@@ -1525,7 +1525,7 @@ def Generate_User_Input_Data(window):
 
 
 
-
+print("📤 Envoi du statut de l'email à l'API...")
 
 
 
