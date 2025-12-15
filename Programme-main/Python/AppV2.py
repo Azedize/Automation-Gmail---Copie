@@ -3998,22 +3998,68 @@ class MainWindow(QMainWindow):
 
         for element in input_json:
             process_type = element.get("process")
+
+            # ⛔ Ignorer certaines actions non liées au traitement des messages
             if process_type in ["google_maps_actions", "save_location", "search_activities"]:
                 continue
 
+            # 🔂 Traitement des boucles
             if process_type == "loop" and "sub_process" in element:
                 sub_process = element["sub_process"]
+
+                # Vérifier que la boucle contient des actions
                 if sub_process:
                     last = sub_process[-1].get("process")
+
+                    # 🟡 Si la dernière action est "next"
+                    # ➜ ouvrir un nouveau message en dehors de la boucle
                     if last == "next":
-                        output_json.append({"process": "open_message", "sleep": random.randint(1, 3)})
-                        sub_process = [sp for sp in sub_process if sp.get("process") != "open_message"]
+                        output_json.append({
+                            "process": "open_message",
+                            "sleep": random.randint(1, 3)
+                        })
+
+                        # Supprimer "open_message" à l’intérieur de la boucle
+                        sub_process = [
+                            sp for sp in sub_process
+                            if sp.get("process") != "open_message"
+                        ]
+
+                    # 🟠 Si la dernière action n’est pas une action finale
+                    # (delete, archive, not_spam, report_spam)
                     elif last not in ["delete", "archive", "not_spam", "report_spam"]:
+                        # Forcer l’ouverture des messages un par un
                         for sp in sub_process:
                             if sp.get("process") == "open_message":
                                 sp["process"] = "OPEN_MESSAGE_ONE_BY_ONE"
+
+                    # ✅ NOUVELLE RÈGLE
+                    # Si "select_all" est présent ET "archive" absent
+                    # ➜ passer à la page suivante
+                    has_select_all = any(
+                        sp.get("process") == "select_all"
+                        for sp in sub_process
+                    )
+                    has_archive = any(
+                        sp.get("process") == "archive"
+                        for sp in sub_process
+                    )
+                    has_next_page = any(
+                        sp.get("process") == "next_page"
+                        for sp in sub_process
+                    )
+
+                    # Ajouter "next_page" uniquement si nécessaire
+                    if has_select_all and not has_archive and not has_next_page:
+                        sub_process.append({
+                            "process": "next_page",
+                            "sleep": 2
+                        })
+
+                # Mise à jour de la boucle avec les actions modifiées
                 element["sub_process"] = sub_process
 
+            # Ajouter l’élément traité à la sortie finale
             output_json.append(element)
 
         return output_json
@@ -4076,7 +4122,7 @@ class MainWindow(QMainWindow):
 
         session_valid = False
 
-        print(f"[INFO] Chemin du fichier session : {SESSION_PATH}")
+        # print(f"[INFO] Chemin du fichier session : {SESSION_PATH}")
 
        
         session_info = check_session(SESSION_PATH, KEY)
@@ -4085,7 +4131,7 @@ class MainWindow(QMainWindow):
 
         # Si la session est invalide, ouvrir la fenêtre de login
         if not session_valid:
-            print("[SESSION] ❌ Session invalide => ouverture de la fenêtre LoginWindow...")
+            # print("[SESSION] ❌ Session invalide => ouverture de la fenêtre LoginWindow...")
 
             self.login_window = LoginWindow()
             self.login_window.setFixedSize(1710, 1005)
@@ -4098,14 +4144,14 @@ class MainWindow(QMainWindow):
 
             self.login_window.show()
 
-            print("[SESSION] 🔒 Fermeture de la fenêtre principale MainWindow...")
+            # print("[SESSION] 🔒 Fermeture de la fenêtre principale MainWindow...")
             self.close()
 
             # Nettoyage du fichier session
             try:
                 with open(SESSION_PATH, "w", encoding="utf-8") as f:
                     f.write("")
-                print("[SESSION] 🧼 Fichier session.txt nettoyé.")
+                # print("[SESSION] 🧼 Fichier session.txt nettoyé.")
             except Exception as e:
                 print(f"[ERREUR NETTOYAGE SESSION] ❌ {e}")
 
@@ -4198,12 +4244,12 @@ class MainWindow(QMainWindow):
 
 
         selected_Browser = self.browser.currentText().lower()
-        print('selected_Browser : ', selected_Browser)
+        # print('selected_Browser : ', selected_Browser)
 
 
 
         if not Process_Browser(window, selected_Browser):
-            print(f"\n⛔ Échec du processus navigateur '{selected_Browser}'. Vérifie les logs ci-dessus.")
+            # print(f"\n⛔ Échec du processus navigateur '{selected_Browser}'. Vérifie les logs ci-dessus.")
             return
 
 
@@ -4352,15 +4398,18 @@ class MainWindow(QMainWindow):
                                 sub_process.append({
                                     "process": sub_hidden_id,
                                     "sleep": wait_process,
-                                    "value":  next((child.toPlainText() for child in sub_widget.children() if isinstance(child, QTextEdit)), "0")
+                                    "value": next(
+                                        (child.toPlainText() for child in sub_widget.children() if isinstance(child, QTextEdit)),
+                                        ""
+                                    )
                                 })
-                                print(f"➡️  Sous-process ajouté avec message vide : {sub_hidden_id} ⏱️ sleep={wait_process}")
-                            sub_process.append({
-                                "process": sub_hidden_id,
-                                "sleep": wait_process
-                            })
-                        else:
-                            break
+                                print(f"➡️ reply_message ajouté avec texte ⏱️ sleep={wait_process}")
+                            else:
+                                sub_process.append({
+                                    "process": sub_hidden_id,
+                                    "sleep": wait_process
+                                })
+
 
                         i += 1
 
