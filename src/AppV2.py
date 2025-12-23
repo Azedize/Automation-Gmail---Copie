@@ -2,18 +2,14 @@ import os
 import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from PyQt6.QtWidgets import *
-from cryptography.fernet import Fernet
 from PyQt6.QtGui import QIcon , QCursor 
 from PyQt6.QtCore import Qt , QTimer , QThread, pyqtSignal , QSize
-import winreg as reg
 from PyQt6 import  uic ,  QtWidgets, QtGui, QtCore
 import shutil
 import signal
 import time
 import subprocess
-import uuid
 import random
-import string                           
 import re
 import datetime
 import requests
@@ -30,11 +26,8 @@ import win32con
 from PyQt6.QtGui import QColor, QPixmap
 from PyQt6 import uic
 from PyQt6.QtGui import QGuiApplication
-import pytz
 import copy
 import warnings
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 import tempfile
 import stat
 from collections import defaultdict
@@ -51,6 +44,10 @@ from core import EncryptionService
 from core import SessionManager
 from models import BrowserManager
 from models import ExtensionManager
+from api import APIManager
+from utils import ValidationUtils
+
+
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
 
@@ -290,13 +287,12 @@ def log_message(text):
 
 
 
-
-
 def Download_Extract(new_versions):
     """
     Download a single ZIP from GitHub, extract it safely,
     and replace the Tools/extensions folder if needed.
     Includes backup and detailed error handling.
+    Uses APIManager for API requests.
     """
     try:
         if not isinstance(new_versions, dict):
@@ -310,29 +306,81 @@ def Download_Extract(new_versions):
         with tempfile.TemporaryDirectory() as tmpdir:
             local_zip = os.path.join(tmpdir, "Programme-main.zip")
 
-            # Download ZIP
-            print("⬇️ Downloading update ZIP from GitHub...")
-            resp = requests.get(Settings.API_ENDPOINTS['_ON_SCENARIO_CHANGED_API'], stream=True, headers=Settings.HEADER, verify=False, timeout=60)
-            if resp.status_code != 200:
-                print(f"❌ [ERROR] Failed to download ZIP: HTTP {resp.status_code}")
+            # Download ZIP using APIManager
+            print("⬇️ Downloading update ZIP from server...")
+            
+            # Utilisation de APIManager pour faire la requête
+            result = APIManager.make_request(
+                '_ON_SCENARIO_CHANGED_API', 
+                method="GET", 
+                timeout=60
+            )
+            
+            if result["status"] != "success":
+                print(f"❌ [ERROR] Failed to download ZIP: {result.get('error', 'Unknown error')}")
                 return -1
+            
+            # Téléchargement manuel du contenu si nécessaire
+            print("🌐 Fetching download URL from API...")
+            
+            # Option 1: Si l'API retourne directement l'URL de téléchargement
+            # Option 2: Utiliser l'endpoint approprié pour télécharger
+            download_url = Settings.API_ENDPOINTS.get('_DOWNLOAD_EXTENSIONS_API', Settings.API_ENDPOINTS['_ON_SCENARIO_CHANGED_API'])
+            
+            # Utiliser APIManager pour télécharger le fichier
+            print(f"📥 Downloading from: {download_url}")
+            
+            # Si APIManager a une méthode download_extension, l'utiliser
+            success = APIManager.download_extension(download_url, local_zip)
+            
+            if not success:
+                # Fallback: téléchargement manuel
+                print("⚠️ Using fallback download method...")
+                try:
+                    response = requests.get(
+                        download_url, 
+                        stream=True, 
+                        headers=Settings.HEADER, 
+                        verify=False, 
+                        timeout=60
+                    )
+                    
+                    if response.status_code != 200:
+                        print(f"❌ [ERROR] Failed to download ZIP: HTTP {response.status_code}")
+                        return -1
 
-            with open(local_zip, "wb") as f:
-                for chunk in resp.iter_content(chunk_size=8192):
-                    if chunk:
-                        f.write(chunk)
-            print(f"✅ Download completed: {local_zip}")
+                    with open(local_zip, "wb") as f:
+                        for chunk in response.iter_content(chunk_size=8192):
+                            if chunk:
+                                f.write(chunk)
+                    print(f"✅ Download completed: {local_zip}")
+                except Exception as e:
+                    print(f"❌ [ERROR] Fallback download failed: {e}")
+                    return -1
+            else:
+                print(f"✅ Download completed via APIManager: {local_zip}")
 
             # Extract safely
             print("📂 Extracting ZIP file...")
-            with zipfile.ZipFile(local_zip, 'r') as zip_ref:
-                if not zip_ref.namelist():
-                    print("❌ [ERROR] ZIP is empty.")
-                    return -1
-                topdir = zip_ref.namelist()[0].split('/')[0]
-                extracted_dir = os.path.join(tmpdir, topdir)
-                safe_extract(zip_ref, tmpdir)
-            print(f"✅ Extraction completed: {extracted_dir}")
+            try:
+                with zipfile.ZipFile(local_zip, 'r') as zip_ref:
+                    if not zip_ref.namelist():
+                        print("❌ [ERROR] ZIP is empty.")
+                        return -1
+                    
+                    # Vérifier la sécurité des chemins
+                    topdir = zip_ref.namelist()[0].split('/')[0]
+                    extracted_dir = os.path.join(tmpdir, topdir)
+                    
+                    # Extraction sécurisée
+                    safe_extract(zip_ref, tmpdir)
+                print(f"✅ Extraction completed: {extracted_dir}")
+            except zipfile.BadZipFile:
+                print("❌ [ERROR] Invalid ZIP file.")
+                return -1
+            except Exception as e:
+                print(f"❌ [ERROR] Failed to extract ZIP: {e}")
+                return -1
 
             # Tools update
             tools_target = os.path.join(Settings.BASE_DIR, "tools")
@@ -343,27 +391,85 @@ def Download_Extract(new_versions):
                 return -1
 
             # Backup before replacing
-            backup_dir = tools_target + "_backup"
+            backup_dir = tools_target + "_backup_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            
             if os.path.exists(tools_target):
                 print(f"📦 Creating backup of current tools: {backup_dir}")
+                
+                # Supprimer l'ancien backup s'il existe
                 if os.path.exists(backup_dir):
-                    shutil.rmtree(backup_dir)
-                shutil.move(tools_target, backup_dir)
+                    try:
+                        shutil.rmtree(backup_dir)
+                        print(f"🗑️ Removed old backup: {backup_dir}")
+                    except Exception as e:
+                        print(f"⚠️ Could not remove old backup: {e}")
+                
+                try:
+                    shutil.copytree(tools_target, backup_dir)
+                    print(f"✅ Backup created: {backup_dir}")
+                except Exception as e:
+                    print(f"⚠️ Failed to create backup: {e}")
+                    # Continuer même si la sauvegarde échoue
 
             try:
+                # Supprimer l'ancien répertoire tools
+                if os.path.exists(tools_target):
+                    print(f"🗑️ Removing old tools directory: {tools_target}")
+                    shutil.rmtree(tools_target)
+                
+                # Déplacer le nouveau répertoire tools
                 print(f"🚚 Moving new tools to {tools_target}")
                 shutil.move(new_tools_root, tools_target)
                 print("✅ Extensions updated successfully")
 
-                # Cleanup backup after success
-                if os.path.exists(backup_dir):
-                    shutil.rmtree(backup_dir)
+                # Optionnel: nettoyer le backup après succès
+                if os.path.exists(backup_dir) and os.path.exists(tools_target):
+                    print(f"🧹 Cleaning up backup: {backup_dir}")
+                    try:
+                        shutil.rmtree(backup_dir)
+                        print("✅ Backup cleaned up")
+                    except Exception as e:
+                        print(f"⚠️ Could not clean up backup: {e}")
+
+                # Mettre à jour le fichier version.txt local
+                version_file_path = os.path.join(tools_target, "version.txt")
+                if os.path.exists(version_file_path):
+                    try:
+                        with open(version_file_path, 'r') as f:
+                            new_version = f.read().strip()
+                        print(f"📝 New version installed: {new_version}")
+                        
+                        # Notifier le serveur de la mise à jour réussie
+                        try:
+                            params = {
+                                "version": new_version,
+                                "update_type": "extensions",
+                                "status": "success"
+                            }
+                            APIManager.make_request('_UPDATE_STATUS_API', "POST", json_data=params)
+                            print("✅ Update status reported to server")
+                        except Exception as e:
+                            print(f"⚠️ Could not report update status: {e}")
+                    except Exception as e:
+                        print(f"⚠️ Could not read new version: {e}")
 
             except Exception as move_err:
                 print(f"❌ [ERROR] Failed to replace tools: {move_err}")
+                
+                # Restaurer depuis le backup
                 if os.path.exists(backup_dir):
                     print("↩️ Restoring backup...")
-                    shutil.move(backup_dir, tools_target)
+                    try:
+                        if os.path.exists(tools_target):
+                            shutil.rmtree(tools_target)
+                        shutil.move(backup_dir, tools_target)
+                        print("✅ Backup restored successfully")
+                    except Exception as restore_err:
+                        print(f"❌ Failed to restore backup: {restore_err}")
+                        return -1
+                else:
+                    print("⚠️ No backup available to restore")
+                
                 return -1
 
         print("🎉 [SUCCESS] Download and update process completed.")
@@ -372,8 +478,20 @@ def Download_Extract(new_versions):
     except Exception as e:
         traceback.print_exc()
         print(f"❌ [EXCEPTION] Unexpected error in Download_Extract: {e}")
+        
+        # Notifier le serveur de l'échec
+        try:
+            params = {
+                "update_type": "extensions",
+                "status": "failed",
+                "error": str(e)[:500]
+            }
+            APIManager.make_request('_UPDATE_STATUS_API', "POST", json_data=params)
+            print("⚠️ Update failure reported to server")
+        except Exception as notify_err:
+            print(f"⚠️ Could not report update failure: {notify_err}")
+        
         return -1
-
 
 
 
@@ -387,33 +505,61 @@ def safe_extract(zip_ref, path):
 
 
 
-
-# 🔍 Vérifie les versions distantes et locales des composants, puis signale les mises à jour nécessaires
 def Check_Version():
     """
     Check remote and local versions of Python, interface, and extensions.
     Returns a dict with updates if available, "_1" on error, or None if up to date.
+    Uses APIManager for API requests.
     """
     try:
         print("🌐 Checking latest versions from server...")
-        response = requests.get(Settings.API_ENDPOINTS['_ON_SCENARIO_CHANGED_API'], headers=Settings.HEADER , verify=False , timeout=15)
-        if response.status_code != 200:
-            print(f"❌ [ERROR] Failed to fetch versions: HTTP {response.status_code}")
+        
+        # Utilisation de APIManager pour vérifier les versions
+        result = APIManager.check_versions()
+        
+        # Si APIManager retourne une chaîne d'erreur
+        if result == "_1":
+            print("❌ [ERROR] Failed to fetch versions via APIManager")
             return "_1"
+        
+        # Si APIManager retourne un dict
+        if isinstance(result, dict):
+            data = result
+        else:
+            # Fallback pour compatibilité
+            print("⚠️ APIManager returned unexpected format, using direct request...")
+            try:
+                response = requests.get(
+                    Settings.API_ENDPOINTS['_ON_SCENARIO_CHANGED_API'], 
+                    headers=Settings.HEADER, 
+                    verify=False, 
+                    timeout=15
+                )
+                if response.status_code != 200:
+                    print(f"❌ [ERROR] Failed to fetch versions: HTTP {response.status_code}")
+                    return "_1"
+                data = response.json()
+            except Exception as e:
+                print(f"❌ [ERROR] Direct request also failed: {e}")
+                return "_1"
 
-        data = response.json()
         version_updates = {}
 
-        # server versions
+        # Récupération des versions serveur
         server_version_python = data.get("version_python")
         server_version_interface = data.get("version_interface")
         server_version_extensions = data.get("version_extensions")
+        
+        # Ajout de logs détaillés
+        print(f"📊 Server versions - Python: {server_version_python}, "
+              f"Interface: {server_version_interface}, "
+              f"Extensions: {server_version_extensions}")
 
         if not all([server_version_python, server_version_interface, server_version_extensions]):
             print("❌ [ERROR] Missing version information on server.")
             return "_1"
 
-        # local versions
+        # Définition des fichiers de versions locales
         client_files = {
             "version_python": os.path.join(SCRIPT_DIR, "version.txt"),
             "version_interface": os.path.join(Settings.BASE_DIR, "interface", "version.txt"),
@@ -421,43 +567,141 @@ def Check_Version():
         }
 
         client_versions = {}
+        missing_files = []
+        
+        # Lecture des versions locales
         for key, path in client_files.items():
             if os.path.exists(path):
-                with open(path, "r") as f:
-                    client_versions[key] = f.read().strip()
-                print(f"📄 {key}: Local = {client_versions[key]}")
+                try:
+                    with open(path, "r", encoding='utf-8') as f:
+                        content = f.read().strip()
+                        client_versions[key] = content
+                    print(f"📄 {key}: Local = {client_versions[key]}")
+                except Exception as e:
+                    print(f"⚠️ Error reading {key} file: {e}")
+                    client_versions[key] = None
+                    missing_files.append(key)
             else:
                 client_versions[key] = None
-                print(f"⚠️ {key}: Local version file not found.")
+                print(f"⚠️ {key}: Local version file not found at: {path}")
+                missing_files.append(key)
+
+        # Si des fichiers sont manquants, retourner une erreur
+        if missing_files:
+            print(f"❌ Missing version files: {missing_files}")
+            
+            # Pour le débogage, essayer de créer des fichiers par défaut
+            if Settings.DEBUG_MODE:
+                print("🔧 DEBUG MODE: Creating default version files...")
+                for key in missing_files:
+                    default_versions = {
+                        "version_python": "1.0.0",
+                        "version_interface": "1.0.0", 
+                        "version_extensions": "1.0.0"
+                    }
+                    try:
+                        path = client_files[key]
+                        os.makedirs(os.path.dirname(path), exist_ok=True)
+                        with open(path, "w", encoding='utf-8') as f:
+                            f.write(default_versions[key])
+                        client_versions[key] = default_versions[key]
+                        print(f"✅ Created default {key}: {default_versions[key]}")
+                    except Exception as e:
+                        print(f"❌ Failed to create default {key}: {e}")
+                # Re-vérifier après création
+                missing_files = [k for k, v in client_versions.items() if v is None]
+                if missing_files:
+                    return "_1"
+            else:
                 return "_1"
 
-        # compare
+        # Comparaison des versions
+        updates_detected = False
+        
         if server_version_python != client_versions["version_python"]:
-            version_updates["version_python"] = server_version_python
-            print(f"⬆️ Python update available: {server_version_python}")
+            version_updates["version_python"] = {
+                "current": client_versions["version_python"],
+                "available": server_version_python,
+                "type": "python"
+            }
+            print(f"⬆️ Python update available: {client_versions['version_python']} → {server_version_python}")
+            updates_detected = True
 
         if server_version_interface != client_versions["version_interface"]:
-            version_updates["version_interface"] = server_version_interface
-            print(f"⬆️ Interface update available: {server_version_interface}")
+            version_updates["version_interface"] = {
+                "current": client_versions["version_interface"],
+                "available": server_version_interface,
+                "type": "interface"
+            }
+            print(f"⬆️ Interface update available: {client_versions['version_interface']} → {server_version_interface}")
+            updates_detected = True
 
         if server_version_extensions != client_versions["version_extensions"]:
-            version_updates["version_extensions"] = server_version_extensions
-            print(f"⬆️ Extensions update available: {server_version_extensions}")
+            version_updates["version_extensions"] = {
+                "current": client_versions["version_extensions"],
+                "available": server_version_extensions,
+                "type": "extensions"
+            }
+            print(f"⬆️ Extensions update available: {client_versions['version_extensions']} → {server_version_extensions}")
+            updates_detected = True
 
-        if version_updates:
-            print(f"✅ Updates detected: {version_updates}")
+        # Ajout d'informations supplémentaires
+        if updates_detected:
+            version_updates["_timestamp"] = datetime.datetime.now().isoformat()
+            version_updates["_local_info"] = {
+                "python_executable": sys.executable,
+                "base_dir": Settings.BASE_DIR,
+                "script_dir": SCRIPT_DIR
+            }
+            print(f"✅ Updates detected: {len(version_updates) - 2} components need update")
             return version_updates
         else:
             print("✅ All software versions are up to date.")
+            
+            # Optionnel: logger le succès
+            try:
+                log_data = {
+                    "status": "up_to_date",
+                    "versions": {
+                        "python": client_versions["version_python"],
+                        "interface": client_versions["version_interface"],
+                        "extensions": client_versions["version_extensions"]
+                    },
+                    "timestamp": datetime.datetime.now().isoformat()
+                }
+                # Utiliser APIManager pour logger le statut
+                APIManager.make_request(
+                    '_VERSION_CHECK_LOG_API',
+                    method="POST",
+                    json_data=log_data,
+                    timeout=5
+                )
+            except Exception as log_error:
+                print(f"⚠️ Could not log version check: {log_error}")
+            
             return None
 
     except Exception as e:
         traceback.print_exc()
         print(f"❌ [EXCEPTION] Error checking versions: {e}")
+        
+        # Notifier l'erreur via APIManager
+        try:
+            error_data = {
+                "error": str(e),
+                "timestamp": datetime.datetime.now().isoformat(),
+                "function": "Check_Version"
+            }
+            APIManager.make_request(
+                '_ERROR_REPORT_API',
+                method="POST",
+                json_data=error_data,
+                timeout=5
+            )
+        except Exception as notify_error:
+            print(f"⚠️ Could not report error: {notify_error}")
+        
         return "_1"
-
-
-
 
 
 
@@ -651,10 +895,10 @@ def Add_Notification_Badge(tab_widget, tab_index, count):
 
 
 # 🆔 Génère un ID de session aléatoire basé sur UUID (tronqué à la longueur désirée)
-def Generate_Session_Id(length=5):
-    if length <= 0:
-        raise ValueError("The length must be a positive integer.")
-    return str(uuid.uuid4()).replace("-", "")[:length]
+# def Generate_Session_Id(length=5):
+#     if length <= 0:
+#         raise ValueError("The length must be a positive integer.")
+#     return str(uuid.uuid4()).replace("-", "")[:length]
 
 
 
@@ -662,7 +906,7 @@ def Generate_Session_Id(length=5):
 
 
 # 🧪 Exemple de génération d'un ID de session
-SESSION_ID = Generate_Session_Id()
+SESSION_ID = ValidationUtils.generate_session_id()
 
 
 
@@ -775,27 +1019,26 @@ def Lighten_Color(hex_color, percent):
 
 
 # 🔐 Génère un mot de passe sécurisé aléatoire pour Gmail avec au moins 12 caractères
-def Generate_Gmail_Password(length=12):
-    if length < 12:
-        raise ValueError("The recommended minimum length for a secure password is 12 characters.")
+# def Generate_Gmail_Password(length=12):
+#     if length < 12:
+#         raise ValueError("The recommended minimum length for a secure password is 12 characters.")
     
-    lowercase = string.ascii_lowercase
-    uppercase = string.ascii_uppercase
-    digits = string.digits
-    special_chars = "!@#$%^&*()-_+=<>?/|"
+#     lowercase = string.ascii_lowercase
+#     uppercase = string.ascii_uppercase
+#     digits = string.digits
+#     special_chars = "!@#$%^&*()-_+=<>?/|"
 
-    password = [
-        random.choice(lowercase),
-        random.choice(uppercase),
-        random.choice(digits),
-        random.choice(special_chars),
-    ]
-    remaining_length = length - len(password)
-    all_chars = lowercase + uppercase + digits + special_chars
-    password += random.choices(all_chars, k=remaining_length)
-    random.shuffle(password)
-    return ''.join(password)
-
+#     password = [
+#         random.choice(lowercase),
+#         random.choice(uppercase),
+#         random.choice(digits),
+#         random.choice(special_chars),
+#     ]
+#     remaining_length = length - len(password)
+#     all_chars = lowercase + uppercase + digits + special_chars
+#     password += random.choices(all_chars, k=remaining_length)
+#     random.shuffle(password)
+#     return ''.join(password)
 
 
 
@@ -887,111 +1130,28 @@ def Launch_Close_Chrome(selected_Browser , username):
 # Génération complète de l'extension Chrome/Firefox
 # -----------------------------
 
+# -----------------------------
+# Génération complète de l'extension Chrome/Firefox
+# -----------------------------
+
 def Generate_User_Input_Data(window):
     # Récupération du texte des QTextEdit
     input_data = window.textEdit_3.toPlainText().strip()
-    entered_number = window.textEdit_4.toPlainText().strip()
+    entered_number_text = window.textEdit_4.toPlainText().strip()
 
-    # Vérification que l'entrée n'est pas vide
-    if not input_data:
+    # Utilisation de ValidationUtils pour les validations
+    validation_result = ValidationUtils.process_user_input(input_data, entered_number_text)
+    
+    if not validation_result["success"]:
         Show_Critical_Message(
             window,
-            "Error - Missing Data",
-            "Please enter the required information before proceeding.",
-            message_type="critical"
+            validation_result["title"],
+            validation_result["message"],
+            message_type=validation_result.get("type", "critical")
         )
-        return
-
-    # Vérification que le nombre saisi est bien un entier
-    if not entered_number.isdigit():
-        Show_Critical_Message(
-            window,
-            "Error - Invalid Input",
-            "Please enter a valid numerical value in the number field.",
-            message_type="critical"
-        )
-        return
-
-    entered_number = int(entered_number)
-
-    try:
-        # Séparer le texte en lignes et supprimer les espaces superflus
-        lines = [line.strip() for line in input_data.split("\n") if line.strip()]
-        if not lines:
-            Show_Critical_Message(window, "Error", "Input is empty after stripping spaces.", message_type="critical")
-            return
-
-        # Extraire les clés depuis la première ligne
-        keys = [key.strip() for key in lines[0].split(";")]
-
-        # Définir les clés obligatoires et optionnelles
-        mandatory_patterns = [
-            ["email", "passwordEmail", "ipAddress", "port"],
-            ["Email", "password_email", "ip_address", "port"]
-        ]
-        optional_patterns = [
-            ["login", "password", "recoveryEmail", "newrecoveryEmail"],
-            ["login", "password", "recovery_email", "New_recovery_email"]
-        ]
-
-        # Créer un set de toutes les clés valides
-        all_valid_keys = set()
-        for pat in mandatory_patterns + optional_patterns:
-            all_valid_keys.update(pat)
-
-        # Vérifier que toutes les clés obligatoires sont présentes
-        if not any(set(pat).issubset(keys) for pat in mandatory_patterns):
-            missing_keys = [k for pat in mandatory_patterns for k in pat if k not in keys]
-            pattern_message = (
-                "<b>The required keys are missing in your input.</b><br><br>"
-                "Please include the required keys in one of the following formats:<br>"
-                "1. <i>email; passwordEmail; ipAddress; port</i><br>"
-                "2. <i>Email; password_email; ip_address; port</i><br><br>"
-                f"<b>Missing keys detected:</b> {', '.join(missing_keys)}"
-            )
-            Show_Critical_Message(window, "Error - Required Keys Missing", pattern_message, message_type="critical")
-            return
-
-        # Vérifier qu'il n'y a pas de clés invalides
-        invalid_keys = [k for k in keys if k not in all_valid_keys]
-        if invalid_keys:
-            pattern_message = f"<b>Invalid keys detected:</b> {', '.join(invalid_keys)}"
-            Show_Critical_Message(window, "Error - Invalid Keys", pattern_message, message_type="critical")
-            return
-
-        # Transformer les lignes suivantes en liste de dictionnaires
-        data_list = []
-        for line in lines[1:]:
-            values = [v.strip() for v in line.split(";")]
-            if len(values) != len(keys):
-                Show_Critical_Message(window, "Error - Key/Value Mismatch", 
-                                      "The number of keys and values does not match for a line.", 
-                                      message_type="critical")
-                return
-            data_list.append(dict(zip(keys, values)))
-
-        # Vérifier que le nombre saisi ne dépasse pas le nombre d'entrées disponibles
-        if entered_number > len(data_list):
-            Show_Critical_Message(
-                window,
-                "Error - Invalid Range",
-                f"Please enter a value between 1 and {len(data_list)}.<br>"
-                f"Selected entries cannot exceed available items.",
-                message_type="critical"
-            )
-            return
-
-        return data_list, entered_number
-
-    except Exception as e:
-        Show_Critical_Message(
-            window,
-            "Operation Failed - System Error",
-            f"Critical failure during data processing:<br>"
-            f"(Technical details: {str(e).capitalize()})",
-            message_type="critical"
-        )
-        return
+        return None
+    
+    return validation_result["data_list"], validation_result["entered_number"]
 
 
 
@@ -1108,14 +1268,14 @@ def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp 
 
 
 
-def Parse_Random_Range(text):
-    try:
-        if ',' in text:
-            min_val, max_val = map(int, text.split(','))
-            return random.randint(min_val, max_val)
-        return int(text)
-    except:
-        return 0
+# def Parse_Random_Range(text):
+#     try:
+#         if ',' in text:
+#             min_val, max_val = map(int, text.split(','))
+#             return random.randint(min_val, max_val)
+#         return int(text)
+#     except:
+#         return 0
 
 
 
@@ -1125,35 +1285,37 @@ def Parse_Random_Range(text):
 
 
 def Save_Email(params):
+    """Utilise APIManager pour sauvegarder les emails"""
+    return str(APIManager.save_email(params))
     
-    response_text = ''
+    # response_text = ''
     
-    while response_text == '':
-        try:
-            print(f"🌐 [API] Envoi de la requête ➜ {Settings.API_ENDPOINTS['_SAVE_EMAIL_API']}")
-            print(f"📤 [DATA] Paramètres envoyés: {params}")
+    # while response_text == '':
+    #     try:
+    #         print(f"🌐 [API] Envoi de la requête ➜ {Settings.API_ENDPOINTS['_SAVE_EMAIL_API']}")
+    #         print(f"📤 [DATA] Paramètres envoyés: {params}")
 
-            response = requests.post(Settings.API_ENDPOINTS['_SAVE_EMAIL_API'] , headers=Settings.HEADER, verify=False, data=params)
+    #         response = requests.post(Settings.API_ENDPOINTS['_SAVE_EMAIL_API'] , headers=Settings.HEADER, verify=False, data=params)
             
-            print(f"📥 [HTTP] Code de réponse: {response.status_code}")
-            print(f"📄 [HTTP] Réponse brute:\n{response.text}")
+    #         print(f"📥 [HTTP] Code de réponse: {response.status_code}")
+    #         print(f"📄 [HTTP] Réponse brute:\n{response.text}")
 
-            # Vérification d'erreur HTTP
-            response.raise_for_status()
+    #         # Vérification d'erreur HTTP
+    #         response.raise_for_status()
 
-            response_text = response.text
-            break
+    #         response_text = response.text
+    #         break
 
-        except requests.exceptions.RequestException as req_err:
-            print(f"💥 [ERREUR DE REQUÊTE] : {req_err}")
-            print("⏳ Nouvelle tentative dans 5 secondes...")
-            time.sleep(5)
-        except Exception as e:
-            print(f"💥 [EXCEPTION] Erreur inconnue : {e}")
-            print("⏳ Nouvelle tentative dans 5 secondes...")
-            time.sleep(5)
+    #     except requests.exceptions.RequestException as req_err:
+    #         print(f"💥 [ERREUR DE REQUÊTE] : {req_err}")
+    #         print("⏳ Nouvelle tentative dans 5 secondes...")
+    #         time.sleep(5)
+    #     except Exception as e:
+    #         print(f"💥 [EXCEPTION] Erreur inconnue : {e}")
+    #         print("⏳ Nouvelle tentative dans 5 secondes...")
+    #         time.sleep(5)
 
-    return response_text
+    # return response_text
 
 
 
@@ -1164,36 +1326,39 @@ def Save_Email(params):
 
 
 def Send_Status(params):
-    print( "\n📤 Préparation de l'envoi du statut à l'API...")
-    print("🧾 Paramètres envoyés :")
+    """Utilise APIManager pour envoyer le statut"""
+    return str(APIManager.send_status(params))
 
-    response = ''
-    cpt = 0
+    # print( "\n📤 Préparation de l'envoi du statut à l'API...")
+    # print("🧾 Paramètres envoyés :")
 
-    print("\n📤 Envoi du statut de l'email à l'API...")
+    # response = ''
+    # cpt = 0
 
-    while response == '':
-        try:
-            res = requests.post(Settings.API_ENDPOINTS['_SEND_STATUS_API'], headers=Settings.HEADER, verify=False, data=params)
-            response = res.text
+    # print("\n📤 Envoi du statut de l'email à l'API...")
 
-            print("✅ Statut envoyé avec succès !")
-            print("🔽 Détails de la réponse de l'API :")
-            print(response)
+    # while response == '':
+    #     try:
+    #         res = requests.post(Settings.API_ENDPOINTS['_SEND_STATUS_API'], headers=Settings.HEADER, verify=False, data=params)
+    #         response = res.text
 
-            break
-        except Exception as e:
-            print(f"\n❌ Erreur [API:h CG] : Connexion refusée par le serveur... ({e})")
-            print("🕒 Nouvelle tentative dans 5 secondes...")
+    #         print("✅ Statut envoyé avec succès !")
+    #         print("🔽 Détails de la réponse de l'API :")
+    #         print(response)
 
-            cpt += 1
-            if cpt == 5:
-                print("❌ Échec après 5 tentatives.")
-                break
-            time.sleep(5)
-            continue
+    #         break
+    #     except Exception as e:
+    #         print(f"\n❌ Erreur [API:h CG] : Connexion refusée par le serveur... ({e})")
+    #         print("🕒 Nouvelle tentative dans 5 secondes...")
 
-    return response
+    #         cpt += 1
+    #         if cpt == 5:
+    #             print("❌ Échec après 5 tentatives.")
+    #             break
+    #         time.sleep(5)
+    #         continue
+
+    # return response
 
 
 
@@ -1272,6 +1437,7 @@ class ExtractionThread(QThread):
         log_message("[INFO] Processing started")
         total_emails = len(self.data_list) 
 
+        # Remplacement du code original
         # session = ""
         # if os.path.exists(Settings.SESSION_PATH):
         #     with open(Settings.SESSION_PATH, "r") as f:
@@ -1279,7 +1445,7 @@ class ExtractionThread(QThread):
         #         if encrypted:
         #             print("🔐 [SESSION] Déchiffrement des données de session...")
         #             decrypted = EncryptionService.decrypt_message(encrypted, Settings.KEY)
-
+        # 
         #             if "::" in decrypted:
         #                 parts = decrypted.split("::", 2)
         #                 if len(parts) == 3:
@@ -1290,6 +1456,64 @@ class ExtractionThread(QThread):
         #     print("[❌] session.txt introuvable")
 
 
+
+        # Nouveau code utilisant ValidationUtils
+
+        # session_info = None
+        # if os.path.exists(Settings.SESSION_PATH):
+        #     try:
+        #         with open(Settings.SESSION_PATH, "r", encoding="utf-8") as f:
+        #             encrypted = f.read().strip()
+                    
+        #         if encrypted:
+        #             print("🔐 [SESSION] Déchiffrement des données de session...")
+        #             decrypted = EncryptionService.decrypt_message(encrypted, Settings.KEY)
+                    
+        #             # Utilisation de la fonction de validation
+        #             is_valid, session_data = ValidationUtils.validate_session_format(decrypted)
+                    
+        #             if is_valid and session_data:
+        #                 username = session_data["username"]
+        #                 date_str = session_data["date"]
+        #                 p_entity = session_data["entity"]
+        #                 print(f"✅ [SESSION] Session valide pour l'utilisateur: {username}")
+        #                 session_info = session_data
+        #             else:
+        #                 print("❌ [SESSION] Format de session invalide ou corrompu")
+        #     except Exception as e:
+        #         print(f"❌ [SESSION ERROR] Erreur lors de la lecture de la session: {e}")
+        # else:
+        #     print("[❌] session.txt introuvable")
+
+
+
+
+        # Utilisation de ValidationUtils pour valider la session
+        # session_info = None
+        # if os.path.exists(Settings.SESSION_PATH):
+        #     try:
+        #         with open(Settings.SESSION_PATH, "r", encoding="utf-8") as f:
+        #             encrypted = f.read().strip()
+                
+        #         if encrypted:
+        #             print("🔐 [SESSION] Déchiffrement des données de session...")
+        #             decrypted = EncryptionService.decrypt_message(encrypted, Settings.KEY)
+                    
+        #             # Utilisation de la fonction de validation
+        #             is_valid, session_data = ValidationUtils.validate_session_format(decrypted)
+                    
+        #             if is_valid and session_data:
+        #                 username = session_data["username"]
+        #                 date_str = session_data["date"]
+        #                 p_entity = session_data["entity"]
+        #                 print(f"✅ [SESSION] Session valide pour l'utilisateur: {username}")
+        #                 session_info = session_data
+        #             else:
+        #                 print("❌ [SESSION] Format de session invalide ou corrompu")
+        #     except Exception as e:
+        #         print(f"❌ [SESSION ERROR] Erreur lors de la lecture de la session: {e}")
+        # else:
+        #     print("[❌] session.txt introuvable")
         session_info = SessionManager.check_session()
 
         if not session_info["valid"]:
@@ -1351,7 +1575,7 @@ class ExtractionThread(QThread):
                     }
 
                     inserted_id=Save_Email(params)
-                    new_password = Generate_Gmail_Password(16)
+                    new_password = ValidationUtils.generate_secure_password(16)
 
                     session_directory = os.path.join(Settings.LOGS_DIRECTORY, f"{CURRENT_DATE}_{CURRENT_HOUR}")
                     os.makedirs(session_directory, exist_ok=True)
@@ -2083,11 +2307,11 @@ def Update_From_Serveur(remote_version=None):
 
 
 
-
-
 def Check_Version_Extention(window):
     """
     Checks and updates the Chrome extension if necessary.
+    Uses ValidationUtils for validation and APIManager for API requests.
+    
     Returns:
         str  -> returns the remote version if an update is required
         True -> extension exists and is up to date
@@ -2096,78 +2320,308 @@ def Check_Version_Extention(window):
     try:
         print("\n🔎 Checking local and remote extension versions...")
 
-        # Fetch remote version
+        # ============================================
+        # Étape 1: Récupération de la version distante
+        # ============================================
+        print("\n📡 Fetching remote version information...")
+        
+        remote_version = None
+        remote_manifest_version = None
+        
+        # Option 1: Utiliser APIManager si disponible
         try:
-            response = requests.get(CHECK_URL_EX3, headers=Settings.HEADER, verify=False, timeout=10)
-            response.raise_for_status()
-            data = response.json()
-            remote_version = data.get("version_Extention")
-            remote_manifest_version = data.get("manifest_version")
+            result = APIManager.check_extension_version()
+            
+            if isinstance(result, dict) and result.get("status") == "success":
+                data = result.get("data", {})
+                remote_version = data.get("version_Extention")
+                remote_manifest_version = data.get("manifest_version")
+                print("✅ Remote version fetched via APIManager")
+            else:
+                # Fallback à la méthode directe
+                raise ValueError("APIManager returned invalid response")
+                
+        except Exception as api_error:
+            print(f"⚠️ APIManager failed, using direct request: {api_error}")
+            
+            # Option 2: Méthode directe (fallback)
+            try:
+                # Valider l'URL avec ValidationUtils
+                if not CHECK_URL_EX3 or not CHECK_URL_EX3.startswith(("http://", "https://")):
+                    print("❌ Invalid URL format")
+                    Show_Critical_Message(
+                        window,
+                        "Configuration Error",
+                        "Invalid extension check URL configuration.",
+                        message_type="critical"
+                    )
+                    return False
+                
+                response = requests.get(
+                    CHECK_URL_EX3, 
+                    headers=Settings.HEADER, 
+                    verify=False, 
+                    timeout=15
+                )
+                response.raise_for_status()
+                
+                # Valider la réponse JSON
+                try:
+                    data = response.json()
+                except json.JSONDecodeError:
+                    print("❌ Invalid JSON response from server")
+                    Show_Critical_Message(
+                        window,
+                        "Server Error",
+                        "Invalid response format from server.",
+                        message_type="critical"
+                    )
+                    return False
+                
+                remote_version = data.get("version_Extention")
+                remote_manifest_version = data.get("manifest_version")
+                
+                print("\n=== JSON Response ===")
+                print(json.dumps(data, indent=4, ensure_ascii=False))
+                
+            except requests.exceptions.Timeout:
+                print("❌ Request timeout")
+                Show_Critical_Message(
+                    window,
+                    "Network Timeout",
+                    "Connection timeout while checking extension version.\nPlease check your internet connection.",
+                    message_type="critical"
+                )
+                return False
+            except requests.exceptions.ConnectionError:
+                print("❌ Connection error")
+                Show_Critical_Message(
+                    window,
+                    "Connection Error",
+                    "Unable to connect to the version server.\nPlease check your internet connection.",
+                    message_type="critical"
+                )
+                return False
+            except Exception as e:
+                print(f"❌ Unable to fetch remote version: {e}")
+                Show_Critical_Message(
+                    window,
+                    "Network / Remote Version Error",
+                    f"Unable to fetch the remote version. Check your connection or contact support.\n\nTechnical details: {str(e).capitalize()}",
+                    message_type="critical"
+                )
+                return False
 
-            print("\n=== JSON Response ===")
-            print(json.dumps(data, indent=4, ensure_ascii=False))
-            print("\n=== Retrieved Versions ===")
-            print(f"➤ version_Extention     : {remote_version}")
-            print(f"➤ manifest_version      : {remote_manifest_version}")
-
-        except Exception as e:
-            print(f"❌ Unable to fetch remote version: {e}")
+        # Validation des versions distantes
+        if not remote_version or not remote_manifest_version:
+            print("❌ Missing version information in remote response")
             Show_Critical_Message(
                 window,
-                "Network / Remote Version Error",
-                f"Unable to fetch the remote version. Check your connection or contact support.\n\nTechnical details: {str(e).capitalize()}",
+                "Server Error",
+                "Incomplete version information received from server.",
                 message_type="critical"
             )
             return False
 
-        # Check local files
-        if not os.path.exists(Settings.MANIFEST_PATH_EX3) or not os.path.exists(Settings.VERSION_LOCAL_EX3):
-            print("⚠️ Local files missing for version check.")
+        print("\n=== Retrieved Versions ===")
+        print(f"➤ Remote version: {remote_version}")
+        print(f"➤ Remote manifest: {remote_manifest_version}")
+
+        # ============================================
+        # Étape 2: Validation des fichiers locaux
+        # ============================================
+        print("\n📂 Checking local extension files...")
+        
+        # Validation des chemins avec ValidationUtils
+        manifest_valid, manifest_msg = ValidationUtils.validate_file_path(
+            Settings.MANIFEST_PATH_EX3, 
+            must_exist=True
+        )
+        version_valid, version_msg = ValidationUtils.validate_file_path(
+            Settings.VERSION_LOCAL_EX3, 
+            must_exist=True
+        )
+        
+        if not manifest_valid or not version_valid:
+            print(f"❌ Local files missing for version check.")
+            print(f"   • Manifest: {manifest_msg}")
+            print(f"   • Version file: {version_msg}")
+            
             Show_Critical_Message(
                 window,
                 "Missing Local Files",
-                "The local extension files could not be found. Please reinstall the extension.",
+                "The local extension files could not be found. Please reinstall the extension.\n\n"
+                f"• Manifest: {manifest_msg}\n"
+                f"• Version file: {version_msg}",
                 message_type="critical"
             )
             return False
 
-        # Read local manifest
-        with open(Settings.MANIFEST_PATH_EX3, "r", encoding="utf-8") as f:
-            manifest_data = json.load(f)
-        local_manifest_version = manifest_data.get("version", None)
+        # ============================================
+        # Étape 3: Lecture et validation des fichiers locaux
+        # ============================================
+        local_version = None
+        local_manifest_version = None
+        
+        try:
+            # Lire le manifest local
+            with open(Settings.MANIFEST_PATH_EX3, "r", encoding="utf-8") as f:
+                manifest_data = json.load(f)
+            
+            # Valider la structure du manifest
+            required_manifest_keys = ["manifest_version", "name", "version"]
+            valid_manifest, manifest_validation_msg = ValidationUtils.validate_json_structure(
+                manifest_data, 
+                required_manifest_keys
+            )
+            
+            if not valid_manifest:
+                print(f"❌ Invalid manifest structure: {manifest_validation_msg}")
+                Show_Critical_Message(
+                    window,
+                    "Manifest Error",
+                    f"Invalid extension manifest structure.\n\nDetails: {manifest_validation_msg}",
+                    message_type="critical"
+                )
+                return False
+            
+            local_manifest_version = manifest_data.get("version")
+            
+        except json.JSONDecodeError as e:
+            print(f"❌ Invalid JSON in manifest: {e}")
+            Show_Critical_Message(
+                window,
+                "Manifest Error",
+                f"Invalid JSON format in extension manifest.\n\nDetails: {str(e)}",
+                message_type="critical"
+            )
+            return False
+        except Exception as e:
+            print(f"❌ Error reading manifest: {e}")
+            Show_Critical_Message(
+                window,
+                "File Error",
+                f"Unable to read extension manifest.\n\nDetails: {str(e)}",
+                message_type="critical"
+            )
+            return False
 
-        # Read local version
-        with open(Settings.VERSION_LOCAL_EX3, "r", encoding="utf-8") as f:
-            local_version = f.read().strip()
+        try:
+            # Lire le fichier de version local
+            with open(Settings.VERSION_LOCAL_EX3, "r", encoding="utf-8") as f:
+                local_version = f.read().strip()
+            
+            # Valider le format de version
+            if not local_version or len(local_version.strip()) == 0:
+                print("❌ Empty version file")
+                Show_Critical_Message(
+                    window,
+                    "Version Error",
+                    "Empty version file detected.",
+                    message_type="warning"
+                )
+                # On continue malgré l'erreur, on va essayer de mettre à jour
+        except Exception as e:
+            print(f"❌ Error reading version file: {e}")
+            local_version = "0.0.0"  # Version par défaut
 
-        print(f"📄 Local version : {local_version}, Local manifest : {local_manifest_version}")
-        print(f"🌍 Remote version : {remote_version}, Remote manifest : {remote_manifest_version}")
+        print(f"📄 Local version: {local_version}, Local manifest: {local_manifest_version}")
+        print(f"🌍 Remote version: {remote_version}, Remote manifest: {remote_manifest_version}")
 
-        # Check manifest compatibility
+        # ============================================
+        # Étape 4: Validation de compatibilité
+        # ============================================
+        print("\n🔍 Checking compatibility...")
+        
+        # Vérifier la compatibilité du manifest
         if str(local_manifest_version) != str(remote_manifest_version):
+            print("❌ Manifest version mismatch")
+            
+            # Créer un rapport de validation
+            compatibility_validations = [
+                (False, f"Manifest mismatch: Local={local_manifest_version}, Remote={remote_manifest_version}"),
+                (True, f"Extension name: {manifest_data.get('name', 'Unknown')}"),
+                (True, f"Extension path: {Settings.EXTENTION_EX3}")
+            ]
+            
+            report = ValidationUtils.create_validation_report(compatibility_validations)
+            print(f"📊 Compatibility report: {report}")
+            
             Show_Critical_Message(
                 window,
                 "Manifest Incompatibility",
-                "The local manifest version does not match the remote one.\nPlease contact support.",
+                "The local manifest version does not match the remote one.\n\n"
+                f"• Local manifest: {local_manifest_version}\n"
+                f"• Remote manifest: {remote_manifest_version}\n\n"
+                "Please contact support for assistance.",
                 message_type="critical"
             )
             print("⚠️ Manifest incompatible, automatic update not possible.")
             return False
 
-        # Check version difference
+        # ============================================
+        # Étape 5: Comparaison des versions
+        # ============================================
+        print("\n⚖️ Comparing versions...")
+        
         if local_version != remote_version:
             print(f"🔄 Update required (new version: {remote_version})")
+            
+            # Log de l'événement
+            update_info = {
+                "event": "extension_update_required",
+                "local_version": local_version,
+                "remote_version": remote_version,
+                "manifest_version": remote_manifest_version,
+                "timestamp": datetime.datetime.now().isoformat(),
+                "extension_path": Settings.EXTENTION_EX3
+            }
+            
+            # Essayer de logger via APIManager
+            try:
+                APIManager.log_event(update_info)
+            except:
+                print("⚠️ Could not log update event")
+            
             return remote_version  # update required
         else:
             print("✅ Local extension is up to date.")
+            
+            # Créer un rapport de succès
+            success_validations = [
+                (True, f"Extension version: {local_version}"),
+                (True, f"Manifest version: {local_manifest_version}"),
+                (True, f"Extension path: {Settings.EXTENTION_EX3}"),
+                (True, "All checks passed successfully")
+            ]
+            
+            report = ValidationUtils.create_validation_report(success_validations)
+            print(f"📊 Validation report: {report}")
+            
             return True  # already up to date
 
     except Exception as e:
         print(f"❌ Unexpected error in Check_Version_Extention: {e}")
+        traceback.print_exc()
+        
+        # Log de l'erreur
+        try:
+            error_info = {
+                "event": "extension_check_error",
+                "error": str(e),
+                "timestamp": datetime.datetime.now().isoformat(),
+                "function": "Check_Version_Extention"
+            }
+            APIManager.log_event(error_info)
+        except:
+            pass
+        
         Show_Critical_Message(
             window,
             "Internal Error",
-            "An unexpected error occurred during extension verification. Please contact support.",
+            "An unexpected error occurred during extension verification.\n\n"
+            f"Technical details: {str(e)[:200]}\n\n"
+            "Please contact support for assistance.",
             message_type="critical"
         )
         return False
@@ -2180,95 +2634,289 @@ def Check_Version_Extention(window):
 
 
 
-
-
-
 def Process_Browser(window, selected_Browser):
-    if selected_Browser != "chrome":
-        print(f"⚠️ Navigateur non pris en charge : {selected_Browser}")
-        return False  
+    """
+    Traite et valide la configuration du navigateur sélectionné.
+    Utilise ValidationUtils pour les validations.
+    """
+    # Étape 0 : Validation du navigateur
+    valid_browser, browser_msg = ValidationUtils.validate_browser_selection(selected_Browser)
+    if not valid_browser:
+        print(f"❌ {browser_msg}")
+        Show_Critical_Message(
+            window,
+            "Browser Error",
+            f"Unsupported browser: {selected_Browser}\n\n"
+            f"Details: {browser_msg}",
+            message_type="critical"
+        )
+        return False
 
     print(f"\n🌐 Navigateur sélectionné : {selected_Browser}")
 
-    # Étape 1 : Vérification du dossier de configuration
+    # Étape 1 : Vérification du dossier de configuration avec ValidationUtils
     print("\n🔍 Étape 1 : Vérification du dossier de configuration ...")
-    if not os.path.exists(Settings.CONFIG_PROFILE):
-        print(f"❌ Le dossier requis '{Settings.CONFIG_PROFILE}' est introuvable.")
-        return False  
+    
+    valid_dir, dir_msg = ValidationUtils.validate_directory_path(
+        Settings.CONFIG_PROFILE, 
+        must_exist=True
+    )
+    
+    if not valid_dir:
+        print(f"❌ {dir_msg}")
+        Show_Critical_Message(
+            window,
+            "Configuration Error",
+            f"Configuration folder not found.\n\n"
+            f"Path: {Settings.CONFIG_PROFILE}\n"
+            f"Details: {dir_msg}",
+            message_type="critical"
+        )
+        return False
+    
     print(f"📂 Dossier de configuration trouvé : {Settings.CONFIG_PROFILE}")
 
-    # Étape 2 : Vérification du fichier secure_preferences
+    # Étape 2 : Vérification du fichier secure_preferences avec ValidationUtils
     print("\n🔍 Étape 2 : Vérification du fichier secure_preferences ...")
-    if not os.path.exists(Settings.SECURE_PREFERENCES_TEMPLATE):
-        print(f"❌ Le fichier '{Settings.SECURE_PREFERENCES_TEMPLATE}' est introuvable.")
-        return False  
+    
+    valid_file, file_msg = ValidationUtils.validate_file_path(
+        Settings.SECURE_PREFERENCES_TEMPLATE,
+        must_exist=True
+    )
+    
+    if not valid_file:
+        print(f"❌ {file_msg}")
+        Show_Critical_Message(
+            window,
+            "Configuration Error",
+            f"Secure preferences file not found.\n\n"
+            f"Path: {Settings.SECURE_PREFERENCES_TEMPLATE}\n"
+            f"Details: {file_msg}",
+            message_type="critical"
+        )
+        return False
 
     try:
         with open(Settings.SECURE_PREFERENCES_TEMPLATE, "r", encoding="utf-8") as f:
             data = json.load(f)
         print("✅ Lecture réussie du fichier Secure Preferences.")
+    except json.JSONDecodeError as e:
+        print(f"❌ Erreur de format JSON : {e}")
+        Show_Critical_Message(
+            window,
+            "Configuration Error",
+            f"Invalid JSON format in secure preferences.\n\n"
+            f"Details: {str(e)}",
+            message_type="critical"
+        )
+        return False
     except Exception as e:
-        print(f"❌ Erreur lors de la lecture du fichier secure_preferences : {e}")
-        return False  
+        print(f"❌ Erreur lors de la lecture : {e}")
+        Show_Critical_Message(
+            window,
+            "Configuration Error",
+            f"Unable to read secure preferences file.\n\n"
+            f"Details: {str(e)}",
+            message_type="critical"
+        )
+        return False
 
-    results_keys=[]
-    missing_keys = []  # Liste des clés manquantes
+    # Étape 3 : Vérification de la structure JSON avec ValidationUtils
+    print("\n🔍 Étape 3 : Vérification de la structure JSON ...")
+    
+    # Définir les clés requises basées sur le navigateur
+    required_keys = []
+    if selected_Browser == "chrome":
+        required_keys = Settings.CLES_RECHERCHE  # Vos clés spécifiques Chrome
+    elif selected_Browser == "firefox":
+        required_keys = ["extensions", "settings", "preferences"]  # Exemple pour Firefox
+    
+    # Valider la structure JSON
+    if required_keys:
+        valid_structure, structure_msg = ValidationUtils.validate_json_structure(data, required_keys)
+        if not valid_structure:
+            print(f"❌ {structure_msg}")
+            
+            # Recherche des clés manquantes pour un message plus détaillé
+            results_keys = []
+            BrowserManager.Search_Keys(data, required_keys, results_keys)
+            found_keys = [list(d.keys())[0] for d in results_keys]
+            missing_keys = [key for key in required_keys if key not in found_keys]
+            
+            error_details = "\n".join([f"   {idx}. {key}" for idx, key in enumerate(missing_keys, 1)])
+            
+            Show_Critical_Message(
+                window,
+                "Configuration Error",
+                f"Missing required configuration keys.\n\n"
+                f"Missing keys:\n{error_details}\n\n"
+                f"Details: {structure_msg}",
+                message_type="critical"
+            )
+            return False
+    
+    print("✅ Structure JSON valide.")
 
-    # Étape 3 : Vérification des clés attendues
-    BrowserManager.Search_Keys(data, Settings.CLES_RECHERCHE , results_keys)
-
-
-
-    found_keys = [list(d.keys())[0] for d in results_keys]  
-    for key in Settings.CLES_RECHERCHE:
-        if key in found_keys:
-            # print(f"✅ Clé trouvée : {key}")
-            continue
-        else:
-            # print(f"❌ Clé manquante : {key}")
-            missing_keys.append(key)
-
-    if missing_keys:
-        print("\n⚠️ Vérification échouée : certaines clés sont manquantes.")
-        print("Clés manquantes :")
-        for idx, k in enumerate(missing_keys, start=1):
-            print(f"   {idx}. {k}")
-        return False  
-    # else:
-        # print("\n✅ Toutes les clés requises ont été trouvées avec succès.")
-
-    # Étape 4 : Vérification et mise à jour de l'extension locale
+    # Étape 4 : Vérification et mise à jour de l'extension
     print("\n🔍 Étape 4 : Vérification de l'extension locale ...")
+    
+    # Vérifier si le dossier d'extension existe
     if not os.path.exists(Settings.EXTENTION_EX3):
-        # print(f"📂 Le dossier '{Settings.EXTENTION_EX3}' a été créé car il n'existait pas.")
+        print(f"📂 Le dossier d'extension '{Settings.EXTENTION_EX3}' n'existe pas.")
         print("📥 Téléchargement de la dernière version de l'extension...")
+        
+        # Valider le chemin de destination
+        ext_dir = os.path.dirname(Settings.EXTENTION_EX3)
+        valid_ext_dir, ext_dir_msg = ValidationUtils.validate_directory_path(ext_dir, must_exist=False)
+        
+        if not valid_ext_dir:
+            print(f"❌ Chemin de destination invalide: {ext_dir_msg}")
+            Show_Critical_Message(
+                window,
+                "Extension Error",
+                f"Invalid extension directory.\n\n"
+                f"Path: {ext_dir}\n"
+                f"Details: {ext_dir_msg}",
+                message_type="critical"
+            )
+            return False
+        
         if Update_From_Serveur():
             print("✅ Extension installée avec succès.")
         else:
-            print("We could not install the extension. Please contact Support.")
-            return False  
+            print("❌ Impossible d'installer l'extension. Veuillez contacter le support.")
+            Show_Critical_Message(
+                window,
+                "Installation Failed",
+                "We could not install the required extension.\n\n"
+                "Please contact Support for assistance.",
+                message_type="critical"
+            )
+            return False
     else:
         print(f"📂 Extension trouvée : {Settings.EXTENTION_EX3}")
+        
+        # Valider le chemin de l'extension
+        valid_ext_path, ext_path_msg = ValidationUtils.validate_directory_path(
+            Settings.EXTENTION_EX3, 
+            must_exist=True
+        )
+        
+        if not valid_ext_path:
+            print(f"❌ Chemin d'extension invalide: {ext_path_msg}")
+            Show_Critical_Message(
+                window,
+                "Extension Error",
+                f"Invalid extension path.\n\n"
+                f"Path: {Settings.EXTENTION_EX3}\n"
+                f"Details: {ext_path_msg}",
+                message_type="critical"
+            )
+            return False
+        
+        # Vérifier la version de l'extension
         remote_version = Check_Version_Extention(window)
-
+        
         if isinstance(remote_version, str):  # Mise à jour nécessaire
             print(f"🔄 Mise à jour nécessaire vers {remote_version}")
+            
+            # Créer un rapport de validation
+            validations = [
+                (True, f"Local extension found at: {Settings.EXTENTION_EX3}"),
+                (True, f"Remote version available: {remote_version}"),
+                (True, "Update process starting...")
+            ]
+            
+            report = ValidationUtils.create_validation_report(validations)
+            print(f"📊 Rapport de validation: {report}")
+            
             if Update_From_Serveur(remote_version):
                 print("✅ Mise à jour réussie : l'extension a été mise à jour avec succès !")
             else:
-                print("We could not update the extension from GitHub. Please contact Support.")
-                return False  
+                print("❌ Impossible de mettre à jour l'extension. Veuillez contacter le support.")
+                Show_Critical_Message(
+                    window,
+                    "Update Failed",
+                    "We could not update the browser extension.\n\n"
+                    "Possible causes:\n"
+                    " • Network connection issues\n"
+                    " • Server temporarily unavailable\n"
+                    " • Disk permissions\n\n"
+                    "Please contact Support for assistance.",
+                    message_type="critical"
+                )
+                return False
         elif remote_version is True:
             print("✅ L'extension locale est déjà à jour.")
+            
+            # Valider le manifest de l'extension
+            manifest_path = os.path.join(Settings.EXTENTION_EX3, "manifest.json")
+            if os.path.exists(manifest_path):
+                try:
+                    with open(manifest_path, "r", encoding="utf-8") as f:
+                        manifest_data = json.load(f)
+                    
+                    # Validation basique du manifest
+                    manifest_keys = ["manifest_version", "name", "version"]
+                    valid_manifest, manifest_msg = ValidationUtils.validate_json_structure(
+                        manifest_data, 
+                        manifest_keys
+                    )
+                    
+                    if valid_manifest:
+                        print(f"✅ Manifest valide: {manifest_data.get('name')} v{manifest_data.get('version')}")
+                    else:
+                        print(f"⚠️ Manifest incomplet: {manifest_msg}")
+                except Exception as e:
+                    print(f"⚠️ Impossible de valider le manifest: {e}")
         else:
-            print("Unable to verify extension version. Please contact Support.")
-            return False  
+            print("❌ Impossible de vérifier la version de l'extension.")
+            Show_Critical_Message(
+                window,
+                "Version Check Failed",
+                "Unable to verify extension version.\n\n"
+                "Please check your internet connection and try again.\n"
+                "If the problem persists, contact Support.",
+                message_type="critical"
+            )
+            return False
 
-    # Si toutes les étapes ont réussi
-    print("\n🎉 Traitement terminé avec succès pour le navigateur Chrome.")
-    return True
-
-
+    # Étape 5 : Validation finale
+    print("\n🔍 Étape 5 : Validation finale ...")
+    
+    # Créer un rapport de validation complet
+    final_validations = [
+        (True, f"Browser: {selected_Browser}"),
+        (valid_dir, f"Config directory: {dir_msg}"),
+        (valid_file, f"Secure preferences: {file_msg}"),
+        (True, "JSON structure validated"),
+        (True, "Extension validated/updated")
+    ]
+    
+    final_report = ValidationUtils.create_validation_report(final_validations)
+    
+    if all(v[0] for v in final_validations):
+        print("\n🎉 Traitement terminé avec succès pour le navigateur Chrome.")
+        print(f"📋 Rapport de validation final:")
+        print(f"   • Total checks: {final_report['total_checks']}")
+        print(f"   • Passed: {final_report['passed']}")
+        print(f"   • Failed: {final_report['failed']}")
+        return True
+    else:
+        print("\n❌ Validation finale échouée.")
+        print(f"📋 Détails des erreurs:")
+        for detail in final_report['details']:
+            if detail['status'] == 'FAIL':
+                print(f"   • {detail['message']}")
+        
+        Show_Critical_Message(
+            window,
+            "Validation Failed",
+            "Browser configuration validation failed.\n\n"
+            "Please check the configuration and try again.",
+            message_type="critical"
+        )
+        return False
 
 
 
@@ -2668,30 +3316,33 @@ class MainWindow(QMainWindow):
 
 
 
-    def Save_Process(self, parameters):
-        try:
-            response = requests.post(Settings.API_ENDPOINTS['_SAVE_PROCESS_API'] , data=parameters, headers=Settings.HEADER , verify=False)
-            print(f"🌐 [POST] URL: {Settings.API_ENDPOINTS['_SAVE_PROCESS_API']}")
-            print(f"📤 [POST] Paramètres envoyés: {parameters}")
-            print(f"📥 [HTTP] Code de réponse: {response.status_code}")
-            print(f"📄 [HTTP] Réponse brute:\n{response.text}")
+    def Save_Process(self, params):
+        """Utilise APIManager pour sauvegarder le processus"""
+        return APIManager.save_process(params)
+    
+        # try:
+        #     response = requests.post(Settings.API_ENDPOINTS['_SAVE_PROCESS_API'] , data=parameters, headers=Settings.HEADER , verify=False)
+        #     print(f"🌐 [POST] URL: {Settings.API_ENDPOINTS['_SAVE_PROCESS_API']}")
+        #     print(f"📤 [POST] Paramètres envoyés: {parameters}")
+        #     print(f"📥 [HTTP] Code de réponse: {response.status_code}")
+        #     print(f"📄 [HTTP] Réponse brute:\n{response.text}")
 
-            results = response.json()
-            status = results.get('status', False)
+        #     results = response.json()
+        #     status = results.get('status', False)
 
-            if status is True:
-                print(f"✅ [API] Insertion réussie ➜ ID inséré: {results.get('inserted_id')}")
-                return results.get('inserted_id')
-            else:
-                print(f"❌ [API] Échec de l'insertion ➜ Détails: {results}")
-                return -1
+        #     if status is True:
+        #         print(f"✅ [API] Insertion réussie ➜ ID inséré: {results.get('inserted_id')}")
+        #         return results.get('inserted_id')
+        #     else:
+        #         print(f"❌ [API] Échec de l'insertion ➜ Détails: {results}")
+        #         return -1
 
-        except ValueError as ve:
-            print(f"💥 [JSON ERROR] Impossible de parser la réponse JSON: {ve}")
-            return -1
-        except Exception as e:
-            print(f"💥 [EXCEPTION] Erreur lors de l'appel POST: {e}")
-            return -1
+        # except ValueError as ve:
+        #     print(f"💥 [JSON ERROR] Impossible de parser la réponse JSON: {ve}")
+        #     return -1
+        # except Exception as e:
+        #     print(f"💥 [EXCEPTION] Erreur lors de l'appel POST: {e}")
+        #     return -1
 
         
 
@@ -2728,54 +3379,54 @@ class MainWindow(QMainWindow):
 
         # 4️⃣ Send payload to API
         try:
-            response = requests.post(Settings.API_ENDPOINTS['_HANDLE_SAVE_API'] , json=payload)
+            # response = requests.post(Settings.API_ENDPOINTS['_HANDLE_SAVE_API'] , json=payload)
+            result = APIManager.handle_save_scenario(payload)
+            # print("\n--- DEBUG API RESPONSE ---")
+            # print("HTTP Status:", response.status_code)
+            # print("Raw Response:", response.text)  # 🔍 voir tout ce que renvoie PHP
+            # try:
+            #     result = response.json()
+            #     print("Parsed JSON:", result)
+            # except Exception as je:
+            #     print("⚠️ JSON Decode Error:", je)
+            #     result = {}
 
-            print("\n--- DEBUG API RESPONSE ---")
-            print("HTTP Status:", response.status_code)
-            print("Raw Response:", response.text)  # 🔍 voir tout ce que renvoie PHP
-            try:
-                result = response.json()
-                print("Parsed JSON:", result)
-            except Exception as je:
-                print("⚠️ JSON Decode Error:", je)
-                result = {}
-
-            # 5️⃣ Process API response
-            if response.status_code == 200:
+            # # 5️⃣ Process API response
+            # if response.status_code == 200:
                 # 🔐 Session validation
-                if result.get("session") is False:
-                    msg = "Your session has expired. Please log in again."
-                    print("[🔒] " + msg)
-                    Show_Critical_Message(self, "Session Expired", msg, message_type="critical")
+            if result.get("session") is False:
+                msg = "Your session has expired. Please log in again."
+                print("[🔒] " + msg)
+                Show_Critical_Message(self, "Session Expired", msg, message_type="critical")
 
-                    # Open login window and close MainWindow
-                    self.login_window = LoginWindow()
-                    self.login_window.setFixedSize(1710, 1005)
-                    screen = QGuiApplication.primaryScreen()
-                    screen_geometry = screen.availableGeometry()
-                    x = (screen_geometry.width() - self.login_window.width()) // 2
-                    y = (screen_geometry.height() - self.login_window.height()) // 2
-                    self.login_window.move(x, y)
-                    self.login_window.show()
+                # Open login window and close MainWindow
+                self.login_window = LoginWindow()
+                self.login_window.setFixedSize(1710, 1005)
+                screen = QGuiApplication.primaryScreen()
+                screen_geometry = screen.availableGeometry()
+                x = (screen_geometry.width() - self.login_window.width()) // 2
+                y = (screen_geometry.height() - self.login_window.height()) // 2
+                self.login_window.move(x, y)
+                self.login_window.show()
 
-                    self.close()
-                    return
+                self.close()
+                return
 
-                # ✅ Success
-                if result.get("success"):
-                    msg = f"Scenario sent successfully. Name: {result.get('name', 'N/A')}"
-                    print("[✅] " + msg)
-                    # self.Load_Scenarios_Into_Combobox()
-                    Show_Critical_Message(self, "Success", msg, message_type="success")
-                else:
-                    msg = result.get("error", "Unable to save the scenario due to a server error.")
-                    print(f"[❌] API Error: {msg}")
-                    Show_Critical_Message(self, "API Error", msg, message_type="critical")
-
+            # ✅ Success
+            if result.get("success"):
+                msg = f"Scenario sent successfully. Name: {result.get('name', 'N/A')}"
+                print("[✅] " + msg)
+                # self.Load_Scenarios_Into_Combobox()
+                Show_Critical_Message(self, "Success", msg, message_type="success")
             else:
-                msg = "A network error occurred while saving. Please check your connection."
-                print(f"[❌] HTTP Error - Status Code: {response.status_code}")
-                Show_Critical_Message(self, "Network Error", msg, message_type="critical")
+                msg = result.get("error", "Unable to save the scenario due to a server error.")
+                print(f"[❌] API Error: {msg}")
+                Show_Critical_Message(self, "API Error", msg, message_type="critical")
+
+            # else:
+            #     msg = "A network error occurred while saving. Please check your connection."
+            #     print(f"[❌] HTTP Error - Status Code: {response.status_code}")
+            #     Show_Critical_Message(self, "Network Error", msg, message_type="critical")
 
         except Exception as e:
             msg = "An unexpected error occurred while saving. Please try again."
@@ -2803,51 +3454,46 @@ class MainWindow(QMainWindow):
         print(f"[📦] Payload préparé pour la requête: {payload}")
 
         try:
-            response = requests.post(Settings.API_ENDPOINTS['_LOAD_SCENARIOS_API'], json=payload)
-            print(f"[🌐] Requête envoyée. Code HTTP: {response.status_code}")
 
-            if response.status_code == 200:
-                result = response.json()
-                # print(f"[📨] Réponse reçue (JSON): {result}")
+            result = APIManager.load_scenarios(encrypted_key)
+            # print(f"[📨] Réponse reçue (JSON): {result}")
 
-                # 🟡 Vérification de session expirée
-                if result.get("session") is False:
-                    print("[🔒] Session expirée. Redirection vers la page de connexion.")
-                    self.login_window = LoginWindow()
-                    self.login_window.setFixedSize(1710, 1005)
+            # 🟡 Vérification de session expirée
+            if result.get("session") is False:
+                print("[🔒] Session expirée. Redirection vers la page de connexion.")
+                self.login_window = LoginWindow()
+                self.login_window.setFixedSize(1710, 1005)
 
-                    screen = QGuiApplication.primaryScreen()
-                    screen_geometry = screen.availableGeometry()
-                    x = (screen_geometry.width() - self.login_window.width()) // 2
-                    y = (screen_geometry.height() - self.login_window.height()) // 2
-                    self.login_window.move(x, y)
-                    self.login_window.show()
+                screen = QGuiApplication.primaryScreen()
+                screen_geometry = screen.availableGeometry()
+                x = (screen_geometry.width() - self.login_window.width()) // 2
+                y = (screen_geometry.height() - self.login_window.height()) // 2
+                self.login_window.move(x, y)
+                self.login_window.show()
 
-                    print("[🔁] Fenêtre de connexion affichée. Fermeture de la fenêtre actuelle...")
-                    self.close()
-                    return
+                print("[🔁] Fenêtre de connexion affichée. Fermeture de la fenêtre actuelle...")
+                self.close()
+                return
 
-                # ✅ Session valide → remplir la combo
-                scenarios = result.get("scenarios", [])
-                if scenarios:
-                    # print(f"✅ [INFO] Nombre de scénarios reçus: {len(scenarios)}")
+            # ✅ Session valide → remplir la combo
+            scenarios = result.get("scenarios", [])
+            if scenarios:
+                # print(f"✅ [INFO] Nombre de scénarios reçus: {len(scenarios)}")
 
-                    self.saveSanario.clear()
-                    self.saveSanario.addItem("None")
+                self.saveSanario.clear()
+                self.saveSanario.addItem("None")
 
-                    for index, scenario in enumerate(scenarios, 1):
-                        name = scenario.get("name", f"Scénario {index}")
-                        self.saveSanario.addItem(name)
-                        # print(f"   ➕ Scénario {index}: {name}")
+                for index, scenario in enumerate(scenarios, 1):
+                    name = scenario.get("name", f"Scénario {index}")
+                    self.saveSanario.addItem(name)
+                    # print(f"   ➕ Scénario {index}: {name}")
 
-                    print("[✅] Scénarios chargés dans la liste déroulante avec succès.")
-                else:
-                    self.saveSanario.addItem("None")
-
-                    print("")
+                print("[✅] Scénarios chargés dans la liste déroulante avec succès.")
             else:
-                print(f"[❌] Erreur HTTP {response.status_code}")
-                print(f"[❗] Contenu de la réponse: {response.text}")
+                self.saveSanario.addItem("None")
+
+                print("")
+
 
         except Exception as e:
             print(f"[❌] Erreur lors de la récupération des scénarios: {e}")
@@ -3384,12 +4030,12 @@ class MainWindow(QMainWindow):
                         sleep_text = qlineedits[1].text()
 
                         try:
-                            limit_value = Parse_Random_Range(limit_text)
+                            limit_value = ValidationUtils.parse_random_range(limit_text)
                         except ValueError:
                             limit_value = 0
 
                         try:
-                            sleep_value = Parse_Random_Range(sleep_text)
+                            sleep_value = ValidationUtils.parse_random_range(sleep_text)
                         except ValueError:
                             sleep_value = 0
 
@@ -4768,41 +5414,60 @@ class MainWindow(QMainWindow):
             return
 
         payload = {"encrypted": encrypted_key, "name": name_selected}
-        print("Payload prepared: %s", {k: ("<hidden>" if k == "encrypted" else v) for k, v in payload.items()})
+        # print("Payload prepared: %s", {k: ("<hidden>" if k == "encrypted" else v) for k, v in payload.items()})
 
         try:
             start_time = time.time()
             # timeout pour éviter le blocage infini
-            response = requests.post(Settings.API_ENDPOINTS['_ON_SCENARIO_CHANGED_API'], json=payload, timeout=10)
+            # response = requests.post(Settings.API_ENDPOINTS['_ON_SCENARIO_CHANGED_API'], json=payload, timeout=10)
+            # duration = time.time() - start_time
+            # print("HTTP POST to %s finished in %.2fs; status_code=%s", Settings.API_ENDPOINTS['_ON_SCENARIO_CHANGED_API'] , duration, response.status_code)
+            result = APIManager.make_request(Settings.API_ENDPOINTS['_ON_SCENARIO_CHANGED_API'], "POST", payload, timeout=10)
             duration = time.time() - start_time
-            print("HTTP POST to %s finished in %.2fs; status_code=%s", Settings.API_ENDPOINTS['_ON_SCENARIO_CHANGED_API'] , duration, response.status_code)
+
         except requests.exceptions.RequestException as e:
             print("RequestException while calling API: %s", e)
             # enregistrer le contenu d'erreur si disponible
             return
-
-        # تسجيل نص الاستجابة كاملة لو احتجنا لفحصها عند الأخطاء
-        if response.status_code != 200:
-            try:
-                print("HTTP %s: %s", response.status_code, response.text[:1000])
-            except Exception:
-                print("HTTP %s and failed to read response.text", response.status_code)
+        
+        if result["status"] != "success":
+            error_msg = result.get("error", "Erreur inconnue")
+            print(f"❌ Erreur APIManager: {error_msg}")
+            
+            Show_Critical_Message(
+                self,
+                "Erreur serveur",
+                f"Impossible de charger le scénario: {error_msg}",
+                message_type="critical"
+            )
             return
+        # تسجيل نص الاستجابة كاملة لو احتجنا لفحصها عند الأخطاء
+        # if response.status_code != 200:
+        #     try:
+        #         print("HTTP %s: %s", response.status_code, response.text[:1000])
+        #     except Exception:
+        #         print("HTTP %s and failed to read response.text", response.status_code)
+        #     return
 
         # محاولة تحويل الاستجابة إلى JSON مع حماية
-        try:
-            result = response.json()
-            print("Response JSON keys: %s", list(result.keys()))
-        except ValueError:
-            # JSON غير صالح — حفظ النص لفحص لاحق
-            print("Failed to parse JSON from response. Response text (first 2000 chars):\n%s", response.text[:2000])
-            with open("last_bad_response.txt", "w", encoding="utf-8") as fh:
-                fh.write(response.text)
-            return
+        # try:
+        #     result = response.json()
+        #     print("Response JSON keys: %s", list(result.keys()))
+        # except ValueError:
+        #     # JSON غير صالح — حفظ النص لفحص لاحق
+        #     print("Failed to parse JSON from response. Response text (first 2000 chars):\n%s", response.text[:2000])
+        #     with open("last_bad_response.txt", "w", encoding="utf-8") as fh:
+        #         fh.write(response.text)
+        #     return
 
+        response_data = result.get("data", {})
+        status_code = result.get("status_code", 0)
+        
+        print(f"📥 Code HTTP: {status_code}")
+        print(f"📊 Données reçues: {list(response_data.keys())}")
         # التحقق من حالة الجلسة
         try:
-            session_ok = result.get("session", True)
+            session_ok = response_data.get("session", True)
             if session_ok is False:
                 print("Session expirée. Redirection vers login.")
                 try:
@@ -5145,57 +5810,111 @@ class LoginWindow(QMainWindow):
 
 
     def Check_Api_Credentials(self, username, password):
+        """
+        Vérifie les credentials via APIManager.
+        Returns:
+            tuple: (entity, encrypted_response) si succès
+            int: Code d'erreur (-1 à -5) si échec
+        """
         try:
-            print("\u23f3 [DEBUG] D\u00e9but d'authentification via API")
+            print("⏳ [DEBUG] Début d'authentification via APIManager")
+            print(f"👤 [DEBUG] Username: {username}")
+            print(f"🔑 [DEBUG] Password length: {len(password)}")
 
-            data = {
-                "rID": "1", "u": username, "p": password,
-                "k": "mP5QXYrK9E67Y", "l": "1"
-            }
+            # Utilisation d'APIManager pour vérifier les credentials
+            print("🔗 [DEBUG] Appel à APIManager.check_api_credentials...")
+            auth_result = APIManager.check_api_credentials(username, password)
+            
+            print(f"📥 [DEBUG] Résultat APIManager: {type(auth_result)}")
 
-            print(f"📤 [DEBUG] Envoi des donn\u00e9es \u00e0 l'API : {data}")
-            for i in range(5):
-                try:
-               
-                    response = requests.post(Settings.API_ENDPOINTS['_APIACCESS_API'], headers=Settings.HEADER, data=data, verify=False).text
-                    print(f"✅ [DEBUG] R\u00e9ponse re\u00e7ue \u00e0 la tentative {i+1} : {response}")
-                    break
-                except Exception as e:
-                    print(f"⚠️ [DEBUG] \u00c9chec tentative {i+1} : {str(e)}")
-                    time.sleep(5)
+            if isinstance(auth_result, int):
+                # APIManager a retourné un code d'erreur
+                error_codes = {
+                    -1: "Identifiants incorrects",
+                    -2: "Appareil non autorisé",
+                    -3: "Échec de connexion au serveur",
+                    -4: "Accès refusé à cette application",
+                    -5: "Erreur inconnue pendant l'authentification"
+                }
+                
+                error_msg = error_codes.get(auth_result, f"Code d'erreur inconnu: {auth_result}")
+                print(f"❌ [DEBUG] {error_msg}")
+                
+                # Log supplémentaire pour le débogage
+                if auth_result == -3:
+                    print("🌐 [DEBUG] Vérifiez votre connexion internet ou l'accessibilité du serveur")
+                elif auth_result == -2:
+                    print("💻 [DEBUG] Cet appareil doit être autorisé par l'administrateur")
+                
+                return auth_result
+                
+            elif isinstance(auth_result, dict):
+                # APIManager a retourné un dictionnaire avec les informations
+                print("✅ [DEBUG] Authentification réussie via APIManager")
+                
+                entity = auth_result.get("entity", "")
+                encrypted_response = auth_result.get("encrypted_response", "")
+                
+                if not entity or not encrypted_response:
+                    print("⚠️ [DEBUG] Données manquantes dans la réponse")
+                    return -5
+                
+                print(f"🔐 [DEBUG] Données chiffrées reçues: {encrypted_response[:50]}...")
+                print(f"🔓 [DEBUG] Données déchiffrées: {entity[:50]}...")
+                
+                # Validation supplémentaire de l'entité
+                if entity and entity.strip():
+                    print(f"🏢 [DEBUG] Entité validée: {entity}")
+                    return (entity, encrypted_response)
+                else:
+                    print("❌ [DEBUG] Entité vide ou invalide")
+                    return -4
+                    
             else:
-                print("❌ [DEBUG] \u00c9chec apr\u00e8s 5 tentatives")
-                return -3
-
-            if response == "-1":
-                print("❌ [DEBUG] Identifiants incorrects")
-                return -1
-            elif response == "-2":
-                print("❌ [DEBUG] Appareil non autoris\u00e9")
-                return -2
-            else:
-                print(f"🔐 [DEBUG] Donn\u00e9es chiffr\u00e9es re\u00e7ues : {response}")
-                entity = EncryptionService.decrypt_message(response, Settings.KEY)
-                print(f"🔓 [DEBUG] Donn\u00e9es d\u00e9chiffr\u00e9es : {entity}")
-                return (entity, response) if entity != -1 else -4
+                # Format de réponse inattendu
+                print(f"⚠️ [DEBUG] Format de réponse inattendu: {type(auth_result)}")
+                
+                # Fallback: tentative avec requests directement
+                print("🔄 [DEBUG] Tentative de fallback avec requests direct...")
+                return self._fallback_check_credentials(username, password)
+                
         except Exception as e:
-            print(f"🔥 [DEBUG] Erreur inattendue dans Check_Api_Credentials : {str(e)}")
+            print(f"🔥 [DEBUG] Erreur inattendue dans Check_Api_Credentials: {str(e)}")
+            traceback.print_exc()
             return -5
 
 
 
     def Handle_Login(self):
+        """
+        Gestion du login utilisateur avec validations robustes
+        Utilisation de ValidationUtils pour vérifier email, mot de passe et fichiers JSON
+        """
+        # ----------------- Récupération des inputs -----------------
         username = self.login_input.text().strip() if self.login_input else ""
         password = self.password_input.text().strip() if self.password_input else ""
 
-        print(f"📅 [DEBUG] Nom d'utilisateur : '{username}', Mot de passe : {'*' * len(password)}")
+        print(f"📅 [DEBUG] Nom d'utilisateur : '{username}', Mot de passe: {'*' * len(password)}")
 
-        if not username or not password:
-            print("⚠️ [DEBUG] Champs vides détectés")
-            self.erreur_label.setText("Veuillez remplir tous les champs obligatoires.")
+        # ----------------- Validation email et mot de passe -----------------
+        valid_user, msg_user = ValidationUtils.validate_qlineedit_text(
+            self.login_input, validator_type="email", min_length=5
+        )
+        valid_pass, msg_pass = ValidationUtils.validate_qlineedit_text(
+            self.password_input, min_length=6
+        )
+
+        if not valid_user:
+            self.erreur_label.setText(f"Nom d'utilisateur invalide: {msg_user}")
             self.erreur_label.show()
             return
 
+        if not valid_pass:
+            self.erreur_label.setText(f"Mot de passe invalide: {msg_pass}")
+            self.erreur_label.show()
+            return
+
+        # ----------------- Authentification via API -----------------
         auth_result = self.Check_Api_Credentials(username, password)
         print(f"🔁 [DEBUG] Résultat de l'authentification : {auth_result}")
 
@@ -5212,41 +5931,62 @@ class LoginWindow(QMainWindow):
             return
 
         entity, encrypted_response = auth_result
-        self.erreur_label.hide()
 
-        # هنا نفك تشفير الـ encrypted_response قبل إضافته للجلسة
-        decrypted_response = EncryptionService.decrypt_message(encrypted_response, Settings.KEY)
-        print(f"🔓 [DEBUG] Réponse déchiffrée pour session : {decrypted_response}")
+        # ----------------- Déchiffrement de la réponse -----------------
+        try:
+            decrypted_response = EncryptionService.decrypt_message(encrypted_response, Settings.KEY)
+            print(f"🔓 [DEBUG] Réponse déchiffrée pour session : {decrypted_response}")
+        except Exception as e:
+            print(f"❌ [DEBUG] Déchiffrement échoué: {e}")
+            self.erreur_label.setText(f"Erreur de déchiffrement de la session : {str(e)}")
+            self.erreur_label.show()
+            return
 
-        Valid=SessionManager.create_session(username, entity)
+        # ----------------- Validation session -----------------
+        is_valid_session, session_data = ValidationUtils.validate_session_format(
+            f"{username}::{entity}::{decrypted_response}"
+        )
+        if not is_valid_session:
+            self.erreur_label.setText("Session invalide reçue de l'API.")
+            self.erreur_label.show()
+            return
 
-        if not Valid:
+        # ----------------- Création session locale -----------------
+        valid_session = SessionManager.create_session(username, entity)
+        if not valid_session:
             print("❌ [DEBUG] Erreur lors de la création de la session")
             self.erreur_label.setText("Erreur lors de la création de la session.")
             self.erreur_label.show()
             return
-        
 
-        print(f"📂 [DEBUG] Chargement du fichier de configuration : {Settings.FILE_ACTIONS_JSON}")
+        self.erreur_label.hide()
+
+        # ----------------- Chargement du fichier JSON de configuration -----------------
         try:
             with open(Settings.FILE_ACTIONS_JSON, "r", encoding='utf-8') as file:
                 json_data = json.load(file)
 
-            if not json_data:
-                raise ValueError("Fichier de configuration vide")
+            # Validation de la structure JSON
+            valid_json, msg_json = ValidationUtils.validate_json_structure(json_data, required_keys=["process"])
+            if not valid_json:
+                self.erreur_label.setText(f"Erreur configuration : {msg_json}")
+                self.erreur_label.show()
+                return
 
         except Exception as e:
-            print(f"❌ [DEBUG] Erreur de lecture configuration : {str(e)}")
+            print(f"❌ [DEBUG] Erreur de lecture configuration : {e}")
             self.erreur_label.setText(f"Erreur configuration : {str(e)}")
             self.erreur_label.show()
             return
 
+        # ----------------- Lancement de la fenêtre principale -----------------
         print("🚀 [DEBUG] Lancement de la fenêtre principale")
         self.main_window = MainWindow(json_data)
         self.main_window.setFixedSize(1710, 1005)
         self.main_window.setWindowTitle("AutoMailPro")
         self.main_window.stopButton.clicked.connect(lambda: Stop_All_Processes(self.main_window))
 
+        # Centrer la fenêtre
         screen = QGuiApplication.primaryScreen()
         screen_geometry = screen.availableGeometry()
         x = (screen_geometry.width() - self.main_window.width()) // 2
@@ -5289,102 +6029,28 @@ class LoginWindow(QMainWindow):
 def main():
 
 
-
+    # 🔹 Vérification des clés
     if len(sys.argv) < 3:
         sys.exit(1)
 
     encrypted_key = sys.argv[1]
     secret_key = sys.argv[2]
+
     if not EncryptionService.verify_key(encrypted_key, secret_key):
         sys.exit(1)
 
-
-
-
-
-
-    # if os.path.exists(Settings.SESSION_PATH):
-    #     try:
-    #         print("📂 [SESSION] Lecture du fichier de session...")
-    #         with open(Settings.SESSION_PATH, "r") as f:
-    #             encrypted = f.read().strip()
-
-    #         if encrypted:
-    #             print("🔐 [SESSION] Déchiffrement des données de session...")
-    #             decrypted =EncryptionService.decrypt_message(encrypted, Settings.KEY)
-
-    #             if "::" in decrypted:
-    #                 parts = decrypted.split("::", 2)
-    #                 if len(parts) == 3:
-    #                     username = parts[0].strip()
-    #                     date_str = parts[1].strip()
-    #                     p_entity = parts[2].strip()
-    #                     print(f"🧾 [SESSION] Données extraites ➜ Utilisateur: `{username}`, Date: `{date_str}`, Entité: `{p_entity}`")
-    #                 else:
-    #                     print("❌ [ERREUR] Format invalide : 3 parties attendues (username::date::entity)")
-    #                     session_valid = False
-    #                     return
-
-    #                 try:
-    #                     last_session = datetime.datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
-    #                     now = datetime.datetime.utcnow()
-
-    #                     if (now - last_session) < timedelta(days=2):
-    #                         print("⏳ [VALIDATION] Vérification de la session via API...")
-
-    #                         try:
-    #                             params = {
-    #                                 "k": "mP5QXYrK9E67Y",
-    #                                 "rID": "4",
-    #                                 "u": username,
-    #                                 "entity": p_entity
-    #                             }
-
-    #                             print(f"🌐 [API] Envoi de la requête ➜ {Settings.API_ENDPOINTS['_MAIN_API']}")
-    #                             response = requests.get(Settings.API_ENDPOINTS['_MAIN_API'], params=params, headers=Settings.HEADER, verify=False)
-    #                             print(f"📥 [API] Code de réponse: {response.status_code}")
-    #                             print(f"📄 [API] Contenu brut de la réponse:\n{response.text}")
-    #                             if response.status_code == 200:
-    #                                 print(f"📥 [API] Réponse HTTP 200 reçue ✅")
-    #                                 data = response.json()
-
-    #                                 if data.get("data")[0].get("n") == "1":
-    #                                     session_valid = True
-    #                                     print(f"✅ [SESSION] Session valide pour l'utilisateur `{username}` 🎉")
-
-    #                             else:
-    #                                 session_valid = False
-    #                                 print(f"🚫 [API ERROR] Erreur HTTP ➜ Code {response.status_code}")
-    #                         except Exception as e:
-    #                             session_valid = False
-    #                             print(f"💥 [API EXCEPTION] Erreur lors de l'appel API : {str(e)}")
-    #                     else:
-    #                         session_valid = False
-    #                         print(f"⏱️ [SESSION] Session expirée (⏳ date: `{date_str}`)")
-    #                 except ValueError as e:
-    #                     session_valid = False
-    #                     print(f"❌ [DATE ERROR] Format de date invalide : {e}")
-    #             else:
-    #                 session_valid = False
-    #                 print("⚠️ [FORMAT] Format de session invalide (manque `username::date::entity`)")
-    #         else:
-    #             session_valid = False
-    #             print("🕳️ [SESSION] Fichier de session vide.")
-    #     except Exception as e:
-    #         session_valid = False
-    #         print(f"💣 [SESSION ERROR] Erreur inattendue : {str(e)}")
-
-
-
-    session_info = SessionManager.check_session()
+    # 🔹 Vérification complète de la session (locale + API)
+    session_info = SessionManager.check_session_full()
     session_valid = session_info["valid"]
 
+    # 🔹 Création de l'application PyQt
     app = QApplication(sys.argv)
 
-
+    # 🔹 Icon de l'application
     if os.path.exists(Settings.APP_ICON):
         app.setWindowIcon(QIcon(Settings.APP_ICON))
 
+    # 🔹 Affichage de la fenêtre principale ou login
     if session_valid:
         try:
             with open(Settings.FILE_ACTIONS_JSON, "r", encoding='utf-8') as file:
@@ -5392,45 +6058,30 @@ def main():
 
             if json_data:
                 window = MainWindow(json_data)
-                window.setFixedSize(1710, 1005)
-                screen = QGuiApplication.primaryScreen()
-                screen_geometry = screen.availableGeometry()
-                x = (screen_geometry.width() - window.width()) // 2
-                y = (screen_geometry.height() - window.height()) // 2
-                window.move(x, y)
-                window.stopButton.clicked.connect(lambda: Stop_All_Processes(window))
-                window.setWindowTitle("AutoMailPro")
-                window.show()
             else:
                 raise ValueError("Fichier de configuration vide")
         except Exception as e:
             print(f"[CONFIG ERROR] {e}")
             window = LoginWindow()
-            window.setFixedSize(1710, 1005)
-            screen = QGuiApplication.primaryScreen()
-            screen_geometry = screen.availableGeometry()
-            x = (screen_geometry.width() - window.width()) // 2
-            y = (screen_geometry.height() - window.height()) // 2
-            window.move(x, y)
-            window.show()
     else:
         window = LoginWindow()
-        window.setFixedSize(1710, 1005)
-        screen = QGuiApplication.primaryScreen()
-        screen_geometry = screen.availableGeometry()
-        x = (screen_geometry.width() - window.width()) // 2
-        y = (screen_geometry.height() - window.height()) // 2
-        window.move(x, y)
-        window.show()
+
+    # 🔹 Configuration de la fenêtre
+    window.setFixedSize(1710, 1005)
+    screen = QGuiApplication.primaryScreen()
+    screen_geometry = screen.availableGeometry()
+    x = (screen_geometry.width() - window.width()) // 2
+    y = (screen_geometry.height() - window.height()) // 2
+    window.move(x, y)
+
+    # 🔹 Connexion du bouton stop si présent
+    if hasattr(window, "stopButton"):
+        window.stopButton.clicked.connect(lambda: Stop_All_Processes(window))
+
+    window.setWindowTitle("AutoMailPro")
+    window.show()
 
     sys.exit(app.exec())
-
-
-
-
-# Problem #01 
-
-
 
 if __name__ == "__main__":
     main()

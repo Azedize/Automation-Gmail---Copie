@@ -97,12 +97,7 @@ class APIManager:
             pass
         return -1
 
-    def check_versions(self) -> Union[Dict[str, Any], str]:
-        result = self.make_request('_ON_SCENARIO_CHANGED_API', "GET", timeout=15)
-        data = self._handle_response(result, {})
-        if all(k in data for k in ["version_python", "version_interface", "version_extensions"]):
-            return data
-        return "_1"
+
 
     def load_scenarios(self, encrypted_key: str) -> Dict[str, Any]:
         payload = {"encrypted": encrypted_key}
@@ -126,39 +121,11 @@ class APIManager:
         url = f"http://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Ext3&k={encrypted}"
         return self._handle_response(self.make_request(url, "GET"), {})
 
-    def download_extension(self, download_url: str, dest_path: str) -> bool:
-        try:
-            with self.session.get(download_url, stream=True, timeout=60) as response:
-                response.raise_for_status()
-                with open(dest_path, 'wb') as f:
-                    for chunk in response.iter_content(8192):
-                        if chunk:
-                            f.write(chunk)
-            return True
-        except Exception as e:
-            self.logger.error(f"❌ Download failed: {e}")
-            return False
 
-    def check_api_credentials(self, username: str, password: str) -> Union[Dict[str, Any], int]:
-        data = {"rID": "1", "u": username, "p": password, "k": "mP5QXYrK9E67Y", "l": "1"}
-        result = self.make_request('_APIACCESS_API', "POST", data=data)
-        resp = self._handle_response(result, "")
-        if resp in ["-1", "-2"]:
-            return int(resp)
-        try:
-            entity = EncryptionService.decrypt_message(resp, Settings.KEY)
-            return {"entity": entity, "encrypted_response": resp}
-        except Exception:
-            return -5
 
-    def validate_session(self, username: str, entity: str) -> bool:
-        params = {"k": "mP5QXYrK9E67Y", "rID": "4", "u": username, "entity": entity}
-        result = self.make_request('_MAIN_API', "GET", params=params)
-        data = self._handle_response(result, {})
-        try:
-            return data.get("data", [{}])[0].get("n") == "1"
-        except Exception:
-            return False
+
+
+
 
 
 # Instance globale

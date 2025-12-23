@@ -7,8 +7,6 @@ import importlib
 import subprocess
 import time
 from pathlib import Path
-from datetime import datetime
-import base64
 
 # Configuration des chemins
 SCRIPT_DIR = Path(__file__).resolve().parent
