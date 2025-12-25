@@ -336,7 +336,6 @@ def Download_Extract(new_versions):
                     try:
                         with open(version_file_path, 'r') as f:
                             new_version = f.read().strip()
-                            
                         # Notifier le serveur de la mise à jour réussie
                         try:
                             params = {
@@ -995,7 +994,7 @@ class CloseBrowserThread(QThread):
                         return f"⚠️ Erreur lors de la fermeture du processus {file_name}: {e}"
             try:
                 os.remove(os.path.join(Settings.BASE_DIRECTORY , email , "data.txt"))
-                return f"🗑️ Fichier session supprimé : {os.path.join(Settings.BASE_DIRECTORY , email , "data.txt")}"
+                return f"🗑️ Fichier session supprimé : {os.path.join(Settings.BASE_DIRECTORY , email , 'data.txt')}"
             except Exception as e:
                 return f"⚠️ Erreur lors de la suppression du fichier {file_name}: {e}"
 
@@ -2092,15 +2091,12 @@ class MainWindow(QMainWindow):
         """
         # 1️⃣ Check if there are any actions to save
         if not self.STATE_STACK:
-            msg = "No actions to save. Please add actions before saving."
-            print("[❌] " + msg)
-            UIManager.Show_Critical_Message(self, "No Data", msg, message_type="critical")
+            UIManager.Show_Critical_Message(self, "No Data", "No actions to save. Please add actions before saving.", message_type="critical")
             return
 
         # 2️⃣ Check if the session file exists
         if not ValidationUtils.path_exists(Settings.SESSION_PATH):
-            print("[❌] Your session file is missing. Please restart the application.")
-            UIManager.Show_Critical_Message(self, "Session Not Found", msg, message_type="critical")
+            UIManager.Show_Critical_Message(self, "Session Not Found", "[❌] Your session file is missing. Please restart the application.", message_type="critical")
             return
 
         # 3️⃣ Read the encrypted session key
@@ -2117,7 +2113,7 @@ class MainWindow(QMainWindow):
         try:
             result = APIManager.handle_save_scenario(payload)
             if result.get("session") is False:
-                UIManager.Show_Critical_Message(self, "Session Expired", msg, message_type="critical")
+                UIManager.Show_Critical_Message(self, "Session Expired", "[❌] Your session has expired. Please log in again.", message_type="critical")
                 self.login_window = LoginWindow()
                 self.login_window.setFixedSize(1710, 1005)
                 screen = QGuiApplication.primaryScreen()
@@ -2131,13 +2127,13 @@ class MainWindow(QMainWindow):
                 return
 
             if result.get("success"):
-                UIManager.Show_Critical_Message(self, "Success", msg, message_type="success")
+                UIManager.Show_Critical_Message(self, "Success", "The scenario has been saved successfully.", message_type="success")
             else:
-                UIManager.Show_Critical_Message(self, "API Error", msg, message_type="critical")
+                UIManager.Show_Critical_Message(self, "API Error", "An error occurred while saving the scenario.", message_type="critical")
 
 
         except Exception as e:
-            UIManager.Show_Critical_Message(self, "Error", msg, message_type="critical")
+            UIManager.Show_Critical_Message(self, "Error", "An error occurred while saving the scenario.", message_type="critical")
 
 
 
@@ -2918,7 +2914,7 @@ class MainWindow(QMainWindow):
         self.Update_Actions_Color_Handle_Last_Button()
 
         UIManager.Remove_Copier( self.scenario_layout, self.reset_options_layout)
-        UIManager.Remove_Initaile(self,  self.scenario_layout, self.reset_options_layout)
+        UIManager.Remove_Initaile( self.scenario_layout, self.reset_options_layout)
 
         self.Display_State_Stack_As_Table()
 

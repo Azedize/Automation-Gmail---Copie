@@ -386,8 +386,8 @@ class UIManager:
     # -----------------------------
 
 
-
-    def Darken_Color(self, hex_color, percent):
+    @staticmethod
+    def Darken_Color( hex_color, percent):
         r, g, b = [int(hex_color[i:i+2], 16) for i in (1, 3, 5)]
         factor = 1 - percent / 100
         r, g, b = [max(0, min(255, int(c * factor))) for c in (r, g, b)]
@@ -398,8 +398,8 @@ class UIManager:
 
 
 
-
-    def Lighten_Color(self,hex_color, percent):
+    @staticmethod
+    def Lighten_Color(hex_color, percent):
         r, g, b = [int(hex_color[i:i+2], 16) for i in (1, 3, 5)]
         r = min(255, int(r + (255 - r) * percent / 100))
         g = min(255, int(g + (255 - g) * percent / 100))
@@ -410,8 +410,8 @@ class UIManager:
 
 
 
-
-    def Set_Icon_For_Existing_Buttons(self,result_tab_widget):
+    @staticmethod
+    def Set_Icon_For_Existing_Buttons(result_tab_widget):
         if not result_tab_widget:
             print("[DEBUG] ❌ tabWidgetResult introuvable. Vérifiez le nom.")
             return
@@ -444,8 +444,8 @@ class UIManager:
 
 
 
-
-    def Copy_Result_From_Tab(self, tab_index , result_tab_widget):
+    @staticmethod
+    def Copy_Result_From_Tab( tab_index , result_tab_widget):
         tab_widget = result_tab_widget.widget(tab_index)
         list_widgets = tab_widget.findChildren(QListWidget)
 
@@ -461,7 +461,7 @@ class UIManager:
 
 
 
-
+    @staticmethod
     def Copy_Logs_To_Clipboard(self):
             log_box = self.findChild(QGroupBox, "log")
             if not log_box:
@@ -483,7 +483,8 @@ class UIManager:
 
         #Ajoute une nouvelle ligne de log dans la zone de log (interface utilisateur).
     #Chaque log est stylisé pour rester lisible avec fond transparent.
-    def Update_Logs_Display(self, log_entry ,log_layout):
+    @staticmethod
+    def Update_Logs_Display( log_entry ,log_layout):
         log_label = QLabel(log_entry)
         log_label.setStyleSheet("""
             QLabel {
@@ -1091,7 +1092,7 @@ class UIManager:
 
 
     @staticmethod
-    def Remove_Initaile(self , scenario_layout,reset_options_layout):
+    def Remove_Initaile( scenario_layout,reset_options_layout):
 
         scenarioContainertableauAdd = []  
         resetOptionsContainertableauALL = []  
