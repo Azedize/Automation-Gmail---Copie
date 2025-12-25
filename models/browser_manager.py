@@ -21,6 +21,7 @@ if ROOT_DIR not in sys.path:
 
 try:
     from config import Settings
+    from utils.validation_utils import ValidationUtils
 except ImportError as e:
     print(f"Error importing modules: {e}")
 
@@ -48,7 +49,7 @@ class BrowserManager:
             try:
                 with winreg.OpenKey(hive, key_app_paths, 0, access) as key_obj:
                     path, _ = winreg.QueryValueEx(key_obj, None)
-                    if path and os.path.exists(path):
+                    if path and ValidationUtils.path_exists(path):
                         print(f"✅ Navigateur trouvé : {path}")
                         return path
             except FileNotFoundError:
@@ -63,7 +64,7 @@ class BrowserManager:
     @staticmethod
     def _get_firefox_profiles() -> Dict[str, str]:
         ini_path = os.path.join(Settings.APPDATA, 'Mozilla', 'Firefox', 'profiles.ini')
-        if not os.path.exists(ini_path):
+        if not ValidationUtils.path_exists(ini_path):
             return {}
 
         config = configparser.ConfigParser()
@@ -94,7 +95,7 @@ class BrowserManager:
         profile_dir = os.path.join(Settings.FIREFOX_PROFILES, profile_name)
         os.makedirs(Settings.FIREFOX_PROFILES, exist_ok=True)
 
-        if os.path.exists(profile_dir):
+        if ValidationUtils.path_exists(profile_dir):
             print(f"✅ Profil '{profile_name}' déjà existant : {profile_dir}")
             return profile_dir
 
@@ -109,7 +110,7 @@ class BrowserManager:
             print(result.stderr.strip())
             return None
 
-        if os.path.exists(profile_dir):
+        if ValidationUtils.path_exists(profile_dir):
             print(f"✅ Profil créé : {profile_dir}")
             return profile_dir
 
@@ -119,13 +120,13 @@ class BrowserManager:
     @staticmethod
     def Get_Firefox_Profiles_In_Use() -> List[Dict[str, str]]:
         profiles = []
-        if not os.path.exists(Settings.FIREFOX_PROFILES):
+        if not ValidationUtils.path_exists(Settings.FIREFOX_PROFILES):
             return profiles
 
         for folder in os.listdir(Settings.FIREFOX_PROFILES):
             path = os.path.join(Settings.FIREFOX_PROFILES, folder)
             lock_file = os.path.join(path, 'parent.lock')
-            if os.path.isdir(path) and os.path.exists(lock_file):
+            if os.path.isdir(path) and os.pa(lock_file):
                 profiles.append({'name': folder, 'path': path})
         return profiles
 
@@ -221,7 +222,7 @@ class BrowserManager:
     @staticmethod
     def Upload_EXTENSION_PROXY(profile_name: str, search_keys: List[str], results: List[Dict[str, Any]]):
         path_file = os.path.join(Settings.CONFIG_PROFILE, profile_name, "Secure Preferences")
-        if not os.path.exists(path_file):
+        if not ValidationUtils.path_exists(path_file):
             print(f"❌ Secure Preferences introuvable pour {profile_name}")
             return None
 

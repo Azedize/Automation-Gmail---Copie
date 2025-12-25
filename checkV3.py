@@ -7,6 +7,7 @@ import importlib
 import subprocess
 import time
 from pathlib import Path
+from utils import ValidationUtils
 
 # Configuration des chemins
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -329,13 +330,13 @@ def main():
         # pythonw_path = None
         # for path in os.environ["PATH"].split(os.pathsep):
         #     pythonw_exe = os.path.join(path, "pythonw.exe")
-        #     if os.path.exists(pythonw_exe):
+        #     if ValidationUtils.path_exists(pythonw_exe):
         #         pythonw_path = pythonw_exe
         #         break
 
         # if not pythonw_path:
         #     pythonw_exe = os.path.join(os.path.dirname(sys.executable), "pythonw.exe")
-        #     if os.path.exists(pythonw_exe):
+        #     if ValidationUtils.path_exists(pythonw_exe):
         #         pythonw_path = pythonw_exe
         # Initialisation des dépendances
         initialize_dependencies()

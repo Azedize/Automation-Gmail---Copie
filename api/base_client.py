@@ -3,7 +3,7 @@ import sys
 import json
 import time
 import requests
-from typing import Dict, Any, Optional, Union, List
+from typing import Dict, Any, Optional
 from requests.adapters import HTTPAdapter, Retry
 
 
@@ -20,6 +20,7 @@ except ImportError as e:
 
 class APIManager:
     """Gestionnaire centralisé pour toutes les requêtes API"""
+
 
     def __init__(self):
         self.session = requests.Session()
