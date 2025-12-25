@@ -29,14 +29,15 @@ import copy
 import warnings
 import tempfile
 import stat
-from typing import Optional, List, Tuple
 
 warnings.simplefilter("ignore", urllib3.exceptions.InsecureRequestWarning)
 urllib3.disable_warnings()
 
+
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
+
 
 from config import settings as Settings
 from core import EncryptionService
@@ -46,6 +47,7 @@ from models import ExtensionManager
 from api import APIManager
 from utils import ValidationUtils
 from ui_utils import UIManager
+
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 FIREFOX_LAUNCH = []
@@ -59,6 +61,12 @@ LOGS_RUNNING = True
 SELECTED_BROWSER_GLOBAL=None
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
+
+
+
+
+
+# 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
 
 
 os.makedirs(Settings.APPDATA_DIR, exist_ok=True)
@@ -102,17 +110,13 @@ def ensure_node_installed():
                 ],
                 check=True
             )
-            print("✅ Chocolatey installé.")
         except subprocess.CalledProcessError:
-            print("❌ Échec de l'installation de Chocolatey.")
             return False
 
     try:
         subprocess.run(["choco", "install", "nodejs-lts", "-y"], check=True)
-        print("✅ Node.js installé avec succès.")
         return True
     except subprocess.CalledProcessError:
-        print("❌ Échec de l'installation de Node.js.")
         return False
 
 
@@ -134,21 +138,18 @@ def ensure_web_ext_installed():
     if not ensure_node_installed():
         print("⚠️ Impossible de continuer sans Node.js.")
         return
-
+    
     if shutil.which('npm') is None:
-        print("❌ npm n'est pas installé. Vérifiez l'installation de Node.js.")
         return
-
+    
     if shutil.which('web-ext') is not None:
-        print("✅ 'web-ext' est déjà installé.")
         return
-
-    print("🔍 'web-ext' n'est pas installé. Installation via npm...")
+    
     try:
         subprocess.run('npm install --global web-ext', check=True, shell=True)
-        print("✅ 'web-ext' a été installé avec succès.")
     except subprocess.CalledProcessError:
         print("❌ Échec de l'installation de 'web-ext' via npm.")
+
 
 
 
@@ -172,26 +173,26 @@ def launch_new_window():
             creationflags=subprocess.CREATE_NO_WINDOW ,
             close_fds=True
         )
-        stdout, stderr = process.communicate()  
+        # stdout, stderr = process.communicate()  
         if process.returncode != 0:
-            try:
-                print(f"   📝 [ERROR] Standard Error: {stderr.decode(encoding='utf-8', errors='replace')}") 
-            except Exception as decode_err:
-                print(f"   ⚠️ [ERROR] Failed to decode stderr: {decode_err}")
-                print(f"   📝 [ERROR] Raw stderr: {stderr}") 
-            try:
-                print(f"   📤 [INFO] Standard Output: {stdout.decode(encoding='utf-8', errors='replace')}") 
-            except Exception as decode_err:
-                print(f"   ⚠️ [ERROR] Failed to decode stdout: {decode_err}")
-                print(f"   📤 [INFO] Raw stdout: {stdout}") 
+            # try:
+            #     print(f"   📝 [ERROR] Standard Error: {stderr.decode(encoding='utf-8', errors='replace')}") 
+            # except Exception as decode_err:
+            #     print(f"   ⚠️ [ERROR] Failed to decode stderr: {decode_err}")
+            #     print(f"   📝 [ERROR] Raw stderr: {stderr}") 
+            # try:
+            #     print(f"   📤 [INFO] Standard Output: {stdout.decode(encoding='utf-8', errors='replace')}") 
+            # except Exception as decode_err:
+            #     print(f"   ⚠️ [ERROR] Failed to decode stdout: {decode_err}")
+            #     print(f"   📤 [INFO] Raw stdout: {stdout}") 
             return None
 
         time.sleep(1)
 
     except Exception as e:
-        print(f"💥 [CRITICAL ERROR] Failed to launch: {str(e)}")
-        print("💡 [TIP] Check execution permissions or file integrity.")
-        print(f"   📌 [ERROR] Details: {traceback.format_exc()}")  
+        # print(f"💥 [CRITICAL ERROR] Failed to launch: {str(e)}")
+        # print("💡 [TIP] Check execution permissions or file integrity.")
+        # print(f"   📌 [ERROR] Details: {traceback.format_exc()}")  
         return None
 
     return target_dir
@@ -207,26 +208,20 @@ def log_message(text):
 
 
 def Download_Extract(new_versions):
-    """
-    Download a single ZIP from GitHub, extract it safely,
-    and replace the Tools/extensions folder if needed.
-    Includes backup and detailed error handling.
-    Uses APIManager for API requests.
-    """
     try:
         if not isinstance(new_versions, dict):
-            print("❌ [ERROR] Invalid new_versions (not a dict).")
+            # print("❌ [ERROR] Invalid new_versions (not a dict).")
             return -1
 
         if "version_extensions" not in new_versions:
-            print("✅ [INFO] No extension updates required.")
+            # print("✅ [INFO] No extension updates required.")
             return 0
 
         with tempfile.TemporaryDirectory() as tmpdir:
             local_zip = os.path.join(tmpdir, "Programme-main.zip")
 
             # Download ZIP using APIManager
-            print("⬇️ Downloading update ZIP from server...")
+            # print("⬇️ Downloading update ZIP from server...")
             
             # Utilisation de APIManager pour faire la requête
             result = APIManager.make_request(
@@ -236,25 +231,25 @@ def Download_Extract(new_versions):
             )
             
             if result["status"] != "success":
-                print(f"❌ [ERROR] Failed to download ZIP: {result.get('error', 'Unknown error')}")
+                # print(f"❌ [ERROR] Failed to download ZIP: {result.get('error', 'Unknown error')}")
                 return -1
             
             # Téléchargement manuel du contenu si nécessaire
-            print("🌐 Fetching download URL from API...")
+            # print("🌐 Fetching download URL from API...")
             
             # Option 1: Si l'API retourne directement l'URL de téléchargement
             # Option 2: Utiliser l'endpoint approprié pour télécharger
             download_url = Settings.API_ENDPOINTS.get('_DOWNLOAD_EXTENSIONS_API', Settings.API_ENDPOINTS['_ON_SCENARIO_CHANGED_API'])
             
             # Utiliser APIManager pour télécharger le fichier
-            print(f"📥 Downloading from: {download_url}")
+            # print(f"📥 Downloading from: {download_url}")
             
             # Si APIManager a une méthode download_extension, l'utiliser
             success = APIManager.download_extension(download_url, local_zip)
             
             if not success:
                 # Fallback: téléchargement manuel
-                print("⚠️ Using fallback download method...")
+                # print("⚠️ Using fallback download method...")
                 try:
                     response = requests.get(
                         download_url, 
@@ -265,26 +260,22 @@ def Download_Extract(new_versions):
                     )
                     
                     if response.status_code != 200:
-                        print(f"❌ [ERROR] Failed to download ZIP: HTTP {response.status_code}")
+                        # print(f"❌ [ERROR] Failed to download ZIP: HTTP {response.status_code}")
                         return -1
 
                     with open(local_zip, "wb") as f:
                         for chunk in response.iter_content(chunk_size=8192):
                             if chunk:
                                 f.write(chunk)
-                    print(f"✅ Download completed: {local_zip}")
                 except Exception as e:
-                    print(f"❌ [ERROR] Fallback download failed: {e}")
                     return -1
-            else:
-                print(f"✅ Download completed via APIManager: {local_zip}")
+
 
             # Extract safely
-            print("📂 Extracting ZIP file...")
+
             try:
                 with zipfile.ZipFile(local_zip, 'r') as zip_ref:
                     if not zip_ref.namelist():
-                        print("❌ [ERROR] ZIP is empty.")
                         return -1
                     
                     # Vérifier la sécurité des chemins
@@ -293,12 +284,9 @@ def Download_Extract(new_versions):
                     
                     # Extraction sécurisée
                     safe_extract(zip_ref, tmpdir)
-                print(f"✅ Extraction completed: {extracted_dir}")
             except zipfile.BadZipFile:
-                print("❌ [ERROR] Invalid ZIP file.")
                 return -1
             except Exception as e:
-                print(f"❌ [ERROR] Failed to extract ZIP: {e}")
                 return -1
 
             # Tools update
@@ -306,26 +294,23 @@ def Download_Extract(new_versions):
             new_tools_root = os.path.join(extracted_dir, "tools")
 
             if not ValidationUtils.path_exists(new_tools_root):
-                print("❌ [ERROR] 'tools' folder not found in archive.")
                 return -1
 
             # Backup before replacing
             backup_dir = tools_target + "_backup_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             
             if ValidationUtils.path_exists(tools_target):
-                print(f"📦 Creating backup of current tools: {backup_dir}")
                 
                 # Supprimer l'ancien backup s'il existe
                 if ValidationUtils.path_exists(backup_dir):
                     try:
                         shutil.rmtree(backup_dir)
-                        print(f"🗑️ Removed old backup: {backup_dir}")
                     except Exception as e:
                         print(f"⚠️ Could not remove old backup: {e}")
                 
                 try:
                     shutil.copytree(tools_target, backup_dir)
-                    print(f"✅ Backup created: {backup_dir}")
+                    # print(f"✅ Backup created: {backup_dir}")
                 except Exception as e:
                     print(f"⚠️ Failed to create backup: {e}")
                     # Continuer même si la sauvegarde échoue
@@ -333,20 +318,15 @@ def Download_Extract(new_versions):
             try:
                 # Supprimer l'ancien répertoire tools
                 if ValidationUtils.path_exists(tools_target):
-                    print(f"🗑️ Removing old tools directory: {tools_target}")
                     shutil.rmtree(tools_target)
                 
                 # Déplacer le nouveau répertoire tools
-                print(f"🚚 Moving new tools to {tools_target}")
                 shutil.move(new_tools_root, tools_target)
-                print("✅ Extensions updated successfully")
 
                 # Optionnel: nettoyer le backup après succès
                 if ValidationUtils.path_exists(backup_dir) and ValidationUtils.path_exists(tools_target):
-                    print(f"🧹 Cleaning up backup: {backup_dir}")
                     try:
                         shutil.rmtree(backup_dir)
-                        print("✅ Backup cleaned up")
                     except Exception as e:
                         print(f"⚠️ Could not clean up backup: {e}")
 
@@ -356,8 +336,7 @@ def Download_Extract(new_versions):
                     try:
                         with open(version_file_path, 'r') as f:
                             new_version = f.read().strip()
-                        print(f"📝 New version installed: {new_version}")
-                        
+                            
                         # Notifier le serveur de la mise à jour réussie
                         try:
                             params = {
@@ -366,7 +345,6 @@ def Download_Extract(new_versions):
                                 "status": "success"
                             }
                             APIManager.make_request('_UPDATE_STATUS_API', "POST", json_data=params)
-                            print("✅ Update status reported to server")
                         except Exception as e:
                             print(f"⚠️ Could not report update status: {e}")
                     except Exception as e:
@@ -377,12 +355,10 @@ def Download_Extract(new_versions):
                 
                 # Restaurer depuis le backup
                 if ValidationUtils.path_exists(backup_dir):
-                    print("↩️ Restoring backup...")
                     try:
                         if ValidationUtils.path_exists(tools_target):
                             shutil.rmtree(tools_target)
                         shutil.move(backup_dir, tools_target)
-                        print("✅ Backup restored successfully")
                     except Exception as restore_err:
                         print(f"❌ Failed to restore backup: {restore_err}")
                         return -1
@@ -3237,6 +3213,20 @@ class MainWindow(QMainWindow):
                     log_message("Échec de suppression des doublons")
         except Exception:
             print("Erreur pendant le traitement du résultat JSON")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
