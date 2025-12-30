@@ -1889,7 +1889,7 @@ class MainWindow(QMainWindow):
             if result.get("session") is False:
                 UIManager.Show_Critical_Message(self, "Session Expired", "[❌] Your session has expired. Please log in again.", message_type="critical")
                 self.login_window = LoginWindow()
-                self.login_window.setFixedSize(1710, 1005)
+                self.login_window.setFixedSize(Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT)
                 screen = QGuiApplication.primaryScreen()
                 screen_geometry = screen.availableGeometry()
                 x = (screen_geometry.width() - self.login_window.width()) // 2
@@ -1935,7 +1935,7 @@ class MainWindow(QMainWindow):
 
             if result.get("session") is False:
                 self.login_window = LoginWindow()
-                self.login_window.setFixedSize(1710, 1005)
+                self.login_window.setFixedSize(Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT)
 
                 screen = QGuiApplication.primaryScreen()
                 screen_geometry = screen.availableGeometry()
@@ -1986,7 +1986,7 @@ class MainWindow(QMainWindow):
                 Stop_All_Processes(self)
 
             self.login_window = LoginWindow()
-            self.login_window.setFixedSize(1710, 1005)
+            self.login_window.setFixedSize(Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT)
 
             screen = QGuiApplication.primaryScreen()
             screen_geometry = screen.availableGeometry()
@@ -2178,7 +2178,7 @@ class MainWindow(QMainWindow):
         session_info = SessionManager.check_session()
         if not session_info["valid"]:
             self.login_window = LoginWindow()
-            self.login_window.setFixedSize(1710, 1005)
+            self.login_window.setFixedSize(Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT)
 
             screen = QGuiApplication.primaryScreen()
             screen_geometry = screen.availableGeometry()
@@ -2583,7 +2583,7 @@ class MainWindow(QMainWindow):
                 #print("Session expirée. Redirection vers login.")
                 try:
                     self.login_window = LoginWindow()
-                    self.login_window.setFixedSize(1710, 1005)
+                    self.login_window.setFixedSize(Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT)
                     screen = QGuiApplication.primaryScreen()
                     screen_geometry = screen.availableGeometry()
                     x = (screen_geometry.width() - self.login_window.width()) // 2
@@ -2869,7 +2869,7 @@ class LoginWindow(QMainWindow):
             return
 
         self.main_window = MainWindow(json_data)
-        self.main_window.setFixedSize(1710, 1005)
+        self.main_window.setFixedSize(Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT)
         self.main_window.setWindowTitle("AutoMailPro")
         self.main_window.stopButton.clicked.connect(
             lambda: Stop_All_Processes(self.main_window)
@@ -2943,7 +2943,7 @@ def main():
     else:
         window = LoginWindow()
 
-    window.setFixedSize(1710, 1005)
+    window.setFixedSize(Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT)
     screen = QGuiApplication.primaryScreen()
     screen_geometry = screen.availableGeometry()
     x = (screen_geometry.width() - window.width()) // 2

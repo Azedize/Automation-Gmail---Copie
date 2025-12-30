@@ -69,12 +69,12 @@ class VerticalTabBar(QtWidgets.QTabBar):
 
             painter.save()
             if self.currentIndex() == i:
-                painter.setBrush(QtGui.QBrush(QtGui.QColor("#669bbc")))
+                painter.setBrush(QtGui.QBrush(QtGui.QColor(Settings.PRIMARY_COLOR)))
             else:
                 painter.setBrush(QtGui.QBrush(QtGui.QColor("#F5F5F5")))
             painter.setPen(QtCore.Qt.PenStyle.NoPen)
             painter.drawRect(rect)  
-            border_pen = QtGui.QPen(QtGui.QColor("#669bbc"))
+            border_pen = QtGui.QPen(QtGui.QColor(Settings.PRIMARY_COLOR))
             border_pen.setWidth(1)
             painter.setPen(border_pen)
             painter.drawLine(rect.bottomLeft(), rect.bottomRight())
@@ -90,7 +90,7 @@ class VerticalTabBar(QtWidgets.QTabBar):
             painter.setPen(QtGui.QPen(QtGui.QColor("#333")))
             font = painter.font()
             font.setPointSize(10)
-            font.setFamily("Times New Roman")
+            font.setFamily(Settings.FONT_FAMILY)
             painter.setFont(font)
 
             text_rect = QtCore.QRect(
@@ -151,54 +151,56 @@ class CustomTextDialog(QDialog):
         self.setLayout(layout)
 
         # 🌟 Style QSS compatible Qt
-        self.setStyleSheet("""
-            QDialog {
+        self.setStyleSheet(f"""
+            QDialog {{
                 background-color: #ffffff;
-            }
-            QLabel {
-                font-family: "Times", "Times New Roman", serif;
+                font-family: {Settings.FONT_FAMILY};
+            }}
+            QLabel {{
+                font-family: {Settings.FONT_FAMILY};
                 font-size: 14px;
                 color: #2d2d2d;
                 font-weight: 500;
                 margin-bottom: 10px;
-            }
-            QTextEdit {
+            }}
+            QTextEdit {{
                 border: 1px solid #d0d0d0;
                 border-radius: 10px;
-                font-family: "Times", "Times New Roman", serif;
+                font-family: {Settings.FONT_FAMILY};
                 background-color: #fafafa;
                 font-size: 12pt;
                 padding: 5px;
-            }
-            QTextEdit:focus {
+            }}
+            QTextEdit:focus {{
                 border: 2px solid #0078d7;
                 background-color: #ffffff;
-            }
-            QPushButton {
-                font-family: "Times", "Times New Roman", serif;
+            }}
+            QPushButton {{
+                font-family: {Settings.FONT_FAMILY};
                 padding: 8px 16px;
                 text-align: center;
                 font-size: 14px;
                 font-weight: bold;
                 min-width: 120px;
-            }
-            QPushButton#btn_ok {
+            }}
+            QPushButton#btn_ok {{
                 background-color: #0078d7;
                 border: none;
                 color: white;
-            }
-            QPushButton#btn_ok:hover {
+            }}
+            QPushButton#btn_ok:hover {{
                 background-color: #005a9e;
-            }
-            QPushButton#btn_cancel {
+            }}
+            QPushButton#btn_cancel {{
                 background-color: #f0f0f0;
                 border: 1px solid #cccccc;
                 color: #333333;
-            }
-            QPushButton#btn_cancel:hover {
+            }}
+            QPushButton#btn_cancel:hover {{
                 background-color: #e0e0e0;
-            }
+            }}
         """)
+
 
         # IDs pour styles séparés
         self.btn_ok.setObjectName("btn_ok")
@@ -219,7 +221,7 @@ class UIManager:
             f'<div style="text-align:center;margin:0;padding:0;">'
             f'<span style="font-family:\'Segoe UI\', sans-serif; font-size:14px;">Result ('
             f'<span style="color:#008000;">{completed_count} completed</span> / '
-            f'<span style="color:#d90429;">{not_completed_count} not completed</span>)</span>'
+            f'<span style="color:{Settings.ACCENT_COLOR};">{not_completed_count} not completed</span>)</span>'
             f'</div>'
         )
 
@@ -410,10 +412,10 @@ class UIManager:
 
         # Définition des styles pour chaque type
         colors = {
-            "critical": {"accent": "#d32f2f", "start": "#d32f2f", "end": "#b71c1c", "bg": "#ffebee", "icon": QMessageBox.Icon.Critical},
-            "warning": {"accent": "#ed6c02", "start": "#ed6c02", "end": "#e65100", "bg": "#fff3e0", "icon": QMessageBox.Icon.Warning},
-            "info": {"accent": "#0288d1", "start": "#0288d1", "end": "#01579b", "bg": "#e1f5fe", "icon": QMessageBox.Icon.Information},
-            "success": {"accent": "#2e7d32", "start": "#2e7d32", "end": "#1b5e20", "bg": "#e8f5e9", "icon": QMessageBox.Icon.Information}
+            "critical": {"accent": Settings.ERROR_COLOR, "start": Settings.ERROR_COLOR, "end": "#b71c1c", "bg": "#ffebee", "icon": QMessageBox.Icon.Critical},
+            "warning": {"accent": Settings.WARNING_COLOR, "start": Settings.WARNING_COLOR, "end": "#e65100", "bg": "#fff3e0", "icon": QMessageBox.Icon.Warning},
+            "info": {"accent": Settings.INFO_COLOR, "start": Settings.INFO_COLOR, "end": "#01579b", "bg": "#e1f5fe", "icon": QMessageBox.Icon.Information},
+            "success": {"accent": Settings.SUCCESS_COLOR, "start": Settings.SUCCESS_COLOR, "end": "#1b5e20", "bg": "#e8f5e9", "icon": QMessageBox.Icon.Information}
         }
 
         c = colors.get(message_type, colors["info"])
@@ -502,10 +504,9 @@ class UIManager:
 
 
     @staticmethod
-    def Copy_Result_From_Tab( tab_index , result_tab_widget):
-        tab_widget = result_tab_widget.widget(tab_index)
+    def Copy_Result_From_Tab(window, tab_index ):
+        tab_widget = window.result_tab_widget.widget(tab_index)
         list_widgets = tab_widget.findChildren(QListWidget)
-
         if list_widgets:
             list_widget = list_widgets[0]
             items = [list_widget.item(i).text() for i in range(list_widget.count())]
@@ -548,14 +549,14 @@ class UIManager:
     @staticmethod
     def Update_Logs_Display( log_entry ,log_layout):
         log_label = QLabel(log_entry)
-        log_label.setStyleSheet("""
-            QLabel {
+        log_label.setStyleSheet(f"""
+            QLabel {{
                 color: #ffffff;
                 font-size: 14px;
                 background-color: transparent;
-                font-family: "Times", "Times New Roman", serif;
+                font-family: {Settings.FONT_FAMILY};
                 padding: 2px;
-            }
+            }}
         """)
         log_layout.addWidget(log_label)
 
@@ -576,61 +577,62 @@ class UIManager:
 
             if widget:
                 if i != scenario_layout.count() - 1:
-                    widget.setStyleSheet("background-color: #ffffff; border: 1px solid #b2cddd; border-radius: 8px;")
+                    widget.setStyleSheet(f"background-color: #ffffff; border: 1px solid {Settings.SECONDARY_COLOR}; border-radius: 8px;")
                     label_list = [child for child in widget.children() if isinstance(child, QLabel)]
                     if label_list:
                         first_label = label_list[0]
 
                         # 🖌️ Appliquer style par défaut à la première QLabel
-                        first_label.setStyleSheet("""
-                            QLabel {
-                                color: #669bbc;
+                        first_label.setStyleSheet(f"""
+                            QLabel {{
+                                color: {Settings.PRIMARY_COLOR};
                                 font-size: 16px;
                                 border: none;
                                 border-radius: 4px;
                                 text-align: center;
                                 background-color: transparent;
-                                font-family: "Times", "Times New Roman", serif;
+                                font-family: {Settings.FONT_FAMILY};
                                 margin-left: 10px;
-                            }
+                            }}
                         """)
+
 
                         # 🎯 Si elle commence par "Random", remplacer le style
                         if first_label.text().startswith("Random"):
-                            first_label.setStyleSheet("""
-                                QLabel {
-                                    color: #669bbc;
+                            first_label.setStyleSheet(f"""
+                                QLabel {{
+                                    color:  {Settings.PRIMARY_COLOR};
                                     font-size: 9px;
                                     border: none;
                                     border-radius: 4px;
                                     background-color: transparent;
-                                    font-family: "Monaco", monospace;
+                                    font-family: {Settings.FONT_FAMILY};
                                     padding: 0px;
                                     margin: 0px;
                                     border:None;
-                                }
+                                }}
                             """)
                             print(f"[🎯] Style appliqué sur QLabel (index 0): '{first_label.text()}'")
 
                         # 🎨 Appliquer style aux autres QLabels
                         for label in label_list[1:]:
-                            label.setStyleSheet("""
-                                QLabel {
-                                    color: #669bbc;
+                            label.setStyleSheet(f"""
+                                QLabel {{
+                                    color: {Settings.PRIMARY_COLOR};
                                     font-size: 14px;
                                     border: none;
                                     border-radius: 4px;
                                     text-align: center;
                                     background-color: transparent;
-                                    font-family: "Times", "Times New Roman", serif;
-                                }
+                                    font-family: {Settings.FONT_FAMILY};
+                                }}
                             """)
 
                             # 🎯 S'il commence par "Random", on remplace
                             if label.text().startswith("Random"):
-                                label.setStyleSheet("""
-                                    QLabel {
-                                        color: #669bbc;
+                                label.setStyleSheet(f"""
+                                    QLabel {{
+                                        color: {Settings.PRIMARY_COLOR}; ;
                                         font-size: 9px;
                                         border: none;
                                         border-radius: 4px;
@@ -639,7 +641,7 @@ class UIManager:
                                         padding: 0px;
                                         margin: 0px;
                                         border:None;
-                                    }
+                                    }}
                                 """)
                                 print(f"[🎯] Style appliqué sur QLabel: '{label.text()}'")
 
@@ -655,7 +657,7 @@ class UIManager:
                         new_style = f"""
                             QSpinBox {{
                                 padding: 2px; 
-                                border: 1px solid #669bbc; 
+                                border: 1px solid {Settings.PRIMARY_COLOR}; 
                                 color: black;
                             }}
                             QSpinBox::down-button {{
@@ -683,11 +685,11 @@ class UIManager:
                     if QCheckBox_list:  
                         checkbox = QCheckBox_list[0]                
                         if checkbox.isChecked():
-                            additional_style = """
-                                QCheckBox::indicator:checked  {
-                                    background-color: #669bbc;
-                                    border: 2px solid #669bbc;
-                                }
+                            additional_style = f"""
+                                QCheckBox::indicator:checked  {{
+                                    background-color: {Settings.PRIMARY_COLOR};
+                                    border: 2px solid {Settings.PRIMARY_COLOR};
+                                }}
                             """
                         else:
                             additional_style = """
@@ -713,20 +715,20 @@ class UIManager:
                                     image: url("{Settings.ARROW_DOWN_PATH}");
                                     width: 13px;
                                     height: 13px;
-                                    border: 1px solid #669bbc; 
+                                    border: 1px solid {Settings.PRIMARY_COLOR}; 
                                     background-color: white;
                                 }}
                                 QComboBox::drop-down {{
-                                    border: 1px solid #669bbc; 
+                                    border: 1px solid {Settings.PRIMARY_COLOR}; 
                                     width: 20px;
                                     outline: none;
                                 }}
                                 
                                 QComboBox QAbstractItemView {{
                                     min-width: 90px; 
-                                    border: 1px solid #669bbc; 
+                                    border: 1px solid {Settings.PRIMARY_COLOR}; 
                                     background: white;
-                                    selection-background-color: #669bbc;
+                                    selection-background-color: {Settings.PRIMARY_COLOR};
                                     selection-color: white;
                                     padding: 3px; 
                                     margin: 0px;  
@@ -735,8 +737,8 @@ class UIManager:
                                 QComboBox {{
                                     padding-left: 10px; 
                                     font-size: 12px;
-                                    font-family: "Times", "Times New Roman", serif;
-                                    border: 1px solid #669bbc; 
+                                    font-family: {Settings.FONT_FAMILY};
+                                    border: 1px solid {Settings.PRIMARY_COLOR}; 
                                 }}
                                 QComboBox QAbstractItemView::item {{
                                     padding: 5px; 
@@ -745,66 +747,66 @@ class UIManager:
                                     border: none; 
                                 }}
                                 QComboBox QAbstractItemView::item:selected {{
-                                    background-color: #669bbc;
+                                    background-color: {Settings.PRIMARY_COLOR};
                                     color: white;
                                     border-radius: 3px;
                                 }}
                                 QComboBox:focus {{
-                                    border: 1px solid #669bbc; 
+                                    border: 1px solid {Settings.PRIMARY_COLOR}; 
                                 }}
                             """
                             combined_style = old_style + new_style
                             QComboBox.setStyleSheet(combined_style)
 
                 if i == scenario_layout.count() - 1:
-                    widget.setStyleSheet("background-color: #669bbc; border-radius: 8px;")
+                    widget.setStyleSheet(f"""background-color: {Settings.PRIMARY_COLOR}; border-radius: 8px;""")
 
                     label_list = [child for child in widget.children() if isinstance(child, QLabel)]
 
                     if label_list:
                         # 🎯 Première QLabel (souvent le titre)
-                        label_list[0].setStyleSheet("""
-                            QLabel {
+                        label_list[0].setStyleSheet(f"""
+                            QLabel {{
                                 color: white;
                                 font-size: 16px;
                                 border: none;
                                 border-radius: 4px;
                                 text-align: center;
-                                background-color: #669bbc;
-                                font-family: "Times", "Times New Roman", serif;
+                                background-color: {Settings.PRIMARY_COLOR};
+                                font-family: {Settings.FONT_FAMILY};
                                 margin-left: 8px;
-                            }
+                            }}
                         """)
 
                         # ➕ Vérifier si c’est un "Random"
                         if label_list[0].text().startswith("Random"):
-                            label_list[0].setStyleSheet("""
-                                QLabel {
+                            label_list[0].setStyleSheet(f"""
+                                QLabel {{
                                     color: white;
                                     font-size: 9px;
                                     border: 1px dashed #ffffff;
                                     border-radius: 4px;
                                     background-color: transparent;
-                                    font-family: "Monaco", monospace;
+                                    font-family: {Settings.FONT_FAMILY};
                                     padding: 0px;
                                     margin: 0px;
                                     border:None;
-                                }
+                                }}
                             """)
                             print(f"[🎯] Dernier widget - QLabel (0) spéciale: '{label_list[0].text()}'")
 
                         # 🎨 Toutes les autres QLabels
                         for label in label_list[1:]:
-                            label.setStyleSheet("""
-                                QLabel {
+                            label.setStyleSheet(f"""
+                                QLabel {{
                                     color: white;
                                     font-size: 16px;
                                     border: none;
                                     border-radius: 4px;
                                     text-align: center;
-                                    background-color: #669bbc;
-                                    font-family: "Times", "Times New Roman", serif;
-                                }
+                                    background-color: {Settings.PRIMARY_COLOR};
+                                    font-family: {Settings.FONT_FAMILY};
+                                }}
                             """)
 
                             # 🎯 Appliquer style spécial si commence par "Random"
@@ -872,11 +874,11 @@ class UIManager:
                         checkbox = QCheckBox_list_last[0]
                         
                         if checkbox.isChecked():
-                            additional_style = """
-                                QCheckBox::indicator:checked  {
-                                    background-color: #669bbc;
+                            additional_style = f"""
+                                QCheckBox::indicator:checked  {{
+                                    background-color: {Settings.PRIMARY_COLOR};
                                     border: 2px solid #ffffff;
-                                }
+                                }}
                             """
                         else:
                             additional_style = """
@@ -917,7 +919,7 @@ class UIManager:
                                 min-width: 90px; 
                                 border: none; 
                                 background: white;
-                                selection-background-color: #669bbc;
+                                selection-background-color: {Settings.PRIMARY_COLOR};
                                 selection-color: white;
                                 padding: 3px; 
                                 margin: 0px;  
@@ -926,8 +928,8 @@ class UIManager:
                             QComboBox {{
                                 padding-left: 10px; 
                                 font-size: 12px;
-                                font-family: "Times", "Times New Roman", serif;
-                                border: 1px solid #669bbc; 
+                                font-family: {Settings.FONT_FAMILY};
+                                border: 1px solid {Settings.PRIMARY_COLOR}; 
                                 outline: none; 
                             }}
                             QComboBox QAbstractItemView::item {{
@@ -937,12 +939,12 @@ class UIManager:
                                 border: none; 
                             }}
                             QComboBox QAbstractItemView::item:selected {{
-                                background-color: #669bbc;
+                                background-color: {Settings.PRIMARY_COLOR};
                                 color: white;
                                 border-radius: 3px;
                             }}
                             QComboBox:focus {{
-                                border: 1px solid #669bbc; 
+                                border: 1px solid {Settings.PRIMARY_COLOR}; 
                             }}
                         """
                         combined_style = old_style + new_style
@@ -1529,7 +1531,7 @@ class UIManager:
                             button.clicked.disconnect()
                         except Exception:
                             pass
-                        button.clicked.connect(partial(UIManager.Copy_Result_From_Tab, i))
+                        button.clicked.connect(partial(UIManager.Copy_Result_From_Tab, window , i))
 
 
     
@@ -1613,9 +1615,9 @@ class UIManager:
                     continue
 
                 frame = QFrame(tab_widget)
-                frame.setStyleSheet("""
+                frame.setStyleSheet(f"""
                     background-color: #F5F5F5;
-                    border-right: 1px solid #669bbc;
+                    border-right: 1px solid {Settings.PRIMARY_COLOR};
                 """)
                 frame.setGeometry(0, 660, 179, 300)
                 frame.show()

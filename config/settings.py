@@ -1,17 +1,4 @@
-"""
-📄 Fichier de configuration principal
-=====================================
-Contient tous les paramètres modifiables de l’application
-
-Responsabilités :
-- Paramètres de connexion à l’API
-- Paramètres des chemins
-- Paramètres de chiffrement
-- Paramètres de l’interface
-"""
-
 import os
-import inspect
 from pathlib import Path
 from dotenv import load_dotenv
 import sys
@@ -29,7 +16,8 @@ class Settings:
     }
 
 
-
+    CHECK_URL_PROGRAM = "https://www.dropbox.com/scl/fi/78a38bc4papwzlw80hxti/version.json?rlkey=n7dx5mb8tcctvprn0wq4ojw7m&st=z6vzw0ox&dl=1"
+    SERVER_ZIP_URL_PROGRAM = "https://github.com/Azedize/Programme/archive/refs/heads/main.zip"
 
 
     # ═══════════════════════════════════════════════════════════
@@ -175,7 +163,7 @@ class Settings:
     
     DATA_DIR = Path(os.getenv('APPDATA')) / 'AutoMailPro'
     SESSION_FILE = DATA_DIR / 'session.txt'
-    LOGS_DIR = BASE_DIR / 'logs'
+    LOGS_DIR = BASE_DIR / 'Tools'  / 'logs'
     
     PROFILES_DIR = BASE_DIR / 'Tools' / 'Profiles'
     CHROME_PROFILES = PROFILES_DIR / 'chrome'
@@ -246,6 +234,7 @@ class Settings:
     SUCCESS_COLOR = '#2e7d32'
     WARNING_COLOR = '#ed6c02'
     ERROR_COLOR = '#d32f2f'
+    INFO_COLOR = '#0288d1'
     
     FONT_FAMILY = 'Times, Times New Roman, serif'
     FONT_SIZE_SMALL = 12

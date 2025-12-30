@@ -89,6 +89,9 @@ class DependencyManager:
 
 
 
+    
+
+
     @staticmethod
     def install_and_import(package, module_name=None, required_import=None, version=None):
         """Installe et importe un package"""
