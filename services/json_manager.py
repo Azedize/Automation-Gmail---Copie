@@ -603,10 +603,7 @@ class JsonManager:
         return output_json
     
     @staticmethod
-    def save_json_to_file(
-        json_data: List[Dict[str, Any]],
-        selected_browser: str
-    ) -> str:
+    def save_json_to_file( json_data: List[Dict[str, Any]],  selected_browser: str) -> str:
         """
         Sauvegarde le JSON dans le fichier approprié selon le navigateur
         
@@ -646,40 +643,6 @@ class JsonManager:
             print(f"❌ Erreur lors de la sauvegarde du fichier {traitement_file}: {e}")
             return "ERROR"
     
-    def process_complete_pipeline(
-        self, 
-        scenario_layout: List[Dict[str, Any]], 
-        selected_browser: str
-    ) -> str:
-        """
-        Pipeline complet de traitement des données
-        
-        Args:
-            scenario_layout: Layout des widgets
-            selected_browser: Navigateur cible
-            
-        Returns:
-            Statut de l'opération
-        """
-        try:
-            # Étape 1: Traitement des widgets
-            json_data = self.process_widget_data(scenario_layout)
-            
-            # Étape 2: Division en sections
-            json_data = self.split_json_sections(json_data)
-            
-            # Étape 3: Gestion des derniers éléments
-            json_data = self.handle_last_element(json_data)
-            
-            # Étape 4: Modification finale
-            json_data = self.modify_json_structure(json_data)
-            
-            # Étape 5: Sauvegarde
-            return self.save_json_to_file(json_data, selected_browser)
-            
-        except Exception as e:
-            return "ERROR"
-    
 
 
 
@@ -712,11 +675,10 @@ class JsonManager:
         except Exception:
             return []
         
+        
+        
     @staticmethod
-    def process_complete_pipeline(
-        scenario_layout: List[Dict[str, Any]], 
-        selected_browser: str
-    ) -> str:
+    def process_complete_pipeline(scenario_layout: List[Dict[str, Any]],  selected_browser: str ) -> str:
         """
         Pipeline complet de traitement des données avec sauvegarde
         

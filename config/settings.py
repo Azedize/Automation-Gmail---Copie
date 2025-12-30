@@ -1,9 +1,6 @@
 import os
 from pathlib import Path
-from dotenv import load_dotenv
 import sys
-# Chargement des variables d’environnement
-load_dotenv()
 
 
 class Settings:
@@ -16,8 +13,7 @@ class Settings:
     }
 
 
-    CHECK_URL_PROGRAM = "https://www.dropbox.com/scl/fi/78a38bc4papwzlw80hxti/version.json?rlkey=n7dx5mb8tcctvprn0wq4ojw7m&st=z6vzw0ox&dl=1"
-    SERVER_ZIP_URL_PROGRAM = "https://github.com/Azedize/Programme/archive/refs/heads/main.zip"
+
 
 
     # ═══════════════════════════════════════════════════════════
@@ -112,8 +108,8 @@ class Settings:
         '_HANDLE_SAVE_API'          :  "http://localhost/auth-api/add_scenario.php",
         '_LOAD_SCENARIOS_API'       :  "http://localhost/auth-api/get_scenarios.php",
         '_ON_SCENARIO_CHANGED_API'  :  "http://localhost/auth-api/get_scenario_by_name.php",
-        'CHECK_URL_PROGRAM': "https://www.dropbox.com/scl/fi/78a38bc4papwzlw80hxti/version.json?rlkey=n7dx5mb8tcctvprn0wq4ojw7m&st=z6vzw0ox&dl=1",
-        'SERVER_ZIP_URL_PROGRAM' : "https://github.com/Azedize/Programme/archive/refs/heads/main.zip"
+        '__CHECK_URL_PROGRAMM__': "https://www.dropbox.com/scl/fi/78a38bc4papwzlw80hxti/version.json?rlkey=n7dx5mb8tcctvprn0wq4ojw7m&st=z6vzw0ox&dl=1",
+        '__SERVER_ZIP_URL_PROGRAM__': "https://github.com/Azedize/Automation-Gmail---Copie.git",
 
     }
 
@@ -170,7 +166,8 @@ class Settings:
     FIREFOX_PROFILES = PROFILES_DIR / 'firefox'
     
     EXTENSIONS_DIR = BASE_DIR / 'Tools' / 'Extensions'
-    
+    VERSION_LOCAL_EXT = os.path.join(EXTENSIONS_DIR, "version.txt")
+    VERSION_LOCAL_PROGRAMM = os.path.join(BASE_DIR , "config", "version.txt")
 
     ICONS_DIR = BASE_DIR / 'resources' / 'icons'
     FILE_ISP = os.path.join(BASE_DIR, "config", "Isp.txt")
@@ -245,8 +242,7 @@ class Settings:
     # ⚙️ Paramètres de l’application
     # ═══════════════════════════════════════════════════════════
     
-    # APP_NAME = 'AutoMailPro'
-    APP_VERSION = '4.0.0'
+
     
     SESSION_VALIDITY_DAYS = 2
     SESSION_TIMEZONE = 'Africa/Casablanca'
@@ -370,4 +366,4 @@ class Settings:
 settings = Settings()
 
 # Vérification et création des dossiers de base
-settings.ensure_directories()
+# settings.ensure_directories()
