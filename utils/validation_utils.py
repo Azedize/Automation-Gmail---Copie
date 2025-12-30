@@ -530,97 +530,7 @@ class ValidationUtils:
         """Vérifie si un chemin existe"""
         return os.path.exists(path)
     
-    @staticmethod
-    def validate_zip_file(zip_path: str) -> Tuple[bool, str]:
-        """Valide l'intégrité d'un fichier ZIP"""
-        try:
-            if not os.path.exists(zip_path):
-                return False, f"Fichier ZIP introuvable: {zip_path}"
-            
-            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-                # Test d'ouverture
-                bad_file = zip_ref.testzip()
-                if bad_file:
-                    return False, f"Fichier corrompu dans le ZIP: {bad_file}"
-                
-                # Vérifier qu'il n'est pas vide
-                if not zip_ref.namelist():
-                    return False, "Le fichier ZIP est vide"
-                
-                # Vérifier la sécurité des chemins
-                for member in zip_ref.namelist():
-                    member_path = os.path.abspath(os.path.join("/tmp", member))
-                    if not member_path.startswith(os.path.abspath("/tmp")):
-                        return False, f"Chemin non sécurisé détecté: {member}"
-            
-            return True, "Fichier ZIP valide"
-            
-        except zipfile.BadZipFile:
-            return False, "Fichier ZIP corrompu ou invalide"
-        except Exception as e:
-            return False, f"Erreur lors de la validation du ZIP: {str(e)}"
-    
-    @staticmethod
-    def validate_directory_permissions(directory_path: str) -> Tuple[bool, str]:
-        """Valide les permissions d'écriture sur un dossier"""
-        try:
-            if not os.path.exists(directory_path):
-                return True, "Le dossier n'existe pas mais peut être créé"
-            
-            # Test d'écriture
-            test_file = os.path.join(directory_path, ".permission_test")
-            try:
-                with open(test_file, 'w') as f:
-                    f.write("test")
-                os.remove(test_file)
-                return True, "Permissions d'écriture valides"
-            except PermissionError:
-                return False, "Permission d'écriture refusée sur le dossier"
-            except Exception:
-                return False, "Impossible d'écrire dans le dossier"
-                
-        except Exception as e:
-            return False, f"Erreur lors de la vérification des permissions: {str(e)}"
-    
-    @staticmethod
-    def validate_result_file_format(file_path: str) -> Tuple[bool, List[Dict]]:
-        """Valide le format du fichier de résultats"""
-        results = []
-        
-        try:
-            if not os.path.exists(file_path):
-                return False, []
-            
-            with open(file_path, 'r', encoding='utf-8') as f:
-                for line_num, line in enumerate(f, 1):
-                    line = line.strip()
-                    if not line:
-                        continue
-                    
-                    # Format attendu: session_id:pid:email:status
-                    parts = line.split(":")
-                    if len(parts) != 4:
-                        continue  # Ignorer les lignes mal formatées
-                    
-                    session_id, pid, email, status = [p.strip() for p in parts]
-                    
-                    # Validation basique
-                    if not email or not status:
-                        continue
-                    
-                    results.append({
-                        "session_id": session_id,
-                        "pid": pid,
-                        "email": email,
-                        "status": status,
-                        "line_number": line_num
-                    })
-            
-            return True, results
-            
-        except Exception:
-            return False, []
-    
+
     # ==================== VALIDATION JSON ET STRUCTURES ====================
     
     @staticmethod
@@ -634,79 +544,7 @@ class ValidationUtils:
             return False, f"Clés manquantes dans JSON: {', '.join(missing_keys)}"
         
         return True, "Structure JSON valide"
-    
-    @staticmethod
-    def validate_configuration_structure(config_data: Dict, required_keys: List[str]) -> Tuple[bool, str]:
-        """Valide la structure d'une configuration JSON"""
-        if not isinstance(config_data, dict):
-            return False, "Les données de configuration doivent être un dictionnaire"
-        
-        missing_keys = [key for key in required_keys if key not in config_data]
-        if missing_keys:
-            return False, f"Clés de configuration manquantes: {', '.join(missing_keys)}"
-        
-        return True, "Configuration valide"
-    
-    @staticmethod
-    def validate_extension_manifest(manifest_path: str) -> Tuple[bool, str]:
-        """Valide un fichier manifest.json d'extension"""
-        try:
-            if not os.path.exists(manifest_path):
-                return False, f"Fichier manifest introuvable: {manifest_path}"
-            
-            with open(manifest_path, 'r', encoding='utf-8') as f:
-                manifest = json.load(f)
-            
-            required_keys = ["manifest_version", "name", "version"]
-            for key in required_keys:
-                if key not in manifest:
-                    return False, f"Clé '{key}' manquante dans le manifest"
-            
-            return True, f"Manifest valide: {manifest.get('name')} v{manifest.get('version')}"
-            
-        except json.JSONDecodeError:
-            return False, "Format JSON invalide dans le manifest"
-        except Exception as e:
-            return False, f"Erreur lors de la lecture du manifest: {str(e)}"
-    
-    @staticmethod
-    def validate_session_file(session_path: str) -> Tuple[bool, Optional[Dict]]:
-        """Valide le fichier de session"""
-        try:
-            if not os.path.exists(session_path):
-                return False, None
-            
-            with open(session_path, 'r', encoding='utf-8') as f:
-                content = f.read().strip()
-            
-            if not content:
-                return False, None
-            
-            # Format attendu: username::date::entity
-            if "::" not in content:
-                return False, None
-            
-            parts = content.split("::", 2)
-            if len(parts) != 3:
-                return False, None
-            
-            username, date_str, entity = parts
-            
-            # Valider le format de la date
-            try:
-                datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
-            except ValueError:
-                return False, None
-            
-            return True, {
-                "username": username,
-                "date": date_str,
-                "entity": entity
-            }
-            
-        except Exception:
-            return False, None
-    
+
     @staticmethod
     def validate_session_format(session_data: str) -> Tuple[bool, Optional[Dict]]:
         """Valide le format des données de session"""
@@ -784,34 +622,7 @@ class ValidationUtils:
             return int(text)
         except (ValueError, TypeError):
             return default
-    
-    @staticmethod
-    def validate_qlineedit_range(qlineedit: QLineEdit, default_value: str = "50,50") -> bool:
-        """Valide et corrige un QLineEdit contenant une plage numérique"""
-        text = qlineedit.text().strip()
-        
-        if not text:
-            qlineedit.setText(default_value)
-            return False
-        
-        # Valider le format
-        pattern = r'^\s*(\d+)(?:\s*,\s*(\d+))?\s*$'
-        match = re.match(pattern, text)
-        
-        if not match:
-            qlineedit.setText(default_value)
-            return False
-        
-        min_val = int(match.group(1))
-        max_val = int(match.group(2)) if match.group(2) else min_val
-        
-        # Corriger si min > max
-        if min_val > max_val:
-            qlineedit.setText(f"{min_val},{min_val}")
-            return False
-        
-        return True
-    
+
     @staticmethod
     def validate_and_correct_qlineedit(qlineedit: QLineEdit, default_value: str = "50,50") -> None:
         """Valide et corrige automatiquement un QLineEdit (version compatible avec la logique spécifiée)"""
@@ -867,179 +678,7 @@ class ValidationUtils:
             callback(qlineedit, valid, range_values)
         
         return valid, range_values
-    
-    @staticmethod
-    def validate_qlineedit_with_callback(
-        qlineedit: QLineEdit,
-        validator_type: str = "numeric_range",
-        default_value: str = "50,50",
-        on_valid: Optional[Callable] = None,
-        on_invalid: Optional[Callable] = None
-    ) -> None:
-        """Valide un QLineEdit avec des callbacks pour les résultats"""
-        def delayed_validation():
-            if validator_type == "numeric_range":
-                # Utilise la méthode de validation compatible
-                ValidationUtils.validate_and_correct_qlineedit(qlineedit, default_value)
-                
-                # Récupère le texte final
-                text = qlineedit.text().strip()
-                valid, range_values = ValidationUtils.validate_numeric_range(text)
-                
-                if valid and on_valid:
-                    on_valid(qlineedit, range_values)
-                elif not valid and on_invalid:
-                    on_invalid(qlineedit, range_values)
-            
-            elif validator_type == "email":
-                is_valid, message = ValidationUtils.validate_qlineedit_text(
-                    qlineedit, "email"
-                )
-                
-                if is_valid:
-                    old_style = qlineedit.styleSheet()
-                    cleaned = ValidationUtils.remove_border_from_style(old_style)
-                    qlineedit.setStyleSheet(cleaned)
-                    qlineedit.setToolTip("")
-                    if on_valid:
-                        on_valid(qlineedit, qlineedit.text())
-                else:
-                    old_style = qlineedit.styleSheet()
-                    new_style = ValidationUtils.inject_border_into_style(old_style)
-                    qlineedit.setStyleSheet(new_style)
-                    qlineedit.setToolTip(message)
-                    if on_invalid:
-                        on_invalid(qlineedit, message)
-        
-        QTimer.singleShot(0, delayed_validation)
-    
-    @staticmethod
-    def validate_checkbox_linked_qlineedit(
-        qlineedit: QLineEdit,
-        checkbox_state: bool,
-        default_text: str = "Google",
-        min_length: int = 4
-    ) -> Tuple[bool, str]:
-        """Valide un QLineEdit lié à une checkbox"""
-        if qlineedit is None:
-            return False, "QLineEdit est None"
-        
-        text = qlineedit.text().strip()
-        
-        # Si la checkbox est cochée, le texte doit être valide
-        if checkbox_state:
-            if not text or len(text) < min_length or text.isdigit():
-                qlineedit.setText(default_text)
-                old_style = qlineedit.styleSheet()
-                new_style = ValidationUtils.inject_border_into_style(
-                    old_style,
-                    "border: 2px solid #d32f2f;"  # Rouge pour erreur
-                )
-                qlineedit.setStyleSheet(new_style)
-                qlineedit.setToolTip(f"Texte invalide. Doit avoir au moins {min_length} caractères non numériques.")
-                return False, "Texte invalide, valeur par défaut appliquée"
-            else:
-                old_style = qlineedit.styleSheet()
-                cleaned = ValidationUtils.remove_border_from_style(old_style)
-                qlineedit.setStyleSheet(cleaned)
-                qlineedit.setToolTip("")
-                return True, "Texte valide"
-        else:
-            # Checkbox non cochée, validation différente
-            is_valid, range_values = ValidationUtils.validate_numeric_range(text)
-            
-            if is_valid:
-                old_style = qlineedit.styleSheet()
-                cleaned = ValidationUtils.remove_border_from_style(old_style)
-                qlineedit.setStyleSheet(cleaned)
-                qlineedit.setToolTip("")
-                return True, "Plage numérique valide"
-            else:
-                # Pour les champs non-checkbox, on accepte aussi du texte
-                if text and len(text) >= min_length and not text.isdigit():
-                    old_style = qlineedit.styleSheet()
-                    cleaned = ValidationUtils.remove_border_from_style(old_style)
-                    qlineedit.setStyleSheet(cleaned)
-                    qlineedit.setToolTip("")
-                    return True, "Texte valide"
-                else:
-                    qlineedit.setText(default_text)
-                    old_style = qlineedit.styleSheet()
-                    new_style = ValidationUtils.inject_border_into_style(
-                        old_style,
-                        "border: 2px solid #d32f2f;"  # Rouge pour erreur
-                    )
-                    qlineedit.setStyleSheet(new_style)
-                    qlineedit.setToolTip(f"Doit être une plage numérique (ex: '1,10') ou du texte ({min_length}+ caractères)")
-                    return False, "Format invalide"
-    
-    @staticmethod
-    def batch_validate_qlineedits(
-        qlineedits: List[QLineEdit],
-        validator_type: str = "numeric_range",
-        default_value: str = "50,50"
-    ) -> Dict[str, Any]:
-        """Valide plusieurs QLineEdit en une seule opération"""
-        results = {
-            "total": len(qlineedits),
-            "valid": 0,
-            "invalid": 0,
-            "details": []
-        }
-        
-        for idx, qlineedit in enumerate(qlineedits):
-            if validator_type == "numeric_range":
-                # Utilise la méthode de validation compatible
-                ValidationUtils.validate_and_correct_qlineedit(qlineedit, default_value)
-                
-                # Récupère le texte final
-                text = qlineedit.text().strip()
-                is_valid, range_values = ValidationUtils.validate_numeric_range(text)
-                
-                result = {
-                    "index": idx,
-                    "valid": is_valid,
-                    "value": text,
-                    "range": range_values if is_valid else None,
-                    "widget_id": qlineedit.objectName() or f"qlineedit_{idx}"
-                }
-            else:
-                is_valid, message = ValidationUtils.validate_qlineedit_text(
-                    qlineedit, validator_type
-                )
-                
-                result = {
-                    "index": idx,
-                    "valid": is_valid,
-                    "value": qlineedit.text(),
-                    "message": message,
-                    "widget_id": qlineedit.objectName() or f"qlineedit_{idx}"
-                }
-            
-            results["details"].append(result)
-            if is_valid:
-                results["valid"] += 1
-            else:
-                results["invalid"] += 1
-        
-        return results
-    
-    @staticmethod
-    def _apply_error_style(qlineedit: QLineEdit, tooltip: str = "") -> None:
-        """Applique un style d'erreur à un QLineEdit (compatible)"""
-        old_style = qlineedit.styleSheet()
-        new_style = ValidationUtils.inject_border_into_style(old_style, "border: 2px solid #d32f2f;")
-        qlineedit.setStyleSheet(new_style)
-        qlineedit.setToolTip(tooltip)
-    
-    @staticmethod
-    def _remove_error_style(qlineedit: QLineEdit) -> None:
-        """Supprime le style d'erreur d'un QLineEdit (compatible)"""
-        old_style = qlineedit.styleSheet()
-        cleaned = ValidationUtils.remove_border_from_style(old_style)
-        qlineedit.setStyleSheet(cleaned)
-        qlineedit.setToolTip("")
-    
+
     # === Méthodes pour la gestion des styles CSS ===
     
     @staticmethod
@@ -1070,30 +709,7 @@ class ValidationUtils:
         return cleaned_style.strip()
     
     # ==================== VALIDATION DE SCÉNARIO ====================
-    
-    @staticmethod
-    def validate_scenario_actions(actions: List[Dict]) -> Tuple[bool, str]:
-        """Valide la liste des actions d'un scénario"""
-        if not actions:
-            return False, "Le scénario ne contient aucune action"
-        
-        required_keys = ["process"]
-        for i, action in enumerate(actions):
-            if not isinstance(action, dict):
-                return False, f"Action {i}: doit être un dictionnaire"
-            
-            if "process" not in action:
-                return False, f"Action {i}: clé 'process' manquante"
-            
-            # Valider les sous-processus pour les boucles
-            if action.get("process") == "loop":
-                if "sub_process" not in action:
-                    return False, f"Action {i}: boucle sans 'sub_process'"
-                
-                if not isinstance(action["sub_process"], list):
-                    return False, f"Action {i}: 'sub_process' doit être une liste"
-        
-        return True, "Scénario valide"
+
     
     @staticmethod
     def validate_browser_selection(browser: str) -> Tuple[bool, str]:
@@ -1103,54 +719,7 @@ class ValidationUtils:
         
         return True, "Navigateur valide"
     
-    @staticmethod
-    def validate_browser_path(browser_name: str) -> Tuple[bool, Optional[str]]:
-        """
-        Valide et trouve le chemin d'exécution d'un navigateur
-        """
-        import shutil
-        
-        browser_executables = {
-            "chrome": "chrome.exe",
-            "firefox": "firefox.exe",
-            "edge": "msedge.exe",
-            "dragon": "dragon.exe",
-            "icedragon": "icedragon.exe",
-            "comodo": "comodo.exe"
-        }
-        
-        if browser_name.lower() not in browser_executables:
-            return False, f"Navigateur non supporté: {browser_name}"
-        
-        exe_name = browser_executables[browser_name.lower()]
-        
-        # Recherche dans les chemins courants
-        path = shutil.which(exe_name)
-        
-        if path:
-            return True, path
-        
-        return False, f"Exécutable {exe_name} non trouvé dans le PATH"
-    
-    @staticmethod
-    def validate_isp_selection(isp: str) -> Tuple[bool, str]:
-        """Valide la sélection du fournisseur de service"""
-        if isp not in ValidationUtils.VALID_ISPS:
-            return False, f"ISP non supporté: {isp}. Options: {', '.join(ValidationUtils.VALID_ISPS)}"
-        
-        return True, "ISP valide"
-    
-    # ==================== VALIDATION D'URL ====================
-    
-    @staticmethod
-    def validate_url_format(url: str) -> bool:
-        """Valide le format d'une URL"""
-        try:
-            result = urlparse(url)
-            return all([result.scheme in ["http", "https"], result.netloc])
-        except Exception:
-            return False
-    
+
     # ==================== FONCTIONS DE GÉNÉRATION ====================
     
     @staticmethod
@@ -1201,13 +770,7 @@ class ValidationUtils:
         return f"{timestamp}.{extension}"
     
     # ==================== UTILITAIRES DE DÉBOGAGE ====================
-    
-    @staticmethod
-    def log_validation_error(context: str, error: Exception) -> None:
-        """Log une erreur de validation"""
-        error_msg = f"[VALIDATION ERROR] {context}: {str(error)}"
-        print(error_msg)
-        traceback.print_exc()
+
     
     @staticmethod
     def create_validation_report(validations: List[Tuple[bool, str]]) -> Dict[str, Any]:
@@ -1229,69 +792,7 @@ class ValidationUtils:
         
         return report
     
-    @staticmethod
-    def create_comprehensive_validation_report(
-        data_list: Optional[List[Dict]] = None,
-        scenario_actions: Optional[List[Dict]] = None,
-        browser: Optional[str] = None,
-        isp: Optional[str] = None,
-        file_paths: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
-        """
-        Crée un rapport de validation complet pour tout le processus.
-        """
-        validations = []
-        
-        # Validation des données d'entrée
-        if data_list:
-            stats = ValidationUtils.get_input_statistics(data_list)
-            validations.append((
-                stats['total_entries'] > 0,
-                f"Données d'entrée: {stats['total_entries']} entrées"
-            ))
-            validations.append((
-                stats['validation_summary']['valid_emails'] > 0,
-                f"Emails valides: {stats['validation_summary']['valid_emails']}"
-            ))
-            validations.append((
-                stats['validation_summary']['valid_proxies'] > 0,
-                f"Proxies valides: {stats['validation_summary']['valid_proxies']}"
-            ))
-        
-        # Validation du scénario
-        if scenario_actions:
-            is_valid, message = ValidationUtils.validate_scenario_actions(scenario_actions)
-            validations.append((is_valid, f"Scénario: {message}"))
-        
-        # Validation du navigateur
-        if browser:
-            is_valid, message = ValidationUtils.validate_browser_selection(browser)
-            validations.append((is_valid, f"Navigateur: {message}"))
-        
-        # Validation de l'ISP
-        if isp:
-            is_valid, message = ValidationUtils.validate_isp_selection(isp)
-            validations.append((is_valid, f"ISP: {message}"))
-        
-        # Validation des chemins de fichiers
-        if file_paths:
-            for path in file_paths:
-                is_valid, message = ValidationUtils.validate_file_path(path)
-                validations.append((is_valid, f"Fichier {os.path.basename(path)}: {message}"))
-        
-        # Créer le rapport
-        report = ValidationUtils.create_validation_report(validations)
-        
-        # Ajouter des statistiques supplémentaires
-        report["summary"] = {
-            "overall_status": "PASS" if all(v[0] for v in validations) else "FAIL",
-            "critical_checks_passed": sum(1 for v in validations if v[0]),
-            "critical_checks_failed": sum(1 for v in validations if not v[0]),
-            "timestamp_human": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        }
-        
-        return report
-    
+
     @staticmethod
     def get_key_from_dict(data_dict: Dict, possible_keys: List[str]) -> str:
         for key in possible_keys:

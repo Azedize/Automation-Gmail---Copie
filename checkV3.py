@@ -87,6 +87,8 @@ class DependencyManager:
         sys.exit(0)
         return True
 
+
+
     @staticmethod
     def install_and_import(package, module_name=None, required_import=None, version=None):
         """Installe et importe un package"""
@@ -133,7 +135,7 @@ class DependencyManager:
 
 
 class UpdateManager:
-    """Gestionnaire des mises à jour"""
+
     
     @staticmethod
     def download_and_extract(new_versions):

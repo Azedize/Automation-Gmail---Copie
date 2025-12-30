@@ -124,16 +124,6 @@ class JsonManager:
     
     @staticmethod
     def _parse_sleep_value(sleep_text: str, default: int = 0) -> int:
-        """
-        Parse une valeur de sleep avec gestion d'erreur
-        
-        Args:
-            sleep_text: Texte à parser
-            default: Valeur par défaut en cas d'erreur
-            
-        Returns:
-            Valeur parsée du sleep
-        """
         try:
             return ValidationUtils.Parse_Random_Range(sleep_text)
         except (ValueError, AttributeError):
