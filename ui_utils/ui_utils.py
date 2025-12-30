@@ -8,6 +8,7 @@ from PyQt6.QtCore import Qt, QTimer, QSize
 from PyQt6 import QtWidgets, QtGui, QtCore
 import PyQt6
 from collections import defaultdict
+from functools import partial
 
 import sys
 
@@ -21,6 +22,95 @@ try:
     from utils.validation_utils import ValidationUtils
 except ImportError as e:
     raise ImportError(f"❌ Erreur d'importation: {e}")
+
+
+
+
+
+
+
+
+# QTabBar personnalisé pour un affichage vertical avec des styles adaptés.
+# Affiche les onglets avec icônes, couleurs personnalisées et texte formaté.
+class VerticalTabBar(QtWidgets.QTabBar):
+
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setShape(QtWidgets.QTabBar.Shape.RoundedWest)
+
+        self.tab_margin = 0
+        self.left_margin = 0
+        self.right_margin = 0
+
+
+    def tabSizeHint(self, index):
+        size_hint = super().tabSizeHint(index)
+        size_hint.transpose()
+        size_hint.setWidth(180)
+        size_hint.setHeight(60)
+        return size_hint
+
+
+    def tabRect(self, index):
+        rect = super().tabRect(index)
+        rect.adjust(self.left_margin, self.tab_margin, -self.right_margin, -self.tab_margin)
+        return rect
+
+
+    def paintEvent(self, event):
+        painter = QtGui.QPainter(self)
+        painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
+
+        for i in range(self.count()):
+            rect = self.tabRect(i)
+            text = self.tabText(i)
+            icon = self.tabIcon(i)
+
+            painter.save()
+            if self.currentIndex() == i:
+                painter.setBrush(QtGui.QBrush(QtGui.QColor("#669bbc")))
+            else:
+                painter.setBrush(QtGui.QBrush(QtGui.QColor("#F5F5F5")))
+            painter.setPen(QtCore.Qt.PenStyle.NoPen)
+            painter.drawRect(rect)  
+            border_pen = QtGui.QPen(QtGui.QColor("#669bbc"))
+            border_pen.setWidth(1)
+            painter.setPen(border_pen)
+            painter.drawLine(rect.bottomLeft(), rect.bottomRight())
+            painter.drawLine(rect.topRight(), rect.bottomRight())
+            painter.restore()
+            painter.save()
+
+            if not icon.isNull():
+                pixmap = icon.pixmap(24, 24)
+                icon_pos = QtCore.QPoint(rect.left() + 8, rect.top() + 15)
+                painter.drawPixmap(icon_pos, pixmap)
+
+            painter.setPen(QtGui.QPen(QtGui.QColor("#333")))
+            font = painter.font()
+            font.setPointSize(10)
+            font.setFamily("Times New Roman")
+            painter.setFont(font)
+
+            text_rect = QtCore.QRect(
+                rect.left() + 44,
+                rect.top(),
+                rect.width() - 45,
+                rect.height() - 8
+            )
+            painter.drawText(text_rect, QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignLeft, text)
+            painter.restore()
+
+
+
+
+class VerticalTabWidget(QtWidgets.QTabWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setTabBar(VerticalTabBar())
+        self.setTabPosition(QtWidgets.QTabWidget.TabPosition.West)
+
 
 
 class CustomTextDialog(QDialog):
@@ -410,39 +500,6 @@ class UIManager:
 
 
 
-    @staticmethod
-    def Set_Icon_For_Existing_Buttons(result_tab_widget):
-        if not result_tab_widget:
-            print("[DEBUG] ❌ tabWidgetResult introuvable. Vérifiez le nom.")
-            return
-
-        print("[DEBUG] ✅ tabWidgetResult trouvé.")
-
-        for i in range(result_tab_widget.count()):
-            tab_widget = result_tab_widget.widget(i)
-            buttons = tab_widget.findChildren(QPushButton)
-
-            for button in buttons:
-                object_name = button.objectName()
-
-                if object_name.startswith("copy"):
-                    icon_path = os.path.join(Settings.ICONS_DIR, "copy.png")
-                    button.setIcon(QIcon(icon_path))
-                    button.setIconSize(QtCore.QSize(20, 20))
-                    # print(f"[DEBUG] 🎯 Icône ajoutée au bouton '{object_name}' dans l'onglet {i}")
-
-                    # ✅ ربط الزر بدالة النسخ (مرة واحدة)
-                    try:
-                        button.clicked.disconnect()
-                    except Exception:
-                        pass  # لم يكن هناك ربط سابق
-
-                    button.clicked.connect(lambda _, idx=i: self.Copy_Result_From_Tab(idx))
-                else:
-                    print(f"[DEBUG] ⏭️ Bouton ignoré: '{object_name}'")
-
-
-
 
     @staticmethod
     def Copy_Result_From_Tab( tab_index , result_tab_widget):
@@ -483,6 +540,11 @@ class UIManager:
 
         #Ajoute une nouvelle ligne de log dans la zone de log (interface utilisateur).
     #Chaque log est stylisé pour rester lisible avec fond transparent.
+    
+    
+    
+    
+    
     @staticmethod
     def Update_Logs_Display( log_entry ,log_layout):
         log_label = QLabel(log_entry)
@@ -1123,4 +1185,619 @@ class UIManager:
                     reset_options_layout.removeWidget(widget)
 
 
+    @staticmethod
+    def read_file_content(file_path):
+        if not ValidationUtils.path_exists(file_path):
+            return None
+
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = f.read().strip()
+            if not content:
+                return None
+            return content
+        except Exception:
+            return None
+
+
+
+
+
+
+    @staticmethod
+    def _find_widget(window, name, widget_type=None):
+        """Find child widget with optional type"""
+        return window.findChild(widget_type, name) if widget_type else window.findChild(QWidget, name)
+
+
+    @staticmethod
+    def _setup_containers(window):
+        """Setup container widgets and layouts"""
+        # Reset options container
+        window.reset_options_container = UIManager._find_widget(window, "resetOptionsContainer")
+        if window.reset_options_container:
+            window.reset_options_layout = QVBoxLayout(window.reset_options_container)
+            window.reset_options_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         
+        # Scenario container
+        window.scenario_container = UIManager._find_widget(window, "scenarioContainer")
+        if window.scenario_container:
+            window.scenario_layout = QVBoxLayout(window.scenario_container)
+            window.scenario_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+
+
+    @staticmethod
+    def _setup_template_widgets(window):
+        templates = {
+            'template_button': 'TemepleteButton',
+            'Temeplete_Button_2': 'TemepleteButton_2',
+            'template_Frame1': 'Template1',
+            'template_Frame2': 'Template2',
+            'template_Frame3': 'Template3',
+            'template_Frame4': 'Template4',
+            'template_Frame5': 'Template5'
+        }
+
+        for attr_name, widget_name in templates.items():
+            widget = UIManager._find_widget(window, widget_name)
+            setattr(window, attr_name, widget)
+            if widget:
+                widget.hide()
+
+
+
+
+    @staticmethod
+    def _setup_icon_button(window, button_name, icon_file, callback, icon_size=None, button_size=None):
+        """Helper to setup icon button with consistent styling"""
+        button = UIManager._find_widget(window, button_name, QPushButton)
+        if not button:
+            return None
+
+        icon_path = os.path.join(Settings.ICONS_DIR, icon_file).replace("\\", "/")
+        if ValidationUtils.path_exists(icon_path):
+            icon = QIcon(icon_path)
+            if icon_size:
+                button.setIconSize(QSize(*icon_size))
+            button.setIcon(icon)
+
+        button.clicked.connect(callback)
+
+        if button_size:
+            button.setFixedSize(*button_size)
+
+        if button_name in ("ClearButton", "copyButton"):
+            button.setText("")
+            button.setStyleSheet("""
+                QPushButton {
+                    border: none;
+                    background-color: transparent;
+                    padding: 0px;
+                    margin: 0px;
+                }
+                QPushButton::icon {
+                    alignment: center;
+                }
+            """)
+
+        return button
+
+
+    @staticmethod
+    def _setup_button(window, widget_name, callback):
+        """Setup simple button with connection"""
+        button = UIManager._find_widget(window, widget_name, QPushButton)
+        if button and callback:
+            button.clicked.connect(callback)
+        return button
+
+    
+    
+    
+    
+    @staticmethod
+    def Copy_Logs_To_Clipboard(window):
+        log_box = window.findChild(QGroupBox, "log")
+        if not log_box:
+            return
+        labels = log_box.findChildren(QLabel)
+        if not labels:
+            return
+        log_lines = [label.text() for label in labels]
+        text_to_copy = "\n".join(log_lines)
+        QApplication.clipboard().setText(text_to_copy)
+
+
+
+    
+    
+    
+    @staticmethod
+    def _setup_browser_combobox(window):
+        """Setup browser selection combobox"""
+        window.browser = UIManager._find_widget(window, "browsers", QComboBox)
+        if window.browser is None:
+            return
+
+        # Appliquer le style commun
+        UIManager._apply_combobox_style(window, window.browser)
+
+        # Nettoyer pour éviter les doublons
+        window.browser.clear()
+
+        # Définition centralisée des navigateurs
+        browsers = [
+            ("Chrome", "chrome.png"),
+            ("Firefox", "firefox.png"),
+            ("Edge", "edge.png"),
+            ("Comodo", "comodo.png"),
+        ]
+
+        for name, icon_file in browsers:
+            icon_path = os.path.join(Settings.ICONS_DIR, icon_file)
+            if ValidationUtils.path_exists(icon_path):
+                window.browser.addItem(QIcon(icon_path), name)
+            else:
+                window.browser.addItem(name)
+
+
+    
+    
+    
+    
+    
+    @staticmethod
+    def _apply_combobox_style(window, combobox):
+        """Apply custom arrow style to combobox"""
+        if not ValidationUtils.path_exists(Settings.ARROW_DOWN_PATH):
+            return
+
+        style = f'''
+            QComboBox::down-arrow {{
+                image: url("{Settings.ARROW_DOWN_PATH}");
+                width: 16px;
+                height: 16px;
+            }}
+        '''
+        old_style = combobox.styleSheet()
+        combobox.setStyleSheet(old_style + style)
+
+
+
+
+
+
+    @staticmethod
+    def _setup_isp_combobox(window):
+        """Setup ISP selection combobox"""
+        window.Isp = UIManager._find_widget(window, "Isps", QComboBox)
+        if window.Isp is None:
+            print("🔧 [DEBUG] Combobox des ISPs introuvable")
+            return
+        
+        print("🔧 [DEBUG] Configuration du combobox des ISPs")
+        
+        # Appliquer le style
+        UIManager._apply_combobox_style(window, window.Isp)
+        
+        # Nettoyer pour éviter les doublons
+        window.Isp.clear()
+        
+        # Ajouter les ISP disponibles
+        for name, icon_file in Settings.SERVICES.items():
+            icon_path = os.path.join(Settings.ICONS_DIR, icon_file)
+            if ValidationUtils.path_exists(icon_path):
+                window.Isp.addItem(QIcon(icon_path), name)
+            else:
+                window.Isp.addItem(name)
+        
+        # Définir l'ISP par défaut à partir du fichier
+        UIManager._set_default_isp(window)
+
+
+    
+    
+    
+    
+    
+    @staticmethod
+    def _set_default_isp(window):
+        """Set the default ISP based on the content of FILE_ISP"""
+        if not ValidationUtils.path_exists(Settings.FILE_ISP):
+            return
+        
+        with open(Settings.FILE_ISP, 'r', encoding='utf-8') as f:
+            line = f.readline().strip().lower()
+        
+        isp_mapping = {
+            'gmail': 'Gmail',
+            'hotmail': 'Hotmail',
+            'yahoo': 'Yahoo'
+        }
+        
+        # التأكد أن combobox موجود
+        if not hasattr(window, "Isp") or window.Isp is None:
+            return
+        
+        for key, value in isp_mapping.items():
+            if key in line:
+                index = window.Isp.findText(value)
+                if index >= 0:
+                    window.Isp.setCurrentIndex(index)
+                break
+
+
+    
+    
+    
+    
+    @staticmethod
+    def _setup_scenario_combobox(window):
+        """Setup scenario selection combobox"""
+        window.saveSanario = UIManager._find_widget(window , "saveSanario", QComboBox)
+        if  window.saveSanario is  None:
+            print("🔧 [DEBUG] Le save scenario not found")
+            return
+        print("🔧 [DEBUG] Le save scenario  found ")
+        
+        UIManager._apply_combobox_style(window ,window.saveSanario)
+        window.saveSanario.currentTextChanged.connect(window.Scenario_Changed)
+
+    
+
+    
+    
+    @staticmethod
+    def _setup_logout_button(window, callback):
+        """
+        Setup the logout button with an icon and a custom callback.
+        
+        :param window: Parent window
+        :param callback: Function to be called on button click
+        :return: QPushButton or None
+        """
+        button = UIManager._find_widget(window, "LogOut", QPushButton)
+        if not button:
+            print("⚠️ [DEBUG] Logout button not found")
+            return None
+        
+        button.setLayoutDirection(Qt.LayoutDirection.RightToLeft)
+        
+        if callback:
+            button.clicked.connect(callback)
+            print(f"✅ [DEBUG] Logout button connected to {callback}")
+        
+        icon_path = os.path.join(Settings.ICONS_DIR, "LogOut4.png")
+        if ValidationUtils.path_exists(icon_path):
+            button.setIcon(QIcon(icon_path))
+            button.setIconSize(QSize(18, 18))
+            print(f"✅ [DEBUG] Icon applied to Logout button: {icon_path}")
+        
+        return button
+
+
+    
+    
+    
+    
+    
+    @staticmethod
+    def _setup_result_tab_widget(window):
+        """Setup result tab widget with vertical tabs"""
+        window.tabWidgetResult = UIManager._find_widget(window, "tabWidgetResult", QTabWidget)
+        if window.tabWidgetResult is None:
+            return
+
+        window.tabWidgetResult.tabBar().setCursor(Qt.CursorShape.PointingHandCursor)
+
+        # Set tab icons
+        UIManager._set_tab_icons(window, window.tabWidgetResult)
+
+        # Convert to vertical tab widget
+        UIManager._convert_to_vertical_tabs(window)
+        
+        # Set icons for existing buttons in tabs
+        UIManager.Set_Icon_For_Existing_Buttons(window)
+
+
+    
+    
+    
+    
+    @staticmethod
+    def Set_Icon_For_Existing_Buttons(window):
+        """Set copy icons for all copy buttons in result tabs"""
+        if not hasattr(window, "tabWidgetResult") or window.tabWidgetResult is None:
+            return
+
+        tab_count = window.tabWidgetResult.count()
+
+        for i in range(tab_count):
+            tab_widget = window.tabWidgetResult.widget(i)
+            if tab_widget is None:
+                continue
+
+            buttons = tab_widget.findChildren(QPushButton)
+            for button in buttons:
+                if button.objectName().startswith("copy"):
+                    icon_path = os.path.join(Settings.ICONS_DIR, "copy.png")
+                    if os.path.exists(icon_path):
+                        button.setIcon(QIcon(icon_path))
+                        button.setIconSize(QSize(20, 20))
+                        try:
+                            button.clicked.disconnect()
+                        except Exception:
+                            pass
+                        button.clicked.connect(partial(UIManager.Copy_Result_From_Tab, i))
+
+
+    
+    
+    
+    
+    @staticmethod
+    def _set_tab_icons(window, tab_widget):
+        """Set icons for tabs based on tab text"""
+        if not ValidationUtils.path_exists(Settings.ICONS_DIR):
+            return
+
+        icon_size = (40, 40)
+        tab_count = tab_widget.count()
+
+        for i in range(tab_count):
+            tab_text = tab_widget.tabText(i)
+            icon_name = tab_text.lower().replace(" ", "_") + ".png"
+            icon_path = os.path.join(Settings.ICONS_DIR, icon_name)
+
+            if ValidationUtils.path_exists(icon_path):
+                icon = QIcon(icon_path)
+                icon_pixmap = icon.pixmap(icon_size[0], icon_size[1])
+                tab_widget.setTabIcon(i, QIcon(icon_pixmap))
+
+
+    
+    
+    
+    
+    @staticmethod
+    def _convert_to_vertical_tabs(window):
+        """Convert tabWidgetResult to VerticalTabWidget"""
+        if not hasattr(window, "tabWidgetResult") or window.tabWidgetResult is None:
+            return
+
+        vertical_tab_widget = VerticalTabWidget()
+        parent_widget = window.tabWidgetResult.parentWidget()
+        geometry = window.tabWidgetResult.geometry()
+
+        while window.tabWidgetResult.count() > 0:
+            widget = window.tabWidgetResult.widget(0)
+            text = window.tabWidgetResult.tabText(0)
+            icon = window.tabWidgetResult.tabIcon(0)
+
+            vertical_tab_widget.addTab(widget, icon, text)
+            vertical_tab_widget.widget(vertical_tab_widget.count() - 1).setStyleSheet(widget.styleSheet())
+            vertical_tab_widget.widget(vertical_tab_widget.count() - 1).setObjectName(widget.objectName())
+
+        window.tabWidgetResult.setParent(None)
+        vertical_tab_widget.setParent(parent_widget)
+        vertical_tab_widget.setObjectName("tabWidgetResult")
+        vertical_tab_widget.setGeometry(geometry)
+        vertical_tab_widget.show()
+
+        window.tabWidgetResult = vertical_tab_widget
+
+    
+
+
+
+    @staticmethod
+    def _setup_interface_tab_widget(window):
+        """Setup main interface tab widget"""
+        window.INTERFACE = UIManager._find_widget(window, "interface_2", QTabWidget)
+        if window.INTERFACE is None:
+            return
+
+        # Changer le curseur du TabBar
+        try:
+            window.INTERFACE.tabBar().setCursor(Qt.CursorShape.PointingHandCursor)
+        except Exception:
+            pass
+
+        # Chercher le tab commençant par "Result" et ajouter un frame
+        for i in range(window.INTERFACE.count()):
+            tab_text = window.INTERFACE.tabText(i)
+            if tab_text.startswith("Result"):
+                tab_widget = window.INTERFACE.widget(i)
+                if tab_widget is None:
+                    continue
+
+                frame = QFrame(tab_widget)
+                frame.setStyleSheet("""
+                    background-color: #F5F5F5;
+                    border-right: 1px solid #669bbc;
+                """)
+                frame.setGeometry(0, 660, 179, 300)
+                frame.show()
+                break
+        
+    
+    
+    
+    
+    @staticmethod
+    def _setup_miscellaneous(window):
+        """Setup miscellaneous UI elements"""
+
+        # Search line edit
+        window.lineEdit_search = UIManager._find_widget(window, "lineEdit_search", QLineEdit)
+        if window.lineEdit_search:
+            window.lineEdit_search.hide()
+
+        # TextEdit placeholders
+        window.textEdit_3 = UIManager._find_widget(window, "textEdit_3", QTextEdit)
+        if window.textEdit_3:
+            window.textEdit_3.setPlaceholderText(
+                "Please enter the data in the following format : \n"
+                "Email* ; passwordEmail* ; ipAddress* ; port* ; login ; password ; recovery_email , new_recovery_email"
+            )
+
+        window.textEdit_4 = UIManager._find_widget(window, "textEdit_4", QTextEdit)
+        if window.textEdit_4:
+            window.textEdit_4.setPlaceholderText(
+                "Specify the maximum number of operations to process"
+            )
+
+        # Stretch table columns
+        tables = window.findChildren(QTableWidget)
+        for table in tables:
+            for col in range(table.columnCount()):
+                table.horizontalHeader().setSectionResizeMode(
+                    col, QHeaderView.ResizeMode.Stretch
+                )
+
+        try:
+            UIManager._style_spin_boxes(window)
+        except Exception:
+            pass
+
+        # Initialize result tab widget reference
+        window.result_tab_widget = UIManager._find_widget(window, "tabWidgetResult", QTabWidget)
+
+
+    
+    
+    
+    @staticmethod  
+    def _style_spin_boxes(window):
+        if not (Settings.DOWN_EXISTS and Settings.UP_EXISTS):
+            return
+        for spin_box in window.findChildren(QSpinBox):
+            old_style = spin_box.styleSheet()
+            spin_box.setStyleSheet(old_style + f"""
+                QSpinBox::down-button {{
+                    image: url("{Settings.ARROW_DOWN_PATH}");
+                    width: 13px;
+                    height: 13px;
+                    border-top-left-radius: 5px;
+                    border-bottom-left-radius: 5px;
+                }}
+                QSpinBox::up-button {{
+                    image: url("{Settings.ARROW_UP_PATH}");
+                    width: 13px;
+                    height: 13px;
+                    border-top-left-radius: 5px;
+                    border-bottom-left-radius: 5px;
+                }}
+            """)
+        
+    
+    
+    
+    
+    @staticmethod
+    def Update_Scenario(window, template_name, state):
+        template_frame = None
+
+        if template_name == "Template1":
+            template_frame = window.template_Frame1
+        elif template_name == "Template2":
+            template_frame = window.template_Frame2
+        elif template_name == "Template3":
+            template_frame = window.template_Frame3
+        elif template_name == "Template4":
+            template_frame = window.template_Frame4
+        elif template_name == "Template5":
+            template_frame = window.template_Frame5
+        else:
+            return
+
+        if template_frame:
+            new_template = QFrame()
+            new_template.setStyleSheet(template_frame.styleSheet())
+            new_template.setMaximumHeight(51)
+            new_template.setMinimumHeight(51)
+            new_template.setMaximumWidth(780)  
+
+            lineedits = []
+            checkboxes = []
+            first_label_updated = False
+
+            for child in template_frame.children():
+                if isinstance(child, QLabel):
+                    new_label = QLabel(new_template)
+                    if not first_label_updated:
+                        new_label.setText(state.get("label", ""))
+                        first_label_updated = True
+                    else:
+                        new_label.setText(child.text())
+                    new_label.setStyleSheet(child.styleSheet())
+                    new_label.setGeometry(child.geometry())
+                elif isinstance(child, QPushButton):
+                    new_button = QPushButton(child.text(), new_template)
+                    new_button.setStyleSheet(child.styleSheet())
+                    new_button.setGeometry(child.geometry())
+                    new_button.clicked.connect(child.clicked)
+                elif isinstance(child, QSpinBox):
+                    new_spinbox = QSpinBox(new_template)
+                    new_spinbox.setValue(child.value())
+                    new_spinbox.setGeometry(child.geometry())
+                    new_spinbox.setStyleSheet(child.styleSheet())
+                elif isinstance(child, QLineEdit):
+                    new_lineedit = QLineEdit(new_template)
+                    new_lineedit.setText(child.text())
+                    new_lineedit.setGeometry(child.geometry())
+                    new_lineedit.setStyleSheet(child.styleSheet())
+                    lineedits.append(new_lineedit)
+                elif isinstance(child, QTextEdit):
+                    new_textedit = QTextEdit(new_template)
+                    new_textedit.setPlainText(child.toPlainText())
+                    new_textedit.setGeometry(child.geometry())
+                    new_textedit.setStyleSheet(child.styleSheet())
+                    lineedits.append(new_textedit)
+                elif isinstance(child, QCheckBox):
+                    new_checkbox = QCheckBox(child.text(), new_template)
+                    new_checkbox.setChecked(child.isChecked())
+                    new_checkbox.setGeometry(child.geometry())
+                    new_checkbox.setStyleSheet(child.styleSheet())
+                    checkboxes.append(new_checkbox)
+                elif isinstance(child, QComboBox):
+                    new_combobox = QComboBox(new_template)
+                    new_combobox.setCurrentIndex(child.currentIndex())
+                    new_combobox.addItems([child.itemText(i) for i in range(child.count())])
+                    new_combobox.setGeometry(child.geometry())
+                    new_combobox.setStyleSheet(child.styleSheet())
+
+            for checkbox in checkboxes:
+                if lineedits:
+                    linked_lineedit = lineedits[-1]
+                    linked_lineedit.hide()
+                    checkbox.stateChanged.connect(
+                        lambda state, lineedit=linked_lineedit: UIManager.Handle_Checkbox_State(state, lineedit)
+                    )
+            new_template.setProperty("full_state", state)
+            window.scenario_layout.addWidget(new_template)
+
+    
+    
+    
+    @staticmethod
+    def Handle_Checkbox_State( state, lineedit):
+        if lineedit:  
+            if state == 2: 
+                lineedit.show()
+            else:  
+                lineedit.hide()
+
+
+    
+    
+    
+    
+    @staticmethod
+    def Display_State_Stack_As_Table(window):
+        if not window.STATE_STACK:
+            return
+
+
+    

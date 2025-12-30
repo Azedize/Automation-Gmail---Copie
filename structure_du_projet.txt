@@ -1,138 +1,178 @@
 Structure du dossier pour le volume Nouveau nom
 Le numéro de série du volume est E00D-9337
 D:.
-¦   .env
-¦   checkV3.py
-¦   config.py
-¦   packages.txt
-¦   structure_du_projet.txt
-¦   __init__.py
-¦   
+|   .env
+|   checkV3.py
+|   config.py
+|   packages.txt
+|   structure_du_projet.txt
+|   __init__.py
+|   
 +---api
-¦       base_client.py
-¦       __init__.py
-¦       
+|   |   base_client.py
+|   |   __init__.py
+|   |   
+|   \---__pycache__
+|           base_client.cpython-38.pyc
+|           __init__.cpython-38.pyc
+|           
 +---config
-¦       action.json
-¦       Isp.txt
-¦       settings.py
-¦       __init__.py
-¦       
+|   |   action.json
+|   |   Isp.txt
+|   |   settings.py
+|   |   __init__.py
+|   |   
+|   \---__pycache__
+|           settings.cpython-38.pyc
+|           __init__.cpython-38.pyc
+|           
 +---core
-¦       encryption.py
-¦       session_manager.py
-¦       __init__.py
-¦       
+|   |   encryption.py
+|   |   session_manager.py
+|   |   __init__.py
+|   |   
+|   \---__pycache__
+|           encryption.cpython-38.pyc
+|           session_manager.cpython-38.pyc
+|           __init__.cpython-38.pyc
+|           
++---logs
 +---models
-¦       browser_manager.py
-¦       email.py
-¦       extension_manager.py
-¦       __init__.py
-¦       
+|   |   browser_manager.py
+|   |   email.py
+|   |   extension_manager.py
+|   |   __init__.py
+|   |   
+|   \---__pycache__
+|           browser_manager.cpython-38.pyc
+|           email.cpython-38.pyc
+|           extension_manager.cpython-38.pyc
+|           __init__.cpython-38.pyc
+|           
 +---resources
-¦   +---icons
-¦   ¦       account_closed.png
-¦   ¦       Activite_suspecte.png
-¦   ¦       all.png
-¦   ¦       arrow_Down.png
-¦   ¦       arrow_Down_w.png
-¦   ¦       arrow_up.png
-¦   ¦       arrow_up_w.png
-¦   ¦       bad_proxy.png
-¦   ¦       baghround.jpg
-¦   ¦       Captcha_Validation.png
-¦   ¦       chrome.png
-¦   ¦       clear.png
-¦   ¦       comodo.png
-¦   ¦       completed.png
-¦   ¦       copy.png
-¦   ¦       copyLog.png
-¦   ¦       edge.png
-¦   ¦       firefox.png
-¦   ¦       Gmail.png
-¦   ¦       Hotmail.png
-¦   ¦       icedragon.png
-¦   ¦       icon.png
-¦   ¦       icon22.png
-¦   ¦       icons8-sauvegarder-50.png
-¦   ¦       logo.jpg
-¦   ¦       logo3.jpg
-¦   ¦       LogOut4.png
-¦   ¦       next.png
-¦   ¦       Others.png
-¦   ¦       Password_Changed.png
-¦   ¦       Recovery_Changed.png
-¦   ¦       recovry_changed.png
-¦   ¦       Restore_Account.png
-¦   ¦       resultat.png
-¦   ¦       sauvegarder.png
-¦   ¦       save.png
-¦   ¦       start.png
-¦   ¦       stop.png
-¦   ¦       Suspicious_Activity.png
-¦   ¦       tritement.png
-¦   ¦       user.png
-¦   ¦       validation_capcha.png
-¦   ¦       Validation_Code.png
-¦   ¦       Yahoo.png
-¦   ¦       
-¦   +---ui
-¦           Auth.ui
-¦           interface.ui
-¦           
+|   +---icons
+|   |       account_closed.png
+|   |       Activite_suspecte.png
+|   |       all.png
+|   |       arrow_Down.png
+|   |       arrow_Down_w.png
+|   |       arrow_up.png
+|   |       arrow_up_w.png
+|   |       bad_proxy.png
+|   |       baghround.jpg
+|   |       Captcha_Validation.png
+|   |       chrome.png
+|   |       clear.png
+|   |       comodo.png
+|   |       completed.png
+|   |       copy.png
+|   |       copyLog.png
+|   |       edge.png
+|   |       firefox.png
+|   |       Gmail.png
+|   |       Hotmail.png
+|   |       icedragon.png
+|   |       icon.png
+|   |       icon22.png
+|   |       icons8-sauvegarder-50.png
+|   |       logo.jpg
+|   |       logo3.jpg
+|   |       LogOut4.png
+|   |       next.png
+|   |       Others.png
+|   |       Password_Changed.png
+|   |       Recovery_Changed.png
+|   |       recovry_changed.png
+|   |       Restore_Account.png
+|   |       resultat.png
+|   |       sauvegarder.png
+|   |       save.png
+|   |       start.png
+|   |       stop.png
+|   |       Suspicious_Activity.png
+|   |       tritement.png
+|   |       user.png
+|   |       validation_capcha.png
+|   |       Validation_Code.png
+|   |       Yahoo.png
+|   |       
+|   \---ui
+|           Auth.ui
+|           interface.ui
+|           
 +---services
-¦       email_service.py
-¦       
+|   |   email_service.py
+|   |   json_manager.py
+|   |   __init__.py
+|   |   
+|   \---__pycache__
+|           json_manager.cpython-38.pyc
+|           __init__.cpython-38.pyc
+|           
 +---src
-¦       AppV2.py
-¦       
+|       AppV2.py
+|       
 +---tools
-¦   +---extensions
-¦   ¦   ¦   data.txt
-¦   ¦   ¦   version.txt
-¦   ¦   ¦   
-¦   ¦   +---ExtensionTemplateChrome
-¦   ¦   ¦       traitement.json
-¦   ¦   ¦       
-¦   ¦   +---ExtensionTemplateFirefox
-¦   ¦   ¦   ¦   actions.js
-¦   ¦   ¦   ¦   background.js
-¦   ¦   ¦   ¦   data.txt
-¦   ¦   ¦   ¦   gmail_process.js
-¦   ¦   ¦   ¦   manifest.json
-¦   ¦   ¦   ¦   reply_message.txt
-¦   ¦   ¦   ¦   traitement.json
-¦   ¦   ¦   ¦   version.txt
-¦   ¦   ¦   ¦   
-¦   ¦   ¦   +---icons
-¦   ¦   ¦           icon1.png
-¦   ¦   ¦           icon2.png
-¦   ¦   ¦           icon3.png
-¦   ¦   ¦           icon4.png
-¦   ¦   ¦           
-¦   ¦   +---Extention_Family_Chrome
-¦   ¦       ¦   actions.js
-¦   ¦       ¦   background.js
-¦   ¦       ¦   data.txt
-¦   ¦       ¦   gmail_process.js
-¦   ¦       ¦   manifest.json
-¦   ¦       ¦   reply_message.txt
-¦   ¦       ¦   ReportingActions.js
-¦   ¦       ¦   traitement.json
-¦   ¦       ¦   version.txt
-¦   ¦       ¦   
-¦   ¦       +---icons
-¦   ¦               icon1.png
-¦   ¦               icon2.png
-¦   ¦               icon3.png
-¦   ¦               icon4.png
-¦   ¦               
-¦   +---logs
-¦   +---profiles
-¦       +---chrome
-¦       +---firefox
-+---utils
-        logger.py
-        validation_utils.py
-        __init__.py
-        
+|   +---extensions
+|   |   |   data.txt
+|   |   |   version.txt
+|   |   |   
+|   |   +---ExtensionTemplateChrome
+|   |   |       traitement.json
+|   |   |       
+|   |   +---ExtensionTemplateFirefox
+|   |   |   |   actions.js
+|   |   |   |   background.js
+|   |   |   |   data.txt
+|   |   |   |   gmail_process.js
+|   |   |   |   manifest.json
+|   |   |   |   reply_message.txt
+|   |   |   |   traitement.json
+|   |   |   |   version.txt
+|   |   |   |   
+|   |   |   \---icons
+|   |   |           icon1.png
+|   |   |           icon2.png
+|   |   |           icon3.png
+|   |   |           icon4.png
+|   |   |           
+|   |   \---Extention_Family_Chrome
+|   |       |   actions.js
+|   |       |   background.js
+|   |       |   data.txt
+|   |       |   gmail_process.js
+|   |       |   manifest.json
+|   |       |   reply_message.txt
+|   |       |   ReportingActions.js
+|   |       |   traitement.json
+|   |       |   version.txt
+|   |       |   
+|   |       \---icons
+|   |               icon1.png
+|   |               icon2.png
+|   |               icon3.png
+|   |               icon4.png
+|   |               
+|   +---logs
+|   |   +---2025-12-22_15-21-52
+|   |   \---2025-12-22_15-26-05
+|   \---profiles
+|       +---chrome
+|       \---firefox
++---ui_utils
+|   |   ui_utils.py
+|   |   __init__.py
+|   |   
+|   \---__pycache__
+|           ui_utils.cpython-38.pyc
+|           __init__.cpython-38.pyc
+|           
+\---utils
+    |   logger.py
+    |   validation_utils.py
+    |   __init__.py
+    |   
+    \---__pycache__
+            validation_utils.cpython-38.pyc
+            __init__.cpython-38.pyc
+            

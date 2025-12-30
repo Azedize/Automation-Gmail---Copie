@@ -166,10 +166,12 @@ class ValidationUtils:
         return True, data_list, f"Format valide - {len(data_list)} entrées traitées"
     
     @staticmethod
-    def process_user_input(input_data: str, entered_number_text: str) -> Dict[str, Any]:
+    def process_user_input(input_data: str, entered_number_text: str) -> dict:
         """
         Traite et valide les données d'entrée utilisateur complètes
         """
+        print("🔵 [START] process_user_input")
+
         result = {
             "success": False,
             "data_list": None,
@@ -178,73 +180,118 @@ class ValidationUtils:
             "error_message": "",
             "error_type": "critical"
         }
-        
+
+        # --------------------
         # Validation de base
+        # --------------------
         if not input_data or not input_data.strip():
             result.update({
                 "error_title": "Error - Missing Data",
-                "error_message": "Please enter the required information before proceeding.",
-                "error_type": "critical"
+                "error_message": "Please enter the required information before proceeding."
             })
             return result
-        
+
         if not entered_number_text or not entered_number_text.strip():
             result.update({
                 "error_title": "Error - Missing Number",
-                "error_message": "Please enter the number of operations to process.",
-                "error_type": "critical"
+                "error_message": "Please enter the number of operations to process."
             })
             return result
-        
-        # Validation du nombre
+
         if not entered_number_text.isdigit():
             result.update({
                 "error_title": "Error - Invalid Input",
-                "error_message": "Please enter a valid numerical value in the number field.",
-                "error_type": "critical"
+                "error_message": "Please enter a valid numerical value in the number field."
             })
             return result
-        
+
         entered_number = int(entered_number_text)
-        
+
         try:
-            # Séparez les lignes
+            # --------------------
+            # Parsing des lignes
+            # --------------------
             lines = [line.strip() for line in input_data.split("\n") if line.strip()]
-            
-            # Validation du format des données
-            is_valid, data_list, error_msg = ValidationUtils.validate_user_input_format(lines)
-            
-            if not is_valid:
+
+            if len(lines) < 2:
                 result.update({
                     "error_title": "Error - Invalid Format",
-                    "error_message": error_msg,
-                    "error_type": "critical"
+                    "error_message": "Header detected but no data rows found."
                 })
                 return result
-            
+
+            header = [k.strip() for k in lines[0].split(";")]
+            data_lines = lines[1:]
+
+            # --------------------
+            # Définition des patterns (comme la fonction originale)
+            # --------------------
+            mandatory_patterns = [
+                ["email", "passwordEmail", "ipAddress", "port"],
+                ["Email", "password_email", "ip_address", "port"]
+            ]
+
+            optional_patterns = [
+                ["login", "password", "recoveryEmail", "newrecoveryEmail"],
+                ["login", "password", "recovery_email", "New_recovery_email"]
+            ]
+
+            all_valid_keys = set()
+            for pat in mandatory_patterns + optional_patterns:
+                all_valid_keys.update(pat)
+
+            # --------------------
+            # Vérification des clés
+            # --------------------
+            if not any(set(pat).issubset(header) for pat in mandatory_patterns):
+                result.update({
+                    "error_title": "Error - Required Keys Missing",
+                    "error_message": (
+                        "Please include required keys using one of the supported formats."
+                    )
+                })
+                return result
+
+            invalid_keys = [k for k in header if k not in all_valid_keys]
+            if invalid_keys:
+                result.update({
+                    "error_title": "Error - Invalid Keys",
+                    "error_message": f"Invalid keys detected: {', '.join(invalid_keys)}"
+                })
+                return result
+
+            # --------------------
+            # Conversion en data_list
+            # --------------------
+            data_list = []
+
+            for index, line in enumerate(data_lines, start=1):
+                values = [v.strip() for v in line.split(";")]
+
+                if len(values) != len(header):
+                    result.update({
+                        "error_title": "Error - Key/Value Mismatch",
+                        "error_message": f"Line {index}: number of values does not match header."
+                    })
+                    return result
+
+                data_list.append(dict(zip(header, values)))
+
+            # --------------------
             # Validation de la plage
+            # --------------------
             if entered_number > len(data_list):
                 result.update({
                     "error_title": "Error - Invalid Range",
                     "error_message": (
-                        f"Please enter a value between 1 and {len(data_list)}.<br>"
-                        f"Selected entries cannot exceed available items."
-                    ),
-                    "error_type": "critical"
+                        f"Please enter a value between 1 and {len(data_list)}."
+                    )
                 })
                 return result
-            
-            # Validation détaillée de chaque entrée
-            detailed_validation = ValidationUtils._validate_entries_detailed(data_list)
-            if not detailed_validation["valid"]:
-                result.update({
-                    "error_title": "Error - Data Validation",
-                    "error_message": detailed_validation["message"],
-                    "error_type": "critical"
-                })
-                return result
-            
+
+            # --------------------
             # Succès
+            # --------------------
             result.update({
                 "success": True,
                 "data_list": data_list,
@@ -253,18 +300,17 @@ class ValidationUtils:
                 "error_message": "Input data validated successfully",
                 "error_type": "success"
             })
-            
+
         except Exception as e:
             result.update({
                 "error_title": "Operation Failed - System Error",
-                "error_message": (
-                    f"Critical failure during data processing:<br>"
-                    f"(Technical details: {str(e).capitalize()})"
-                ),
-                "error_type": "critical"
+                "error_message": f"Critical failure during data processing: {str(e)}"
             })
-        
+
+        print("🔵 [END] process_user_input")
         return result
+
+
     
     @staticmethod
     def _validate_entries_detailed(data_list: List[Dict]) -> Dict[str, Any]:

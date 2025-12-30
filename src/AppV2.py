@@ -47,7 +47,7 @@ from models import ExtensionManager
 from api import APIManager
 from utils import ValidationUtils
 from ui_utils import UIManager
-
+from services import JsonManager
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 FIREFOX_LAUNCH = []
@@ -466,24 +466,31 @@ def Launch_Close_Chrome(selected_Browser , username):
 # -----------------------------
 
 def Generate_User_Input_Data(window):
-    # Récupération du texte des QTextEdit
+    # Récupération des données depuis l’UI
     input_data = window.textEdit_3.toPlainText().strip()
     entered_number_text = window.textEdit_4.toPlainText().strip()
 
-    # Utilisation de ValidationUtils pour les validations
-    validation_result = ValidationUtils.process_user_input(input_data, entered_number_text)
-    
+    # Appel de la logique de validation
+    validation_result = ValidationUtils.process_user_input(
+        input_data,
+        entered_number_text
+    )
+
+    # En cas d’erreur → affichage UI
     if not validation_result["success"]:
         UIManager.Show_Critical_Message(
             window,
-            validation_result["title"],
-            validation_result["message"],
-            message_type=validation_result.get("type", "critical")
+            validation_result["error_title"],
+            validation_result["error_message"],
+            message_type=validation_result.get("error_type", "critical")
         )
         return None
-    
-    return validation_result["data_list"], validation_result["entered_number"]
 
+    # Succès → même retour que la fonction originale
+    return (
+        validation_result["data_list"],
+        validation_result["entered_number"]
+    )
 
 
 
@@ -1123,89 +1130,6 @@ class CloseBrowserThread(QThread):
 
 
 
-# QTabBar personnalisé pour un affichage vertical avec des styles adaptés.
-# Affiche les onglets avec icônes, couleurs personnalisées et texte formaté.
-class VerticalTabBar(QtWidgets.QTabBar):
-
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setShape(QtWidgets.QTabBar.Shape.RoundedWest)
-
-        self.tab_margin = 0
-        self.left_margin = 0
-        self.right_margin = 0
-
-
-    def tabSizeHint(self, index):
-        size_hint = super().tabSizeHint(index)
-        size_hint.transpose()
-        size_hint.setWidth(180)
-        size_hint.setHeight(60)
-        return size_hint
-
-
-    def tabRect(self, index):
-        rect = super().tabRect(index)
-        rect.adjust(self.left_margin, self.tab_margin, -self.right_margin, -self.tab_margin)
-        return rect
-
-
-    def paintEvent(self, event):
-        painter = QtGui.QPainter(self)
-        painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
-
-        for i in range(self.count()):
-            rect = self.tabRect(i)
-            text = self.tabText(i)
-            icon = self.tabIcon(i)
-
-            painter.save()
-            if self.currentIndex() == i:
-                painter.setBrush(QtGui.QBrush(QtGui.QColor("#669bbc")))
-            else:
-                painter.setBrush(QtGui.QBrush(QtGui.QColor("#F5F5F5")))
-            painter.setPen(QtCore.Qt.PenStyle.NoPen)
-            painter.drawRect(rect)  
-            border_pen = QtGui.QPen(QtGui.QColor("#669bbc"))
-            border_pen.setWidth(1)
-            painter.setPen(border_pen)
-            painter.drawLine(rect.bottomLeft(), rect.bottomRight())
-            painter.drawLine(rect.topRight(), rect.bottomRight())
-            painter.restore()
-            painter.save()
-
-            if not icon.isNull():
-                pixmap = icon.pixmap(24, 24)
-                icon_pos = QtCore.QPoint(rect.left() + 8, rect.top() + 15)
-                painter.drawPixmap(icon_pos, pixmap)
-
-            painter.setPen(QtGui.QPen(QtGui.QColor("#333")))
-            font = painter.font()
-            font.setPointSize(10)
-            font.setFamily("Times New Roman")
-            painter.setFont(font)
-
-            text_rect = QtCore.QRect(
-                rect.left() + 44,
-                rect.top(),
-                rect.width() - 45,
-                rect.height() - 8
-            )
-            painter.drawText(text_rect, QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignLeft, text)
-            painter.restore()
-
-
-
-
-class VerticalTabWidget(QtWidgets.QTabWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setTabBar(VerticalTabBar())
-        self.setTabPosition(QtWidgets.QTabWidget.TabPosition.West)
-
-
-
 
 def Download_File(url, dest_path):
     try:
@@ -1755,326 +1679,176 @@ def Process_Browser(window, selected_Browser):
 
 
 
+
+
+
 class MainWindow(QMainWindow):
 
     def __init__(self, json_data):
 
         super(MainWindow, self).__init__()
-        uic.loadUi(Settings.INTERFACE_UI , self)
-        
+        self._init_ui()
+        self._init_data(json_data)
+        self._setup_ui_components()
+        self._load_initial_state()
+        # self.JsonManager = JsonManager(ValidationUtils)
+
+
+
+    def _init_ui(self):
+        uic.loadUi(Settings.INTERFACE_UI, self)
+    
+
+
+    def _init_data(self, json_data):
         self.states = json_data
         self.STATE_STACK = []
 
-        self.reset_options_container = self.findChild(QWidget, "resetOptionsContainer")
-        self.reset_options_layout = QVBoxLayout(self.reset_options_container)
-        self.reset_options_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        self.scenario_container = self.findChild(QWidget, "scenarioContainer")
-        self.scenario_layout = QVBoxLayout(self.scenario_container)
-        self.scenario_layout.setAlignment(Qt.AlignmentFlag.AlignTop )
-
-
-        self.template_button = self.findChild(QPushButton, "TemepleteButton")
-        self.Temeplete_Button_2 = self.findChild(QPushButton, "TemepleteButton_2")
-        self.template_Frame1 = self.findChild(QFrame, "Template1")
-        self.template_Frame2 = self.findChild(QFrame, "Template2")
-        self.template_Frame3 = self.findChild(QFrame, "Template3")
-        self.template_Frame4 = self.findChild(QFrame, "Template4")
-        self.template_Frame5 = self.findChild(QFrame, "Template5")
-        self.Temeplete_Button_2.hide()
-        self.template_button.hide()
-        self.template_Frame1.hide()
-        self.template_Frame2.hide()
-        self.template_Frame4.hide()
-        self.template_Frame5.hide()
-
-
-        self.Button_Initaile_state = self.findChild(QPushButton, "Button_Initaile_state")
-        
-        if self.Button_Initaile_state:
-            self.Button_Initaile_state.clicked.connect(self.Load_Initial_Options)
-
-        self.submit_button = self.findChild(QPushButton, "submitButton")
-        if self.submit_button:
-            self.submit_button.clicked.connect(lambda: self.Submit_Button_Clicked(self))
-
-        self.ClearButton = self.findChild(QPushButton, "ClearButton")
-
-        if self.ClearButton:
-            clear_path = os.path.join(Settings.ICONS_DIR, "clear.png").replace("\\", "/")
-            if os.path.exists(clear_path):
-                icon = QIcon(clear_path)
-                self.ClearButton.setIcon(icon)
-                self.ClearButton.setIconSize(QSize(32, 32))
-
-            self.ClearButton.setText("")
-            self.ClearButton.setFixedSize(36, 36)  
-
-            self.ClearButton.setStyleSheet("""
-                QPushButton {
-                    border: none;
-                    background-color: transparent;
-                    padding: 0px;
-                    margin: 0px;
-                }
-                QPushButton::icon {
-                    alignment: center;
-                }
-            """)
-
-            self.ClearButton.clicked.connect(self.Clear_Button_Clicked)
-
-
-        self.CopyButton = self.findChild(QPushButton, "CopyButton")
-
-        if self.CopyButton:
-            clear_path = os.path.join(Settings.ICONS_DIR, "copyLog.png").replace("\\", "/")
-            if os.path.exists(clear_path):
-                icon = QIcon(clear_path)
-                self.CopyButton.setIcon(icon)
-                self.CopyButton.setIconSize(QSize(26, 26))
-                self.CopyButton.setText("")
-                self.CopyButton.setStyleSheet("""
-                    QPushButton {
-                        border: none;
-                        padding: 0px;
-                        margin: 0px;
-                        background-color: transparent;
-                    }
-                    QPushButton::icon {
-                        alignment: center;
-                    }
-                """)
-
-                self.CopyButton.setFixedSize(38, 38) 
-                self.CopyButton.clicked.connect(self.Copy_Logs_To_Clipboard)
-
-
-        self.SaveButton = self.findChild(QPushButton, "saveButton")
-
-        if self.SaveButton:
-            icon_path_save = os.path.join(Settings.ICONS_DIR, "save.png").replace("\\", "/")
-            if ValidationUtils.path_exists(icon_path_save):
-                icon = QIcon(icon_path_save)
-                self.SaveButton.setIcon(icon)
-                self.SaveButton.setIconSize(QSize(16, 16))
-                self.SaveButton.clicked.connect(self.Handle_Save)
-
-
-        self.lineEdit_search = self.findChild(QLineEdit, "lineEdit_search")
-        if self.lineEdit_search:
-            self.lineEdit_search.hide()
-        
-        self.tabWidgetResult = self.findChild(QTabWidget, "tabWidgetResult")
-
-        if self.tabWidgetResult:
-            self.tabWidgetResult.tabBar().setCursor(Qt.CursorShape.PointingHandCursor)
-            if ValidationUtils.path_exists(Settings.ICONS_DIR):
-                icon_size = (40, 40)  
-                for i in range(self.tabWidgetResult.count()):
-                    tab_text = self.tabWidgetResult.tabText(i)
-                    icon_name = tab_text.lower().replace(" ", "_") + ".png"
-                    icon_path = os.path.join(Settings.ICONS_DIR, icon_name)
-                    if ValidationUtils.path_exists(icon_path):
-                        icon = QIcon(icon_path)
-                        icon_pixmap = icon.pixmap(icon_size[0], icon_size[1])
-                        icon = QIcon(icon_pixmap)
-                        self.tabWidgetResult.setTabIcon(i, icon)
-
-            self.vertical_tab_widget = VerticalTabWidget()
-            parent_widget = self.tabWidgetResult.parentWidget()
-            geometry = self.tabWidgetResult.geometry()
-
-            while self.tabWidgetResult.count() > 0:
-                widget = self.tabWidgetResult.widget(0)
-                text = self.tabWidgetResult.tabText(0)
-                icon = self.tabWidgetResult.tabIcon(0)
-
-
-                self.vertical_tab_widget.addTab(widget, icon, text)
-                style_sheet = widget.styleSheet()
-                object_name = widget.objectName()
-                self.vertical_tab_widget.widget(self.vertical_tab_widget.count() - 1).setStyleSheet(style_sheet)
-                self.vertical_tab_widget.widget(self.vertical_tab_widget.count() - 1).setObjectName(object_name)
-
-            self.tabWidgetResult.setParent(None)
-            self.vertical_tab_widget.setParent(parent_widget)
-            self.vertical_tab_widget.setObjectName("tabWidgetResult") 
-            self.vertical_tab_widget.setGeometry(geometry)  
-            self.vertical_tab_widget.show()
-
-
-            self.tabWidgetResult = self.vertical_tab_widget
-            self.tabWidgetResult.tabBar().setCursor(Qt.CursorShape.PointingHandCursor)
+    def _setup_ui_components(self):
+        """Setup all UI components in a modular way"""
+        self._setup_containers()
+        self._setup_template_widgets()
+        self._setup_buttons()
+        self._setup_comboboxes()
+        self._setup_tab_widgets()
+        self._setup_log_system()
+        self._setup_miscellaneous()
 
 
 
-        self.INTERFACE = self.findChild(QTabWidget, "interface_2")
 
-        if self.INTERFACE:
-            self.INTERFACE.tabBar().setCursor(Qt.CursorShape.PointingHandCursor)
-            for i in range(self.INTERFACE.count()):
-                tab_text = self.INTERFACE.tabText(i)
-                if tab_text.startswith("Result"):
-                    tab_widget = self.INTERFACE.widget(i)
-                    frame = QFrame(tab_widget)
-                    frame.setStyleSheet("background-color: #F5F5F5; border-right: 1px solid #669bbc;")
-                    frame.setGeometry(0, 660, 179, 300)
-                    frame.show()
-                    break
+    def _find_widget(self, name, widget_type=None):
+        widget = self.findChild(widget_type, name) if widget_type else self.findChild(QWidget, name)
+        return widget
+    
 
-        self.textEdit_3.setPlaceholderText(
-            "Please enter the data in the following format : \n"
-            "Email* ; passwordEmail* ; ipAddress* ; port* ; login ; password ; recovery_email , new_recovery_email"
-        )
-        self.textEdit_4.setPlaceholderText(
-            "Specify the maximum number of operations to process"
+    def _setup_containers(self):
+        UIManager._setup_containers(self)
+
+
+
+
+    def _setup_template_widgets(self):
+        UIManager._setup_template_widgets(self)
+
+
+
+    def _setup_buttons(self):
+        self.Button_Initaile_state = self._setup_button(
+            "Button_Initaile_state", self.Load_Initial_Options
         )
         
+        # Submit button
+        self.submit_button = self._setup_button(
+            "submitButton", lambda: self.Submit_Button_Clicked(self)
+        )
+        
+        # Clear button with icon
+        self.ClearButton = self._setup_icon_button(
+            "ClearButton", "clear.png", self.Clear_Button_Clicked,
+            icon_size=(32, 32), button_size=(36, 36)
+        )
+        
+        # Copy button with icon
+        self.CopyButton = self._setup_icon_button(
+            "CopyButton", "copyLog.png", self.Copy_Logs_To_Clipboard,
+            icon_size=(26, 26), button_size=(38, 38)
+        )
+        
+        # Save button with icon
+        self.SaveButton = self._setup_icon_button(
+            "saveButton", "save.png", self.Handle_Save,
+            icon_size=(16, 16)
+        )
+        
+        # Logout button
+        self.log_out_Button = UIManager._setup_logout_button(self, self.logOut)
 
 
-        for table in self.findChildren(QTableWidget):
-            for col in range(table.columnCount()):
-                table.horizontalHeader().setSectionResizeMode(col, QHeaderView.ResizeMode.Stretch)
 
-        spin_boxes = self.findChildren(QSpinBox)
-        if Settings.DOWN_EXISTS and Settings.UP_EXISTS:
-            for spin_box in spin_boxes:
-                old_style = spin_box.styleSheet()  
-                spin_box.setStyleSheet(old_style + f"""
-                    QSpinBox::down-button {{
-                        image: url("{Settings.ARROW_DOWN_PATH}");
-                        width: 13px;
-                        height: 13px;
-                        border-top-left-radius: 5px;
-                        border-bottom-left-radius: 5px;
-                    }}
-                    QSpinBox::up-button {{
-                        image: url("{Settings.ARROW_UP_PATH}");
-                        width: 13px;
-                        height: 13px;
-                        border-top-left-radius: 5px;
-                        border-bottom-left-radius: 5px;
-                    }}
-                """)
 
+
+    def _setup_icon_button(self, button_name, icon_file, callback, icon_size=None, button_size=None):
+        UIManager._setup_icon_button(self, button_name, icon_file, callback, icon_size, button_size)
+
+
+
+
+
+    def _setup_button(self, widget_name, callback):
+        UIManager._setup_button(self, widget_name, callback)
+
+
+
+    def _setup_comboboxes(self):
+        """Setup all comboboxes"""
+        self._setup_browser_combobox()
+        self._setup_isp_combobox()
+        self._setup_scenario_combobox()
+    
+
+
+
+
+    def _setup_browser_combobox(self):
+        UIManager._setup_browser_combobox(self)
+
+        
+
+
+
+
+    def _setup_isp_combobox(self):
+        UIManager._setup_isp_combobox(self)
+
+        
+
+    
+    def _setup_scenario_combobox(self):
+        UIManager._setup_scenario_combobox(self)
+
+
+
+
+
+
+
+    def _setup_tab_widgets(self):
+        UIManager._setup_result_tab_widget(self)
+        UIManager._setup_interface_tab_widget(self)
+
+
+    
+
+    def _setup_log_system(self):
+        """Setup log display system"""
+
+        # Chercher le container des logs
+        self.log_container = self._find_widget("log", QWidget)
+        if self.log_container is not None:
+            # Créer un layout vertical
+            self.log_layout = QVBoxLayout(self.log_container)
+            self.log_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+            # Ajuster la taille du container
+            self.log_container.adjustSize()
+            self.log_container.setFixedWidth(1627)
+
+        # Créer le thread de logs et connecter le signal
         self.LOGS_THREAD = LogsDisplayThread(LOGS)
         self.LOGS_THREAD.log_signal.connect(self.Update_Logs_Display)
 
-        self.browser = self.findChild(QComboBox, "browsers")
-        if self.browser is not None:
-            if ValidationUtils.path_exists(Settings.ARROW_DOWN_PATH):
-                new_style = f'''
-                    QComboBox::down-arrow {{
-                        image: url("{Settings.ARROW_DOWN_PATH}");
-                        width: 16px;
-                        height: 16px;
-                    }}
-                '''
-                old_style = self.browser.styleSheet()
-                self.browser.setStyleSheet(old_style + new_style)
 
-
-            self.browser.addItem(QIcon(os.path.join(Settings.ICONS_DIR, "chrome.png")), "Chrome")
-            self.browser.addItem(QIcon(os.path.join(Settings.ICONS_DIR, "firefox.png")), "Firefox")
-            self.browser.addItem(QIcon(os.path.join(Settings.ICONS_DIR, "edge.png")), "Edge")
-            self.browser.addItem(QIcon(os.path.join(Settings.ICONS_DIR, "comodo.png")), "Comodo")
+    
+    def _setup_miscellaneous(self):
+        UIManager._setup_miscellaneous(self)
     
 
-
-        self.Isp = self.findChild(QComboBox, "Isps")
-        if self.Isp is not None:
-            if ValidationUtils.path_exists(Settings.ARROW_DOWN_PATH):
-                new_style = f'''
-                    QComboBox::down-arrow {{
-                        image: url("{Settings.ARROW_DOWN_PATH}");
-                        width: 16px;
-                        height: 16px;
-                    }}
-                '''
-                old_style = self.Isp.styleSheet()
-                self.Isp.setStyleSheet(old_style + new_style)
-
-            self.Isp.clear()
-
-
-
-            for name, icon_file in Settings.SERVICES.items():
-                icon_path = os.path.join(Settings.ICONS_DIR, icon_file)
-                if ValidationUtils.path_exists(icon_path):
-                    self.Isp.addItem(QIcon(icon_path), name)
-                else:
-                    self.Isp.addItem(name)
-
-            selected_isp = None
-
-            if ValidationUtils.path_exists(Settings.FILE_ISP):
-                with open(Settings.FILE_ISP, 'r', encoding='utf-8') as f:
-                    line = f.readline().strip().lower()
-                    if "gmail" in line:
-                        selected_isp = "Gmail"
-                    elif "hotmail" in line:
-                        selected_isp = "Hotmail"
-                    elif "yahoo" in line:
-                        selected_isp = "Yahoo"
-
-            if selected_isp:
-                index = self.Isp.findText(selected_isp)
-                if index >= 0:
-                    self.Isp.setCurrentIndex(index)
-
-
-            
-        self.saveSanario = self.findChild(QComboBox, "saveSanario")
-        if self.saveSanario is not None:
-                    if ValidationUtils.path_exists(Settings.ARROW_DOWN_PATH):
-                        new_style = f'''
-                            QComboBox::down-arrow {{
-                                image: url("{Settings.ARROW_DOWN_PATH}");
-                                width: 16px;
-                                height: 16px;
-                            }}
-                        '''
-                        old_style = self.saveSanario.styleSheet()
-                        self.saveSanario.setStyleSheet(old_style + new_style)
-                        self.saveSanario.currentTextChanged.connect(self.Scenario_Changed)
-
-        self.image_path = os.path.join(Settings.ICONS_DIR, "LogOut4.png")
-        self.log_out_Button = self.findChild(QPushButton, "LogOut")
-
-        if self.log_out_Button:
-            self.log_out_Button.setLayoutDirection(Qt.LayoutDirection.RightToLeft)  
-            self.log_out_Button.clicked.connect(self.logOut)
-
-            if ValidationUtils.path_exists(self.image_path):
-                self.log_out_Button.setIcon(QIcon(self.image_path))
-                self.log_out_Button.setIconSize(QSize(18, 18))
-
-        self.log_container = self.findChild(QWidget, "log")
-        self.log_layout = QVBoxLayout(self.log_container)  
-        self.log_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        self.log_container.adjustSize() 
-        self.log_container.setFixedWidth(1627)
-
-        self.result_tab_widget = self.findChild(QTabWidget, "tabWidgetResult")
-        self.Set_Icon_For_Existing_Buttons()
+    
+    def _load_initial_state(self):
         self.Load_Scenarios_Into_Combobox()
-
         self.Load_Initial_Options()
-
-
-
-
-
-
-
-
-
-
-
-    
-
-
 
 
 
@@ -2140,11 +1914,19 @@ class MainWindow(QMainWindow):
 
 
     def Load_Scenarios_Into_Combobox(self):
+        if self.saveSanario is None:
+            print("self.saveSanario is None")
+            return
+        else:
+            print("self.saveSanario is not None")
+    
         if not ValidationUtils.path_exists(Settings.SESSION_PATH):
             return
 
-        with open(Settings.SESSION_PATH, "r", encoding="utf-8") as f:
-            encrypted_key = f.read().strip()
+        encrypted_key =UIManager.read_file_content(Settings.SESSION_PATH)
+
+        if not encrypted_key:
+            return
 
         payload = {"encrypted": encrypted_key}
         try:
@@ -2184,60 +1966,12 @@ class MainWindow(QMainWindow):
 
 
 
-    def Set_Icon_For_Existing_Buttons(self):
-        if not self.result_tab_widget:
-            return
-
-        for i in range(self.result_tab_widget.count()):
-            tab_widget = self.result_tab_widget.widget(i)
-            buttons = tab_widget.findChildren(QPushButton)
-
-            for button in buttons:
-                object_name = button.objectName()
-
-                if object_name.startswith("copy"):
-                    icon_path = os.path.join(Settings.ICONS_DIR, "copy.png")
-                    button.setIcon(QIcon(icon_path))
-                    button.setIconSize(QtCore.QSize(20, 20))
-
-                    try:
-                        button.clicked.disconnect()
-                    except Exception:
-                        pass  
-
-                    button.clicked.connect(lambda _, idx=i: self.Copy_Result_From_Tab(idx))
-                else:
-                    print(f"[DEBUG] ⏭️ Bouton ignoré: '{object_name}'")
-
-
-
-
-
-    def Copy_Result_From_Tab(self, tab_index):
-        tab_widget = self.result_tab_widget.widget(tab_index)
-        list_widgets = tab_widget.findChildren(QListWidget)
-
-        if list_widgets:
-            list_widget = list_widgets[0]
-            items = [list_widget.item(i).text() for i in range(list_widget.count())]
-            text_to_copy = "\n".join(items)
-            clipboard = QApplication.clipboard()
-            clipboard.setText(text_to_copy)
-
 
             
 
 
     def Copy_Logs_To_Clipboard(self):
-        log_box = self.findChild(QGroupBox, "log")
-        if not log_box:
-            return
-        labels = log_box.findChildren(QLabel)
-        if not labels:
-            return
-        log_lines = [label.text() for label in labels]
-        text_to_copy = "\n".join(log_lines)
-        QApplication.clipboard().setText(text_to_copy)
+        UIManager.Copy_Logs_To_Clipboard(self)
 
 
 
@@ -2438,13 +2172,11 @@ class MainWindow(QMainWindow):
 
     
     def Submit_Button_Clicked(self, window):
-        global CURRENT_HOUR, CURRENT_DATE, LOGS_RUNNING , NOTIFICATION_BADGES  
+        global CURRENT_HOUR, CURRENT_DATE, LOGS_RUNNING, NOTIFICATION_BADGES  
 
-
+        # Vérification de session
         session_info = SessionManager.check_session()
-
         if not session_info["valid"]:
-
             self.login_window = LoginWindow()
             self.login_window.setFixedSize(1710, 1005)
 
@@ -2455,7 +2187,6 @@ class MainWindow(QMainWindow):
             self.login_window.move(x, y)
 
             self.login_window.show()
-
             self.close()
 
             try:
@@ -2466,9 +2197,7 @@ class MainWindow(QMainWindow):
 
             return
 
-
-
-
+        # Nettoyage des badges de notification
         try:
             if self.result_tab_widget:
                 for tab_index, badge in NOTIFICATION_BADGES.items():
@@ -2485,12 +2214,8 @@ class MainWindow(QMainWindow):
         except Exception as e:
             log_message(f"[BADGES ERROR] Erreur lors de la suppression des badges : {e}")
 
-
-
         # For PROGRAMM COMPLETE UPDATE
-
         # new_versions = Check_Version()
-
         # if new_versions == "_1":
         #     UIManager.Show_Critical_Message(
         #         window,
@@ -2501,7 +2226,6 @@ class MainWindow(QMainWindow):
         #         message_type="critical"
         #     )
         #     return
-
         # if not new_versions:
         #     print("✅ Everything is up to date. No updates are required.")
         # else:
@@ -2518,11 +2242,9 @@ class MainWindow(QMainWindow):
         #         window.close()
         #         launch_new_window()
         #         sys.exit(0)
-
         #     # 🌐 Extensions update
         #     elif 'version_extensions' in new_versions:
         #         print("⬇️ Downloading new Extensions update...")
-
         #         if Download_Extract(new_versions) == 0:
         #             UIManager.Show_Critical_Message(
         #                 window,
@@ -2547,14 +2269,10 @@ class MainWindow(QMainWindow):
         #             print("❌ Failed to update one or more extensions")
         #             return
 
-
-
-
-
         selected_Browser = self.browser.currentText().lower()
 
-        if not Process_Browser(window, selected_Browser):
-            return
+        # if not Process_Browser(window, selected_Browser):
+        #     return
 
         if self.INTERFACE:
             for i in range(self.INTERFACE.count()):
@@ -2563,7 +2281,7 @@ class MainWindow(QMainWindow):
                     self.INTERFACE.setTabText(i, "Result")
                     break
         
-        LOGS_RUNNING =True
+        LOGS_RUNNING = True
 
         output_json = [
             {
@@ -2579,199 +2297,10 @@ class MainWindow(QMainWindow):
                 "No actions have been added. Please add actions before submitting.",
                 message_type="warning"
             )
-
             return
-        
-        i = 0
-        while i < self.scenario_layout.count():
-            widget = self.scenario_layout.itemAt(i).widget()  
-            if widget:
-                
-                full_state = widget.property("full_state")
-                hidden_id = full_state.get("id") if full_state else None
-
-                checkbox = next((child for child in widget.children() if isinstance(child, QCheckBox)), None)
-
-                if full_state and not full_state.get("showOnInit", False) and not hidden_id.startswith("google") and  hidden_id.startswith("youtube"):
-                    qlineedits = [child for child in widget.children() if isinstance(child, QLineEdit)]
-                    if len(qlineedits) > 1:
-                        limit_text = qlineedits[0].text()
-                        sleep_text = qlineedits[1].text()
-                        try:
-                            limit_value = ValidationUtils.parse_random_range(limit_text)
-                        except ValueError:
-                            limit_value = 0
-
-                        try:
-                            sleep_value = ValidationUtils.parse_random_range(sleep_text)
-                        except ValueError:
-                            sleep_value = 0
-
-                        if  hidden_id.startswith("youtube"):
-                            output_json.append({
-                                "process": "CheckLoginYoutube",
-                                "sleep":  random.randint(1, 3)
-                            })
-                            output_json.append({
-                                "process": hidden_id,
-                                "limit": limit_value,
-                                "sleep": sleep_value
-                            })
-                        else:
-                            output_json.append({
-                                "process": hidden_id,
-                                "limit": limit_value,
-                                "sleep": sleep_value
-                            })
-
-                    else:
-                        sleep_text = qlineedits[0].text() if qlineedits else "0"
-                        try:
-                            sleep_value = ValidationUtils.parse_random_range(sleep_text)
-                        except ValueError:
-                            sleep_value = 0
-
-                        output_json.append({
-                            "process": hidden_id,
-                            "sleep": sleep_value
-                        })
-
-                    i += 1
-                    continue
-
-                if full_state and full_state.get("showOnInit", False) and checkbox:
-                    sub_process = []  
-                    output_json.append({
-                        "process": hidden_id,
-                        "sleep": random.randint(1, 3)
-                    })
-
-                    if checkbox.isChecked():
-                        search_value = next((child.text() for child in reversed(widget.children()) if isinstance(child, QLineEdit)), None)
-                        
-                        if output_json and output_json[-1]["process"] == "open_spam":
-                            output_json.append({
-                                "process": "search",
-                                "value": f"in:spam {search_value}"
-                            })
-                        else:
-                            output_json.append({
-                                "process": "search",
-                                "value": search_value
-                            })
-
-                    i += 1
-                    while i < self.scenario_layout.count():
-                        sub_widget = self.scenario_layout.itemAt(i).widget()
-                        if not sub_widget:
-                            break
-
-                        sub_full_state = sub_widget.property("full_state")
-                        sub_hidden_id = sub_full_state.get("id") if sub_full_state else None
-                        wait_process_txt = next((child.text() for child in sub_widget.children() if isinstance(child, QLineEdit)), "0")
-                        try:
-                            wait_process = ValidationUtils.parse_random_range(wait_process_txt)
-                        except ValueError:
-                            wait_process = 0
-                        sub_checkbox = next((child for child in sub_widget.children() if isinstance(child, QCheckBox)), None)
-
-                        combobox = next((child for child in widget.children() if isinstance(child, QComboBox)), None)
-                        combo_value = combobox.currentText() if combobox else None
-
-                        if sub_full_state and sub_full_state.get("showOnInit", False) or sub_hidden_id.startswith("google") or sub_hidden_id.startswith("youtube"):
-                            break
-
-                        if not sub_checkbox:
-                            if sub_full_state.get("id") == "reply_message":
-                                sub_process.append({
-                                    "process": sub_hidden_id,
-                                    "sleep": wait_process,
-                                    "value": next(
-                                        (child.toPlainText() for child in sub_widget.children() if isinstance(child, QTextEdit)),
-                                        ""
-                                    )
-                                })
-                            else:
-                                sub_process.append({
-                                    "process": sub_hidden_id,
-                                    "sleep": wait_process
-                                })
-
-
-                        i += 1
-
-                    if len(sub_process) > 0:
-                        action = "return_back" if combo_value == "Return back" else "next"
-                        sub_process.append({
-                            "process": action
-                        })
-                    qlineedits = [child for child in widget.children() if isinstance(child, QLineEdit)]
-
-                    limit_loop_text = qlineedits[0].text() if len(qlineedits) > 1 else "0"
-                    Start_loop_text =qlineedits[1].text() if len(qlineedits) > 1 else "0"
-
-                    try:
-                        limit_loop = ValidationUtils.parse_random_range(limit_loop_text)
-                        Start_loop =  ValidationUtils.parse_random_range(Start_loop_text)
-                    except ValueError:
-                        limit_loop = 0
-
-                    output_json.append({
-                        "process": "loop",
-                        "check": "is_empty_folder",
-                        "limit_loop": limit_loop,
-                        "start": Start_loop,
-                        "sub_process": sub_process
-                    })
-                    continue
-
-                if full_state and full_state.get("showOnInit", False) and not checkbox:
-                    wait_process_txt = next((child.text() for child in widget.children() if isinstance(child, QLineEdit)), "0")
-                    try:
-                        wait_process = ValidationUtils.parse_random_range(wait_process_txt)
-                    except ValueError:
-                        wait_process = 0
-
-                    output_json.append({
-                        "process": hidden_id,
-                        "sleep": wait_process
-                    })
-
-
-                if full_state and not full_state.get("showOnInit", False) and (hidden_id.startswith("google") or hidden_id.startswith("youtube")):
-                    wait_process_txt = next((child.text() for child in widget.children() if isinstance(child, QLineEdit)), "0")
-                    
-                    try:
-                        wait_process = ValidationUtils.parse_random_range(wait_process_txt)
-                    except ValueError:
-                        wait_process = 0
-                    
-                    if checkbox and checkbox.isChecked():
-
-                        qlineedits = [child for child in widget.children() if isinstance(child, QLineEdit)]
-
-                        if len(qlineedits) > 1:
-                            search_value = qlineedits[1].text()
-                        elif len(qlineedits) == 1:
-                            search_value = qlineedits[0].text()
-                        else:
-                            search_value = ""
-
-                        output_json.append({
-                            "process": hidden_id,
-                            "search": search_value,
-                            "sleep": wait_process
-                        })
-                    else:
-                        output_json.append({
-                            "process": hidden_id,
-                            "sleep": wait_process
-                        })
-
-            i += 1
-
 
         try:
+            print("📦 JSON test:")
             result = Generate_User_Input_Data(window)
 
             if not result:  
@@ -2781,68 +2310,89 @@ class MainWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(window, "Error", f"Error while parsing the JSON: {e}")
             return
-    
-        print("📦 JSON test:")
-
-        print(json.dumps(output_json, indent=4, ensure_ascii=False))
         
         current_time = datetime.datetime.now()
         CURRENT_DATE = current_time.strftime("%Y-%m-%d")
         CURRENT_HOUR = current_time.strftime("%H-%M-%S") 
-        modified_json = self.Process_Split_Json(output_json)
-        print(f"📦 JSON Modifié après Process_Split_Json:{json.dumps(modified_json, indent=4, ensure_ascii=False)}")
-        output_json = self.Process_Handle_Last_Element(modified_json)
-        print(f"📦 JSON Modifié après Process_Handle_Last_Element:{json.dumps(output_json, indent=4, ensure_ascii=False)}")
-        output_json_final=self.Process_Modify_Json(output_json)
-        print(f"📦 JSON Final après Process_Modify_Json:{json.dumps(output_json_final, indent=4, ensure_ascii=False)}")
-        result_json = self.Save_Json_To_File(output_json_final, selected_Browser)
 
-        if result_json == "ERROR":
+        print("📦 JSON Final:")
+        result_json = JsonManager.generate_json_data(self.scenario_layout)
+        print(json.dumps(result_json, indent=2, ensure_ascii=False))
+
+        # CORRECTION: Vérifier si result_json est vide au lieu de vérifier "ERROR"
+        if not result_json or result_json == []:
             UIManager.Show_Critical_Message(
                 window,
                 "Error - Save Configuration",
-                "An error occurred while saving the configuration file.\n\n"
+                "No valid actions could be generated or an error occurred while saving the configuration file.\n\n"
                 "If the problem persists, contact Support.",
                 message_type="critical"
             )
             return
-        print("📦 JSON Final:")
-        print(json.dumps(output_json_final, indent=4, ensure_ascii=False))
 
- 
+        # Sauvegarde du fichier JSON de traitement
         try:
-            with open( Settings.FILE_ISP, 'w', encoding='utf-8') as f:
+            save_status = JsonManager.save_json_to_file(result_json, selected_Browser)
+            
+            if save_status == "ERROR":
+                UIManager.Show_Critical_Message(
+                    window,
+                    "Error - Save Configuration",
+                    "An error occurred while saving the configuration file.\n\n"
+                    "If the problem persists, contact Support.",
+                    message_type="critical"
+                )
+                return
+            else:
+                print(f"✅ Fichier JSON sauvegardé avec statut: {save_status}")
+        except Exception as e:
+            print(f"❌ Erreur lors de la sauvegarde du JSON: {e}")
+            UIManager.Show_Critical_Message(
+                window,
+                "Error - Save Configuration",
+                f"An error occurred while saving the configuration file:\n\n{e}",
+                message_type="critical"
+            )
+            return
+
+        try:
+            with open(Settings.FILE_ISP, 'w', encoding='utf-8') as f:
                 f.write(self.Isp.currentText().strip())
         except Exception as e:
             print(f"❌ Erreur lors de l'écriture dans Isp.txt : {e}")
 
-
-
-        json_string = json.dumps(output_json_final)
+        json_string = json.dumps(result_json)
 
         parameters = { 
-            'p_owner':session_info["username"],
-            'p_entity':session_info["p_entity"],
+            'p_owner': session_info["username"],
+            'p_entity': session_info["p_entity"],
             'p_isp': self.Isp.currentText(),
-            'p_action_name': json.dumps(output_json_final), 
-            'p_app':'V4',
+            'p_action_name': json_string,  # CORRECTION: Utiliser json_string au lieu de json.dumps(result_json)
+            'p_app': 'V4',
             'p_python_version': f"{sys.version_info.major}.{sys.version_info.minor}", 
             'p_browser': self.browser.currentText(),
         }
 
-        unique_id=self.Save_Process(parameters)
+        unique_id = self.Save_Process(parameters)
 
-        if unique_id==-1:
-            print("Error getting process ID ")
-            os.system("pause")
-            exit()
+        if unique_id == -1:
+            print("❌ Error getting process ID")
+            UIManager.Show_Critical_Message(
+                window,
+                "Error - Process Save",
+                "Failed to save the process in the database.\n\n"
+                "Please check your connection and try again.",
+                message_type="critical"
+            )
             return
 
+        print(f"✅ Process ID obtenu: {unique_id}")
 
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            executor.submit(Start_Extraction, window, data_list , entered_number, selected_Browser, self.Isp.currentText() , unique_id , output_json_final, session_info["username"])
-            executor.submit(self.LOGS_THREAD.start)
-        EXTRACTION_THREAD.finished.connect(lambda: self.Extraction_Finished(window))
+
+        # with ThreadPoolExecutor(max_workers=2) as executor:
+        #     executor.submit(Start_Extraction, window, data_list , entered_number, selected_Browser, self.Isp.currentText() , unique_id , result_json, session_info["username"])
+        #     executor.submit(self.LOGS_THREAD.start)
+        # EXTRACTION_THREAD.finished.connect(lambda: self.Extraction_Finished(window))
 
 
 
@@ -2889,25 +2439,17 @@ class MainWindow(QMainWindow):
 
 
 
-
-
-    def Display_State_Stack_As_Table(self):
-        if not self.STATE_STACK:
-            return
-
-
-
     def Load_State(self, state):
-        self.Display_State_Stack_As_Table()
+        UIManager.Display_State_Stack_As_Table(self)
         is_multi = state.get("isMultiSelect", False)
         if not is_multi:
             self.STATE_STACK.append(state)
 
-        self.Display_State_Stack_As_Table()
+        UIManager.Display_State_Stack_As_Table(self)
 
         if not is_multi:
             template = state.get("Template", "")
-            self.Update_Scenario(template, state)
+            UIManager.Update_Scenario(self, template, state)
 
         actions = state.get("actions", [])
         self.Update_Reset_Options(actions)
@@ -2916,7 +2458,7 @@ class MainWindow(QMainWindow):
         UIManager.Remove_Copier( self.scenario_layout, self.reset_options_layout)
         UIManager.Remove_Initaile( self.scenario_layout, self.reset_options_layout)
 
-        self.Display_State_Stack_As_Table()
+        UIManager.Display_State_Stack_As_Table(self)
 
 
 
@@ -2926,11 +2468,7 @@ class MainWindow(QMainWindow):
 
 
 
-
-
-
     def Update_Reset_Options(self, actions):
-
         count = self.reset_options_layout.count()
         for i in reversed(range(count)):
             widget = self.reset_options_layout.itemAt(i).widget()
@@ -2950,100 +2488,8 @@ class MainWindow(QMainWindow):
 
 
 
-    def Handle_Checkbox_State(self, state, lineedit):
-        if lineedit:  
-            if state == 2: 
-                lineedit.show()
-            else:  
-                lineedit.hide()
-
-
-
-    def Update_Scenario(self, template_name, state):
-        template_frame = None
-
-        if template_name == "Template1":
-            template_frame = self.template_Frame1
-        elif template_name == "Template2":
-            template_frame = self.template_Frame2
-        elif template_name == "Template3":
-            template_frame = self.template_Frame3
-        elif template_name == "Template4":
-            template_frame = self.template_Frame4
-        elif template_name == "Template5":
-            template_frame = self.template_Frame5
-        else:
-            return
-
-        if template_frame:
-            new_template = QFrame()
-            new_template.setStyleSheet(template_frame.styleSheet())
-            new_template.setMaximumHeight(51)
-            new_template.setMinimumHeight(51)
-            new_template.setMaximumWidth(780)  
-
-            lineedits = []
-            checkboxes = []
-            first_label_updated = False
-
-            for child in template_frame.children():
-                if isinstance(child, QLabel):
-                    new_label = QLabel(new_template)
-                    if not first_label_updated:
-                        new_label.setText(state.get("label", ""))
-                        first_label_updated = True
-                    else:
-                        new_label.setText(child.text())
-                    new_label.setStyleSheet(child.styleSheet())
-                    new_label.setGeometry(child.geometry())
-                elif isinstance(child, QPushButton):
-                    new_button = QPushButton(child.text(), new_template)
-                    new_button.setStyleSheet(child.styleSheet())
-                    new_button.setGeometry(child.geometry())
-                    new_button.clicked.connect(child.clicked)
-                elif isinstance(child, QSpinBox):
-                    new_spinbox = QSpinBox(new_template)
-                    new_spinbox.setValue(child.value())
-                    new_spinbox.setGeometry(child.geometry())
-                    new_spinbox.setStyleSheet(child.styleSheet())
-                elif isinstance(child, QLineEdit):
-                    new_lineedit = QLineEdit(new_template)
-                    new_lineedit.setText(child.text())
-                    new_lineedit.setGeometry(child.geometry())
-                    new_lineedit.setStyleSheet(child.styleSheet())
-                    lineedits.append(new_lineedit)
-                elif isinstance(child, QTextEdit):
-                    new_textedit = QTextEdit(new_template)
-                    new_textedit.setPlainText(child.toPlainText())
-                    new_textedit.setGeometry(child.geometry())
-                    new_textedit.setStyleSheet(child.styleSheet())
-                    lineedits.append(new_textedit)
-                elif isinstance(child, QCheckBox):
-                    new_checkbox = QCheckBox(child.text(), new_template)
-                    new_checkbox.setChecked(child.isChecked())
-                    new_checkbox.setGeometry(child.geometry())
-                    new_checkbox.setStyleSheet(child.styleSheet())
-                    checkboxes.append(new_checkbox)
-                elif isinstance(child, QComboBox):
-                    new_combobox = QComboBox(new_template)
-                    new_combobox.setCurrentIndex(child.currentIndex())
-                    new_combobox.addItems([child.itemText(i) for i in range(child.count())])
-                    new_combobox.setGeometry(child.geometry())
-                    new_combobox.setStyleSheet(child.styleSheet())
-
-            for checkbox in checkboxes:
-                if lineedits:
-                    linked_lineedit = lineedits[-1]
-                    linked_lineedit.hide()
-                    checkbox.stateChanged.connect(
-                        lambda state, lineedit=linked_lineedit: self.Handle_Checkbox_State(state, lineedit)
-                    )
-            new_template.setProperty("full_state", state)
-            self.scenario_layout.addWidget(new_template)
-
-
     def Go_To_Previous_State(self):
-        self.Display_State_Stack_As_Table()
+        UIManager.Display_State_Stack_As_Table(self)
         if len(self.STATE_STACK) > 1:
 
             if self.scenario_layout.count() > 0:
@@ -3068,7 +2514,7 @@ class MainWindow(QMainWindow):
         self.Update_Actions_Color_Handle_Last_Button()
 
         UIManager.Remove_Copier( self.scenario_layout, self.reset_options_layout)
-        self.Display_State_Stack_As_Table()
+        UIManager.Display_State_Stack_As_Table(self)
 
 
     
@@ -3088,47 +2534,53 @@ class MainWindow(QMainWindow):
 
 
 
+
+
+
+
     def Scenario_Changed(self, name_selected):
+        print("Scenario_Changed called with name_selected=%r", name_selected)
 
-        if not ValidationUtils.path_exists(Settings.SESSION_PATH):
+        encrypted_key =UIManager.read_file_content(Settings.SESSION_PATH)
+        if not encrypted_key:
             return
-
-        try:
-            with open(Settings.SESSION_PATH, "r", encoding="utf-8") as f:
-                encrypted_key = f.read().strip()
-            if not encrypted_key:
-                return
-        except Exception:
-            return
-
         payload = {"encrypted": encrypted_key, "name": name_selected}
+        #print("Payload prepared: %s", {k: ("<hidden>" if k == "encrypted" else v) for k, v in payload.items()})
 
         try:
             start_time = time.time()
-            result = APIManager.make_request(Settings.API_ENDPOINTS['_ON_SCENARIO_CHANGED_API'], "POST", payload, timeout=10)
+            # timeout pour éviter le blocage infini
+            response = requests.post(Settings.API_ENDPOINTS['_ON_SCENARIO_CHANGED_API'], json=payload, timeout=10)
             duration = time.time() - start_time
-
+            #print("HTTP POST to %s finished in %.2fs; status_code=%s", _ON_SCENARIO_CHANGED_API, duration, response.status_code)
         except requests.exceptions.RequestException as e:
-            return
-        
-        if result["status"] != "success":
-            error_msg = result.get("error", "Erreur inconnue")
-            print(f"❌ Erreur APIManager: {error_msg}")
-            
-            UIManager.Show_Critical_Message(
-                self,
-                "Erreur serveur",
-                f"Impossible de charger le scénario: {error_msg}",
-                message_type="critical"
-            )
+            #print("RequestException while calling API: %s", e)
+            # enregistrer le contenu d'erreur si disponible
             return
 
-        response_data = result.get("data", {})
-        status_code = result.get("status_code", 0)
-       
+        # تسجيل نص الاستجابة كاملة لو احتجنا لفحصها عند الأخطاء
+        if response.status_code != 200:
+            try:
+                print("HTTP %s: %s", response.status_code, response.text[:1000])
+            except Exception:
+                print("HTTP %s and failed to read response.text", response.status_code)
+            return
+
+        # محاولة تحويل الاستجابة إلى JSON مع حماية
         try:
-            session_ok = response_data.get("session", True)
+            result = response.json()
+            #print("Response JSON keys: %s", list(result.keys()))
+        except ValueError:
+            # JSON غير صالح — حفظ النص لفحص لاحق
+            print("Failed to parse JSON from response. Response text (first 2000 chars):\n%s", response.text[:2000])
+        
+            return
+
+        # التحقق من حالة الجلسة
+        try:
+            session_ok = result.get("session", True)
             if session_ok is False:
+                #print("Session expirée. Redirection vers login.")
                 try:
                     self.login_window = LoginWindow()
                     self.login_window.setFixedSize(1710, 1005)
@@ -3140,9 +2592,10 @@ class MainWindow(QMainWindow):
                     self.login_window.show()
                     self.close()
                 except Exception:
-                    log_message("Erreur pendant l'affichage de la fenêtre de login")
+                    print("Erreur pendant l'affichage de la fenêtre de login")
                 return
         except Exception:
+            #print("Erreur en vérifiant la clé 'session' du résultat")
             return
 
 
@@ -3152,47 +2605,70 @@ class MainWindow(QMainWindow):
             if item:
                 widget = item.widget()
                 if widget:
+                    widget_name = widget.objectName() if widget.objectName() else widget.__class__.__name__
+                    # print(f"   🗑️ Suppression du widget: {widget_name}")
                     widget.deleteLater()
-               
+                # else:
+                    # print(f"   📦 Élément non-widget trouvé à l'index {i}")
+        # إذا العملية ناجحة
         try:
             if result.get("success"):
                 scenario = result.get("scenario")
                 if scenario is None:
-                    print("Le champ 'scenario' est manquant dans la réponse.")
+                    #print("Le champ 'scenario' est manquant dans la réponse.")
                     return
 
+                # التأكد من وجود state_stack
                 state_stack = scenario.get("state_stack")
-                if not isinstance(state_stack, list):  
+                if not isinstance(state_stack, list):
+                    print("state_stack n'est pas une liste (type=%s). Tentative de conversion...", type(state_stack))
+                    # محاولة تصحيح إذا كانت سلسلة JSON
                     if isinstance(state_stack, str):
                         try:
                             state_stack = json.loads(state_stack)
+                            #print("state_stack loaded from string; length=%d", len(state_stack))
                         except Exception:
+                            #print("Impossible de parser state_stack string")
                             return
                     else:
+                        #print("state_stack a un format inattendu: %r", state_stack)
                         return
 
                 self.STATE_STACK = state_stack
+                #print("Scénario récupéré avec %d états.", len(self.STATE_STACK))
 
+                # نسخة للمعالجة
                 state_stack_copy = copy.deepcopy(self.STATE_STACK)
 
                 for index, state in enumerate(state_stack_copy, start=1):
+                    #print("Processing state #%d", index)
+                    # محاولة عرض حالة بشكل آمن (fallback to str)
                     try:
                         pretty = json.dumps(state, indent=2, ensure_ascii=False, default=str)
+                        #print("State #%d preview: %s", index, pretty[:2000])  # لا تطبع كل شيء لو كبير
                     except Exception:
-                        log_message("State #%d repr: %s", index, repr(state)[:1000])
+                        print("Cannot JSON-dump state #%d; fallback to repr", index)
+                        #print("State #%d repr: %s", index, repr(state)[:1000])
 
-                
+                    # استدعاء Load_State مع قياس الوقت
                     try:
                         t0 = time.time()
                         self.Load_State(state)
-                        t1 = time.time()                    
+                        t1 = time.time()
+                        #print("Load_State for #%d succeeded in %.3fs", index, t1 - t0)
+                        # بعد كل تحميل حدّث الأزرار
                         try:
                             self.Update_Actions_Color_Handle_Last_Button()
                         except Exception:
-                            log_message("Update_Actions_Color_Handle_Last_Button failed after state #%d", index)
+                            print("Update_Actions_Color_Handle_Last_Button failed after state #%d", index)
                     except Exception as e:
+                        print("Erreur pendant Load_State() pour l'état #%d: %s", index, e)
+                        # لا نكسر الحلقة — نستمر في محاولة تحميل باقي الحالات
                         continue
 
+                #print("Scénario chargé avec succès.")
+
+                # حذف التكرارات بطريقة آمنة: نستخدم json.dumps(default=str) لتجنب TypeError
                 try:
                     unique_states = []
                     seen = set()
@@ -3200,13 +2676,17 @@ class MainWindow(QMainWindow):
                         try:
                             state_key = json.dumps(state, sort_keys=True, ensure_ascii=False, default=str)
                         except Exception:
+                            #print("json.dumps failed for a state during dedup; using repr fallback")
                             state_key = repr(state)
                         if state_key not in seen:
                             seen.add(state_key)
                             unique_states.append(state)
                     self.STATE_STACK = unique_states
+                    #print("self.STATE_STACK dédupliqué, nouveau length=%d", len(self.STATE_STACK))
                 except Exception:
-                    log_message("Échec de suppression des doublons")
+                    print("Échec de suppression des doublons")
+            # else:
+                # print("API returned success=false; error: %s", result.get("error"))
         except Exception:
             print("Erreur pendant le traitement du résultat JSON")
 

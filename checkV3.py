@@ -299,6 +299,7 @@ def initialize_dependencies():
     platformdirs = DependencyManager.install_and_import("platformdirs")
     selenium = DependencyManager.install_and_import("selenium", module_name="selenium", 
                                                    required_import="webdriver", version="4.27.1")
+    jsonschema = DependencyManager.install_and_import("jsonschema")
     
     # Installation de python-dotenv
     try:

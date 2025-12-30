@@ -280,5 +280,7 @@ class SessionManager:
 
 
 
+
+    
 # 🔹 Instance unique pour usage global
 SessionManager= SessionManager()
