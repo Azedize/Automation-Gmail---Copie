@@ -82,8 +82,7 @@ class Settings:
         '_LOAD_SCENARIOS_API'       :  "http://localhost/auth-api/get_scenarios.php",
         '_ON_SCENARIO_CHANGED_API'  :  "http://localhost/auth-api/get_scenario_by_name.php",
         '__CHECK_URL_PROGRAMM__': "https://www.dropbox.com/scl/fi/78a38bc4papwzlw80hxti/version.json?rlkey=n7dx5mb8tcctvprn0wq4ojw7m&st=z6vzw0ox&dl=1",
-        '__SERVER_ZIP_URL_PROGRAM__': "https://github.com/Azedize/Automation-Gmail---Copie.git",
-
+        '__SERVER_ZIP_URL_PROGRAM__': "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/master.zip"
     }
 
 
@@ -138,6 +137,7 @@ class Settings:
     CHROME_PROFILES = PROFILES_DIR / 'chrome'
     FIREFOX_PROFILES = PROFILES_DIR / 'firefox'
     
+    TOOLS_DICT = BASE_DIR / 'Tools'
     EXTENSIONS_DIR = BASE_DIR / 'Tools' / 'Extensions'
     VERSION_LOCAL_EXT = os.path.join(EXTENSIONS_DIR, "version.txt")
     VERSION_LOCAL_PROGRAMM = os.path.join(BASE_DIR , "config", "version.txt")
