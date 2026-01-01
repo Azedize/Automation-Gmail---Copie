@@ -286,18 +286,16 @@ class Settings:
 
 
     @classmethod
-    def find_pythonw():
+    def find_pythonw(cls):
         base_dir = os.path.dirname(sys.executable)
         candidate = os.path.join(base_dir, "pythonw.exe")
         if os.path.isfile(candidate):
             return candidate
 
-        # 🔹 2) البحث في PATH
         for path in os.environ.get("PATH", "").split(os.pathsep):
             candidate = os.path.join(path.strip('"'), "pythonw.exe")
             if os.path.isfile(candidate):
                 return candidate
-
 
         return None
 
