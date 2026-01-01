@@ -1,29 +1,18 @@
 import os
 import sys
 import shutil
+import tempfile
 import zipfile
-import traceback
-import importlib
-import subprocess
-import time
-from pathlib import Path
 import requests
-import json
-
+import traceback
+import json 
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
-
-
-try:
-    from config import Settings
-    from utils.validation_utils import ValidationUtils
-    from api.base_client import APIManager
-except ImportError as e:
-    print(f"[ERROR] Import modules failed: {e}")
-
+from config import Settings
+from api.base_client import APIManager
 
 
 class UpdateManager:
@@ -63,12 +52,8 @@ class UpdateManager:
             # 🔹 Versions serveur
             # =========================
             server_versions = {
-                "extensions": data.get("version_extensions"),
-                "programm": (
-                    data.get("version_programm")
-                    or data.get("version_Programm")
-                    or data.get("version_program")
-                )
+                "extension": data.get("version_extension"),
+                "programme": data.get("version_Programme")
             }
 
             print("\n🌐 Versions serveur :")
@@ -83,8 +68,8 @@ class UpdateManager:
             # 🔹 Versions locales
             # =========================
             local_files = {
-                "extensions": Settings.VERSION_LOCAL_EXT,
-                "programm": Settings.VERSION_LOCAL_PROGRAMM
+                "extension": Settings.VERSION_LOCAL_EXT,
+                "programme": Settings.VERSION_LOCAL_PROGRAMM
             }
 
             print("\n📁 Vérification des versions locales :")
@@ -111,6 +96,7 @@ class UpdateManager:
                 print(f"   🌐 Version serveur: {server_versions[key]}")
 
                 if local_version != server_versions[key]:
+                    print("Local version" + " " + local_version + " " + "server version" + " " + server_versions[key])
                     print("   🔄 MISE À JOUR REQUISE (versions différentes)")
                     return True
 
@@ -147,7 +133,7 @@ class UpdateManager:
                 print("✅ [INFO] No extension updates required.")
                 return 0
 
-        
+            # إزالة ZIP القديم
             if os.path.exists(local_zip):
                 print(f"🗑️ Removing old ZIP: {local_zip}")
                 os.remove(local_zip)
@@ -159,7 +145,6 @@ class UpdateManager:
 
             # تحميل ZIP
             print("⬇️ Downloading update ZIP from GitHub...")
-            print("🌐 Fetching download URL from API...")
 
             resp = requests.get(SERVEUR_ZIP_URL_PROGRAMM, stream=True, headers=HEADERS, timeout=60)
             print(f"📡 HTTP status code: {resp.status_code}")
@@ -177,7 +162,6 @@ class UpdateManager:
                         f.write(chunk)
                         downloaded += len(chunk)
                 print(f"✅ Downloaded {downloaded / 1024:.2f} KB")
-
 
             # التأكد من أن ZIP موجود وحجمه > 0
             if not os.path.exists(local_zip) or os.path.getsize(local_zip) == 0:
@@ -219,9 +203,268 @@ class UpdateManager:
             return -1
 
 
+        
 
 
-print("🌐 Appel API serveur...")
+
+
+    @staticmethod
+    def update_from_github_generic(target_dir, zip_name, github_url, remote_version=None):
+        try:
+            print("📥 Téléchargement de la dernière version depuis GitHub ...")
+            with tempfile.TemporaryDirectory() as tmpdir:
+                zip_path = os.path.join(tmpdir, zip_name)
+                print(f"📂 Dossier temporaire créé : {tmpdir}")
+                print(f"📦 Chemin prévu pour l’archive : {zip_path}")
+
+                # ⬇️ Télécharger l'archive depuis GitHub
+                print(f"⬇️ Téléchargement depuis : {github_url}")
+                if not download_file(github_url, zip_path):
+                    print("❌ Impossible de télécharger le fichier ZIP depuis GitHub.")
+                    return False
+                else:
+                    file_size = os.path.getsize(zip_path)
+                    print(f"✅ Fichier ZIP téléchargé ({file_size/1024:.2f} KB) -> {zip_path}")
+
+                # 🗑️ Supprimer l'ancien dossier cible s'il existe
+                if os.path.exists(target_dir):
+                    print(f"🗑️ Suppression de l'ancien dossier {target_dir} ...")
+                    try:
+                        shutil.rmtree(target_dir, onerror=remove_readonly)
+                        print("✅ Ancien dossier supprimé.")
+                    except Exception as e:
+                        print(f"⚠️ Impossible de supprimer {target_dir} :", e)
+
+                # 📂 Extraction du fichier ZIP
+                print("📂 Extraction du fichier ZIP ...")
+                with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                    zip_content = zip_ref.namelist()
+                    print(f"📑 Contenu du ZIP ({len(zip_content)} fichiers) :")
+                    for f in zip_content[:10]:  # n’affiche que les 10 premiers
+                        print(f"   - {f}")
+                    if len(zip_content) > 10:
+                        print("   ...")
+                    zip_ref.extractall(tmpdir)
+                print("✅ Extraction terminée.")
+
+                # 🔎 Chercher le dossier extrait
+                extracted_dir = None
+                print(f"🔎 Recherche du dossier extrait dans {tmpdir} ...")
+                for item in os.listdir(tmpdir):
+                    item_path = os.path.join(tmpdir, item)
+                    if os.path.isdir(item_path) and item_path != target_dir:
+                        extracted_dir = item_path
+                        print(f"✅ Dossier extrait trouvé : {extracted_dir}")
+                        break
+
+                if extracted_dir is None:
+                    print("❌ Impossible de trouver le dossier extrait dans le ZIP.")
+                    return False
+
+                # 🚚 Déplacer le dossier extrait vers le chemin final
+                print(f"🚚 Déplacement de {extracted_dir} -> {target_dir} ...")
+                shutil.move(extracted_dir, target_dir)
+                print(f"✅ Mise à jour réussie : {target_dir}")
+
+                if remote_version:
+                    print(f"📌 Version installée : {remote_version}")
+
+                return True
+
+        except Exception as e:
+            print("❌ Erreur lors de la mise à jour :", e)
+            traceback.print_exc()
+            return False
+
+
+
+
+
+
+
+    @staticmethod
+    def check_version_generic(dropbox_url, manifest_path, version_txt, retries=3, delay=5):
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/120.0.0.0 Safari/537.36"
+            )
+        }
+
+        attempt = 0
+        while attempt < retries:
+            try:
+                print(f"\n🔎 Tentative de connexion au serveur ({attempt + 1}/{retries}) ...")
+                response = requests.get(dropbox_url, headers=headers, verify=False, timeout=20)
+                response.raise_for_status()  # Lève une exception pour les codes HTTP >=400
+                break  # Si la requête réussit, on sort de la boucle
+            except requests.exceptions.ConnectionError as e:
+                print(f"❌ Échec de la connexion au serveur. Détail : {e}")
+            except requests.exceptions.Timeout as e:
+                print(f"⏱️ Délai d'attente dépassé lors de la connexion. Détail : {e}")
+            except requests.exceptions.HTTPError as e:
+                print(f"⚠️ Erreur HTTP : {e} (code {getattr(response, 'status_code', 'non disponible')})")
+            except requests.exceptions.RequestException as e:
+                print(f"⚠️ Erreur lors de la requête : {e}")
+
+            attempt += 1
+            if attempt < retries:
+                print(f"➡️ Nouvelle tentative dans {delay} secondes ...")
+                time.sleep(delay)
+            else:
+                print("❌ Toutes les tentatives de connexion ont échoué. Vérifiez votre connexion Internet ou le serveur.")
+                sys.exit(1)
+
+        # Vérification du contenu
+        if not response.text.strip():
+            print("⚠️ Le serveur n'a renvoyé aucun contenu.")
+            sys.exit(1)
+
+        try:
+            data = response.json()
+        except json.JSONDecodeError:
+            print("⚠️ Le contenu reçu n'est pas au format JSON valide.")
+            print("📄 Contenu reçu :")
+            print(response.text)
+            sys.exit(1)
+
+        remote_version = data.get("version_Extention")
+        remote_manifest_version = data.get("manifest_version")
+        if not remote_version or not remote_manifest_version:
+            print("⚠️ Les informations de version sont manquantes dans le fichier distant.")
+            sys.exit(1)
+
+        print(f"🌍 Version distante : {remote_version}")
+        print(f"🌍 Version manifest distante : {remote_manifest_version}")
+
+        # Vérification des fichiers locaux
+        if not os.path.exists(manifest_path) or not os.path.exists(version_txt):
+            print(f"⚠️ Les fichiers locaux sont introuvables ({manifest_path} ou {version_txt}). Une mise à jour est requise.")
+            return True
+
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            manifest_data = json.load(f)
+        local_manifest_version = manifest_data.get("version")
+
+        with open(version_txt, "r", encoding="utf-8") as f:
+            local_version = f.read().strip()
+
+        print(f"📄 Version locale : {local_version}")
+        print(f"📄 Version manifest locale : {local_manifest_version}")
+
+        # Comparaison des versions
+        if local_version != remote_version or str(local_manifest_version) != str(remote_manifest_version):
+            print("🔄 Une mise à jour est nécessaire !")
+            print(f"   ➝ Version locale   : {local_version} (manifest_version={local_manifest_version})")
+            print(f"   ➝ Version distante : {remote_version} (manifest_version={remote_manifest_version})")
+            return True
+        else:
+            print("✅ La version locale est à jour.")
+            return False
+
+
+
+
+
+    @staticmethod
+    def process_extension(name, folder, dropbox_url, manifest_path, version_file, github_zip_url, zip_name, icon):
+        # print(f"\n=== 🚀 Lancement du script de mise à jour {icon} {name} ===")
+        print("")
+
+        print(f"\n🔍 Étape 1: Vérification de l'extension locale {name} ...")
+        if os.path.exists(folder):
+            print(f"📂 Extension trouvée : {folder}")
+            remote_version = check_version_generic(dropbox_url, manifest_path, version_file)
+            if remote_version:
+                print(f"🔄 Une mise à jour est nécessaire (nouvelle version : {remote_version})")
+                if update_from_github_generic(folder, zip_name, github_zip_url, remote_version):
+                    print(f"✅ Mise à jour réussie : {name} a été mise à jour avec succès !")
+                else:
+                    print(f"❌ Échec de la mise à jour de {name} depuis GitHub.")
+            else:
+                print(f"✅ L'extension locale {name} est déjà à jour.")
+        else:
+            os.makedirs(folder, exist_ok=True)
+            print(f"📂 Le dossier '{folder}' a été créé car il n'existait pas.")
+            print(f"⚠️ L'extension '{name}' n'existe pas localement.")
+            print("📥 Installation de la dernière version ...")
+
+            remote_version = check_version_generic(dropbox_url, manifest_path, version_file)
+            if update_from_github_generic(folder, zip_name, github_zip_url, remote_version):
+                print(f"✅ Installation de {name} réussie.")
+            else:
+                print(f"❌ Installation de {name} échouée.")
+
+
+
+
+
+
+def download_file(url, dest_path):
+    try:
+        print(f"⬇️ Téléchargement depuis : {url}")
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                          "AppleWebKit/537.36 (KHTML, like Gecko) "
+                          "Chrome/120.0.0.0 Safari/537.36"
+        }
+
+        response = requests.get(url, headers=headers, stream=True, verify=False)
+        response.raise_for_status()
+        total_size = int(response.headers.get("content-length", 0))
+        downloaded = 0
+
+        with open(dest_path, "wb") as f:
+            for chunk in response.iter_content(1024):
+                if chunk:
+                    f.write(chunk)
+                    downloaded += len(chunk)
+                    if total_size:
+                        percent = (downloaded / total_size) * 100
+                        print(f"   → Progression : {percent:.2f}%", end="\r")
+
+        print(f"\n✅ Téléchargement terminé : {dest_path}")
+        return True
+    except Exception as e:
+        print("❌ Erreur lors du téléchargement :", e)
+        return False
+
+
+
+
+
+
+
+
+
+def process_extension(name, folder, dropbox_url, manifest_path, version_file, github_zip_url, zip_name, icon):
+    # print(f"\n=== 🚀 Lancement du script de mise à jour {icon} {name} ===")
+    print("")
+
+    print(f"\n🔍 Étape 1: Vérification de l'extension locale {name} ...")
+    if os.path.exists(folder):
+        print(f"📂 Extension trouvée : {folder}")
+        remote_version = check_version_generic(dropbox_url, manifest_path, version_file)
+        if remote_version:
+            print(f"🔄 Une mise à jour est nécessaire (nouvelle version : {remote_version})")
+            if update_from_github_generic(folder, zip_name, github_zip_url, remote_version):
+                print(f"✅ Mise à jour réussie : {name} a été mise à jour avec succès !")
+            else:
+                print(f"❌ Échec de la mise à jour de {name} depuis GitHub.")
+        else:
+            print(f"✅ L'extension locale {name} est déjà à jour.")
+    else:
+        os.makedirs(folder, exist_ok=True)
+        print(f"📂 Le dossier '{folder}' a été créé car il n'existait pas.")
+        print(f"⚠️ L'extension '{name}' n'existe pas localement.")
+        print("📥 Installation de la dernière version ...")
+
+        remote_version = check_version_generic(dropbox_url, manifest_path, version_file)
+        if update_from_github_generic(folder, zip_name, github_zip_url, remote_version):
+            print(f"✅ Installation de {name} réussie.")
+        else:
+            print(f"❌ Installation de {name} échouée.")
 
 # =========================
 # 🧪 TEST DIRECT
@@ -238,5 +481,8 @@ if __name__ == "__main__":
         print("🔄 UPDATE REQUIRED → True")
     else:
         print("✅ NO UPDATE → False")
+
+
+
 
 
