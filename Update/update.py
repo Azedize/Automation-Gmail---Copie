@@ -10,6 +10,9 @@ import subprocess
 from typing import Optional
 import requests
 
+
+
+
 # ==========================================================
 # 📁 ROOT DIR
 # ==========================================================
@@ -18,6 +21,25 @@ if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
 from config import Settings
+from core import EncryptionService
+
+
+
+DATA_AUTH = {
+        "login": "rep.test",
+        "password": "zsGEnntKD5q2Brp68yxT"
+}
+
+KEY_HEX = "f564292a5740af4fc4819c6e22f64765232ad35f56079854a0ad3996c68ee7a2"
+KEY     = bytes.fromhex(KEY_HEX)
+
+ENCRYPTED = EncryptionService.encrypt_message(json.dumps(DATA_AUTH), KEY)
+
+
+CHECK_URL_EX3 = f"http://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Ext3&k={ENCRYPTED}"
+SERVEUR_ZIP_URL_EX3 = f"http://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Ext3&k={ENCRYPTED}"
+
+
 
 class UpdateManager:
     """Gestionnaire de mise à jour pour l'application et les extensions"""

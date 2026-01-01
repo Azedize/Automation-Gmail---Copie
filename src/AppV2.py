@@ -14,8 +14,6 @@ import re
 import datetime
 import requests
 import sys
-import zipfile
-import traceback
 import urllib3
 import psutil
 from platformdirs import user_downloads_dir
@@ -72,18 +70,23 @@ SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
 os.makedirs(Settings.APPDATA_DIR, exist_ok=True)
 
-DATA = {
-    "login": "rep.test",
-    "password": "zsGEnntKD5q2Brp68yxT"
+# ═══════════════════════════════════════════════════════════
+#  DATA AUTH
+# ═══════════════════════════════════════════════════════════
+DATA_AUTH = {
+        "login": "rep.test",
+        "password": "zsGEnntKD5q2Brp68yxT"
 }
 
-encrypted = EncryptionService.encrypt_message(json.dumps(DATA), Settings.KEY)
+KEY_HEX = "f564292a5740af4fc4819c6e22f64765232ad35f56079854a0ad3996c68ee7a2"
+KEY     = bytes.fromhex(KEY_HEX)
 
-# DROPBOX_URL    = "https://www.dropbox.com/scl/fi/78a38bc4papwzlw80hxti/version.json?rlkey=n7dx5mb8tcctvprn0wq4ojw7m&st=ormvslid&dl=1"
-# GITHUB_ZIP_URL = "https://github.com/Azedize/Extention-Repo/archive/refs/heads/main.zip"
+ENCRYPTED = EncryptionService.encrypt_message(json.dumps(DATA_AUTH), KEY)
 
-CHECK_URL_EX3 = f"http://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Ext3&k={encrypted}"
-SERVEUR_ZIP_URL_EX3 = f"http://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Ext3&k={encrypted}"
+
+CHECK_URL_EX3 = f"http://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Ext3&k={ENCRYPTED}"
+SERVEUR_ZIP_URL_EX3 = f"http://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Ext3&k={ENCRYPTED}"
+
 
 
 # Si ce n'est pas le cas, il tente de l'installer via Chocolatey (et installe aussi npm).
