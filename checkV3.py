@@ -287,7 +287,7 @@ class UpdateManagerLV:
                 UpdateManagerLV._download_and_extract(
                     Settings.API_ENDPOINTS["__SERVER_ZIP_URL_EXTENSIONS__"],
                     Settings.TOOLS_DIR,
-                    clean_target=True    # حذف المجلد القديم
+                    clean_target=True       
                 )
                 print("▶️ Extensions mises à jour, poursuite normale")
                 return True
@@ -302,135 +302,6 @@ class UpdateManagerLV:
             print("🔥 ERREUR CRITIQUE → UPDATE PAR SÉCURITÉ")
             traceback.print_exc()
             return True
-
-
-
-
-
-
-class UpdateManager:
-
-    
-    @staticmethod
-    def download_and_extract(new_versions):
-        """Télécharge et extrait les mises à jour"""
-        try:
-            if not isinstance(new_versions, dict):
-                print("❌ Format de versions invalide")
-                return -1
-
-            download_path = SCRIPT_DIR
-            local_zip = download_path / "Programme-main.zip"
-            extracted_dir = download_path / "Programme-main"
-
-            print(f"📁 Chemin : {download_path}")
-            
-            need_interface = "version_interface" in new_versions
-            need_python = "version_python" in new_versions
-
-            if not need_interface and not need_python:
-                print("✅ Aucune mise à jour requise")
-                return 0
-
-            # Nettoyage des fichiers existants
-            if local_zip.exists():
-                local_zip.unlink()
-            if extracted_dir.exists():
-                shutil.rmtree(extracted_dir)
-
-            # Téléchargement
-            print("⬇️ Téléchargement des mises à jour...")
-            response = requests.get(SERVER_ZIP_URL_PROGRAM, stream=True, headers=HEADERS, timeout=60)
-            if response.status_code != 200:
-                print(f"❌ Échec du téléchargement : HTTP {response.status_code}")
-                return -1
-
-            with open(local_zip, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    if chunk:
-                        f.write(chunk)
-
-            # Extraction
-            print("📦 Extraction des fichiers...")
-            with zipfile.ZipFile(local_zip, 'r') as zip_ref:
-                names = [n for n in zip_ref.namelist() if n.strip()]
-                if not names:
-                    print("❌ Archive vide")
-                    return -1
-
-                top_folder = names[0].split('/')[0]
-                zip_ref.extractall(download_path)
-
-            # Organisation des dossiers
-            extracted_top_dir = download_path / top_folder
-            if extracted_top_dir != extracted_dir:
-                if extracted_dir.exists():
-                    shutil.rmtree(extracted_dir)
-                extracted_top_dir.rename(extracted_dir)
-
-            # Nettoyage
-            if local_zip.exists():
-                local_zip.unlink()
-
-            print("🎉 Mise à jour terminée avec succès")
-            return 0
-
-        except Exception as e:
-            traceback.print_exc()
-            print(f"❌ Erreur lors de la mise à jour : {e}")
-            return -1
-
-    @staticmethod
-    def check_version():
-        """Vérifie les versions disponibles"""
-        try:
-            print("🔍 Vérification des mises à jour...")
-            response = requests.get(CHECK_URL_PROGRAM, timeout=15)
-            if response.status_code != 200:
-                print(f"❌ Impossible de contacter le serveur : HTTP {response.status_code}")
-                return "_1"
-
-            data = response.json()
-            server_version_python = data.get("version_python")
-            server_version_interface = data.get("version_interface")
-            
-            if not all([server_version_python, server_version_interface]):
-                print("❌ Informations de version manquantes")
-                return "_1"
-
-            # Chemins des fichiers de version locaux
-            version_files = {
-                "version_python": DIRECTORY_VERSIONS / "Python" / "version.txt",
-                "version_interface": DIRECTORY_VERSIONS / "interface" / "version.txt"
-            }
-
-            client_versions = {}
-            version_updates = {}
-
-            # Lecture des versions locales
-            for key, path in version_files.items():
-                if path.exists():
-                    with open(path, "r") as f:
-                        client_versions[key] = f.read().strip()
-                else:
-                    client_versions[key] = None
-                    # Si fichier manquant, mise à jour nécessaire
-                    version_updates[key] = server_version_python if key == "version_python" else server_version_interface
-
-            # Comparaison des versions
-            if client_versions.get("version_python") and server_version_python != client_versions["version_python"]:
-                version_updates["version_python"] = server_version_python
-            
-            if client_versions.get("version_interface") and server_version_interface != client_versions["version_interface"]:
-                version_updates["version_interface"] = server_version_interface
-
-            return version_updates if version_updates else None
-
-        except Exception as e:
-            traceback.print_exc()
-            print(f"❌ Erreur lors de la vérification : {e}")
-            return "_1"
-
 
 
 
