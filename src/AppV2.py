@@ -48,6 +48,7 @@ from api import APIManager
 from utils import ValidationUtils
 from ui_utils import UIManager
 from services import JsonManager
+from Update import UpdateManager
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 FIREFOX_LAUNCH = []
@@ -154,50 +155,6 @@ def ensure_web_ext_installed():
 
 
 
-# 🚀 Lance discrètement un nouveau script Python (checkV3.pyc) dans une nouvelle fenêtre sans console
-def launch_new_window():
-    target_dir = os.path.dirname(Settings.BASE_DIR)
-    script_path = os.path.join(target_dir, "checkV3.pyc")
-    time.sleep(1)
-
-    if not ValidationUtils.path_exists(script_path):
-        return None  
-
-    time.sleep(1)
-
-    try:
-        python_executable = sys.executable
-        command = [python_executable, script_path]
-        process = subprocess.Popen(
-            command,
-            creationflags=subprocess.CREATE_NO_WINDOW ,
-            close_fds=True
-        )
-        # stdout, stderr = process.communicate()  
-        if process.returncode != 0:
-            # try:
-            #     print(f"   📝 [ERROR] Standard Error: {stderr.decode(encoding='utf-8', errors='replace')}") 
-            # except Exception as decode_err:
-            #     print(f"   ⚠️ [ERROR] Failed to decode stderr: {decode_err}")
-            #     print(f"   📝 [ERROR] Raw stderr: {stderr}") 
-            # try:
-            #     print(f"   📤 [INFO] Standard Output: {stdout.decode(encoding='utf-8', errors='replace')}") 
-            # except Exception as decode_err:
-            #     print(f"   ⚠️ [ERROR] Failed to decode stdout: {decode_err}")
-            #     print(f"   📤 [INFO] Raw stdout: {stdout}") 
-            return None
-
-        time.sleep(1)
-
-    except Exception as e:
-        # print(f"💥 [CRITICAL ERROR] Failed to launch: {str(e)}")
-        # print("💡 [TIP] Check execution permissions or file integrity.")
-        # print(f"   📌 [ERROR] Details: {traceback.format_exc()}")  
-        return None
-
-    return target_dir
-
-
 
 # 📝 Ajoute un message au journal global 'LOGS'
 def log_message(text):
@@ -206,182 +163,6 @@ def log_message(text):
 
 
 
-
-def Download_Extract(new_versions):
-    try:
-        if not isinstance(new_versions, dict):
-            # print("❌ [ERROR] Invalid new_versions (not a dict).")
-            return -1
-
-        if "version_extensions" not in new_versions:
-            # print("✅ [INFO] No extension updates required.")
-            return 0
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            local_zip = os.path.join(tmpdir, "Programme-main.zip")
-
-            # Download ZIP using APIManager
-            # print("⬇️ Downloading update ZIP from server...")
-            
-            # Utilisation de APIManager pour faire la requête
-            result = APIManager.make_request(
-                '_ON_SCENARIO_CHANGED_API', 
-                method="GET", 
-                timeout=60
-            )
-            
-            if result["status"] != "success":
-                # print(f"❌ [ERROR] Failed to download ZIP: {result.get('error', 'Unknown error')}")
-                return -1
-            
-            # Téléchargement manuel du contenu si nécessaire
-            # print("🌐 Fetching download URL from API...")
-            
-            # Option 1: Si l'API retourne directement l'URL de téléchargement
-            # Option 2: Utiliser l'endpoint approprié pour télécharger
-            download_url = Settings.API_ENDPOINTS.get('_DOWNLOAD_EXTENSIONS_API', Settings.API_ENDPOINTS['_ON_SCENARIO_CHANGED_API'])
-            
-            # Utiliser APIManager pour télécharger le fichier
-            # print(f"📥 Downloading from: {download_url}")
-            
-            # Si APIManager a une méthode download_extension, l'utiliser
-            success = APIManager.download_extension(download_url, local_zip)
-            
-            if not success:
-                # Fallback: téléchargement manuel
-                # print("⚠️ Using fallback download method...")
-                try:
-                    response = requests.get(
-                        download_url, 
-                        stream=True, 
-                        headers=Settings.HEADER, 
-                        verify=False, 
-                        timeout=60
-                    )
-                    
-                    if response.status_code != 200:
-                        # print(f"❌ [ERROR] Failed to download ZIP: HTTP {response.status_code}")
-                        return -1
-
-                    with open(local_zip, "wb") as f:
-                        for chunk in response.iter_content(chunk_size=8192):
-                            if chunk:
-                                f.write(chunk)
-                except Exception as e:
-                    return -1
-
-
-            # Extract safely
-
-            try:
-                with zipfile.ZipFile(local_zip, 'r') as zip_ref:
-                    if not zip_ref.namelist():
-                        return -1
-                    
-                    # Vérifier la sécurité des chemins
-                    topdir = zip_ref.namelist()[0].split('/')[0]
-                    extracted_dir = os.path.join(tmpdir, topdir)
-                    
-                    # Extraction sécurisée
-                    safe_extract(zip_ref, tmpdir)
-            except zipfile.BadZipFile:
-                return -1
-            except Exception as e:
-                return -1
-
-            # Tools update
-            tools_target = os.path.join(Settings.BASE_DIR, "tools")
-            new_tools_root = os.path.join(extracted_dir, "tools")
-
-            if not ValidationUtils.path_exists(new_tools_root):
-                return -1
-
-            # Backup before replacing
-            backup_dir = tools_target + "_backup_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            
-            if ValidationUtils.path_exists(tools_target):
-                
-                # Supprimer l'ancien backup s'il existe
-                if ValidationUtils.path_exists(backup_dir):
-                    try:
-                        shutil.rmtree(backup_dir)
-                    except Exception as e:
-                        print(f"⚠️ Could not remove old backup: {e}")
-                
-                try:
-                    shutil.copytree(tools_target, backup_dir)
-                    # print(f"✅ Backup created: {backup_dir}")
-                except Exception as e:
-                    print(f"⚠️ Failed to create backup: {e}")
-                    # Continuer même si la sauvegarde échoue
-
-            try:
-                # Supprimer l'ancien répertoire tools
-                if ValidationUtils.path_exists(tools_target):
-                    shutil.rmtree(tools_target)
-                
-                # Déplacer le nouveau répertoire tools
-                shutil.move(new_tools_root, tools_target)
-
-                # Optionnel: nettoyer le backup après succès
-                if ValidationUtils.path_exists(backup_dir) and ValidationUtils.path_exists(tools_target):
-                    try:
-                        shutil.rmtree(backup_dir)
-                    except Exception as e:
-                        print(f"⚠️ Could not clean up backup: {e}")
-
-                # Mettre à jour le fichier version.txt local
-                version_file_path = os.path.join(tools_target, "version.txt")
-                if ValidationUtils.path_exists(version_file_path):
-                    try:
-                        with open(version_file_path, 'r') as f:
-                            new_version = f.read().strip()
-                        # Notifier le serveur de la mise à jour réussie
-                        try:
-                            params = {
-                                "version": new_version,
-                                "update_type": "extensions",
-                                "status": "success"
-                            }
-                            APIManager.make_request('_UPDATE_STATUS_API', "POST", json_data=params)
-                        except Exception as e:
-                            print(f"⚠️ Could not report update status: {e}")
-                    except Exception as e:
-                        print(f"⚠️ Could not read new version: {e}")
-
-            except Exception as move_err:
-                print(f"❌ [ERROR] Failed to replace tools: {move_err}")
-                
-                # Restaurer depuis le backup
-                if ValidationUtils.path_exists(backup_dir):
-                    try:
-                        if ValidationUtils.path_exists(tools_target):
-                            shutil.rmtree(tools_target)
-                        shutil.move(backup_dir, tools_target)
-                    except Exception as restore_err:
-                        print(f"❌ Failed to restore backup: {restore_err}")
-                        return -1
-                else:
-                    print("⚠️ No backup available to restore")
-                
-                return -1
-
-        print("🎉 [SUCCESS] Download and update process completed.")
-        return 0
-
-    except Exception as e:
-        traceback.print_exc()
-        print(f"❌ [EXCEPTION] Unexpected error in Download_Extract: {e}")
-        return -1
-
-
-
-def safe_extract(zip_ref, path):
-    for member in zip_ref.namelist():
-        member_path = os.path.abspath(os.path.join(path, member))
-        if not member_path.startswith(os.path.abspath(path)):
-            raise Exception("⚠️ [SECURITY] Unsafe path detected in ZIP archive.")
-    zip_ref.extractall(path)
 
 
 
@@ -1131,322 +912,6 @@ class CloseBrowserThread(QThread):
 
 
 
-def Download_File(url, dest_path):
-    try:
-        print(f"⬇️ Téléchargement depuis : {url}")
-        response = requests.get(url, stream=True, verify=False)
-        response.raise_for_status()
-        total_size = int(response.headers.get("content-length", 0))
-        downloaded = 0
-
-        with open(dest_path, "wb") as f:
-            for chunk in response.iter_content(1024):
-                if chunk:
-                    f.write(chunk)
-                    downloaded += len(chunk)
-                    if total_size:
-                        percent = (downloaded / total_size) * 100
-                        print(f"   → Progression : {percent:.2f}%", end="\r")
-        print(f"\n✅ Téléchargement terminé : {dest_path}")
-        return True
-    except Exception as e:
-        print("❌ Erreur lors du téléchargement :", e)
-        return False
-
-
-
-
-
-
-
-# 🔧 Forcer suppression même si fichier en lecture seule
-def Remove_Readonly(func, path, exc_info):
-    os.chmod(path, stat.S_IWRITE)
-    func(path)
-
-
-
-
-
-
-
-# 📦 Télécharger et extraire le projet GitHub
-def Update_From_Serveur(remote_version=None):
-    try:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            zip_path = os.path.join(tmpdir, "Ext3.zip")
-
-            if not Download_File(SERVEUR_ZIP_URL_EX3, zip_path):
-                return False
-
-            if ValidationUtils.path_exists(Settings.EXTENTION_EX3):
-                shutil.rmtree(Settings.EXTENTION_EX3, onerror=Remove_Readonly)
-
-            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-                zip_ref.extractall(tmpdir)
-
-            extracted_dir = None
-            for item in os.listdir(tmpdir):
-                item_path = os.path.join(tmpdir, item)
-                if os.path.isdir(item_path):
-                    extracted_dir = item_path
-                    break
-
-            if extracted_dir is None:
-                return False
-
-            shutil.move(extracted_dir, Settings.EXTENTION_EX3)
-            return True
-    except Exception as e:
-        traceback.print_exc()
-        return False
-
-
-
-
-def Check_Version_Extention(window):
-    try:
-        remote_version = None
-        remote_manifest_version = None
-        
-        try:
-            result = APIManager.check_extension_version()
-            
-            if isinstance(result, dict) and result.get("status") == "success":
-                data = result.get("data", {})
-                remote_version = data.get("version_Extention")
-                remote_manifest_version = data.get("manifest_version")
-            else:
-                # Fallback à la méthode directe
-                raise ValueError("APIManager returned invalid response")
-                
-        except Exception as api_error:
-            
-            # Option 2: Méthode directe (fallback)
-            try:
-                # Valider l'URL avec ValidationUtils
-                if not CHECK_URL_EX3 or not CHECK_URL_EX3.startswith(("http://", "https://")):
-                    UIManager.Show_Critical_Message(
-                        window,
-                        "Configuration Error",
-                        "Invalid extension check URL configuration.",
-                        message_type="critical"
-                    )
-                    return False
-                
-                response = requests.get(
-                    CHECK_URL_EX3, 
-                    headers=Settings.HEADER, 
-                    verify=False, 
-                    timeout=15
-                )
-                response.raise_for_status()
-                
-                # Valider la réponse JSON
-                try:
-                    data = response.json()
-                except json.JSONDecodeError:
-                    UIManager.Show_Critical_Message(
-                        window,
-                        "Server Error",
-                        "Invalid response format from server.",
-                        message_type="critical"
-                    )
-                    return False
-                
-                remote_version = data.get("version_Extention")
-                remote_manifest_version = data.get("manifest_version")
-
-            except requests.exceptions.Timeout:
-                UIManager.Show_Critical_Message(
-                    window,
-                    "Network Timeout",
-                    "Connection timeout while checking extension version.\nPlease check your internet connection.",
-                    message_type="critical"
-                )
-                return False
-            except requests.exceptions.ConnectionError:
-                UIManager.Show_Critical_Message(
-                    window,
-                    "Connection Error",
-                    "Unable to connect to the version server.\nPlease check your internet connection.",
-                    message_type="critical"
-                )
-                return False
-            except Exception as e:
-                UIManager.Show_Critical_Message(
-                    window,
-                    "Network / Remote Version Error",
-                    f"Unable to fetch the remote version. Check your connection or contact support.\n\nTechnical details: {str(e).capitalize()}",
-                    message_type="critical"
-                )
-                return False
-
-        # Validation des versions distantes
-        if not remote_version or not remote_manifest_version:
-            UIManager.Show_Critical_Message(
-                window,
-                "Server Error",
-                "Incomplete version information received from server.",
-                message_type="critical"
-            )
-            return False
-
-        manifest_valid, manifest_msg = ValidationUtils.validate_file_path(
-            Settings.MANIFEST_PATH_EX3, 
-            must_exist=True
-        )
-        version_valid, version_msg = ValidationUtils.validate_file_path(
-            Settings.VERSION_LOCAL_EX3, 
-            must_exist=True
-        )
-        
-        if not manifest_valid or not version_valid: 
-            UIManager.Show_Critical_Message(
-                window,
-                "Missing Local Files",
-                "The local extension files could not be found. Please reinstall the extension.\n\n"
-                f"• Manifest: {manifest_msg}\n"
-                f"• Version file: {version_msg}",
-                message_type="critical"
-            )
-            return False
-
-        local_version = None
-        local_manifest_version = None
-        
-        try:
-            with open(Settings.MANIFEST_PATH_EX3, "r", encoding="utf-8") as f:
-                manifest_data = json.load(f)
-            
-            required_manifest_keys = ["manifest_version", "name", "version"]
-            valid_manifest, manifest_validation_msg = ValidationUtils.validate_json_structure(
-                manifest_data, 
-                required_manifest_keys
-            )
-            
-            if not valid_manifest:
-                UIManager.Show_Critical_Message(
-                    window,
-                    "Manifest Error",
-                    f"Invalid extension manifest structure.\n\nDetails: {manifest_validation_msg}",
-                    message_type="critical"
-                )
-                return False
-            
-            local_manifest_version = manifest_data.get("version")
-            
-        except json.JSONDecodeError as e:
-            UIManager.Show_Critical_Message(
-                window,
-                "Manifest Error",
-                f"Invalid JSON format in extension manifest.\n\nDetails: {str(e)}",
-                message_type="critical"
-            )
-            return False
-        except Exception as e:
-            UIManager.Show_Critical_Message(
-                window,
-                "File Error",
-                f"Unable to read extension manifest.\n\nDetails: {str(e)}",
-                message_type="critical"
-            )
-            return False
-
-        try:
-            with open(Settings.VERSION_LOCAL_EX3, "r", encoding="utf-8") as f:
-                local_version = f.read().strip()
-            
-            if not local_version or len(local_version.strip()) == 0:
-                print("❌ Empty version file")
-                UIManager.Show_Critical_Message(
-                    window,
-                    "Version Error",
-                    "Empty version file detected.",
-                    message_type="warning"
-                )
-        except Exception as e:
-            print(f"❌ Error reading version file: {e}")
-            local_version = "0.0.0" 
-
-        
-        if str(local_manifest_version) != str(remote_manifest_version):
-            compatibility_validations = [
-                (False, f"Manifest mismatch: Local={local_manifest_version}, Remote={remote_manifest_version}"),
-                (True, f"Extension name: {manifest_data.get('name', 'Unknown')}"),
-                (True, f"Extension path: {Settings.EXTENTION_EX3}")
-            ]
-            report = ValidationUtils.create_validation_report(compatibility_validations)
-            
-            UIManager.Show_Critical_Message(
-                window,
-                "Manifest Incompatibility",
-                "The local manifest version does not match the remote one.\n\n"
-                f"• Local manifest: {local_manifest_version}\n"
-                f"• Remote manifest: {remote_manifest_version}\n\n"
-                "Please contact support for assistance.",
-                message_type="critical"
-            )
-            return False
-
-        
-        if local_version != remote_version:
-            
-            update_info = {
-                "event": "extension_update_required",
-                "local_version": local_version,
-                "remote_version": remote_version,
-                "manifest_version": remote_manifest_version,
-                "timestamp": datetime.datetime.now().isoformat(),
-                "extension_path": Settings.EXTENTION_EX3
-            }
-            
-            try:
-                APIManager.log_event(update_info)
-            except:
-                print("⚠️ Could not log update event")
-            
-            return remote_version  # update required
-        else:
-            
-            # Créer un rapport de succès
-            success_validations = [
-                (True, f"Extension version: {local_version}"),
-                (True, f"Manifest version: {local_manifest_version}"),
-                (True, f"Extension path: {Settings.EXTENTION_EX3}"),
-                (True, "All checks passed successfully")
-            ]
-            
-            report = ValidationUtils.create_validation_report(success_validations)
-            return True 
-
-    except Exception as e:
-        traceback.print_exc()
-        
-        try:
-            error_info = {
-                "event": "extension_check_error",
-                "error": str(e),
-                "timestamp": datetime.datetime.now().isoformat(),
-                "function": "Check_Version_Extention"
-            }
-            APIManager.log_event(error_info)
-        except:
-            pass
-        
-        UIManager.Show_Critical_Message(
-            window,
-            "Internal Error",
-            "An unexpected error occurred during extension verification.\n\n"
-            f"Technical details: {str(e)[:200]}\n\n"
-            "Please contact support for assistance.",
-            message_type="critical"
-        )
-        return False
-
-
-
-
 
 
 
@@ -1680,91 +1145,18 @@ def Process_Browser(window, selected_Browser):
 
 
 
-def check_and_update() -> bool:
-    """Vérifier et mettre à jour le programme et/ou extensions"""
-    try:
-        from api.base_client import APIManager
 
-        print("\n" + "=" * 80)
-        print("🔍 DÉMARRAGE DU SYSTÈME DE MISE À JOUR")
-        print("=" * 80)
 
-        # -------------------------------
-        # 🌐 APPEL SERVEUR pour récupérer versions
-        # -------------------------------
-        response = APIManager.make_request(
-            "__CHECK_URL_PROGRAMM__", method="GET", timeout=10
-        )
 
-        if not isinstance(response, dict) or response.get("status_code") != 200:
-            print("❌ Réponse serveur invalide → Update forcé")
-            return True
-
-        data = response.get("data", {})
-        server_program = data.get("version_Programme")
-        server_ext = data.get("version_extension")
-
-        print(f"🌐 Version programme serveur : {server_program}")
-        print(f"🌐 Version extensions serveur : {server_ext}")
-
-        # -------------------------------
-        # 📁 VERSIONS LOCALES
-        # -------------------------------
-        local_program = UpdateManager._read_local_version(Settings.VERSION_LOCAL_PROGRAMM)
-        local_ext = UpdateManager._read_local_version(Settings.VERSION_LOCAL_EXT)
-
-        print(f"📄 Version programme locale : {local_program}")
-        print(f"📄 Version extensions locale : {local_ext}")
-
-        # ======================================================
-        # 🟥 MISE À JOUR PROGRAMME
-        # ======================================================
-        if not local_program or local_program != server_program:
-            print("\n🟥 MISE À JOUR PROGRAMME REQUISE")
-            UpdateManager._download_and_extract(
-                Settings.API_ENDPOINTS["__SERVER_ZIP_URL_PROGRAM__"],
-                ROOT_DIR,
-                clean_target=False,
-                extract_subdir=None  # كل الملفات في الجذر
-            )
-            print("⛔ Arrêt après mise à jour programme")
-            return True
-
-        # ======================================================
-        # 🟨 MISE À JOUR EXTENSIONS (TOOLS)
-        # ======================================================
-        if not local_ext or local_ext != server_ext:
-            print("\n🟨 MISE À JOUR EXTENSIONS REQUISE")
-            tools_dir = Settings.TOOLS_DIR
-            if not os.path.exists(tools_dir):
-                print(f"⚠️ Dossier Tools introuvable, création automatique : {tools_dir}")
-                os.makedirs(tools_dir)
-
-            UpdateManager._download_and_extract(
-                Settings.API_ENDPOINTS["__SERVER_ZIP_URL_PROGRAM__"],
-                tools_dir,
-                clean_target=True,
-                extract_subdir="tools"
-            )
-            print("▶️ Extensions mises à jour, poursuite normale")
-            return True
-
-        # ======================================================
-        # 🟩 AUCUNE MISE À JOUR
-        # ======================================================
-        print("\n🟩 APPLICATION À JOUR – AUCUNE ACTION")
-        return False
-
-    except Exception as e:
-        print("🔥 ERREUR CRITIQUE → UPDATE PAR SÉCURITÉ")
-        traceback.print_exc()
-        return True
 
 
 
 
 
 class MainWindow(QMainWindow):
+
+
+
 
     def __init__(self, json_data):
 
@@ -2277,6 +1669,10 @@ class MainWindow(QMainWindow):
 
             return
 
+
+
+
+
         # Nettoyage des badges de notification
         try:
             if self.result_tab_widget:
@@ -2294,60 +1690,19 @@ class MainWindow(QMainWindow):
         except Exception as e:
             log_message(f"[BADGES ERROR] Erreur lors de la suppression des badges : {e}")
 
+
+
+
+
         # For PROGRAMM COMPLETE UPDATE
-        # new_versions = Check_Version()
-        # if new_versions == "_1":
-        #     UIManager.Show_Critical_Message(
-        #         window,
-        #         "Connection Error",
-        #         "We could not reach the server or retrieve the required version information.\n\n"
-        #         "👉 Please check your internet connection and try again.\n"
-        #         "If the problem continues, contact Support for further assistance.",
-        #         message_type="critical"
-        #     )
-        #     return
-        # if not new_versions:
-        #     print("✅ Everything is up to date. No updates are required.")
-        # else:
-        #     # 🔄 Python or interface update
-        #     if 'version_python' in new_versions or 'version_interface' in new_versions:
-        #         UIManager.Show_Critical_Message(
-        #             window,
-        #             "Update Required",
-        #             "A new update is available for the application.\n\n"
-        #             "The program will now restart to apply the latest changes.",
-        #             message_type="info"
-        #         )
-        #         print("🔄 Python or interface update detected. Restarting the program...")
-        #         window.close()
-        #         launch_new_window()
-        #         sys.exit(0)
-        #     # 🌐 Extensions update
-        #     elif 'version_extensions' in new_versions:
-        #         print("⬇️ Downloading new Extensions update...")
-        #         if Download_Extract(new_versions) == 0:
-        #             UIManager.Show_Critical_Message(
-        #                 window,
-        #                 "Update Completed",
-        #                 "The browser extensions have been successfully updated.\n\n"
-        #                 "You can now continue using the application.",
-        #                 message_type="success"
-        #             )
-        #             print("✅ Extensions updated successfully")
-        #         else:
-        #             UIManager.Show_Critical_Message(
-        #                 window,
-        #                 "Update Failed",
-        #                 "We were unable to complete the update of one or more browser extensions.\n\n"
-        #                 "Possible causes:\n"
-        #                 " • Internet connection issues\n"
-        #                 " • Server temporarily unavailable\n\n"
-        #                 "👉 Please check your connection and try again.\n"
-        #                 "If the problem persists, contact Support for assistance.",
-        #                 message_type="critical"
-        #             )
-        #             print("❌ Failed to update one or more extensions")
-        #             return
+        try:
+            UpdateManager.check_and_update()
+
+        except SystemExit:
+            return
+        except Exception as e:
+            log_message(f"[UPDATE ERROR] {e}")
+
 
         selected_Browser = self.browser.currentText().lower()
 
