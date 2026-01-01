@@ -1,6 +1,14 @@
 import os
 from pathlib import Path
 import sys
+import json
+
+
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
+
+from core import EncryptionService
 
 
 class Settings:
@@ -12,8 +20,14 @@ class Settings:
             "password": "zsGEnntKD5q2Brp68yxT"
     }
 
+    KEY_HEX = "f564292a5740af4fc4819c6e22f64765232ad35f56079854a0ad3996c68ee7a2"
+    KEY     = bytes.fromhex(KEY_HEX)
+
+    ENCRYPTED = EncryptionService.encrypt_message(json.dumps(DATA_AUTH), KEY)
 
 
+    CHECK_URL_EX3 = f"http://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Ext3&k={ENCRYPTED}"
+    SERVEUR_ZIP_URL_EX3 = f"http://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Ext3&k={ENCRYPTED}"
 
 
     # ═══════════════════════════════════════════════════════════
@@ -105,10 +119,8 @@ class Settings:
     # 🔐 Paramètres de chiffrement
     # ═══════════════════════════════════════════════════════════
     
-    ENCRYPTION_KEY_HEX = os.getenv(
-        'ENCRYPTION_KEY',
-        'f564292a5740af4fc4819c6e22f64765232ad35f56079854a0ad3996c68ee7a2'
-    )
+    ENCRYPTION_KEY_HEX = 'f564292a5740af4fc4819c6e22f64765232ad35f56079854a0ad3996c68ee7a2'
+    
     
     AES_BLOCK_SIZE = 128    
     AES_KEY_LENGTH = 32         
@@ -264,8 +276,7 @@ class Settings:
     STATUS_LIST = ["all", "bad_proxy", "completed", "account_closed", "password_changed", "code_de_validation",
                     "recoverychanged", "Activite_suspecte", "validation_capcha", "restore_account", "others"]
     
-    KEY_HEX = "f564292a5740af4fc4819c6e22f64765232ad35f56079854a0ad3996c68ee7a2"
-    KEY     = bytes.fromhex(KEY_HEX)
+
 
     
     @classmethod
