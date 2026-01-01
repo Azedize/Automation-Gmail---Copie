@@ -27,11 +27,8 @@ from core import EncryptionService
 
 # Configuration des chemins
 SCRIPT_DIR = Path(__file__).resolve().parent
-DIRECTORY_VERSIONS = SCRIPT_DIR / "Programme-main"
 
-# URLs de configuration
-CHECK_URL_PROGRAM = "https://www.dropbox.com/scl/fi/78a38bc4papwzlw80hxti/version.json?rlkey=n7dx5mb8tcctvprn0wq4ojw7m&st=z6vzw0ox&dl=1"
-SERVER_ZIP_URL_PROGRAM = "https://github.com/Azedize/Programme/archive/refs/heads/main.zip"
+
 
 
 # Flags d'état
@@ -245,9 +242,9 @@ class UpdateManager:
         try:
             from api.base_client import APIManager
 
-            print("\n" + "=" * 80)
-            print("🔍 DÉMARRAGE DU SYSTÈME DE MISE À JOUR")
-            print("=" * 80)
+            # print("\n" + "=" * 80)
+            # print("🔍 DÉMARRAGE DU SYSTÈME DE MISE À JOUR")
+            # print("=" * 80)
 
             # -------------------------------
             # 🌐 APPEL SERVEUR pour récupérer versions
@@ -257,15 +254,15 @@ class UpdateManager:
             )
 
             if not isinstance(response, dict) or response.get("status_code") != 200:
-                print("❌ Réponse serveur invalide → Update forcé")
+                # print("❌ Réponse serveur invalide → Update forcé")
                 return True
 
             data = response.get("data", {})
             server_program = data.get("version_Programme")
             server_ext = data.get("version_extension")
 
-            print(f"🌐 Version programme serveur : {server_program}")
-            print(f"🌐 Version extensions serveur : {server_ext}")
+            # print(f"🌐 Version programme serveur : {server_program}")
+            # print(f"🌐 Version extensions serveur : {server_ext}")
 
             # -------------------------------
             # 📁 VERSIONS LOCALES
@@ -411,9 +408,9 @@ def main():
         # startupinfo.wShowWindow = subprocess.SW_HIDE
         # Code en commentaire pour la mise à jour automatique
         # Vous pouvez le décommenter si nécessaire :
-        print("\n" + "=" * 80)
-        print("📌 DÉBUT DU SCRIPT")
-        print("=" * 80)
+        # print("\n" + "=" * 80)
+        # print("📌 DÉBUT DU SCRIPT")
+        # print("=" * 80)
 
         try:
             updated = UpdateManager.check_and_update()
