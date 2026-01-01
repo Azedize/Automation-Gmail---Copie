@@ -25,6 +25,8 @@ if ROOT_DIR not in sys.path:
 
 from config import Settings
 from core import EncryptionService
+from Log import DevLogger
+
 
 # Configuration des chemins
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -334,26 +336,27 @@ def initialize_dependencies():
 # ==========================================================
 def main():
     try:
+        DevLogger.init_logger(log_file="Logs/my_project.log")
+
         # if sys.platform == "win32":
         #         ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
 
 
         initialize_dependencies()
-        from config import Settings
         pythonw_path = Settings.find_pythonw()
         if not pythonw_path:
-            print("[ERROR] pythonw.exe introuvable")
+            DevLogger.error("[ERROR] pythonw.exe introuvable")
             sys.exit(1)
 
         try:
             updated = UpdateManager.check_and_update()
             if updated:
-                print("[INFO] UPDATE EFFECTUÉ")
+                DevLogger.info("[INFO] UPDATE EFFECTUÉ")
             else:
-                print("[INFO] APPLICATION À JOUR")
+                DevLogger.info("[INFO] APPLICATION À JOUR")
         except Exception as e:
-            print("[WARN] ERREUR CRITIQUE LORS DU CHECK/UPDATE")
-            print(f"[WARN] Détails : {e}")
+            DevLogger.error("[WARN] ERREUR CRITIQUE LORS DU CHECK/UPDATE")
+            DevLogger.error(f"[WARN] Détails : {e}")
             traceback.print_exc()
         
 
@@ -373,11 +376,11 @@ def main():
             if script_path.is_file():
                 subprocess.run([sys.executable, str(script_path), encrypted_key, secret_key])
             else:
-                print(f"[ERROR] Fichier introuvable : {script_path}")
+                DevLogger.error(f"[ERROR] Fichier introuvable : {script_path}")
                 sys.exit(1)
 
     except Exception as e:
-        print(f"[FATAL] Erreur fatale : {e}")
+        DevLogger.error(f"[FATAL] Erreur fatale : {e}")
         traceback.print_exc()
         sys.exit(1)
 

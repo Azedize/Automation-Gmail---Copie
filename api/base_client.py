@@ -43,7 +43,7 @@ class APIManager:
             try:
                 print(f"🌐 Tentative {attempt} - {method} {url}")
                 response = self.session.request( method=method.upper(), url=url, data=data, json=json_data, params=params, timeout=timeout)
-                # print(f"📥 HTTP {response.status_code}")
+                print(f"📥 HTTP {response.status_code}")
 
                 if response.status_code == 200:
                     try:

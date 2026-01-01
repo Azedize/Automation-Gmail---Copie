@@ -3,13 +3,12 @@ import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import QIcon , QCursor 
-from PyQt6.QtCore import Qt , QTimer , QThread, pyqtSignal , QSize
+from PyQt6.QtCore import Qt , QTimer , QThread, pyqtSignal 
 from PyQt6 import  uic 
 import shutil
 import signal
 import time
 import subprocess
-import random
 import re
 import datetime
 import requests
@@ -25,8 +24,7 @@ from PyQt6 import uic
 from PyQt6.QtGui import QGuiApplication
 import copy
 import warnings
-import tempfile
-import stat
+
 
 warnings.simplefilter("ignore", urllib3.exceptions.InsecureRequestWarning)
 urllib3.disable_warnings()
@@ -47,6 +45,7 @@ from utils import ValidationUtils
 from ui_utils import UIManager
 from services import JsonManager
 from Update import UpdateManager
+from Log import DevLogger
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 FIREFOX_LAUNCH = []
@@ -58,21 +57,14 @@ CLOSE_BROWSER_THREAD = None
 NEW_VERSION = None
 LOGS_RUNNING = True  
 SELECTED_BROWSER_GLOBAL=None
-SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
 
 
-
-
-
-# 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
-
-
-os.makedirs(Settings.APPDATA_DIR, exist_ok=True)
 
 # ═══════════════════════════════════════════════════════════
 #  DATA AUTH
 # ═══════════════════════════════════════════════════════════
+
 DATA_AUTH = {
         "login": "rep.test",
         "password": "zsGEnntKD5q2Brp68yxT"
@@ -92,13 +84,13 @@ SERVEUR_ZIP_URL_EX3 = f"http://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv
 # Si ce n'est pas le cas, il tente de l'installer via Chocolatey (et installe aussi npm).
 def ensure_node_installed():
     if shutil.which("node") is not None:
-        print("✅ Node.js est déjà installé.")
+        DevLogger.info("✅ Node.js est déjà installé.")
         return True
 
-    print("❌ Node.js n'est pas installé. Tentative d'installation via Chocolatey...")
+    DevLogger.info("❌ Node.js n'est pas installé. Tentative d'installation via Chocolatey...")
 
     if shutil.which("choco") is None:
-        print("🔍 Chocolatey non trouvé. Installation...")
+        DevLogger.info("🔍 Chocolatey non trouvé. Installation...")
         try:
             subprocess.run(
                 [
@@ -140,7 +132,7 @@ def get_web_ext_path():
 # 🔍📦 Vérifie si 'web-ext' est installé, sinon l'installe globalement via npm
 def ensure_web_ext_installed():
     if not ensure_node_installed():
-        print("⚠️ Impossible de continuer sans Node.js.")
+        DevLogger.error("⚠️ Impossible de continuer sans Node.js.")
         return
     
     if shutil.which('npm') is None:
@@ -152,7 +144,7 @@ def ensure_web_ext_installed():
     try:
         subprocess.run('npm install --global web-ext', check=True, shell=True)
     except subprocess.CalledProcessError:
-        print("❌ Échec de l'installation de 'web-ext' via npm.")
+        DevLogger.error("❌ Échec de l'installation de 'web-ext' via npm.")
 
 
 
@@ -177,26 +169,26 @@ SESSION_ID = ValidationUtils.generate_session_id()
 def Stop_All_Processes(window):
     global EXTRACTION_THREAD, CLOSE_BROWSER_THREAD, PROCESS_PIDS, LOGS_RUNNING, SELECTED_BROWSER_GLOBAL
 
-    print("Stopping all processes...")
+    DevLogger.info("Stopping all processes...")
     LOGS_RUNNING = False
 
     if EXTRACTION_THREAD:
-        print("Stopping extraction thread...")
+        DevLogger.info("Stopping extraction thread...")
         EXTRACTION_THREAD.stop_flag = True
         EXTRACTION_THREAD.wait()
         EXTRACTION_THREAD = None
-        print("Extraction thread stopped.")
+        DevLogger.info("Extraction thread stopped.")
 
 
     if CLOSE_BROWSER_THREAD:
-        print("Stopping close Chrome thread...")
+        DevLogger.info("Stopping close Chrome thread...")
         CLOSE_BROWSER_THREAD.stop_flag = True
         CLOSE_BROWSER_THREAD.wait()
         CLOSE_BROWSER_THREAD = None
-        print("Close Chrome thread stopped.")
+        DevLogger.info("Close Chrome thread stopped.")
 
     if EXTRACTION_THREAD and EXTRACTION_THREAD.isRunning():
-        print("Waiting for extraction thread to finish before updating UI...")
+        DevLogger.info("Waiting for extraction thread to finish before updating UI...")
         EXTRACTION_THREAD.finished.connect(
             lambda: QTimer.singleShot(100, 
             lambda: UIManager.Read_Result_Update_List(window))
@@ -205,31 +197,31 @@ def Stop_All_Processes(window):
     if SELECTED_BROWSER_GLOBAL != "firefox":
         for pid in PROCESS_PIDS[:]:
             try:
-                print(f"Attempting to terminate process with PID {pid}...")
+                DevLogger.info(f"Attempting to terminate process with PID {pid}...")
                 process = psutil.Process(pid)
                 process.terminate()
                 process.wait(timeout=5)
-                print(f"Process {pid} terminated successfully.")
+                DevLogger.info(f"Process {pid} terminated successfully.")
             except psutil.NoSuchProcess:
-                print(f"The process with PID {pid} no longer exists.")
+                DevLogger.info(f"The process with PID {pid} no longer exists.")
             except psutil.AccessDenied:
-                print(f"Permission denied to terminate the process with PID {pid}.")
+                DevLogger.info(f"Permission denied to terminate the process with PID {pid}.")
             except Exception as e:
-                print(f"An error occurred while terminating PID {pid}: {e}")
+                DevLogger.error(f"An error occurred while terminating PID {pid}: {e}")
             finally:
                 if pid in PROCESS_PIDS:
                     PROCESS_PIDS.remove(pid)
-                    print(f"PID {pid} removed from process list.")
+                    DevLogger.info(f"PID {pid} removed from process list.")
     else:
             try:
                 BrowserManager.Close_Windows_By_Profiles(FIREFOX_LAUNCH)
             except Exception as e:
-                print(f"⚠️ Erreur lors de la fermeture des profils Firefox: {e}")
+                DevLogger.error(f"⚠️ Erreur lors de la fermeture des profils Firefox: {e}")
  
             finally:
                 for pid in PROCESS_PIDS[:]:
                     PROCESS_PIDS.remove(pid)
-                    print(f"PID {pid} removed from process list.")
+                    DevLogger.info(f"PID {pid} removed from process list.")
 
 
 
@@ -287,7 +279,7 @@ def Generate_User_Input_Data(window):
 # 🛠️ Démarre le processus d'extraction en lançant le thread principal avec les paramètres utilisateur, après validation des entrées et préparation de l'environnement.
 def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp , unique_id , output_json_final , username):
     global EXTRACTION_THREAD 
-    print("Starting extraction process...")
+    DevLogger.info("Starting extraction process...")
     
     ValidationUtils.ensure_path_exists(Settings.LOGS_DIRECTORY)
     
@@ -314,7 +306,7 @@ def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp 
             message_type="critical"
         )
         return
-    print("Selected entries:", entered_number)
+    DevLogger.info("Selected entries:", entered_number)
 
 
 
@@ -326,14 +318,14 @@ def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp 
         else BrowserManager.get_browser_path("msedge.exe") if selected_Browser == "edge"
         else BrowserManager.get_browser_path("dragon.exe")  
     )
-    print("browser path   :",   browser_path    or "Non найд")
+    DevLogger.info("browser path   :",   browser_path    or "Non найд")
 
-    print("le programme is runing dans une interface superstar et tres professionnelle et 100% secure")
+    DevLogger.info("le programme is runing dans une interface superstar et tres professionnelle et 100% secure")
 
     if selected_Browser == "firefox":
         ensure_web_ext_installed()
 
-    print("browser path   :",   browser_path    or "Non trouvé")
+    DevLogger.info("browser path   :",   browser_path    or "Non trouvé")
 
     # return browser_path;
     EXTRACTION_THREAD = ExtractionThread(
@@ -427,19 +419,19 @@ class ExtractionThread(QThread):
         session_info = SessionManager.check_session()
 
         if not session_info["valid"]:
-            print("[SESSION] ❌ Session invalide. Impossible de continuer l’extraction.")
+            DevLogger.info("[SESSION] ❌ Session invalide. Impossible de continuer l’extraction.")
             self.stopped.emit("Session invalide. Veuillez vous reconnecter.")
             return
         
 
         if self.selected_Browser == "chrome":
-            print(f"✅ Navigateur sélectionné : {self.selected_Browser}")
+            DevLogger.info(f"✅ Navigateur sélectionné : {self.selected_Browser}")
 
 
             Settings.RESULTATS_EX = BrowserManager.Upload_EXTENTION_PROXY("default", Settings.CLES_RECHERCHE, Settings.RESULTATS)
-            print("↕️​↕️​↕️​↕️​↕️​ Résultats EX2 :")
+            DevLogger.info("↕️​↕️​↕️​↕️​↕️​ Résultats EX2 :")
             for item in Settings.RESULTATS_EX:
-                print(json.dumps(item, indent=4, ensure_ascii=False))
+                DevLogger.info(json.dumps(item, indent=4, ensure_ascii=False))
 
 
         while remaining_emails or PROCESS_PIDS:
@@ -593,17 +585,18 @@ class ExtractionThread(QThread):
 
                         process = subprocess.Popen(command) 
                         PROCESS_PIDS.append(process.pid)  
-                        print('➡️➡️➡️➡️➡️➡️ PROCESS_PIDS : ' ,PROCESS_PIDS)
+                        DevLogger.info('➡️➡️➡️➡️➡️➡️ PROCESS_PIDS : ' ,PROCESS_PIDS)
                         # ExtensionManager.add_pid_to_text_file(process.pid, profile_email , inserted_id , )
              
                     self.emails_processed += 1  
 
                 except Exception as e:
-                    log_message(f"[ERROR] Erreur emojie  : {e}")
-                    log_message(f"[INFO] Erreur : {e}")
+                    DevLogger.info(f"[ERROR] Erreur emojie  : {e}")
+                    DevLogger.info(f"[INFO] Erreur : {e}")
             self.msleep(1000) 
 
         log_message("[INFO] Processing finished for all emails.") 
+        DevLogger.info("[INFO] Processing finished for all emails.")
         time.sleep(3)
         LOGS_RUNNING=False
         self.finished.emit()
@@ -707,9 +700,6 @@ class CloseBrowserThread(QThread):
             return f"⚠️ Erreur dans le fichier {log_file} : {e}"
 
 
-
-
-
     def process_session_file(self, file_name, downloads_folder , selected_Browser, session):
         try:
             try:
@@ -766,20 +756,20 @@ class CloseBrowserThread(QThread):
                 log_message(f"[INFO] Attempting to terminate process:  {email}.")
                 if selected_Browser == "firefox":
                     try:
-                        print("browser : ", selected_Browser)
-                        print('✅✅✅✅✅✅✅✅PID : ', pid)
+                        DevLogger.info("browser : ", selected_Browser)
+                        DevLogger.info('✅✅✅✅✅✅✅✅PID : ', pid)
                         self.find_firefox_window(email)
                         self.wait_then_close(email)
                         PROCESS_PIDS.remove(pid)   
                     except Exception as e:
-                        print(f"⚠️ Erreur lors de la fermeture du processus {pid} ({email}): {e}")
+                        DevLogger.error(f"⚠️ Erreur lors de la fermeture du processus {pid} ({email}): {e}")
                     
                 else:
                     try:
-                        print('✅✅✅✅✅✅✅✅✅✅ PID : ', pid)
+                        DevLogger.info('✅✅✅✅✅✅✅✅✅✅ PID : ', pid)
                         os.kill(pid, signal.SIGTERM) 
                         PROCESS_PIDS.remove(pid)   
-                        print(f"Processus {pid} ({email}) terminé.")
+                        DevLogger.info(f"Processus {pid} ({email}) terminé.")
     
                     except Exception as e:
                         return f"⚠️ Erreur lors de la fermeture du processus {file_name}: {e}"
@@ -794,16 +784,11 @@ class CloseBrowserThread(QThread):
 
 
 
-    
-
     def find_firefox_window(self, profile_email, timeout=30):
         entry = next((e for e in FIREFOX_LAUNCH if e['profile'] == profile_email), None)
         if not entry:
             raise ValueError(f"❌ ERREUR: Profil '{profile_email}' non trouvé.")
-
         target_title = f"EXT:{profile_email}"
-
-
         start_time = time.time()
         attempt = 0
 
@@ -832,12 +817,12 @@ class CloseBrowserThread(QThread):
                         found[0] = True
                         return False
                 except Exception as e:
-                    print(f"⚠️ Erreur lors du traitement de la fenêtre HWND={hwnd} : {e}")
+                    DevLogger.error(f"⚠️ Erreur lors du traitement de la fenêtre HWND={hwnd} : {e}")
                 return True
             try:
                 win32gui.EnumWindows(window_processor, None)
             except Exception as e:
-                print(f"⚠️ Exception EnumWindows : {e}")
+                DevLogger.error(f"⚠️ Exception EnumWindows : {e}")
             if entry['hwnd']:
                 return entry['hwnd']
             time.sleep(2)
@@ -850,7 +835,7 @@ class CloseBrowserThread(QThread):
     def wait_then_close(self, profile_email):
         entry = next((e for e in FIREFOX_LAUNCH if e['profile'] == profile_email), None)
         if not entry or not entry.get('hwnd'):
-            print(f"❌ Aucune fenêtre trouvée pour {profile_email}.")
+            DevLogger.error(f"❌ Aucune fenêtre trouvée pour {profile_email}.")
             return
         
         self.close_window_by_hwnd(entry['hwnd'], entry['proc'])
@@ -867,8 +852,6 @@ class CloseBrowserThread(QThread):
             return True
 
         win32gui.EnumWindows(_enum, None)
-
-
 
 
 
@@ -893,16 +876,15 @@ class CloseBrowserThread(QThread):
 
 
 
-
     def get_email_from_log_file(self, file_name):
         file_name = os.path.basename(file_name)
         match = re.search(r"log_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z_([\w.+-]+@[\w.-]+\.[a-zA-Z]{2,6})\.txt", file_name)
         if match:
-            print(f"   - Email extrait : {match.group(1)}")
+            DevLogger.info(f"   - Email extrait : {match.group(1)}")
             email = match.group(1)
             return email
         else:
-            print(f"[Email Extraction] Aucun email trouvé dans {file_name}")
+            DevLogger.info(f"[Email Extraction] Aucun email trouvé dans {file_name}")
             return None
 
 
@@ -915,34 +897,34 @@ def Process_Browser(window, selected_Browser) -> bool:
     Préparer et valider le navigateur pour l'application
     Version simplifiée avec print et sans rapport
     """
-    print(f"\n🌐 Démarrage du traitement du navigateur : {selected_Browser}")
+    DevLogger.info(f"\n🌐 Démarrage du traitement du navigateur : {selected_Browser}")
     
     # 1️⃣ Vérification du navigateur
     if selected_Browser.lower() != "chrome":
-        print(f"❌ Navigateur non supporté : {selected_Browser}")
+        DevLogger.error(f"❌ Navigateur non supporté : {selected_Browser}")
         return False
-    print("✅ Navigateur : Chrome supporté")
+    DevLogger.info("✅ Navigateur : Chrome supporté")
 
     # 2️⃣ Vérification du dossier de configuration
     config_profile = Settings.CONFIG_PROFILE
     if not os.path.exists(config_profile):
-        print(f"❌ Dossier de configuration introuvable : {config_profile}")
+        DevLogger.error(f"❌ Dossier de configuration introuvable : {config_profile}")
         return False
-    print(f"✅ Dossier de configuration trouvé : {config_profile}")
+    DevLogger.info(f"✅ Dossier de configuration trouvé : {config_profile}")
 
     # 3️⃣ Vérification du fichier secure_preferences
     secure_prefs = Settings.SECURE_PREFERENCES_TEMPLATE
     if not os.path.exists(secure_prefs):
-        print(f"❌ Fichier sécurisé introuvable : {secure_prefs}")
+        DevLogger.error(f"❌ Fichier sécurisé introuvable : {secure_prefs}")
         return False
 
     # Lecture du fichier JSON
     try:
         with open(secure_prefs, "r", encoding="utf-8") as f:
             data = json.load(f)
-        print("✅ Fichier JSON chargé avec succès")
+        DevLogger.info("✅ Fichier JSON chargé avec succès")
     except Exception as e:
-        print(f"❌ Erreur lecture fichier JSON : {e}")
+        DevLogger.error(f"❌ Erreur lecture fichier JSON : {e}")
         return False
 
     # 4️⃣ Vérification des clés JSON
@@ -954,48 +936,48 @@ def Process_Browser(window, selected_Browser) -> bool:
     missing_keys = [key for key in required_keys if key not in found_keys]
 
     if missing_keys:
-        print("❌ Clés manquantes :")
+        DevLogger.error("❌ Clés manquantes :")
         for idx, key in enumerate(missing_keys, start=1):
-            print(f"   {idx}. {key}")
+            DevLogger.error(f"   {idx}. {key}")
         return False
-    print(f"✅ Toutes les clés JSON requises sont présentes ({len(found_keys)}/{len(required_keys)})")
+    DevLogger.info(f"✅ Toutes les clés JSON requises sont présentes ({len(found_keys)}/{len(required_keys)})")
 
     # 5️⃣ Vérification et mise à jour de l'extension
     ext_path = Settings.EXTENTION_EX3
     if not ValidationUtils.path_exists(ext_path):
-        print("📥 Extension manquante, téléchargement...")
+        DevLogger.info("📥 Extension manquante, téléchargement...")
         valid_ext_dir, ext_dir_msg = ValidationUtils.validate_directory_path(ext_path, must_exist=False)
         if not valid_ext_dir:
-            print(f"❌ Chemin extension invalide : {ext_dir_msg}")
+            DevLogger.error(f"❌ Chemin extension invalide : {ext_dir_msg}")
             return False
         if UpdateManager.update_extension_from_server():
-            print("✅ Extension installée avec succès")
+            DevLogger.info("✅ Extension installée avec succès")
         else:
-            print("❌ Échec installation extension")
+            DevLogger.error("❌ Échec installation extension")
             return False
     else:
-        print(f"📂 Extension trouvée : {ext_path}")
+        DevLogger.info(f"📂 Extension trouvée : {ext_path}")
         manifest_file = os.path.join(ext_path, "manifest.json")
         if not os.path.exists(manifest_file):
-            print("❌ manifest.json manquant")
+            DevLogger.error("❌ manifest.json manquant")
             return False
         
         remote_version = UpdateManager.check_version_extension(window)
         if isinstance(remote_version, str):
-            print(f"🔄 Mise à jour disponible : {remote_version}")
+            DevLogger.info(f"🔄 Mise à jour disponible : {remote_version}")
             if UpdateManager.update_extension_from_server(remote_version):
-                print("✅ Extension mise à jour avec succès")
+                DevLogger.info("✅ Extension mise à jour avec succès")
             else:
-                print("❌ Échec mise à jour extension")
+                DevLogger.error("❌ Échec mise à jour extension")
                 return False
         elif remote_version is True:
-            print("✅ Extension déjà à jour")
+            DevLogger.info("✅ Extension déjà à jour")
         else:
-            print("❌ Impossible de vérifier la version de l'extension")
+            DevLogger.error("❌ Impossible de vérifier la version de l'extension")
             return False
 
     # ✅ Tout est OK
-    print("🎉 Traitement terminé avec succès pour le navigateur Chrome")
+    DevLogger.info("🎉 Traitement terminé avec succès pour le navigateur Chrome")
     return True
 
 
@@ -1233,10 +1215,10 @@ class MainWindow(QMainWindow):
 
     def Load_Scenarios_Into_Combobox(self):
         if self.saveSanario is None:
-            print("self.saveSanario is None")
+            DevLogger.error("self.saveSanario is None")
             return
         else:
-            print("self.saveSanario is not None")
+            DevLogger.error("self.saveSanario is not None")
     
         if not ValidationUtils.path_exists(Settings.SESSION_PATH):
             return
@@ -1373,7 +1355,7 @@ class MainWindow(QMainWindow):
                 with open(Settings.SESSION_PATH, "w", encoding="utf-8") as f:
                     f.write("")
             except Exception as e:
-                print(f"[ERREUR NETTOYAGE SESSION] ❌ {e}")
+                DevLogger.error(f"[ERREUR NETTOYAGE SESSION] ❌ {e}")
 
             return
 
@@ -1443,7 +1425,6 @@ class MainWindow(QMainWindow):
             return
 
         try:
-            print("📦 JSON test:")
             result = Generate_User_Input_Data(window)
 
             if not result:  
@@ -1458,11 +1439,11 @@ class MainWindow(QMainWindow):
         CURRENT_DATE = current_time.strftime("%Y-%m-%d")
         CURRENT_HOUR = current_time.strftime("%H-%M-%S") 
 
-        print("📦 JSON Final:")
+        DevLogger.info("📦 JSON Final:")
         result_json = JsonManager.generate_json_data(self.scenario_layout)
-        print(json.dumps(result_json, indent=2, ensure_ascii=False))
+        DevLogger.info(json.dumps(result_json, indent=2, ensure_ascii=False))
 
-        # CORRECTION: Vérifier si result_json est vide au lieu de vérifier "ERROR"
+
         if not result_json or result_json == []:
             UIManager.Show_Critical_Message(
                 window,
@@ -1473,10 +1454,9 @@ class MainWindow(QMainWindow):
             )
             return
 
-        # Sauvegarde du fichier JSON de traitement
+
         try:
             save_status = JsonManager.save_json_to_file(result_json, selected_Browser)
-            
             if save_status == "ERROR":
                 UIManager.Show_Critical_Message(
                     window,
@@ -1487,9 +1467,9 @@ class MainWindow(QMainWindow):
                 )
                 return
             else:
-                print(f"✅ Fichier JSON sauvegardé avec statut: {save_status}")
+                DevLogger.info(f"✅ Fichier JSON sauvegardé avec statut: {save_status}")
         except Exception as e:
-            print(f"❌ Erreur lors de la sauvegarde du JSON: {e}")
+            DevLogger.error(f"❌ Erreur lors de la sauvegarde du JSON: {e}")
             UIManager.Show_Critical_Message(
                 window,
                 "Error - Save Configuration",
@@ -1502,7 +1482,7 @@ class MainWindow(QMainWindow):
             with open(Settings.FILE_ISP, 'w', encoding='utf-8') as f:
                 f.write(self.Isp.currentText().strip())
         except Exception as e:
-            print(f"❌ Erreur lors de l'écriture dans Isp.txt : {e}")
+            DevLogger.error(f"❌ Erreur lors de l'écriture dans Isp.txt : {e}")
 
         json_string = json.dumps(result_json)
 
@@ -1519,7 +1499,7 @@ class MainWindow(QMainWindow):
         unique_id = self.Save_Process(parameters)
 
         if unique_id == -1:
-            print("❌ Error getting process ID")
+            DevLogger.error("❌ Error getting process ID")
             UIManager.Show_Critical_Message(
                 window,
                 "Error - Process Save",
@@ -1529,7 +1509,7 @@ class MainWindow(QMainWindow):
             )
             return
 
-        print(f"✅ Process ID obtenu: {unique_id}")
+        DevLogger.info(f"✅ Process ID obtenu: {unique_id}")
 
 
         # with ThreadPoolExecutor(max_workers=2) as executor:
@@ -1576,7 +1556,7 @@ class MainWindow(QMainWindow):
         if ValidationUtils.path_exists(icon_path):
             button.setIcon(QIcon(icon_path))
         else:
-            print(f"[Warning] Icon not found at: {icon_path}")
+            DevLogger.warning(f"[Warning] Icon not found at: {icon_path}")
 
         self.reset_options_layout.addWidget(button)
 
@@ -1626,7 +1606,6 @@ class MainWindow(QMainWindow):
             state = self.states.get(action_key)
             if state:
                 label = state.get('label', action_key)
-                print(f"🔘 {label}")
                 self.Create_Option_Button(state)
 
 
@@ -1682,48 +1661,40 @@ class MainWindow(QMainWindow):
 
 
     def Scenario_Changed(self, name_selected):
-        print("Scenario_Changed called with name_selected=%r", name_selected)
+        DevLogger.debug("Scenario_Changed called with name_selected=%r", name_selected)
 
         encrypted_key =UIManager.read_file_content(Settings.SESSION_PATH)
         if not encrypted_key:
             return
         payload = {"encrypted": encrypted_key, "name": name_selected}
-        #print("Payload prepared: %s", {k: ("<hidden>" if k == "encrypted" else v) for k, v in payload.items()})
 
         try:
-            start_time = time.time()
-            # timeout pour éviter le blocage infini
             response = requests.post(Settings.API_ENDPOINTS['_ON_SCENARIO_CHANGED_API'], json=payload, timeout=10)
-            duration = time.time() - start_time
-            #print("HTTP POST to %s finished in %.2fs; status_code=%s", _ON_SCENARIO_CHANGED_API, duration, response.status_code)
         except requests.exceptions.RequestException as e:
-            #print("RequestException while calling API: %s", e)
-            # enregistrer le contenu d'erreur si disponible
+            DevLogger.error("RequestException while calling API: %s", e)
             return
 
-        # تسجيل نص الاستجابة كاملة لو احتجنا لفحصها عند الأخطاء
+    
         if response.status_code != 200:
             try:
-                print("HTTP %s: %s", response.status_code, response.text[:1000])
+                DevLogger.error("HTTP %s: %s", response.status_code, response.text[:1000])
             except Exception:
-                print("HTTP %s and failed to read response.text", response.status_code)
+                DevLogger.error("HTTP %s and failed to read response.text", response.status_code)
             return
 
-        # محاولة تحويل الاستجابة إلى JSON مع حماية
+        
         try:
             result = response.json()
-            #print("Response JSON keys: %s", list(result.keys()))
+            DevLogger.debug("Response JSON keys: %s", list(result.keys()))
         except ValueError:
-            # JSON غير صالح — حفظ النص لفحص لاحق
-            print("Failed to parse JSON from response. Response text (first 2000 chars):\n%s", response.text[:2000])
-        
+            DevLogger.error("Failed to parse JSON from response. Response text (first 2000 chars):\n%s", response.text[:2000])
             return
 
-        # التحقق من حالة الجلسة
+
         try:
             session_ok = result.get("session", True)
             if session_ok is False:
-                #print("Session expirée. Redirection vers login.")
+                DevLogger.info("Session expirée. Redirection vers login.")
                 try:
                     self.login_window = LoginWindow()
                     self.login_window.setFixedSize(Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT)
@@ -1735,10 +1706,10 @@ class MainWindow(QMainWindow):
                     self.login_window.show()
                     self.close()
                 except Exception:
-                    print("Erreur pendant l'affichage de la fenêtre de login")
+                    DevLogger.error("Erreur pendant l'affichage de la fenêtre de login")
                 return
         except Exception:
-            #print("Erreur en vérifiant la clé 'session' du résultat")
+            DevLogger.error("Erreur en vérifiant la clé 'session' du résultat")
             return
 
 
@@ -1749,69 +1720,65 @@ class MainWindow(QMainWindow):
                 widget = item.widget()
                 if widget:
                     widget_name = widget.objectName() if widget.objectName() else widget.__class__.__name__
-                    # print(f"   🗑️ Suppression du widget: {widget_name}")
+                    DevLogger.debug(f"🗑️ Suppression du widget: {widget_name}")
                     widget.deleteLater()
-                # else:
-                    # print(f"   📦 Élément non-widget trouvé à l'index {i}")
-        # إذا العملية ناجحة
+                else:
+                    DevLogger.debug(f"📦 Élément non-widget trouvé à l'index {i}")
+ 
         try:
             if result.get("success"):
                 scenario = result.get("scenario")
                 if scenario is None:
-                    #print("Le champ 'scenario' est manquant dans la réponse.")
+                    DevLogger.error("Le champ 'scenario' est manquant dans la réponse.")
                     return
 
-                # التأكد من وجود state_stack
+            
                 state_stack = scenario.get("state_stack")
                 if not isinstance(state_stack, list):
-                    print("state_stack n'est pas une liste (type=%s). Tentative de conversion...", type(state_stack))
-                    # محاولة تصحيح إذا كانت سلسلة JSON
+                    DevLogger.debug("state_stack n'est pas une liste (type=%s). Tentative de conversion...", type(state_stack))
+                    
                     if isinstance(state_stack, str):
                         try:
                             state_stack = json.loads(state_stack)
-                            #print("state_stack loaded from string; length=%d", len(state_stack))
+                            DevLogger.debug("state_stack loaded from string; length=%d", len(state_stack))
                         except Exception:
-                            #print("Impossible de parser state_stack string")
+                            DevLogger.error("Impossible de parser state_stack string")
                             return
                     else:
-                        #print("state_stack a un format inattendu: %r", state_stack)
+                        DevLogger.error("state_stack a un format inattendu: %r", state_stack)
                         return
 
                 self.STATE_STACK = state_stack
-                #print("Scénario récupéré avec %d états.", len(self.STATE_STACK))
+                DevLogger.debug("Scénario récupéré avec %d états.", len(self.STATE_STACK))
 
-                # نسخة للمعالجة
                 state_stack_copy = copy.deepcopy(self.STATE_STACK)
 
                 for index, state in enumerate(state_stack_copy, start=1):
-                    #print("Processing state #%d", index)
-                    # محاولة عرض حالة بشكل آمن (fallback to str)
+                    DevLogger.debug("Processing state #%d", index)
                     try:
                         pretty = json.dumps(state, indent=2, ensure_ascii=False, default=str)
-                        #print("State #%d preview: %s", index, pretty[:2000])  # لا تطبع كل شيء لو كبير
+                        DevLogger.debug("State #%d preview: %s", index, pretty[:2000])  # لا تطبع كل شيء لو كبير
                     except Exception:
-                        print("Cannot JSON-dump state #%d; fallback to repr", index)
-                        #print("State #%d repr: %s", index, repr(state)[:1000])
+                        DevLogger.warning("Cannot JSON-dump state #%d; fallback to repr", index)
+                        DevLogger.debug("State #%d repr: %s", index, repr(state)[:1000])
 
-                    # استدعاء Load_State مع قياس الوقت
+                    
                     try:
                         t0 = time.time()
                         self.Load_State(state)
                         t1 = time.time()
-                        #print("Load_State for #%d succeeded in %.3fs", index, t1 - t0)
-                        # بعد كل تحميل حدّث الأزرار
+                        DevLogger.debug("Load_State for #%d succeeded in %.3fs", index, t1 - t0)
+                        
                         try:
                             self.Update_Actions_Color_Handle_Last_Button()
                         except Exception:
-                            print("Update_Actions_Color_Handle_Last_Button failed after state #%d", index)
+                            DevLogger.error("Update_Actions_Color_Handle_Last_Button failed after state #%d", index)
                     except Exception as e:
-                        print("Erreur pendant Load_State() pour l'état #%d: %s", index, e)
-                        # لا نكسر الحلقة — نستمر في محاولة تحميل باقي الحالات
+                        DevLogger.error("Erreur pendant Load_State() pour l'état #%d: %s", index, e)
                         continue
 
-                #print("Scénario chargé avec succès.")
+                DevLogger.info("Scénario chargé avec succès.")
 
-                # حذف التكرارات بطريقة آمنة: نستخدم json.dumps(default=str) لتجنب TypeError
                 try:
                     unique_states = []
                     seen = set()
@@ -1819,19 +1786,19 @@ class MainWindow(QMainWindow):
                         try:
                             state_key = json.dumps(state, sort_keys=True, ensure_ascii=False, default=str)
                         except Exception:
-                            #print("json.dumps failed for a state during dedup; using repr fallback")
+                            DevLogger.warning("json.dumps failed for a state during dedup; using repr fallback")
                             state_key = repr(state)
                         if state_key not in seen:
                             seen.add(state_key)
                             unique_states.append(state)
                     self.STATE_STACK = unique_states
-                    #print("self.STATE_STACK dédupliqué, nouveau length=%d", len(self.STATE_STACK))
+                    DevLogger.debug("self.STATE_STACK dédupliqué, nouveau length=%d", len(self.STATE_STACK))
                 except Exception:
-                    print("Échec de suppression des doublons")
-            # else:
-                # print("API returned success=false; error: %s", result.get("error"))
+                    DevLogger.error("Échec de suppression des doublons")
+            else:
+                DevLogger.error("API returned success=false; error: %s", result.get("error"))
         except Exception:
-            print("Erreur pendant le traitement du résultat JSON")
+            DevLogger.error("Erreur pendant le traitement du résultat JSON")
 
 
 
@@ -1875,7 +1842,7 @@ class LoginWindow(QMainWindow):
             if session_info["valid"]:
                 return Settings.INTERFACE_UI 
         except Exception as e:
-            print(f"[SESSION ERROR] {e}")
+            DevLogger.error(f"[SESSION ERROR] {e}")
 
         return Settings.AUTH_UI
 
