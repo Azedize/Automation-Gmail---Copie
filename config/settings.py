@@ -289,24 +289,21 @@ class Settings:
 
 
     @classmethod
-    def find_pythonw(cls) -> str:
-        """البحث عن pythonw.exe في PATH أو بجانب python.exe"""
+    def find_pythonw():
+        base_dir = os.path.dirname(sys.executable)
+        candidate = os.path.join(base_dir, "pythonw.exe")
+        if os.path.isfile(candidate):
+            return candidate
 
+        # 🔹 2) البحث في PATH
         for path in os.environ.get("PATH", "").split(os.pathsep):
-            pythonw_exe = os.path.join(path, "pythonw.exe")
-            if os.path.exists(pythonw_exe):
-                return pythonw_exe
+            candidate = os.path.join(path.strip('"'), "pythonw.exe")
+            if os.path.isfile(candidate):
+                return candidate
 
-        # 🔍 البحث في نفس مجلد python.exe
-        pythonw_exe = os.path.join(
-            os.path.dirname(sys.executable),
-            "pythonw.exe"
-        )
-        if os.path.exists(pythonw_exe):
-            return pythonw_exe
 
-        # ❌ غير موجود
-        raise FileNotFoundError("Impossible de trouver pythonw.exe")
+        return None
+
 
 
 # Création d’une instance unique utilisée dans tout le projet

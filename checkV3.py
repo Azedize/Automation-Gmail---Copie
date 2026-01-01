@@ -327,15 +327,20 @@ def initialize_dependencies():
     from cryptography.fernet import Fernet
     from cryptography.hazmat.primitives import padding
     from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+    import ctypes
 
 # ==========================================================
 # 🔹 MAIN
 # ==========================================================
 def main():
     try:
+        # if sys.platform == "win32":
+        #         ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
+
+
         initialize_dependencies()
-        from config import settings
-        pythonw_path = settings.find_pythonw()
+        from config import Settings
+        pythonw_path = Settings.find_pythonw()
         if not pythonw_path:
             print("[ERROR] pythonw.exe introuvable")
             sys.exit(1)
@@ -350,15 +355,26 @@ def main():
             print("[WARN] ERREUR CRITIQUE LORS DU CHECK/UPDATE")
             print(f"[WARN] Détails : {e}")
             traceback.print_exc()
-
-        encrypted_key, secret_key = EncryptionService.generate_encrypted_key()
         
-        script_path = SCRIPT_DIR / 'src' / 'AppV2.py'
-        if script_path.is_file():
-            subprocess.run([sys.executable, str(script_path), encrypted_key, secret_key])
-        else:
-            print(f"[ERROR] Fichier introuvable : {script_path}")
-            sys.exit(1)
+
+        
+        # sys.stdout = open(os.devnull, 'w')
+        # sys.stderr = open(os.devnull, 'w')
+        # sys.stdin = open(os.devnull, 'r')
+        
+        # startupinfo = subprocess.STARTUPINFO()
+        # startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        # startupinfo.wShowWindow = subprocess.SW_HIDE
+
+        if len(sys.argv) == 1:
+
+            encrypted_key, secret_key = EncryptionService.generate_encrypted_key()
+            script_path = SCRIPT_DIR / 'src' / 'AppV2.py'
+            if script_path.is_file():
+                subprocess.run([sys.executable, str(script_path), encrypted_key, secret_key])
+            else:
+                print(f"[ERROR] Fichier introuvable : {script_path}")
+                sys.exit(1)
 
     except Exception as e:
         print(f"[FATAL] Erreur fatale : {e}")
