@@ -137,7 +137,7 @@ class Settings:
     CHROME_PROFILES = PROFILES_DIR / 'chrome'
     FIREFOX_PROFILES = PROFILES_DIR / 'firefox'
     
-    TOOLS_DICT = BASE_DIR / 'Tools'
+    TOOLS_DIR = BASE_DIR / 'Tools'
     EXTENSIONS_DIR = BASE_DIR / 'Tools' / 'Extensions'
     VERSION_LOCAL_EXT = os.path.join(EXTENSIONS_DIR, "version.txt")
     VERSION_LOCAL_PROGRAMM = os.path.join(BASE_DIR , "config", "version.txt")

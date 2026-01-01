@@ -152,7 +152,6 @@ class DependencyManager:
 
 
 class UpdateManager:
-
     # ==========================================================
     # 🔹 UTILITAIRES
     # ==========================================================
@@ -168,8 +167,7 @@ class UpdateManager:
             return None
 
     @staticmethod
-    def _download_and_extract(zip_url, target_dir, clean_target=False):
-        """Télécharger et extraire un ZIP dans target_dir"""
+    def _download_and_extract(zip_url, target_dir, clean_target=False, extract_subdir=None):
         try:
             print(f"\n⬇️ Téléchargement depuis : {zip_url}")
 
@@ -185,28 +183,43 @@ class UpdateManager:
                         if chunk:
                             f.write(chunk)
 
-                print("📦 ZIP téléchargé")
+                print("📦 ZIP téléchargé avec succès")
 
                 # إزالة المجلد القديم إذا clean_target = True
                 if clean_target and os.path.exists(target_dir):
                     print(f"🗑️ Suppression du dossier cible : {target_dir}")
                     shutil.rmtree(target_dir)
 
-                # استخراج ZIP
+                # استخراج ZIP مؤقتاً
                 with zipfile.ZipFile(zip_path, "r") as z:
                     z.extractall(tmpdir)
+                print(f"✅ ZIP extrait temporairement dans {tmpdir}")
 
-                # العثور على المجلد الرئيسي المستخرج
-                extracted_dir = next(
+                # العثور على المجلد الرئيسي
+                extracted_root = next(
                     os.path.join(tmpdir, d)
                     for d in os.listdir(tmpdir)
                     if os.path.isdir(os.path.join(tmpdir, d))
                 )
+                print(f"📁 Dossier principal extrait : {extracted_root}")
 
-                # دمج الملفات مباشرة في target_dir
+                # التعامل مع extract_subdir إذا موجود
+                if extract_subdir:
+                    candidate = os.path.join(extracted_root, extract_subdir)
+                    if os.path.exists(candidate):
+                        extracted_dir = candidate
+                    else:
+                        print(f"⚠️ Subfolder '{extract_subdir}' non trouvé, utilisation du dossier racine")
+                        extracted_dir = extracted_root
+                else:
+                    extracted_dir = extracted_root
+
+                # التأكد أن المجلد الهدف موجود
                 if not os.path.exists(target_dir):
                     os.makedirs(target_dir)
+                    print(f"📂 Création du dossier cible : {target_dir}")
 
+                # نقل الملفات من extracted_dir إلى target_dir
                 for item in os.listdir(extracted_dir):
                     s = os.path.join(extracted_dir, item)
                     d = os.path.join(target_dir, item)
@@ -217,7 +230,7 @@ class UpdateManager:
                     else:
                         shutil.move(s, d)
 
-                print(f"✅ Extraction terminée → {target_dir}")
+                print(f"✅ Extraction terminée dans : {target_dir}")
 
         except Exception as e:
             print("❌ Erreur dans _download_and_extract :", e)
@@ -236,7 +249,7 @@ class UpdateManager:
             print("=" * 80)
 
             # -------------------------------
-            # 🌐 APPEL SERVEUR
+            # 🌐 APPEL SERVEUR pour récupérer versions
             # -------------------------------
             response = APIManager.make_request(
                 "__CHECK_URL_PROGRAMM__", method="GET", timeout=10
@@ -256,38 +269,41 @@ class UpdateManager:
             # -------------------------------
             # 📁 VERSIONS LOCALES
             # -------------------------------
-            local_program = UpdateManager._read_local_version(
-                Settings.VERSION_LOCAL_PROGRAMM
-            )
-            local_ext = UpdateManager._read_local_version(
-                Settings.VERSION_LOCAL_EXT
-            )
+            local_program = UpdateManager._read_local_version(Settings.VERSION_LOCAL_PROGRAMM)
+            local_ext = UpdateManager._read_local_version(Settings.VERSION_LOCAL_EXT)
 
             print(f"📄 Version programme locale : {local_program}")
             print(f"📄 Version extensions locale : {local_ext}")
 
             # ======================================================
-            # 🟥 PRIORITÉ ABSOLUE : PROGRAMME
+            # 🟥 MISE À JOUR PROGRAMME
             # ======================================================
             if not local_program or local_program != server_program:
                 print("\n🟥 MISE À JOUR PROGRAMME REQUISE")
                 UpdateManager._download_and_extract(
-                    Settings.API_ENDPOINTS["__SERVER_ZIP_URL_PROGRAM__"],
-                    Settings.BASE_DIR,
-                    clean_target=False  
+                    "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip",
+                    ROOT_DIR,
+                    clean_target=False,
+                    extract_subdir=None  # كل الملفات في الجذر
                 )
                 print("⛔ Arrêt après mise à jour programme")
                 return True
 
             # ======================================================
-            # 🟨 EXTENSIONS SEULEMENT
+            # 🟨 MISE À JOUR EXTENSIONS (TOOLS)
             # ======================================================
             if not local_ext or local_ext != server_ext:
                 print("\n🟨 MISE À JOUR EXTENSIONS REQUISE")
+                tools_dir = Settings.TOOLS_DIR
+                if not os.path.exists(tools_dir):
+                    print(f"⚠️ Dossier Tools introuvable, création automatique : {tools_dir}")
+                    os.makedirs(tools_dir)
+
                 UpdateManager._download_and_extract(
-                    "https://github.com/Azedize/Automation-Gmail---Copie/tree/bdc59caa4df1de6aea71224737a7a630b1dceb4a/tools",
-                    Settings.TOOLS_DIR,
-                    clean_target=True       
+                    "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip",
+                    tools_dir,
+                    clean_target=True,
+                    extract_subdir="tools"
                 )
                 print("▶️ Extensions mises à jour, poursuite normale")
                 return True
@@ -302,7 +318,6 @@ class UpdateManager:
             print("🔥 ERREUR CRITIQUE → UPDATE PAR SÉCURITÉ")
             traceback.print_exc()
             return True
-
 
 
 
@@ -370,18 +385,8 @@ def initialize_dependencies():
 def main():
     """Fonction principale"""
     try:
-        updated = UpdateManager.check_and_update()
+   
 
-        print("\n" + "=" * 80)
-        print("📌 RÉSULTAT FINAL")
-        print("=" * 80)
-
-        if updated:
-            print("🔄 UPDATE EFFECTUÉ")
-        else:
-            print("✅ APPLICATION À JOUR")
-        
-        return updated
          # 🪟 إخفاء نافذة الكونسول في الويندوز (اختياري)
         # if sys.platform == "win32":
         #     ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
@@ -420,28 +425,29 @@ def main():
         # startupinfo.wShowWindow = subprocess.SW_HIDE
         # Code en commentaire pour la mise à jour automatique
         # Vous pouvez le décommenter si nécessaire :
-        """
-        # Vérification des mises à jour
-        new_versions = UpdateManager.check_version()
-        
-        if new_versions == "_1":
-            print("❌ Serveur inaccessible")
-            sys.exit(1)
-        
-        if new_versions:
-            print(f"🔄 Mises à jour disponibles : {list(new_versions.keys())}")
-            result = UpdateManager.download_and_extract(new_versions)
-            
-            if result == 0:
-                print("✅ Mise à jour installée")
-                if 'version_python' in new_versions:
-                    print(f"⬆️ Python → version {new_versions['version_python']}")
-                if 'version_interface' in new_versions:
-                    print(f"⬆️ Interface → version {new_versions['version_interface']}")
+        print("\n" + "=" * 80)
+        print("📌 DÉBUT DU SCRIPT")
+        print("=" * 80)
+
+        try:
+            updated = UpdateManager.check_and_update()
+
+            print("\n" + "=" * 80)
+            print("📌 RÉSULTAT FINAL")
+            print("=" * 80)
+
+            if updated:
+                print("🔄 UPDATE EFFECTUÉ")
             else:
-                print("❌ Échec de la mise à jour")
-                sys.exit(1)
-        """
+                print("✅ APPLICATION À JOUR")
+
+        except Exception as e:
+            print("\n🔥 ERREUR CRITIQUE LORS DU CHECK/UPDATE")
+            print(f"❌ Détails : {e}")
+            import traceback
+            traceback.print_exc()
+            print("⚠️ L'application continue malgré l'erreur")
+            
 
         # Génération des clés de sécurité
         encrypted_key, secret_key = SecurityManager.generate_encrypted_key()
