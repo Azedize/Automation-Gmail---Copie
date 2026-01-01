@@ -1,27 +1,36 @@
 import os
 import sys
 import shutil
+import zipfile
+import traceback
+import importlib
+import subprocess
+import time
+from pathlib import Path
+import requests
+import json
 
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
-from config import Settings
-from api.base_client import APIManager
+
+
+try:
+    from config import Settings
+    from utils.validation_utils import ValidationUtils
+    from api.base_client import APIManager
+except ImportError as e:
+    print(f"[ERROR] Import modules failed: {e}")
+
 
 
 class UpdateManager:
-    """
-    Gestionnaire de mise à jour
-    """
+
 
     @staticmethod
     def is_update_required() -> bool:
-        """
-        Vérifie si une mise à jour est nécessaire
-        """
-
         try:
             print("\n" + "=" * 80)
             print("🔍 DÉBUT VÉRIFICATION DES MISES À JOUR")
@@ -123,7 +132,7 @@ class UpdateManager:
                 print("❌ [ERROR] Invalid new_versions (not a dict).")
                 return -1
 
-            path_DownloadFile =  os.path.abspath(Settings.BASE_DIR)
+            path_DownloadFile =  os.path.abspath(Settings.PATH_DOWNLOAD_FILE)
             local_zip = os.path.join(path_DownloadFile, "Programme-main.zip")
             extracted_dir = os.path.join(path_DownloadFile, "Programme-main")
 
@@ -138,7 +147,7 @@ class UpdateManager:
                 print("✅ [INFO] No extension updates required.")
                 return 0
 
-            # إزالة ZIP القديم
+        
             if os.path.exists(local_zip):
                 print(f"🗑️ Removing old ZIP: {local_zip}")
                 os.remove(local_zip)
@@ -150,6 +159,7 @@ class UpdateManager:
 
             # تحميل ZIP
             print("⬇️ Downloading update ZIP from GitHub...")
+            print("🌐 Fetching download URL from API...")
 
             resp = requests.get(SERVEUR_ZIP_URL_PROGRAMM, stream=True, headers=HEADERS, timeout=60)
             print(f"📡 HTTP status code: {resp.status_code}")
@@ -167,6 +177,7 @@ class UpdateManager:
                         f.write(chunk)
                         downloaded += len(chunk)
                 print(f"✅ Downloaded {downloaded / 1024:.2f} KB")
+
 
             # التأكد من أن ZIP موجود وحجمه > 0
             if not os.path.exists(local_zip) or os.path.getsize(local_zip) == 0:
@@ -210,10 +221,12 @@ class UpdateManager:
 
 
 
+print("🌐 Appel API serveur...")
 
 # =========================
 # 🧪 TEST DIRECT
 # =========================
+
 if __name__ == "__main__":
     result = UpdateManager.is_update_required()
 
@@ -225,6 +238,5 @@ if __name__ == "__main__":
         print("🔄 UPDATE REQUIRED → True")
     else:
         print("✅ NO UPDATE → False")
-
 
 

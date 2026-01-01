@@ -13,12 +13,7 @@ class EncryptionError(Exception):
 
 
 class EncryptionService:
-    """
-    Encryption Service
-    - Key derivation: PBKDF2 (SHA256)
-    - AES-256-CBC (encrypt / decrypt)
-    - AES-256-GCM (encrypt)
-    """
+
 
     # =========================
     # 🔑 Key Derivation (PBKDF2)
@@ -134,5 +129,9 @@ class EncryptionService:
                 return False
         except Exception as e:
             return False
+
+
+
+
 
 EncryptionService = EncryptionService()

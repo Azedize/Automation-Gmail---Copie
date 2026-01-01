@@ -19,7 +19,6 @@ except ImportError as e:
 
 
 class APIManager:
-    """Gestionnaire centralisé pour toutes les requêtes API"""
 
 
     def __init__(self):

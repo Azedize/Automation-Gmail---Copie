@@ -24,8 +24,7 @@ ALL_PACKAGES_INSTALLED = True
 
 
 class DependencyManager:
-    """Gestionnaire des dépendances Python"""
-    
+
     @staticmethod
     def install_and_verify_pywin32():
         """Vérifie et installe pywin32 si nécessaire"""
@@ -87,9 +86,6 @@ class DependencyManager:
         sys.exit(0)
         return True
 
-
-
-    
 
 
     @staticmethod

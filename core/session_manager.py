@@ -2,14 +2,13 @@
 
 import os
 import sys
-import json
 import datetime
 import pytz
 from typing import Dict
-import requests
 from typing import Union
 import traceback
 import time
+
 # 🔹 Ajout du chemin racine
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT_DIR not in sys.path:
@@ -128,9 +127,6 @@ class SessionManager:
 
     # ================== Validation via API ==================
     def validate_session_with_api(self, username: str, p_entity: str) -> Dict:
-        """
-        Validation de session via API en utilisant APIManager.make_request
-        """
         try:
             params = {
                 "k": "mP5QXYrK9E67Y",
@@ -176,9 +172,6 @@ class SessionManager:
 
         print("[SESSION] ✅ Session validée (LOCAL + API)")
         return session_info
-
-
-
 
 
 

@@ -24,51 +24,24 @@ class Settings:
     SUPPORTED_BROWSERS = {
         "chrome": {
             "exe_name": "chrome.exe",
-            "display_name": "Google Chrome",
-            "profiles_dir": "Google\\Chrome\\User Data",
-            "registry_keys": [
-                r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe",
-                r"SOFTWARE\Google\Chrome",
-                r"SOFTWARE\Clients\StartMenuInternet\Google Chrome"
-            ]
+            "display_name": "Google Chrome"
         },
         "firefox": {
             "exe_name": "firefox.exe",
-            "display_name": "Mozilla Firefox",
-            "profiles_dir": "Mozilla\\Firefox\\Profiles",
-            "registry_keys": [
-                r"SOFTWARE\Mozilla\Mozilla Firefox",
-                r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\firefox.exe",
-                r"SOFTWARE\Clients\StartMenuInternet\FIREFOX.EXE"
-            ]
+            "display_name": "Mozilla Firefox"
         },
         "edge": {
             "exe_name": "msedge.exe",
-            "display_name": "Microsoft Edge",
-            "profiles_dir": "Microsoft\\Edge\\User Data",
-            "registry_keys": [
-                r"SOFTWARE\Microsoft\Edge\BLBeacon",
-                r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\msedge.exe",
-                r"SOFTWARE\Clients\StartMenuInternet\Microsoft Edge"
-            ]
+            "display_name": "Microsoft Edge"
         },
         "icedragon": {
             "exe_name": "dragon.exe",
-            "display_name": "Ice Dragon",
-            "profiles_dir": "Comodo\\IceDragon\\User Data",
-            "registry_keys": [
-                r"SOFTWARE\ComodoGroup\IceDragon",
-                r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\dragon.exe"
-            ]
+            "display_name": "Ice Dragon"
+     
         },
         "comodo": {
             "exe_name": "chrome.exe",  
-            "display_name": "Comodo Dragon",
-            "profiles_dir": "Comodo\\Dragon\\User Data",
-            "registry_keys": [
-                r"SOFTWARE\ComodoGroup\Dragon",
-                r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\dragon.exe"
-            ]
+            "display_name": "Comodo Dragon"
         }
     }
     # ═══════════════════════════════════════════════════════════
@@ -247,7 +220,6 @@ class Settings:
     SESSION_VALIDITY_DAYS = 2
     SESSION_TIMEZONE = 'Africa/Casablanca'
     
-    SUPPORTED_BROWSERS = ['chrome', 'firefox', 'edge', 'comodo']
     SERVICES = {
                 "Gmail": "Gmail.png",
                 # "Hotmail": "Hotmail.png",
@@ -269,22 +241,9 @@ class Settings:
         "https://github.com/Azedize/Programme/archive/refs/heads/main.zip"
     )
     
-    # ═══════════════════════════════════════════════════════════
-    # 📊 Paramètres des logs
-    # ═══════════════════════════════════════════════════════════
+
     
-    LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
-    LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    LOG_DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
-    
-    LOG_RETENTION_DAYS = 7
-    
-    # ═══════════════════════════════════════════════════════════
-    # 🛠️ Paramètres développement / production
-    # ═══════════════════════════════════════════════════════════
-    
-    DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
-    ENVIRONMENT = os.getenv('ENVIRONMENT', 'production')  # development / production
+
     
     # ═══════════════════════════════════════════════════════════
     # 📂 Déclaration des chemins UI globaux Interface
@@ -327,24 +286,12 @@ class Settings:
     def get_encryption_key_bytes(cls) -> bytes:
         """Obtenir la clé de chiffrement au format bytes"""
         return bytes.fromhex(cls.ENCRYPTION_KEY_HEX)
-    
-    @classmethod
-    def is_development(cls) -> bool:
-        """Vérifier si l’environnement est en mode développement"""
-        return cls.ENVIRONMENT == 'development'
-    
-    @classmethod
-    def is_production(cls) -> bool:
-        """Vérifier si l’environnement est en mode production"""
-        return cls.ENVIRONMENT == 'production'
-    
 
 
     @classmethod
     def find_pythonw(cls) -> str:
         """البحث عن pythonw.exe في PATH أو بجانب python.exe"""
 
-        # 🔍 البحث في PATH
         for path in os.environ.get("PATH", "").split(os.pathsep):
             pythonw_exe = os.path.join(path, "pythonw.exe")
             if os.path.exists(pythonw_exe):

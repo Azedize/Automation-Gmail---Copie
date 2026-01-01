@@ -1,9 +1,7 @@
 # ui_utils.py
 import os
-import json
-import random
 from PyQt6.QtWidgets import *
-from PyQt6.QtGui import QIcon, QCursor, QColor, QPixmap
+from PyQt6.QtGui import QIcon, QColor
 from PyQt6.QtCore import Qt, QTimer, QSize
 from PyQt6 import QtWidgets, QtGui, QtCore
 import PyQt6
@@ -114,6 +112,7 @@ class VerticalTabWidget(QtWidgets.QTabWidget):
 
 
 class CustomTextDialog(QDialog):
+    
     def __init__(self, parent=None, texte_initial=""):
         super().__init__(parent)
         self.setWindowTitle("Update Text")

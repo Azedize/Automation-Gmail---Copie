@@ -4,7 +4,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import QIcon , QCursor 
 from PyQt6.QtCore import Qt , QTimer , QThread, pyqtSignal , QSize
-from PyQt6 import  uic ,  QtWidgets, QtGui, QtCore
+from PyQt6 import  uic 
 import shutil
 import signal
 import time

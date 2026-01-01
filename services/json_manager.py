@@ -1,14 +1,11 @@
-"""
-JSON Manager - Gestion optimisée du traitement JSON pour l'application AutoMailPro
-Version refactorisée avec méthodes statiques pour une meilleure modularité
-"""
+
 
 import json
 import random
 import os
 import sys
-from typing import Dict, List, Any, Optional, Set, Tuple, Union
-from datetime import datetime
+from typing import Dict, List, Any, Tuple
+
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT_DIR not in sys.path:
@@ -20,9 +17,11 @@ try:
 except ImportError as e:
     raise ImportError(f"❌ Erreur d'importation: {e}")
 
-# Constantes pour une meilleure lisibilité
+
+
+
+
 class ProcessTypes:
-    """Types de processus constants pour éviter les chaînes magiques"""
     LOGIN = "login"
     LOOP = "loop"
     OPEN_INBOX = "open_inbox"
@@ -42,6 +41,11 @@ class ProcessTypes:
     GOOGLE_MAPS_ACTIONS = "google_maps_actions"
     SAVE_LOCATION = "save_location"
     SEARCH_ACTIVITIES = "search_activities"
+
+
+
+
+
 
 class JsonManager:
     """Gestionnaire optimisé pour la transformation et validation des structures JSON"""
@@ -70,17 +74,10 @@ class JsonManager:
     }
     
     def __init__(self):
-        """Initialise le gestionnaire JSON"""
         pass
     
     @staticmethod
     def create_initial_json() -> List[Dict[str, Any]]:
-        """
-        Crée la structure JSON initiale avec l'action de login
-        
-        Returns:
-            Liste contenant l'action de login initiale
-        """
         return [{
             "process": ProcessTypes.LOGIN,
             "sleep": 1
@@ -88,15 +85,6 @@ class JsonManager:
     
     @staticmethod
     def _extract_widget_data(widget) -> Dict[str, Any]:
-        """
-        Extrait les données d'un widget de manière structurée
-        
-        Args:
-            widget: Le widget à analyser
-            
-        Returns:
-            Dictionnaire contenant toutes les données extraites
-        """
         if not widget:
             return {}
         
@@ -131,17 +119,6 @@ class JsonManager:
     
     @staticmethod
     def _process_youtube_action(hidden_id: str, limit_value: int, sleep_value: int) -> List[Dict[str, Any]]:
-        """
-        Traite une action YouTube spéciale
-        
-        Args:
-            hidden_id: ID de l'action
-            limit_value: Valeur de limite
-            sleep_value: Valeur de sleep
-            
-        Returns:
-            Liste d'actions pour YouTube
-        """
         actions = []
         
         # Ajouter le check de login YouTube uniquement si c'est une action YouTube
@@ -162,15 +139,6 @@ class JsonManager:
     
     @staticmethod
     def _process_show_on_init_with_checkbox(widget_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Traite un widget avec showOnInit=True et checkbox
-        
-        Args:
-            widget_data: Données du widget
-            
-        Returns:
-            Dictionnaire contenant l'action et les sous-processus
-        """
         hidden_id = widget_data["hidden_id"]
         
         # Chercher la checkbox
@@ -206,17 +174,6 @@ class JsonManager:
     
     @staticmethod
     def _process_sub_widgets(layout, start_index: int, widget_data: Dict[str, Any]) -> Tuple[List[Dict[str, Any]], int]:
-        """
-        Traite les sous-widgets récursivement
-        
-        Args:
-            layout: Layout contenant les widgets
-            start_index: Index de départ
-            widget_data: Données du widget parent
-            
-        Returns:
-            Tuple (sous-processus, nouvel index)
-        """
         sub_process = []
         i = start_index
         
@@ -268,15 +225,6 @@ class JsonManager:
     
     @staticmethod
     def _process_special_platform_action(widget_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Traite les actions spéciales (Google/YouTube)
-        
-        Args:
-            widget_data: Données du widget
-            
-        Returns:
-            Dictionnaire d'action
-        """
         hidden_id = widget_data["hidden_id"]
         qlineedits = widget_data["children"].get("QLineEdit", [])
         
@@ -306,15 +254,6 @@ class JsonManager:
     
     @staticmethod
     def process_widget_data(scenario_layout: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        Traite les données des widgets pour construire le JSON final
-        
-        Args:
-            scenario_layout: Layout contenant les widgets
-            
-        Returns:
-            JSON construit à partir des widgets
-        """
         output_json = []
         i = 0
         
@@ -426,15 +365,6 @@ class JsonManager:
     
     @staticmethod
     def split_json_sections(input_json: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        Divise le JSON en sections basées sur open_inbox/open_spam
-        
-        Args:
-            input_json: JSON d'entrée
-            
-        Returns:
-            JSON avec sections séparées
-        """
         output_json = []
         current_section = []
         
@@ -487,15 +417,6 @@ class JsonManager:
     
     @staticmethod
     def handle_last_element(input_json: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        Gère les derniers éléments des boucles
-        
-        Args:
-            input_json: JSON d'entrée
-            
-        Returns:
-            JSON avec derniers éléments traités
-        """
         output_json = []
         
         for element in input_json:
@@ -565,15 +486,6 @@ class JsonManager:
     
     @staticmethod
     def modify_json_structure(input_json: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        Modifie la structure JSON finale
-        
-        Args:
-            input_json: JSON d'entrée
-            
-        Returns:
-            JSON modifié
-        """
         output_json = []
         current_section = []
         found_open_message = False
@@ -604,16 +516,6 @@ class JsonManager:
     
     @staticmethod
     def save_json_to_file( json_data: List[Dict[str, Any]],  selected_browser: str) -> str:
-        """
-        Sauvegarde le JSON dans le fichier approprié selon le navigateur
-        
-        Args:
-            json_data: Données JSON à sauvegarder
-            selected_browser: "firefox", "chrome", ou autre
-            
-        Returns:
-            "SUCCESS", "SUCCESS_FAMILY", ou "ERROR"
-        """
         # Déterminer le répertoire cible
         browser_lower = selected_browser.lower()
         
@@ -648,15 +550,6 @@ class JsonManager:
 
     @staticmethod
     def generate_json_data(scenario_layout: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        Génère les données JSON sans les sauvegarder
-        
-        Args:
-            scenario_layout: Layout des widgets
-            
-        Returns:
-            Données JSON générées
-        """
         try:
             # Étape 1: Traitement des widgets
             json_data = JsonManager.process_widget_data(scenario_layout)
@@ -675,20 +568,10 @@ class JsonManager:
         except Exception:
             return []
         
-        
+
         
     @staticmethod
     def process_complete_pipeline(scenario_layout: List[Dict[str, Any]],  selected_browser: str ) -> str:
-        """
-        Pipeline complet de traitement des données avec sauvegarde
-        
-        Args:
-            scenario_layout: Layout des widgets
-            selected_browser: Navigateur cible
-            
-        Returns:
-            Statut de sauvegarde ("SUCCESS", "SUCCESS_FAMILY", ou "ERROR")
-        """
         try:
             # Générer les données JSON
             json_data = JsonManager.generate_json_data(scenario_layout)
