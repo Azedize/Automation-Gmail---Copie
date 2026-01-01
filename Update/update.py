@@ -189,29 +189,48 @@ class UpdateManager:
     # ==========================================================
     @staticmethod
     def launch_new_window() -> bool:
-        """Lance une nouvelle instance silencieuse"""
+        """Lance une nouvelle instance silencieuse avec affichage debug pour les problèmes"""
+        import traceback
+
         script_path = os.path.join(Settings.BASE_DIR, "checkV3.py")
+        print(f"[DEBUG] Chemin du script à lancer : {script_path}")
 
         if not os.path.isfile(script_path):
             print(f"[LAUNCH] Script introuvable : {script_path}")
             return False
 
         try:
+            print("[DEBUG] Préparation STARTUPINFO pour lancer le script")
             startupinfo = subprocess.STARTUPINFO()
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
-            subprocess.Popen(
+            print("[DEBUG] Exécution subprocess.Popen ...")
+            process = subprocess.Popen(
                 [sys.executable, script_path],
                 startupinfo=startupinfo,
                 creationflags=subprocess.CREATE_NO_WINDOW,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,  # capturer stdout pour debug
+                stderr=subprocess.PIPE   # capturer stderr pour debug
             )
+
+            print(f"[DEBUG] Process lancé avec PID : {process.pid}")
+
+            # Optionnel : lecture rapide stdout/stderr pour debug immédiat
+            try:
+                out, err = process.communicate(timeout=2)  # 2 secondes max pour debug
+                if out:
+                    print(f"[DEBUG] stdout: {out.decode().strip()}")
+                if err:
+                    print(f"[DEBUG] stderr: {err.decode().strip()}")
+            except subprocess.TimeoutExpired:
+                print("[DEBUG] Process en cours d'exécution (timeout expiré)")
 
             return True
 
-        except Exception:
-            print("[LAUNCH] Échec lancement")
+        except Exception as e:
+            print("[LAUNCH] Échec du lancement")
+            print(f"[DEBUG] Exception: {e}")
+            traceback.print_exc()
             return False
 
 
