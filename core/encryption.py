@@ -6,11 +6,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.fernet import Fernet
 import sys
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-if ROOT_DIR not in sys.path:
-    sys.path.insert(0, ROOT_DIR)
 
-from config import Settings
 
 
 class EncryptionError(Exception):
@@ -19,6 +15,9 @@ class EncryptionError(Exception):
 
 class EncryptionService:
 
+  
+    
+    
 
     # =========================
     # 🔑 Key Derivation (PBKDF2)
@@ -26,17 +25,17 @@ class EncryptionService:
     @staticmethod
     def Derive_Key(password: str, salt: bytes) -> bytes:
         try:
-            if len(salt) != Settings.AES_SALT_LENGTH:
+            if len(salt) != 16:
                 raise EncryptionError(
                     f"Invalid salt length: {len(salt)} "
-                    f"(expected {Settings.AES_SALT_LENGTH})"
+                    f"(expected {16})"
                 )
 
             kdf = PBKDF2HMAC(
                 algorithm=hashes.SHA256(),
-                length=Settings.AES_KEY_LENGTH,
+                length=32,
                 salt=salt,
-                iterations=Settings.PBKDF2_ITERATIONS,
+                iterations=100_000,
             )
             return kdf.derive(password.encode("utf-8"))
 
@@ -49,13 +48,13 @@ class EncryptionService:
     @staticmethod
     def encrypt_message(plaintext: str, key_bytes: bytes) -> str:
         try:
-            if len(key_bytes) != Settings.AES_KEY_LENGTH:
+            if len(key_bytes) != 32:
                 raise EncryptionError("Invalid AES key length")
 
-            padder = padding.PKCS7(Settings.AES_BLOCK_SIZE).padder()
+            padder = padding.PKCS7(128).padder()
             padded = padder.update(plaintext.encode("utf-8")) + padder.finalize()
 
-            iv = os.urandom(Settings.AES_IV_LENGTH_CBC)
+            iv = os.urandom(16)
 
             cipher = Cipher(
                 algorithms.AES(key_bytes),
@@ -75,13 +74,13 @@ class EncryptionService:
     @staticmethod
     def decrypt_message(base64_data: str, key_bytes: bytes) -> str:
         try:
-            if len(key_bytes) != Settings.AES_KEY_LENGTH:
+            if len(key_bytes) != 32:
                 raise EncryptionError("Invalid AES key length")
 
             raw = base64.b64decode(base64_data)
 
-            iv = raw[:Settings.AES_IV_LENGTH_CBC]
-            ciphertext = raw[Settings.AES_IV_LENGTH_CBC:]
+            iv = raw[:16]
+            ciphertext = raw[16:]
 
             cipher = Cipher(
                 algorithms.AES(key_bytes),
@@ -90,7 +89,7 @@ class EncryptionService:
             decryptor = cipher.decryptor()
             padded_plaintext = decryptor.update(ciphertext) + decryptor.finalize()
 
-            unpadder = padding.PKCS7(Settings.AES_BLOCK_SIZE).unpadder()
+            unpadder = padding.PKCS7(128).unpadder()
             plaintext = unpadder.update(padded_plaintext) + unpadder.finalize()
 
             return plaintext.decode("utf-8")
@@ -104,10 +103,10 @@ class EncryptionService:
     @staticmethod
     def encrypt_aes_gcm(password: str, plaintext: str) -> str:
         try:
-            salt = os.urandom(Settings.AES_SALT_LENGTH)
+            salt = os.urandom(16)
             key = EncryptionService.Derive_Key(password, salt)
 
-            iv = os.urandom(Settings.AES_IV_LENGTH_GCM)
+            iv = os.urandom(12)
             aesgcm = AESGCM(key)
 
             ciphertext_and_tag = aesgcm.encrypt(

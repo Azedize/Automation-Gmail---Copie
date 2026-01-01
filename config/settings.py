@@ -122,13 +122,7 @@ class Settings:
     ENCRYPTION_KEY_HEX = 'f564292a5740af4fc4819c6e22f64765232ad35f56079854a0ad3996c68ee7a2'
     
     
-    AES_BLOCK_SIZE = 128    
-    AES_KEY_LENGTH = 32         
-    AES_IV_LENGTH = 16         
-    AES_SALT_LENGTH = 16        
-    PBKDF2_ITERATIONS = 100_000
-    AES_IV_LENGTH_CBC = 16        
-    AES_IV_LENGTH_GCM = 12        
+
 
 
     # ═══════════════════════════════════════════════════════════
