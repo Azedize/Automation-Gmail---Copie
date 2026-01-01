@@ -1155,11 +1155,7 @@ def Process_Browser(window, selected_Browser):
 
 class MainWindow(QMainWindow):
 
-
-
-
     def __init__(self, json_data):
-
         super(MainWindow, self).__init__()
         self._init_ui()
         self._init_data(json_data)
