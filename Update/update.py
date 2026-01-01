@@ -214,4 +214,4 @@ class UpdateManager:
 # ==========================================================
 # ▶️ POINT D’ENTRÉE
 # ==========================================================
-UpdateManager.check_and_update()
+UpdateManager = UpdateManager()
