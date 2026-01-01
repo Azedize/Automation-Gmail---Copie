@@ -243,7 +243,7 @@ class UpdateManager:
 
             # Fetch remote version
             try:
-                response = requests.get(CHECK_URL_EX3, verify=False, timeout=10)
+                response = requests.get(Settings.CHECK_URL_EX3, verify=False, timeout=10)
                 response.raise_for_status()
                 data = response.json()
                 remote_version = data.get("version_Extention")
