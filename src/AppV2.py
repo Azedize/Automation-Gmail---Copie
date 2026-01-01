@@ -1680,6 +1680,88 @@ def Process_Browser(window, selected_Browser):
 
 
 
+def check_and_update() -> bool:
+    """Vérifier et mettre à jour le programme et/ou extensions"""
+    try:
+        from api.base_client import APIManager
+
+        print("\n" + "=" * 80)
+        print("🔍 DÉMARRAGE DU SYSTÈME DE MISE À JOUR")
+        print("=" * 80)
+
+        # -------------------------------
+        # 🌐 APPEL SERVEUR pour récupérer versions
+        # -------------------------------
+        response = APIManager.make_request(
+            "__CHECK_URL_PROGRAMM__", method="GET", timeout=10
+        )
+
+        if not isinstance(response, dict) or response.get("status_code") != 200:
+            print("❌ Réponse serveur invalide → Update forcé")
+            return True
+
+        data = response.get("data", {})
+        server_program = data.get("version_Programme")
+        server_ext = data.get("version_extension")
+
+        print(f"🌐 Version programme serveur : {server_program}")
+        print(f"🌐 Version extensions serveur : {server_ext}")
+
+        # -------------------------------
+        # 📁 VERSIONS LOCALES
+        # -------------------------------
+        local_program = UpdateManager._read_local_version(Settings.VERSION_LOCAL_PROGRAMM)
+        local_ext = UpdateManager._read_local_version(Settings.VERSION_LOCAL_EXT)
+
+        print(f"📄 Version programme locale : {local_program}")
+        print(f"📄 Version extensions locale : {local_ext}")
+
+        # ======================================================
+        # 🟥 MISE À JOUR PROGRAMME
+        # ======================================================
+        if not local_program or local_program != server_program:
+            print("\n🟥 MISE À JOUR PROGRAMME REQUISE")
+            UpdateManager._download_and_extract(
+                Settings.API_ENDPOINTS["__SERVER_ZIP_URL_PROGRAM__"],
+                ROOT_DIR,
+                clean_target=False,
+                extract_subdir=None  # كل الملفات في الجذر
+            )
+            print("⛔ Arrêt après mise à jour programme")
+            return True
+
+        # ======================================================
+        # 🟨 MISE À JOUR EXTENSIONS (TOOLS)
+        # ======================================================
+        if not local_ext or local_ext != server_ext:
+            print("\n🟨 MISE À JOUR EXTENSIONS REQUISE")
+            tools_dir = Settings.TOOLS_DIR
+            if not os.path.exists(tools_dir):
+                print(f"⚠️ Dossier Tools introuvable, création automatique : {tools_dir}")
+                os.makedirs(tools_dir)
+
+            UpdateManager._download_and_extract(
+                Settings.API_ENDPOINTS["__SERVER_ZIP_URL_PROGRAM__"],
+                tools_dir,
+                clean_target=True,
+                extract_subdir="tools"
+            )
+            print("▶️ Extensions mises à jour, poursuite normale")
+            return True
+
+        # ======================================================
+        # 🟩 AUCUNE MISE À JOUR
+        # ======================================================
+        print("\n🟩 APPLICATION À JOUR – AUCUNE ACTION")
+        return False
+
+    except Exception as e:
+        print("🔥 ERREUR CRITIQUE → UPDATE PAR SÉCURITÉ")
+        traceback.print_exc()
+        return True
+
+
+
 
 
 class MainWindow(QMainWindow):
@@ -1691,7 +1773,7 @@ class MainWindow(QMainWindow):
         self._init_data(json_data)
         self._setup_ui_components()
         self._load_initial_state()
-        # self.JsonManager = JsonManager(ValidationUtils)
+
 
 
 
@@ -1706,7 +1788,6 @@ class MainWindow(QMainWindow):
 
 
     def _setup_ui_components(self):
-        """Setup all UI components in a modular way"""
         self._setup_containers()
         self._setup_template_widgets()
         self._setup_buttons()
@@ -1853,7 +1934,6 @@ class MainWindow(QMainWindow):
 
 
     def Save_Process(self, params):
-        """Utilise APIManager pour sauvegarder le processus"""
         return APIManager.save_process(params)
         
 

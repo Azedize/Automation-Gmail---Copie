@@ -131,7 +131,16 @@ class EncryptionService:
             return False
 
 
-
+    @staticmethod
+    def generate_encrypted_key():
+        """Génère une clé chiffrée pour l'authentification"""
+        from cryptography.fernet import Fernet
+        
+        secret_key = Fernet.generate_key()
+        fernet = Fernet(secret_key)
+        encrypted_message = fernet.encrypt(b"authorized")
+        
+        return encrypted_message.decode(), secret_key.decode()
 
 
 EncryptionService = EncryptionService()

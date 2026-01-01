@@ -23,7 +23,7 @@ if ROOT_DIR not in sys.path:
 
 from config import Settings
 
-from core import EncryptionService
+
 
 # Configuration des chemins
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -322,6 +322,21 @@ class UpdateManager:
 
 
 
+class SecurityManager:
+    """Gestionnaire de sécurité et chiffrement"""
+    
+    @staticmethod
+    def generate_encrypted_key():
+        """Génère une clé chiffrée pour l'authentification"""
+        from cryptography.fernet import Fernet
+        
+        secret_key = Fernet.generate_key()
+        fernet = Fernet(secret_key)
+        encrypted_message = fernet.encrypt(b"authorized")
+        
+        return encrypted_message.decode(), secret_key.decode()
+
+
 
 
 
@@ -369,51 +384,6 @@ def initialize_dependencies():
 
 
 def main():
-    """Fonction principale"""
-    try:
-   
-
-         # 🪟 إخفاء نافذة الكونسول في الويندوز (اختياري)
-        # if sys.platform == "win32":
-        #     ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
-
-        # 🔍 البحث عن pythonw.exe لتشغيل البرنامج بدون نافذة كونسول
-        # pythonw_path = None
-        # for path in os.environ["PATH"].split(os.pathsep):
-        #     pythonw_exe = os.path.join(path, "pythonw.exe")
-        #     if ValidationUtils.path_exists(pythonw_exe):
-        #         pythonw_path = pythonw_exe
-        #         break
-
-        # if not pythonw_path:
-        #     pythonw_exe = os.path.join(os.path.dirname(sys.executable), "pythonw.exe")
-        #     if ValidationUtils.path_exists(pythonw_exe):
-        #         pythonw_path = pythonw_exe
-        # Initialisation des dépendances
-        initialize_dependencies()
-        
-        # Import de la configuration
-        from config import settings
-        
-        # Vérification de pythonw.exe
-        pythonw_path = settings.find_pythonw()
-        if not pythonw_path:
-            print("❌ pythonw.exe introuvable")
-            sys.exit(1)
-
-
-        # sys.stdout = open(os.devnull, 'w')
-        # sys.stderr = open(os.devnull, 'w')
-        # sys.stdin = open(os.devnull, 'r')
-        
-        # startupinfo = subprocess.STARTUPINFO()
-        # startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-        # startupinfo.wShowWindow = subprocess.SW_HIDE
-        # Code en commentaire pour la mise à jour automatique
-        # Vous pouvez le décommenter si nécessaire :
-        print("\n" + "=" * 80)
-        print("📌 DÉBUT DU SCRIPT")
-        print("=" * 80)
 
         try:
             updated = UpdateManager.check_and_update()
@@ -435,22 +405,3 @@ def main():
             print("⚠️ L'application continue malgré l'erreur")
             
 
-        # Génération des clés de sécurité
-        encrypted_key, secret_key = EncryptionService.generate_encrypted_key()
-        
-        # Lancement de l'application principale
-        script_path = SCRIPT_DIR / 'src' / 'AppV2.py'
-        if script_path.is_file():
-            subprocess.run([sys.executable, str(script_path), encrypted_key, secret_key])
-        else:
-            print(f"❌ Fichier introuvable : {script_path}")
-            sys.exit(1)
-
-    except Exception as e:
-        print(f"❌ Erreur fatale : {e}")
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
