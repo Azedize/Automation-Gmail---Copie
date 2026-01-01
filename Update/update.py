@@ -6,6 +6,7 @@ import tempfile
 import requests
 import traceback
 import subprocess
+from typing import Optional
 
 # ==========================================================
 # 📁 ROOT DIR
@@ -37,7 +38,7 @@ class UpdateManager:
         zip_url: str,
         target_dir: str,
         clean_target: bool = False,
-        extract_subdir: str | None = None,
+        extract_subdir:  Optional[str] = None,
     ):
         """Télécharge un ZIP et l’extrait proprement"""
         try:
