@@ -1696,7 +1696,7 @@ class MainWindow(QMainWindow):
 
         # For PROGRAMM COMPLETE UPDATE
         try:
-            UpdateManager.check_and_update()
+            UpdateManager.check_and_update(self)
 
         except SystemExit:
             return

@@ -34,12 +34,7 @@ class UpdateManager:
             return None
 
     @staticmethod
-    def _download_and_extract(
-        zip_url: str,
-        target_dir: str,
-        clean_target: bool = False,
-        extract_subdir:  Optional[str] = None,
-    ):
+    def _download_and_extract( zip_url: str, target_dir: str, clean_target: bool = False, extract_subdir:  Optional[str] = None):
         """Télécharge un ZIP et l’extrait proprement"""
         try:
             print(f"\n⬇️ Téléchargement : {zip_url}")
@@ -100,7 +95,7 @@ class UpdateManager:
     # 🔥 LOGIQUE PRINCIPALE
     # ==========================================================
     @staticmethod
-    def check_and_update() -> None:
+    def check_and_update( Window) -> None:
         """
         🔴 PROGRAMME changé :
             - Lance nouvelle instance
@@ -150,6 +145,11 @@ class UpdateManager:
             # ==================================================
             if not local_program or local_program != server_program:
                 print("\n🔴 UPDATE PROGRAMME")
+                # close window 
+                if Window:
+                    Window.close()
+
+
 
                 # ⚠️ AUCUN code tools ici
                 UpdateManager.launch_new_window()
