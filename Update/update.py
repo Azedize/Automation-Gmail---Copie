@@ -147,7 +147,11 @@ class UpdateManager:
                 print("\n🔴 UPDATE PROGRAMME")
                 # close window 
                 if Window:
+                    print(f"[DEBUG] Fermeture de la fenêtre : {Window}")
                     Window.close()
+                    print("[DEBUG] Fenêtre fermée avec succès")
+                else:
+                    print("[DEBUG] Aucune fenêtre ouverte")
 
 
 
