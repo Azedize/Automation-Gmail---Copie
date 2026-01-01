@@ -151,7 +151,7 @@ class DependencyManager:
 
 
 
-class UpdateManagerLV:
+class UpdateManager:
 
     # ==========================================================
     # 🔹 UTILITAIRES
@@ -256,10 +256,10 @@ class UpdateManagerLV:
             # -------------------------------
             # 📁 VERSIONS LOCALES
             # -------------------------------
-            local_program = UpdateManagerLV._read_local_version(
+            local_program = UpdateManager._read_local_version(
                 Settings.VERSION_LOCAL_PROGRAMM
             )
-            local_ext = UpdateManagerLV._read_local_version(
+            local_ext = UpdateManager._read_local_version(
                 Settings.VERSION_LOCAL_EXT
             )
 
@@ -271,10 +271,10 @@ class UpdateManagerLV:
             # ======================================================
             if not local_program or local_program != server_program:
                 print("\n🟥 MISE À JOUR PROGRAMME REQUISE")
-                UpdateManagerLV._download_and_extract(
+                UpdateManager._download_and_extract(
                     Settings.API_ENDPOINTS["__SERVER_ZIP_URL_PROGRAM__"],
                     Settings.BASE_DIR,
-                    clean_target=False   # دمج في نفس المشروع
+                    clean_target=False  
                 )
                 print("⛔ Arrêt après mise à jour programme")
                 return True
@@ -284,8 +284,8 @@ class UpdateManagerLV:
             # ======================================================
             if not local_ext or local_ext != server_ext:
                 print("\n🟨 MISE À JOUR EXTENSIONS REQUISE")
-                UpdateManagerLV._download_and_extract(
-                    Settings.API_ENDPOINTS["__SERVER_ZIP_URL_EXTENSIONS__"],
+                UpdateManager._download_and_extract(
+                    "https://github.com/Azedize/Automation-Gmail---Copie/tree/bdc59caa4df1de6aea71224737a7a630b1dceb4a/tools",
                     Settings.TOOLS_DIR,
                     clean_target=True       
                 )
