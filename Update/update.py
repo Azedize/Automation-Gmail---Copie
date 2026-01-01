@@ -191,7 +191,7 @@ class UpdateManager:
     def launch_new_window() -> bool:
         """
         Lance une nouvelle instance silencieuse de checkV3.py
-        Debug activé et gestion UTF-8 pour éviter UnicodeEncodeError
+        Version corrigée : ne bloque pas et utilise pythonw.exe sur Windows
         """
         import traceback
 
@@ -203,38 +203,32 @@ class UpdateManager:
             return False
 
         try:
-            # Préparer STARTUPINFO pour cacher la fenêtre console sur Windows
-            startupinfo = subprocess.STARTUPINFO()
-            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            # Utiliser pythonw.exe si possible (Windows)
+            python_exe = sys.executable
+            if sys.platform == "win32":
+                pythonw_candidate = os.path.join(os.path.dirname(python_exe), "pythonw.exe")
+                if os.path.isfile(pythonw_candidate):
+                    python_exe = pythonw_candidate
 
-            # Lancer le subprocess avec capture de stdout/stderr
-            process = subprocess.Popen(
-                [sys.executable, script_path],
-                startupinfo=startupinfo,
-                creationflags=subprocess.CREATE_NO_WINDOW,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
+            # Lancer le subprocess en arrière-plan
+            subprocess.Popen(
+                [python_exe, script_path],
+                cwd=Settings.BASE_DIR,
+                close_fds=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
             )
 
-            print(f"[DEBUG] Process lancé avec PID : {process.pid}")
-
-            try:
-                # Lire la sortie (stdout/stderr) sans bloquer
-                out, err = process.communicate(timeout=3)
-                if out:
-                    print(f"[DEBUG] stdout: {out.decode('utf-8', errors='replace').strip()}")
-                if err:
-                    print(f"[DEBUG] stderr: {err.decode('utf-8', errors='replace').strip()}")
-            except subprocess.TimeoutExpired:
-                print("[DEBUG] Process en cours d'exécution (timeout expiré, processus toujours actif)")
-
+            print("[DEBUG] Nouvelle instance lancée avec succès")
             return True
 
         except Exception as e:
             print("[LAUNCH] Échec du lancement")
-            print(f"[DEBUG] Exception: {str(e).encode('utf-8', errors='replace').decode('utf-8')}")
+            print(f"[DEBUG] Exception: {str(e)}")
             traceback.print_exc()
             return False
+
 
 
 # ==========================================================
