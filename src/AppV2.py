@@ -1342,144 +1342,6 @@ class MainWindow(QMainWindow):
             return "ERROR"
 
 
-
-    def Process_Split_Json(self, input_json):
-        output_json = []
-        current_section = []
-        current_start = None
-
-        def finalize_section():
-            if current_section:
-                output_json.extend(current_section)
-
-        for element in input_json:
-            process_type = element.get("process")
-
-            if process_type == "loop" and not element.get("sub_process"):
-                continue
-
-            if process_type in {"open_inbox", "open_spam"}:
-                finalize_section()
-                current_section = [element]
-                current_start = process_type
-                continue
-
-
-            if process_type == "loop":
-                sub_process = element.get("sub_process", [])
-
-            
-                allowed_items = {
-                    "open_inbox": {"report_spam", "delete", "archive"},
-                    "open_spam": {"not_spam", "delete", "report_spam"}
-                }.get(current_start, set())
-
-            
-                has_select_all = any(sp.get("process") == "select_all" for sp in sub_process)
-                has_allowed_item = any(sp.get("process") in allowed_items for sp in sub_process)
-
-                
-                if has_select_all or has_allowed_item:
-                    sub_process = [
-                        sp for sp in sub_process
-                        if sp.get("process") not in {"return_back", "next"}
-                    ]
-
-                element["sub_process"] = sub_process
-                current_section.append(element)
-                continue
-            current_section.append(element)
-        finalize_section()
-        return output_json
-
-
- 
-    def Process_Handle_Last_Element(self, input_json):
-        output_json = []
-
-        for element in input_json:
-            process_type = element.get("process")
-
-            if process_type in ["google_maps_actions", "save_location", "search_activities"]:
-                continue
-
-            if process_type == "loop" and "sub_process" in element:
-                sub_process = element["sub_process"]
-
-                if sub_process:
-                    last = sub_process[-1].get("process")
-
-                    if last == "next":
-                        output_json.append({
-                            "process": "open_message",
-                            "sleep": random.randint(1, 3)
-                        })
-
-                        sub_process = [
-                            sp for sp in sub_process
-                            if sp.get("process") != "open_message"
-                        ]
-
-                    elif last not in ["delete", "archive", "not_spam", "report_spam"]:
-                        for sp in sub_process:
-                            if sp.get("process") == "open_message":
-                                sp["process"] = "OPEN_MESSAGE_ONE_BY_ONE"
-
-
-                    has_select_all = any(
-                        sp.get("process") == "select_all"
-                        for sp in sub_process
-                    )
-                    has_archive = any(
-                        sp.get("process") == "archive"
-                        for sp in sub_process
-                    )
-                    has_next_page = any(
-                        sp.get("process") == "next_page"
-                        for sp in sub_process
-                    )
-
-                    if has_select_all and not has_archive and not has_next_page:
-                        sub_process.append({
-                            "process": "next_page",
-                            "sleep": 2
-                        })
-                element["sub_process"] = sub_process
-            output_json.append(element)
-        return output_json
-
-
-
-
-
-    def Process_Modify_Json(self, input_json):
-        output_json = []
-        current_section = []
-        found_open_message = False
-
-        def finalize_section():
-            if current_section:
-                output_json.extend(current_section)
-
-        for element in input_json:
-            process_type = element.get("process")
-            if process_type == "open_message":
-                found_open_message = True
-
-            if process_type == "loop":
-                if found_open_message:
-                    sub_process = element.get("sub_process", [])
-                    if any(sp.get("process") == "next" for sp in sub_process):
-                        element.pop("check", None)
-                current_section.append(element)
-                continue
-
-            current_section.append(element)
-
-        finalize_section()
-        return output_json
-
-
     def Extraction_Finished(self, window):
         self.LOGS_THREAD.stop()  
         self.LOGS_THREAD.wait()  
@@ -1552,8 +1414,8 @@ class MainWindow(QMainWindow):
 
         selected_Browser = self.browser.currentText().lower()
 
-        # if not Process_Browser(window, selected_Browser):
-        #     return
+        if not Process_Browser(window, selected_Browser):
+            return
 
         if self.INTERFACE:
             for i in range(self.INTERFACE.count()):
