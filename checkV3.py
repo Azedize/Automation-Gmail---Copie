@@ -9,6 +9,23 @@ import time
 from pathlib import Path
 from utils import ValidationUtils
 
+import os
+import sys
+import shutil
+import zipfile
+import tempfile
+import requests
+import traceback
+
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
+
+from config import Settings
+from api.base_client import APIManager
+
+
+
 # Configuration des chemins
 SCRIPT_DIR = Path(__file__).resolve().parent
 DIRECTORY_VERSIONS = SCRIPT_DIR / "Programme-main"
@@ -129,6 +146,164 @@ class DependencyManager:
                 return importlib.import_module(module_to_import)
             except ImportError as e:
                 sys.exit(f"❌ Import impossible : {e}")
+
+
+
+
+
+class UpdateManagerLV:
+
+    # ==========================================================
+    # 🔹 UTILITAIRES
+    # ==========================================================
+    @staticmethod
+    def _read_local_version(path):
+        """Lire la version locale depuis un fichier"""
+        if not path or not os.path.exists(path):
+            return None
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                return f.read().strip()
+        except Exception:
+            return None
+
+    @staticmethod
+    def _download_and_extract(zip_url, target_dir, clean_target=False):
+        """Télécharger et extraire un ZIP dans target_dir"""
+        try:
+            print(f"\n⬇️ Téléchargement depuis : {zip_url}")
+
+            with tempfile.TemporaryDirectory() as tmpdir:
+                zip_path = os.path.join(tmpdir, "update.zip")
+
+                # téléchargement
+                r = requests.get(zip_url, stream=True, timeout=60, verify=False)
+                r.raise_for_status()
+
+                with open(zip_path, "wb") as f:
+                    for chunk in r.iter_content(8192):
+                        if chunk:
+                            f.write(chunk)
+
+                print("📦 ZIP téléchargé")
+
+                # إزالة المجلد القديم إذا clean_target = True
+                if clean_target and os.path.exists(target_dir):
+                    print(f"🗑️ Suppression du dossier cible : {target_dir}")
+                    shutil.rmtree(target_dir)
+
+                # استخراج ZIP
+                with zipfile.ZipFile(zip_path, "r") as z:
+                    z.extractall(tmpdir)
+
+                # العثور على المجلد الرئيسي المستخرج
+                extracted_dir = next(
+                    os.path.join(tmpdir, d)
+                    for d in os.listdir(tmpdir)
+                    if os.path.isdir(os.path.join(tmpdir, d))
+                )
+
+                # دمج الملفات مباشرة في target_dir
+                if not os.path.exists(target_dir):
+                    os.makedirs(target_dir)
+
+                for item in os.listdir(extracted_dir):
+                    s = os.path.join(extracted_dir, item)
+                    d = os.path.join(target_dir, item)
+                    if os.path.isdir(s):
+                        if os.path.exists(d):
+                            shutil.rmtree(d)
+                        shutil.move(s, d)
+                    else:
+                        shutil.move(s, d)
+
+                print(f"✅ Extraction terminée → {target_dir}")
+
+        except Exception as e:
+            print("❌ Erreur dans _download_and_extract :", e)
+            traceback.print_exc()
+            raise e
+
+    # ==========================================================
+    # 🔥 LOGIQUE PRINCIPALE
+    # ==========================================================
+    @staticmethod
+    def check_and_update() -> bool:
+        """Vérifier et mettre à jour le programme et/ou extensions"""
+        try:
+            print("\n" + "=" * 80)
+            print("🔍 DÉMARRAGE DU SYSTÈME DE MISE À JOUR")
+            print("=" * 80)
+
+            # -------------------------------
+            # 🌐 APPEL SERVEUR
+            # -------------------------------
+            response = APIManager.make_request(
+                "__CHECK_URL_PROGRAMM__", method="GET", timeout=10
+            )
+
+            if not isinstance(response, dict) or response.get("status_code") != 200:
+                print("❌ Réponse serveur invalide → Update forcé")
+                return True
+
+            data = response.get("data", {})
+            server_program = data.get("version_Programm")
+            server_ext = data.get("version_extensions")
+
+            print(f"🌐 Version programme serveur : {server_program}")
+            print(f"🌐 Version extensions serveur : {server_ext}")
+
+            # -------------------------------
+            # 📁 VERSIONS LOCALES
+            # -------------------------------
+            local_program = UpdateManagerLV._read_local_version(
+                Settings.VERSION_LOCAL_PROGRAMM
+            )
+            local_ext = UpdateManagerLV._read_local_version(
+                Settings.VERSION_LOCAL_EXT
+            )
+
+            print(f"📄 Version programme locale : {local_program}")
+            print(f"📄 Version extensions locale : {local_ext}")
+
+            # ======================================================
+            # 🟥 PRIORITÉ ABSOLUE : PROGRAMME
+            # ======================================================
+            if not local_program or local_program != server_program:
+                print("\n🟥 MISE À JOUR PROGRAMME REQUISE")
+                UpdateManagerLV._download_and_extract(
+                    Settings.API_ENDPOINTS["__SERVER_ZIP_URL_PROGRAM__"],
+                    Settings.BASE_DIR,
+                    clean_target=False   # دمج في نفس المشروع
+                )
+                print("⛔ Arrêt après mise à jour programme")
+                return True
+
+            # ======================================================
+            # 🟨 EXTENSIONS SEULEMENT
+            # ======================================================
+            if not local_ext or local_ext != server_ext:
+                print("\n🟨 MISE À JOUR EXTENSIONS REQUISE")
+                UpdateManagerLV._download_and_extract(
+                    Settings.API_ENDPOINTS["__SERVER_ZIP_URL_EXTENSIONS__"],
+                    Settings.TOOLS_DIR,
+                    clean_target=True    # حذف المجلد القديم
+                )
+                print("▶️ Extensions mises à jour, poursuite normale")
+                return True
+
+            # ======================================================
+            # 🟩 AUCUNE MISE À JOUR
+            # ======================================================
+            print("\n🟩 APPLICATION À JOUR – AUCUNE ACTION")
+            return False
+
+        except Exception as e:
+            print("🔥 ERREUR CRITIQUE → UPDATE PAR SÉCURITÉ")
+            traceback.print_exc()
+            return True
+
+
 
 
 
@@ -324,6 +499,18 @@ def initialize_dependencies():
 def main():
     """Fonction principale"""
     try:
+        updated = UpdateManagerLV.check_and_update()
+
+        print("\n" + "=" * 80)
+        print("📌 RÉSULTAT FINAL")
+        print("=" * 80)
+
+        if updated:
+            print("🔄 UPDATE EFFECTUÉ")
+        else:
+            print("✅ APPLICATION À JOUR")
+        
+        return updated
          # 🪟 إخفاء نافذة الكونسول في الويندوز (اختياري)
         # if sys.platform == "win32":
         #     ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
