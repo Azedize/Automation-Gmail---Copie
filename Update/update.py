@@ -1,14 +1,14 @@
 import os
 import sys
+import json
+import stat
 import shutil
 import zipfile
 import tempfile
-import requests
 import traceback
 import subprocess
 from typing import Optional
-import json
-
+import requests
 
 # ==========================================================
 # 📁 ROOT DIR
@@ -18,14 +18,15 @@ if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
 from config import Settings
-from ui_utils import UIManager
 
 class UpdateManager:
+    """Gestionnaire de mise à jour pour l'application et les extensions"""
+    
     # ==========================================================
     # 🔹 UTILITAIRES
     # ==========================================================
     @staticmethod
-    def _read_local_version(path: str):
+    def _read_local_version(path: str) -> Optional[str]:
         """Lire une version depuis un fichier texte"""
         if not path or not os.path.isfile(path):
             return None
@@ -36,69 +37,111 @@ class UpdateManager:
             return None
 
     @staticmethod
-    def _download_and_extract( zip_url: str, target_dir: str, clean_target: bool = False, extract_subdir:  Optional[str] = None):
-        """Télécharge un ZIP et l’extrait proprement"""
+    def _download_file(url: str, dest_path: str) -> bool:
+        """Télécharge un fichier avec progression"""
+        try:
+            print(f"⬇️ Téléchargement depuis : {url}")
+            response = requests.get(url, stream=True, verify=False, timeout=60)
+            response.raise_for_status()
+            total_size = int(response.headers.get("content-length", 0))
+            downloaded = 0
+
+            with open(dest_path, "wb") as f:
+                for chunk in response.iter_content(8192):
+                    if chunk:
+                        f.write(chunk)
+                        downloaded += len(chunk)
+                        if total_size:
+                            percent = (downloaded / total_size) * 100
+                            print(f"   → Progression : {percent:.2f}%", end="\r")
+            print(f"\n✅ Téléchargement terminé : {dest_path}")
+            return True
+        except Exception as e:
+            print(f"❌ Erreur lors du téléchargement : {e}")
+            return False
+
+    @staticmethod
+    def _remove_readonly(func, path, exc_info):
+        """Supprime l'attribut readonly pour Windows"""
+        os.chmod(path, stat.S_IWRITE)
+        func(path)
+
+    
+    
+    
+    @staticmethod
+    def _download_and_extract(zip_url: str, target_dir: str, clean_target: bool = False, extract_subdir: Optional[str] = None) -> bool:
         try:
             print(f"\n⬇️ Téléchargement : {zip_url}")
 
             with tempfile.TemporaryDirectory() as tmpdir:
                 zip_path = os.path.join(tmpdir, "update.zip")
 
-                r = requests.get(zip_url, stream=True, timeout=60, verify=False)
-                r.raise_for_status()
-
-                with open(zip_path, "wb") as f:
-                    for chunk in r.iter_content(8192):
-                        if chunk:
-                            f.write(chunk)
+                # Téléchargement
+                if not UpdateManager._download_file(zip_url, zip_path):
+                    return False
 
                 print("📦 ZIP téléchargé")
 
+                # Nettoyage du répertoire cible si demandé
                 if clean_target and os.path.exists(target_dir):
-                    shutil.rmtree(target_dir)
+                    shutil.rmtree(target_dir, onerror=UpdateManager._remove_readonly)
 
+                # Extraction
                 with zipfile.ZipFile(zip_path, "r") as z:
                     z.extractall(tmpdir)
 
-                extracted_root = next(
-                    os.path.join(tmpdir, d)
-                    for d in os.listdir(tmpdir)
-                    if os.path.isdir(os.path.join(tmpdir, d))
-                )
+                # Recherche du répertoire extrait
+                extracted_root = None
+                for item in os.listdir(tmpdir):
+                    item_path = os.path.join(tmpdir, item)
+                    if os.path.isdir(item_path):
+                        extracted_root = item_path
+                        break
 
+                if extracted_root is None:
+                    print("❌ Aucun dossier trouvé dans l'archive")
+                    return False
+
+                # Gestion du sous-répertoire
                 extracted_dir = (
                     os.path.join(extracted_root, extract_subdir)
-                    if extract_subdir
-                    and os.path.exists(os.path.join(extracted_root, extract_subdir))
+                    if extract_subdir and os.path.exists(os.path.join(extracted_root, extract_subdir))
                     else extracted_root
                 )
 
                 os.makedirs(target_dir, exist_ok=True)
 
+                # Déplacement des fichiers
                 for item in os.listdir(extracted_dir):
                     src = os.path.join(extracted_dir, item)
                     dst = os.path.join(target_dir, item)
 
                     if os.path.isdir(src):
                         if os.path.exists(dst):
-                            shutil.rmtree(dst)
+                            shutil.rmtree(dst, onerror=UpdateManager._remove_readonly)
                         shutil.move(src, dst)
                     else:
+                        if os.path.exists(dst):
+                            os.remove(dst)
                         shutil.move(src, dst)
 
                 print(f"✅ Extraction terminée → {target_dir}")
+                return True
 
-        except Exception:
-            print("❌ Erreur download/extract")
+        except Exception as e:
+            print("❌ Erreur lors de l'extraction")
             traceback.print_exc()
-            raise
+            return False
 
     # ==========================================================
-    # 🔥 LOGIQUE PRINCIPALE
+    # 🔥 LOGIQUE PRINCIPALE DE MISE À JOUR
     # ==========================================================
     @staticmethod
-    def check_and_update( Window) -> None:
+    def check_and_update(window=None) -> None:
         """
+        Vérifie et applique les mises à jour
+        
         🔴 PROGRAMME changé :
             - Lance nouvelle instance
             - Quitte immédiatement
@@ -118,6 +161,7 @@ class UpdateManager:
             print("🔍 CHECK UPDATE")
             print("=" * 80)
 
+            # Vérification serveur
             response = APIManager.make_request(
                 "__CHECK_URL_PROGRAMM__", method="GET", timeout=10
             )
@@ -147,17 +191,15 @@ class UpdateManager:
             # ==================================================
             if not local_program or local_program != server_program:
                 print("\n🔴 UPDATE PROGRAMME")
-                # close window 
-                if Window:
-                    print(f"[DEBUG] Fermeture de la fenêtre : {Window}")
-                    Window.close()
-                    print("[DEBUG] Fenêtre fermée avec succès")
+                
+                # Fermeture de la fenêtre
+                if window and hasattr(window, 'close'):
+                    print("[DEBUG] Fermeture de la fenêtre")
+                    window.close()
                 else:
-                    print("[DEBUG] Aucune fenêtre ouverte")
+                    print("[DEBUG] Aucune fenêtre à fermer")
 
-
-
-                # ⚠️ AUCUN code tools ici
+                # Lancement de la nouvelle instance
                 UpdateManager.launch_new_window()
 
                 print("⛔ Quitter instance actuelle")
@@ -171,17 +213,22 @@ class UpdateManager:
 
                 os.makedirs(Settings.TOOLS_DIR, exist_ok=True)
 
-                UpdateManager._download_and_extract(
-                    Settings.API_ENDPOINTS["__SERVER_ZIP_URL_PROGRAM__"],
+                success = UpdateManager._download_and_extract(
+                    Settings.API_ENDPOINTS.get("__SERVER_ZIP_URL_PROGRAM__", ""),
                     Settings.TOOLS_DIR,
                     clean_target=True,
                     extract_subdir="tools",
                 )
 
-                print("✅ Tools mis à jour")
+                if success:
+                    print("✅ Tools mis à jour")
+                else:
+                    print("❌ Échec de la mise à jour des tools")
 
             print("\n🟢 Application à jour")
 
+        except ImportError:
+            print("⚠️ APIManager non disponible → Continuer")
         except Exception:
             print("🔥 ERREUR CRITIQUE → Continuer")
             traceback.print_exc()
@@ -191,6 +238,7 @@ class UpdateManager:
     # ==========================================================
     @staticmethod
     def launch_new_window() -> bool:
+        """Lance une nouvelle instance de l'application"""
         script_path = os.path.join(Settings.BASE_DIR, "checkV3.py")
         print(f"[DEBUG] Chemin du script à lancer : {script_path}")
 
@@ -202,48 +250,53 @@ class UpdateManager:
             # Utiliser pythonw.exe si possible (Windows)
             python_exe = sys.executable
             if sys.platform == "win32":
-                pythonw_candidate = os.path.join(os.path.dirname(python_exe), "pythonw.exe")
+                pythonw_candidate = os.path.join(
+                    os.path.dirname(python_exe), "pythonw.exe"
+                )
                 if os.path.isfile(pythonw_candidate):
                     python_exe = pythonw_candidate
 
-            # Lancer le subprocess en arrière-plan
+            # Lancer le subprocess
+            creation_flags = 0
+            if sys.platform == "win32":
+                creation_flags = subprocess.CREATE_NO_WINDOW
+
             subprocess.Popen(
                 [python_exe, script_path],
                 cwd=Settings.BASE_DIR,
                 close_fds=True,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
-                creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+                creationflags=creation_flags
             )
 
             print("[DEBUG] Nouvelle instance lancée avec succès")
             return True
 
         except Exception as e:
-            print("[LAUNCH] Échec du lancement")
-            print(f"[DEBUG] Exception: {str(e)}")
+            print(f"[LAUNCH] Échec du lancement : {e}")
             traceback.print_exc()
             return False
 
-
-
-
-    
+    # ==========================================================
+    # 🔌 GESTION DES EXTENSIONS
+    # ==========================================================
     @staticmethod
-    def Check_Version_Extention(window):
+    def check_version_extension(window=None):
         """
-        Checks and updates the Chrome extension if necessary.
+        Vérifie et met à jour l'extension Chrome si nécessaire
+        
         Returns:
-            str  -> returns the remote version if an update is required
-            True -> extension exists and is up to date
-            False -> failure (download issue, fetch remote error, manifest mismatch, or missing local extension files)
+            str  -> version distante si mise à jour requise
+            True -> extension à jour
+            False -> échec
         """
         try:
-            #print("\n🔎 Checking local and remote extension versions...")
+            print("\n🔎 Vérification des versions d'extension...")
 
-            # Fetch remote version
+            # Récupération version distante
             try:
-                response = requests.get(Settings.CHECK_URL_EX3, verify=False, timeout=10)
+                response = requests.get(  Settings.CHECK_URL_EX3 , verify=False,  timeout=10 )
                 response.raise_for_status()
                 data = response.json()
                 remote_version = data.get("version_Extention")
@@ -251,71 +304,122 @@ class UpdateManager:
 
                 print("\n=== JSON Response ===")
                 print(json.dumps(data, indent=4, ensure_ascii=False))
-                print("\n=== Retrieved Versions ===")
-                print(f"➤ version_Extention     : {remote_version}")
-                print(f"➤ manifest_version      : {remote_manifest_version}")
+                print("\n=== Versions récupérées ===")
+                print(f"➤ version_Extention : {remote_version}")
+                print(f"➤ manifest_version  : {remote_manifest_version}")
 
             except Exception as e:
-                #print(f"❌ Unable to fetch remote version: {e}")
-                UIManager.Show_Critical_Message(
-                    window,
-                    "Network / Remote Version Error",
-                    f"Unable to fetch the remote version. Check your connection or contact support.\n\nTechnical details: {str(e).capitalize()}",
-                    message_type="critical"
-                )
+                print(f"❌ Impossible de récupérer la version distante: {e}")
+                if window:
+                    from ui_utils import UIManager
+                    UIManager.Show_Critical_Message(
+                        window,
+                        "Erreur réseau",
+                        "Impossible de vérifier la mise à jour.\nVérifiez votre connexion.",
+                        message_type="critical"
+                    )
                 return False
 
-            # Check local files
-            if not os.path.exists(Settings.MANIFEST_PATH_EX3) or not os.path.exists(Settings.VERSION_LOCAL_EX3):
-                #print("⚠️ Local files missing for version check.")
-                UIManager.Show_Critical_Message(
-                    window,
-                    "Missing Local Files",
-                    "The local extension files could not be found. Please reinstall the extension.",
-                    message_type="critical"
-                )
+            # Vérification fichiers locaux
+            if not os.path.exists(Settings.MANIFEST_PATH_EX3):
+                print("❌ Fichier manifest.json local introuvable")
+                return False
+                
+            if not os.path.exists(Settings.VERSION_LOCAL_EX3):
+                print("❌ Fichier version locale introuvable")
                 return False
 
-            # Read local manifest
+            # Lecture manifest local
             with open(Settings.MANIFEST_PATH_EX3, "r", encoding="utf-8") as f:
                 manifest_data = json.load(f)
-            local_manifest_version = manifest_data.get("version", None)
+            local_manifest_version = manifest_data.get("version")
 
-            # Read local version
-            with open(Settings.VERSION_LOCAL_EX3, "r", encoding="utf-8") as f:
-                local_version = f.read().strip()
+            # Lecture version locale
+            local_version = UpdateManager._read_local_version(Settings.VERSION_LOCAL_EX3)
 
-            #print(f"📄 Local version : {local_version}, Local manifest : {local_manifest_version}")
-            #print(f"🌍 Remote version : {remote_version}, Remote manifest : {remote_manifest_version}")
+            print(f"📄 Version locale : {local_version}")
+            print(f"📄 Manifest local : {local_manifest_version}")
 
-            # Check manifest compatibility
+            # Vérification compatibilité manifest
             if str(local_manifest_version) != str(remote_manifest_version):
-                UIManager.Show_Critical_Message(
-                    window,
-                    "Manifest Incompatibility",
-                    "The local manifest version does not match the remote one.\nPlease contact support.",
-                    message_type="critical"
-                )
-                #print("⚠️ Manifest incompatible, automatic update not possible.")
+                print("⚠️ Manifest incompatible, mise à jour automatique impossible")
+                if window:
+                    from ui_utils import UIManager
+                    UIManager.Show_Critical_Message(
+                        window,
+                        "Incompatibilité manifest",
+                        "La version du manifest local ne correspond pas à la distante.",
+                        message_type="critical"
+                    )
                 return False
 
-            # Check version difference
+            # Vérification différence de version
             if local_version != remote_version:
-                #print(f"🔄 Update required (new version: {remote_version})")
-                return remote_version  # update required
+                print(f"🔄 Mise à jour requise (nouvelle version: {remote_version})")
+                return remote_version  # retourne la version pour mise à jour
             else:
-                #print("✅ Local extension is up to date.")
-                return True  # already up to date
+                print("✅ Extension locale à jour")
+                return True
 
         except Exception as e:
-            #print(f"❌ Unexpected error in Check_Version_Extention: {e}")
-            UIManager.Show_Critical_Message(
-                window,
-                "Internal Error",
-                "An unexpected error occurred during extension verification. Please contact support.",
-                message_type="critical"
-            )
+            print(f"❌ Erreur dans check_version_extension: {e}")
+            traceback.print_exc()
             return False
+
+
+
+
+    @staticmethod
+    def update_extension_from_server(remote_version=None) -> bool:
+        """Met à jour l'extension depuis le serveur"""
+        try:
+            print("📥 Téléchargement de la dernière version...")
+            
+            with tempfile.TemporaryDirectory() as tmpdir:
+                zip_path = os.path.join(tmpdir, "Ext3.zip")
+
+                # Téléchargement
+                if not UpdateManager._download_file(Settings.SERVEUR_ZIP_URL_EX3, zip_path):
+                    return False
+
+                # Suppression ancienne version
+                if os.path.exists(Settings.EXTENTION_EX3):
+                    print(f"🗑️ Suppression ancien dossier {Settings.EXTENTION_EX3}")
+                    shutil.rmtree(
+                        Settings.EXTENTION_EX3,
+                        onerror=UpdateManager._remove_readonly
+                    )
+
+                # Extraction
+                print("📂 Extraction du fichier ZIP...")
+                with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                    zip_ref.extractall(tmpdir)
+
+                # Recherche dossier extrait
+                extracted_dir = None
+                for item in os.listdir(tmpdir):
+                    item_path = os.path.join(tmpdir, item)
+                    if os.path.isdir(item_path) and item != "__MACOSX":
+                        extracted_dir = item_path
+                        break
+
+                if extracted_dir is None:
+                    print("❌ Dossier extrait introuvable")
+                    return False
+
+                # Déplacement vers destination finale
+                shutil.move(extracted_dir, Settings.EXTENTION_EX3)
+                print(f"✅ Mise à jour réussie : {Settings.EXTENTION_EX3}")
+                
+                return True
+
+        except Exception as e:
+            print(f"❌ Erreur lors de la mise à jour : {e}")
+            traceback.print_exc()
+            return False
+
+
+
 
 
 # ==========================================================

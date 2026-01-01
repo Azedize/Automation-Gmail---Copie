@@ -907,246 +907,93 @@ class CloseBrowserThread(QThread):
 
 
 
-
-
-
-
-
-
-
-
-
-
-def Process_Browser(window, selected_Browser):
-    valid_browser, browser_msg = ValidationUtils.validate_browser_selection(selected_Browser)
-    if not valid_browser:
-        UIManager.Show_Critical_Message(
-            window,
-            "Browser Error",
-            f"Unsupported browser: {selected_Browser}\n\n"
-            f"Details: {browser_msg}",
-            message_type="critical"
-        )
+def Process_Browser(window, selected_Browser) -> bool:
+    """
+    Préparer et valider le navigateur pour l'application
+    Version simplifiée avec print et sans rapport
+    """
+    print(f"\n🌐 Démarrage du traitement du navigateur : {selected_Browser}")
+    
+    # 1️⃣ Vérification du navigateur
+    if selected_Browser.lower() != "chrome":
+        print(f"❌ Navigateur non supporté : {selected_Browser}")
         return False
-    
-    valid_dir, dir_msg = ValidationUtils.validate_directory_path(
-        Settings.CONFIG_PROFILE, 
-        must_exist=True
-    )
-    
-    if not valid_dir:
-        UIManager.Show_Critical_Message(
-            window,
-            "Configuration Error",
-            f"Configuration folder not found.\n\n"
-            f"Path: {Settings.CONFIG_PROFILE}\n"
-            f"Details: {dir_msg}",
-            message_type="critical"
-        )
-        return False
-    
+    print("✅ Navigateur : Chrome supporté")
 
-    
-    valid_file, file_msg = ValidationUtils.validate_file_path(
-        Settings.SECURE_PREFERENCES_TEMPLATE,
-        must_exist=True
-    )
-    
-    if not valid_file:
-        UIManager.Show_Critical_Message(
-            window,
-            "Configuration Error",
-            f"Secure preferences file not found.\n\n"
-            f"Path: {Settings.SECURE_PREFERENCES_TEMPLATE}\n"
-            f"Details: {file_msg}",
-            message_type="critical"
-        )
+    # 2️⃣ Vérification du dossier de configuration
+    config_profile = Settings.CONFIG_PROFILE
+    if not os.path.exists(config_profile):
+        print(f"❌ Dossier de configuration introuvable : {config_profile}")
+        return False
+    print(f"✅ Dossier de configuration trouvé : {config_profile}")
+
+    # 3️⃣ Vérification du fichier secure_preferences
+    secure_prefs = Settings.SECURE_PREFERENCES_TEMPLATE
+    if not os.path.exists(secure_prefs):
+        print(f"❌ Fichier sécurisé introuvable : {secure_prefs}")
         return False
 
+    # Lecture du fichier JSON
     try:
-        with open(Settings.SECURE_PREFERENCES_TEMPLATE, "r", encoding="utf-8") as f:
+        with open(secure_prefs, "r", encoding="utf-8") as f:
             data = json.load(f)
-    except json.JSONDecodeError as e:
-        UIManager.Show_Critical_Message(
-            window,
-            "Configuration Error",
-            f"Invalid JSON format in secure preferences.\n\n"
-            f"Details: {str(e)}",
-            message_type="critical"
-        )
-        return False
+        print("✅ Fichier JSON chargé avec succès")
     except Exception as e:
-        UIManager.Show_Critical_Message(
-            window,
-            "Configuration Error",
-            f"Unable to read secure preferences file.\n\n"
-            f"Details: {str(e)}",
-            message_type="critical"
-        )
+        print(f"❌ Erreur lecture fichier JSON : {e}")
         return False
 
+    # 4️⃣ Vérification des clés JSON
+    required_keys = Settings.CLES_RECHERCHE
+    results_keys = []
+    BrowserManager.Search_Keys(data, required_keys, results_keys)
 
-    required_keys = []
-    if selected_Browser == "chrome":
-        required_keys = Settings.CLES_RECHERCHE 
-    elif selected_Browser == "firefox":
-        required_keys = ["extensions", "settings", "preferences"] 
-    
-    if required_keys:
-        valid_structure, structure_msg = ValidationUtils.validate_json_structure(data, required_keys)
-        if not valid_structure:
-            print(f"❌ {structure_msg}")
-            
-            results_keys = []
-            BrowserManager.Search_Keys(data, required_keys, results_keys)
-            found_keys = [list(d.keys())[0] for d in results_keys]
-            missing_keys = [key for key in required_keys if key not in found_keys]
-            
-            error_details = "\n".join([f"   {idx}. {key}" for idx, key in enumerate(missing_keys, 1)])
-            
-            UIManager.Show_Critical_Message(
-                window,
-                "Configuration Error",
-                f"Missing required configuration keys.\n\n"
-                f"Missing keys:\n{error_details}\n\n"
-                f"Details: {structure_msg}",
-                message_type="critical"
-            )
-            return False
-    
-    if not ValidationUtils.path_exists(Settings.EXTENTION_EX3):
-        
-        ext_dir = os.path.dirname(Settings.EXTENTION_EX3)
-        valid_ext_dir, ext_dir_msg = ValidationUtils.validate_directory_path(
-            ext_dir,
-            must_exist=False
-        )
+    found_keys = [list(d.keys())[0] for d in results_keys]
+    missing_keys = [key for key in required_keys if key not in found_keys]
 
+    if missing_keys:
+        print("❌ Clés manquantes :")
+        for idx, key in enumerate(missing_keys, start=1):
+            print(f"   {idx}. {key}")
+        return False
+    print(f"✅ Toutes les clés JSON requises sont présentes ({len(found_keys)}/{len(required_keys)})")
+
+    # 5️⃣ Vérification et mise à jour de l'extension
+    ext_path = Settings.EXTENTION_EX3
+    if not ValidationUtils.path_exists(ext_path):
+        print("📥 Extension manquante, téléchargement...")
+        valid_ext_dir, ext_dir_msg = ValidationUtils.validate_directory_path(ext_path, must_exist=False)
         if not valid_ext_dir:
-            UIManager.Show_Critical_Message(
-                window,
-                "Extension Error",
-                f"Invalid extension directory.\n\n"
-                f"Path: {ext_dir}\n"
-                f"Details: {ext_dir_msg}",
-                message_type="critical"
-            )
+            print(f"❌ Chemin extension invalide : {ext_dir_msg}")
             return False
-
-        if Update_From_Serveur():
-            log_message("✅ Extension installée avec succès.")
+        if UpdateManager.update_extension_from_server():
+            print("✅ Extension installée avec succès")
         else:
-            UIManager.Show_Critical_Message(
-                window,
-                "Installation Failed",
-                "We could not install the required extension.\n\n"
-                "Please contact Support for assistance.",
-                message_type="critical"
-            )
+            print("❌ Échec installation extension")
             return False
     else:
-
-        valid_ext_path, ext_path_msg = ValidationUtils.validate_directory_path(
-            Settings.EXTENTION_EX3, 
-            must_exist=True
-        )
-        
-        if not valid_ext_path:
-            UIManager.Show_Critical_Message(
-                window,
-                "Extension Error",
-                f"Invalid extension path.\n\n"
-                f"Path: {Settings.EXTENTION_EX3}\n"
-                f"Details: {ext_path_msg}",
-                message_type="critical"
-            )
+        print(f"📂 Extension trouvée : {ext_path}")
+        manifest_file = os.path.join(ext_path, "manifest.json")
+        if not os.path.exists(manifest_file):
+            print("❌ manifest.json manquant")
             return False
         
-        remote_version = Check_Version_Extention(window)
-        
-        if isinstance(remote_version, str): 
-            validations = [
-                (True, f"Local extension found at: {Settings.EXTENTION_EX3}"),
-                (True, f"Remote version available: {remote_version}"),
-                (True, "Update process starting...")
-            ]
-            
-            report = ValidationUtils.create_validation_report(validations)
-            
-            if Update_From_Serveur(remote_version):
-                log_message("✅ Mise à jour réussie : l'extension a été mise à jour avec succès !")
+        remote_version = UpdateManager.check_version_extension(window)
+        if isinstance(remote_version, str):
+            print(f"🔄 Mise à jour disponible : {remote_version}")
+            if UpdateManager.update_extension_from_server(remote_version):
+                print("✅ Extension mise à jour avec succès")
             else:
-                UIManager.Show_Critical_Message(
-                    window,
-                    "Update Failed",
-                    "We could not update the browser extension.\n\n"
-                    "Possible causes:\n"
-                    " • Network connection issues\n"
-                    " • Server temporarily unavailable\n"
-                    " • Disk permissions\n\n"
-                    "Please contact Support for assistance.",
-                    message_type="critical"
-                )
+                print("❌ Échec mise à jour extension")
                 return False
         elif remote_version is True:
-            print("✅ L'extension locale est déjà à jour.")
-                        
-            if ValidationUtils.path_exists(os.path.join(Settings.EXTENTION_EX3, "manifest.json")):
-                try:
-                    with open(os.path.join(Settings.EXTENTION_EX3, "manifest.json"), "r", encoding="utf-8") as f:
-                        manifest_data = json.load(f)
-                    
-                    manifest_keys = ["manifest_version", "name", "version"]
-                    valid_manifest, manifest_msg = ValidationUtils.validate_json_structure(
-                        manifest_data, 
-                        manifest_keys
-                    )
-                except Exception as e:
-                    print(f"⚠️ Impossible de valider le manifest: {e}")
+            print("✅ Extension déjà à jour")
         else:
-            UIManager.Show_Critical_Message(
-                window,
-                "Version Check Failed",
-                "Unable to verify extension version.\n\n"
-                "Please check your internet connection and try again.\n"
-                "If the problem persists, contact Support.",
-                message_type="critical"
-            )
+            print("❌ Impossible de vérifier la version de l'extension")
             return False
 
-    final_validations = [
-        (True, f"Browser: {selected_Browser}"),
-        (valid_dir, f"Config directory: {dir_msg}"),
-        (valid_file, f"Secure preferences: {file_msg}"),
-        (True, "JSON structure validated"),
-        (True, "Extension validated/updated")
-    ]
-    
-    final_report = ValidationUtils.create_validation_report(final_validations)
-    
-    if all(v[0] for v in final_validations):
-        return True
-    else:
-        for detail in final_report['details']:
-            if detail['status'] == 'FAIL':
-                log_message(f"   • {detail['message']}")
-        
-        UIManager.Show_Critical_Message(
-            window,
-            "Validation Failed",
-            "Browser configuration validation failed.\n\n"
-            "Please check the configuration and try again.",
-            message_type="critical"
-        )
-        return False
-
-
-
-
-
-
-
-
+    # ✅ Tout est OK
+    print("🎉 Traitement terminé avec succès pour le navigateur Chrome")
+    return True
 
 
 

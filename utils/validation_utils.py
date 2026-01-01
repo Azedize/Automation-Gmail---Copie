@@ -486,9 +486,12 @@ class ValidationUtils:
         except Exception:
             return False, "Chemin de fichier invalide"
     
+    
+    
+    
+    
     @staticmethod
     def validate_directory_path(path: str, must_exist: bool = True) -> Tuple[bool, str]:
-        """Valide un chemin de dossier"""
         if not path or not isinstance(path, str):
             return False, "Chemin de dossier invalide"
         
@@ -503,6 +506,10 @@ class ValidationUtils:
             return True, "Chemin de dossier valide"
         except Exception:
             return False, "Chemin de dossier invalide"
+    
+    
+    
+    
     
     @staticmethod
     def ensure_path_exists(path: str, is_file: bool = True) -> bool:
@@ -535,16 +542,21 @@ class ValidationUtils:
     
     @staticmethod
     def validate_json_structure(json_data: Dict, required_keys: List[str]) -> Tuple[bool, str]:
-        """Valide la structure d'un objet JSON"""
+        
         if not isinstance(json_data, dict):
-            return False, "Les données doivent être un dictionnaire JSON"
+            return False, "Data must be a JSON dictionary"
         
         missing_keys = [key for key in required_keys if key not in json_data]
         if missing_keys:
-            return False, f"Clés manquantes dans JSON: {', '.join(missing_keys)}"
+            return False, f"Missing keys in JSON: {', '.join(missing_keys)}"
         
-        return True, "Structure JSON valide"
+        return True, "Valid JSON structure"
 
+
+    
+    
+    
+    
     @staticmethod
     def validate_session_format(session_data: str) -> Tuple[bool, Optional[Dict]]:
         """Valide le format des données de session"""
@@ -708,30 +720,18 @@ class ValidationUtils:
         cleaned_style = re.sub(r'border\s*:\s*[^;]+;', '', style, flags=re.IGNORECASE)
         return cleaned_style.strip()
     
-    # ==================== VALIDATION DE SCÉNARIO ====================
 
-    
-    @staticmethod
-    def validate_browser_selection(browser: str) -> Tuple[bool, str]:
-        """Valide la sélection du navigateur"""
-        if browser.lower() not in ValidationUtils.VALID_BROWSERS:
-            return False, f"Navigateur non supporté: {browser}. Options: {', '.join(ValidationUtils.VALID_BROWSERS)}"
-        
-        return True, "Navigateur valide"
-    
 
     # ==================== FONCTIONS DE GÉNÉRATION ====================
     
     @staticmethod
     def generate_session_id(length: int = 5) -> str:
-        """Génère un ID de session unique"""
         if length <= 0:
             raise ValueError("La longueur doit être un entier positif")
         return str(uuid.uuid4()).replace("-", "")[:length]
     
     @staticmethod
     def generate_secure_password(length: int = 12) -> str:
-        """Génère un mot de passe sécurisé"""
         if length < 12:
             raise ValueError("La longueur minimale recommandée est 12 caractères")
         
@@ -772,26 +772,8 @@ class ValidationUtils:
     # ==================== UTILITAIRES DE DÉBOGAGE ====================
 
     
-    @staticmethod
-    def create_validation_report(validations: List[Tuple[bool, str]]) -> Dict[str, Any]:
-        """Crée un rapport de validation"""
-        report = {
-            "timestamp": datetime.now().isoformat(),
-            "total_checks": len(validations),
-            "passed": sum(1 for v in validations if v[0]),
-            "failed": sum(1 for v in validations if not v[0]),
-            "details": []
-        }
-        
-        for i, (is_valid, message) in enumerate(validations, 1):
-            report["details"].append({
-                "check_number": i,
-                "status": "PASS" if is_valid else "FAIL",
-                "message": message
-            })
-        
-        return report
-    
+
+
 
     @staticmethod
     def get_key_from_dict(data_dict: Dict, possible_keys: List[str]) -> str:
