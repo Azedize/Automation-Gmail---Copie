@@ -370,7 +370,7 @@ def initialize_dependencies():
 def main():
     """Fonction principale"""
     try:
-        updated = UpdateManagerLV.check_and_update()
+        updated = UpdateManager.check_and_update()
 
         print("\n" + "=" * 80)
         print("📌 RÉSULTAT FINAL")
