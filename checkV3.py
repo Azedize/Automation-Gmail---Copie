@@ -247,8 +247,8 @@ class UpdateManager:
                 return True
 
             data = response.get("data", {})
-            server_program = data.get("version_Programm")
-            server_ext = data.get("version_extensions")
+            server_program = data.get("version_Programme")
+            server_ext = data.get("version_extension")
 
             print(f"🌐 Version programme serveur : {server_program}")
             print(f"🌐 Version extensions serveur : {server_ext}")
