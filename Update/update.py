@@ -320,7 +320,7 @@ class UpdateManager:
 
             # Récupération version distante
             try:
-                response = requests.get(  Settings.CHECK_URL_EX3 , verify=False,  timeout=10 )
+                response = requests.get(  CHECK_URL_EX3 , verify=False,  timeout=10 )
                 response.raise_for_status()
                 data = response.json()
                 remote_version = data.get("version_Extention")
@@ -403,7 +403,7 @@ class UpdateManager:
                 zip_path = os.path.join(tmpdir, "Ext3.zip")
 
                 # Téléchargement
-                if not UpdateManager._download_file(Settings.SERVEUR_ZIP_URL_EX3, zip_path):
+                if not UpdateManager._download_file(SERVEUR_ZIP_URL_EX3, zip_path):
                     return False
 
                 # Suppression ancienne version
