@@ -1,8 +1,0 @@
-[2026-01-02 11:12:32] [DEBUG] ✅ Logger initialisé avec succès
-[2026-01-02 11:12:32] [INFO] [INFO] pywin32 est déjà installé
-[2026-01-02 11:12:33] [INFO] [INFO] Run FuncTion : check_and_update()
-[2026-01-02 11:12:33] [ERROR] [ERROR] ERREUR CRITIQUE → UPDATE PAR SÉCURITÉ
-[2026-01-02 11:12:33] [INFO] [INFO] UPDATE EFFECTUÉ
-[2026-01-02 11:12:33] [DEBUG] 🔑 generate_encrypted_key() started
-[2026-01-02 11:12:33] [DEBUG] ✅ Encrypted key generated successfully
-[2026-01-02 11:12:33] [DEBUG] ⏱️ generate_encrypted_key execution time: 0.0028s

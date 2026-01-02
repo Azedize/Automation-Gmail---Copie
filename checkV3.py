@@ -311,8 +311,7 @@ def initialize_dependencies():
     pytz = DependencyManager.install_and_import("pytz")
     tqdm = DependencyManager.install_and_import("tqdm")
     platformdirs = DependencyManager.install_and_import("platformdirs")
-    selenium = DependencyManager.install_and_import("selenium", module_name="selenium", 
-                                                   required_import="webdriver", version="4.27.1")
+    selenium = DependencyManager.install_and_import("selenium", module_name="selenium", required_import="webdriver", version="4.27.1")
     jsonschema = DependencyManager.install_and_import("jsonschema")
     
 
@@ -326,12 +325,17 @@ def initialize_dependencies():
     from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
     import ctypes
 
+
+
+
+
 # ==========================================================
 # 🔹 MAIN
 # ==========================================================
+
 def main():
     try:
-        DevLogger.init_logger(log_file="logs/my_project.log")
+        DevLogger.init_logger(log_file="Log/LogDev/my_project.log")
 
         # if sys.platform == "win32":
         #         ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
