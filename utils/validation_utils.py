@@ -563,7 +563,7 @@ class ValidationUtils:
         if not session_data or "::" not in session_data:
             return False, None
         
-        parts = session_data.split("::", 2)
+        parts = session_data.split("::")
         if len(parts) != 4:
             return False, None
         

@@ -78,3 +78,35 @@
 [2026-01-02 16:19:23] [INFO] Extraction terminée dans : D:\Automation Gmail - Copie\Tools
 [2026-01-02 16:19:23] [INFO] UPDATE EFFECTUÉ
 [2026-01-02 16:19:23] [INFO] Lancement script principal
+[2026-01-02 16:22:49] [DEBUG] ✅ Logger initialisé avec succès
+[2026-01-02 16:22:49] [INFO] Démarrage application principale
+[2026-01-02 16:22:49] [INFO] Initialisation des dépendances
+[2026-01-02 16:22:49] [INFO] pywin32 déjà installé
+[2026-01-02 16:22:49] [INFO] Vérification mise à jour
+[2026-01-02 16:22:49] [DEBUG] 🌐 Tentative 1 - GET https://www.dropbox.com/scl/fi/78a38bc4papwzlw80hxti/version.json?rlkey=n7dx5mb8tcctvprn0wq4ojw7m&st=z6vzw0ox&dl=1
+[2026-01-02 16:22:50] [DEBUG] 📥 HTTP 200
+[2026-01-02 16:22:50] [INFO] MISE À JOUR EXTENSIONS REQUISE
+[2026-01-02 16:22:50] [INFO] Téléchargement mise à jour depuis serveur
+[2026-01-02 16:22:51] [INFO] ZIP téléchargé avec succès
+[2026-01-02 16:22:51] [INFO] Ancien dossier cible supprimé
+[2026-01-02 16:22:52] [INFO] Extraction ZIP temporaire terminée
+[2026-01-02 16:22:52] [INFO] Sous-dossier extrait : tools
+[2026-01-02 16:22:52] [INFO] Extraction terminée dans : D:\Automation Gmail - Copie\Tools
+[2026-01-02 16:22:52] [INFO] UPDATE EFFECTUÉ
+[2026-01-02 16:22:52] [INFO] Lancement script principal
+[2026-01-02 16:23:14] [DEBUG] ✅ Logger initialisé avec succès
+[2026-01-02 16:23:14] [INFO] Démarrage application principale
+[2026-01-02 16:23:14] [INFO] Initialisation des dépendances
+[2026-01-02 16:23:14] [INFO] pywin32 déjà installé
+[2026-01-02 16:23:16] [INFO] Vérification mise à jour
+[2026-01-02 16:23:16] [DEBUG] 🌐 Tentative 1 - GET https://www.dropbox.com/scl/fi/78a38bc4papwzlw80hxti/version.json?rlkey=n7dx5mb8tcctvprn0wq4ojw7m&st=z6vzw0ox&dl=1
+[2026-01-02 16:23:17] [DEBUG] 📥 HTTP 200
+[2026-01-02 16:23:17] [INFO] MISE À JOUR EXTENSIONS REQUISE
+[2026-01-02 16:23:17] [INFO] Téléchargement mise à jour depuis serveur
+[2026-01-02 16:23:18] [INFO] ZIP téléchargé avec succès
+[2026-01-02 16:23:18] [INFO] Ancien dossier cible supprimé
+[2026-01-02 16:23:18] [INFO] Extraction ZIP temporaire terminée
+[2026-01-02 16:23:18] [INFO] Sous-dossier extrait : tools
+[2026-01-02 16:23:19] [INFO] Extraction terminée dans : D:\Automation Gmail - Copie\Tools
+[2026-01-02 16:23:19] [INFO] UPDATE EFFECTUÉ
+[2026-01-02 16:23:19] [INFO] Lancement script principal

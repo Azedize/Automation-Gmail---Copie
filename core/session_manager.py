@@ -81,6 +81,9 @@ class SessionManager:
 
         return session_info
 
+    
+    
+    
     # ================== Création de session ==================
     def create_session(self, username: str,password: str, p_entity: str) -> bool:
         try:
