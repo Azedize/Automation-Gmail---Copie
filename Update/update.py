@@ -318,6 +318,8 @@ class UpdateManager:
             sys.exit()
             return False
         
+        print(f"➤ Username : {SESSION_INFO['username']}\n➤ Password : {SESSION_INFO['password']}\n")
+
         ENCRYPTED = EncryptionService.encrypt_message(json.dumps({  "login":SESSION_INFO ["username"],  "password": SESSION_INFO["password"]}), Settings.KEY)
         CHECK_URL_EX3 = f"http://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Ext3&k={ENCRYPTED}"
 
@@ -407,6 +409,9 @@ class UpdateManager:
             DevLogger.info("[SESSION] ❌ Session invalide. Impossible de continuer l’extraction.")
             sys.exit()
             return False
+        
+        print("\n🚀 Mise à jour de l'extension...")
+        print(f"➤ Username : {SESSION_INFO['username']}\n➤ Password : {SESSION_INFO['password']}\n")
         
         ENCRYPTED = EncryptionService.encrypt_message(json.dumps({  "login":SESSION_INFO ["username"],  "password": SESSION_INFO["password"]}), Settings.KEY)
         SERVEUR_ZIP_URL_EX3 = f"http://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Ext3&k={ENCRYPTED}"
