@@ -39,16 +39,42 @@ class APIManager:
         self.session.headers.update(Settings.HEADER)
 
     # --------------------- Requêtes HTTP ---------------------
-    def make_request(  self,  endpoint: str,  method: str = "POST",  data: Optional[Dict] = None,  json_data: Optional[Dict] = None,  params: Optional[Dict] = None, timeout: int = 30) :
+    def make_request(
+        self,
+        endpoint: str,
+        method: str = "POST",
+        data: Optional[Dict] = None,
+        json_data: Optional[Dict] = None,
+        params: Optional[Dict] = None,
+        timeout: int = 30
+    ):
 
-        # URL sécurisée pour logs
+        print("\n================= 🌐 MAKE REQUEST =================")
+
+        # URL sécurisée
         url = Settings.API_ENDPOINTS.get(endpoint, endpoint) if endpoint.startswith('_') else endpoint
         last_exception = None
 
-        for attempt in range(1, 4):
-            try:
-                DevLogger.debug(f"🌐 Tentative {attempt} - {method} {url}")
+        print(f"🔗 Endpoint : {endpoint}")
+        print(f"🌍 URL finale : {url}")
+        print(f"🧭 Méthode : {method}")
+        print(f"⏱️ Timeout : {timeout}s")
 
+        if params:
+            print(f"📎 Params : {params}")
+        if data:
+            print(f"📦 Data : {data}")
+        if json_data:
+            print(f"📦 JSON : {json_data}")
+
+        DevLogger.debug(f"URL={url} | METHOD={method} | PARAMS={params} | DATA={data} | JSON={json_data}")
+
+        # ================= Retry =================
+        for attempt in range(1, 4):
+            print(f"\n🔁 Tentative {attempt}/3")
+            DevLogger.debug(f"🌐 Tentative {attempt} - {method} {url}")
+
+            try:
                 response = self.session.request(
                     method=method.upper(),
                     url=url,
@@ -58,29 +84,69 @@ class APIManager:
                     timeout=timeout
                 )
 
+                print(f"📥 Status HTTP : {response.status_code}")
                 DevLogger.debug(f"📥 HTTP {response.status_code}")
 
+                # ================= SUCCESS =================
                 if response.status_code == 200:
+                    print("✅ Réponse HTTP 200 reçue")
+
                     try:
-                        return {"status": "success", "data": response.json(), "status_code": 200}
+                        json_resp = response.json()
+                        print("📄 Réponse JSON :")
+                        print(json_resp)
+                        return {
+                            "status": "success",
+                            "data": json_resp,
+                            "status_code": 200
+                        }
+
                     except json.JSONDecodeError:
-                        return {"status": "success", "data": response.text, "status_code": 200}
-                elif response.status_code in [401, 403]:
+                        print("⚠️ Réponse non JSON (texte brut)")
+                        print(response.text[:300])
+                        return {
+                            "status": "success",
+                            "data": response.text,
+                            "status_code": 200
+                        }
+
+                # ================= AUTH ERROR =================
+                elif response.status_code in (401, 403):
+                    print("❌ Accès refusé (401/403)")
+                    DevLogger.error(f"Accès refusé HTTP {response.status_code}")
+
                     return {
                         "status": "error",
                         "error": f"HTTP {response.status_code}: accès refusé",
                         "status_code": response.status_code
                     }
+
+                # ================= OTHER ERRORS =================
                 else:
                     last_exception = f"HTTP {response.status_code}"
-                    DevLogger.warning(f"⚠️ HTTP {response.status_code} - réponse tronquée: {response.text[:100]}")
+                    print(f"⚠️ Erreur HTTP {response.status_code}")
+                    print(f"📄 Réponse (tronquée) : {response.text[:200]}")
+                    DevLogger.warning(
+                        f"⚠️ HTTP {response.status_code} - réponse tronquée: {response.text[:100]}"
+                    )
 
             except requests.RequestException as e:
                 last_exception = str(e)
+                print("🔥 Exception RequestException")
+                print(f"❌ Détail : {last_exception}")
                 DevLogger.warning(f"⚠️ Erreur tentative {attempt}: {last_exception}")
 
+            # ================= WAIT RETRY =================
             if attempt < 3:
+                print("⏳ Attente avant nouvelle tentative (2s)...")
                 time.sleep(2)
+
+        # ================= FAILED AFTER RETRIES =================
+        print("❌ Échec après 3 tentatives")
+        print(f"🧨 Dernière erreur : {last_exception}")
+        DevLogger.error(f"Échec après 3 tentatives: {last_exception}")
+
+        print("================= ❌ FIN MAKE REQUEST =================\n")
 
         return {
             "status": "error",
@@ -88,6 +154,8 @@ class APIManager:
             "status_code": None
         }
 
+   
+   
     # --------------------- Gestion de réponse ---------------------
     def _handle_response(
         self,
@@ -125,9 +193,42 @@ class APIManager:
                                      {"session": False, "scenarios": []})
 
     def handle_save_scenario(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        print("\n================= 💾 HANDLE SAVE SCENARIO =================")
+        DevLogger.info("💾 Début sauvegarde scénario")
+
+        # 1️⃣ Affichage des données envoyées
+        print("📤 Payload envoyé à l'API :")
+        print(payload)
+        DevLogger.debug(f"Payload envoyé : {payload}")
+
+        # 2️⃣ Appel API
+        print("🌐 Appel API : _HANDLE_SAVE_API (POST)")
         result = self.make_request("_HANDLE_SAVE_API", "POST", json_data=payload)
-        return self._handle_response(result, {"success": True},
-                                     {"success": False, "error": "Format de réponse invalide"})
+
+        # 3️⃣ Affichage réponse brute
+        print("📥 Réponse brute de l'API :")
+        print(result)
+        DevLogger.debug(f"Réponse brute API : {result}")
+
+        # 4️⃣ Traitement de la réponse
+        response = self._handle_response(
+            result,
+            {"success": True},
+            {"success": False, "error": "Format de réponse invalide"}
+        )
+
+        # 5️⃣ Résultat final
+        print("✅ Résultat final après traitement :")
+        print(response)
+
+        if response.get("success"):
+            DevLogger.info("✅ Scénario sauvegardé avec succès")
+        else:
+            DevLogger.error(f"❌ Échec sauvegarde scénario : {response}")
+
+        print("================= ✅ FIN HANDLE SAVE =================\n")
+        return response
+
 
     def on_scenario_changed(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         result = self.make_request("_ON_SCENARIO_CHANGED_API", "POST", json_data=payload)
