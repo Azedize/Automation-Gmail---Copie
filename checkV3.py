@@ -7,7 +7,6 @@ import os
 import sys
 import shutil
 import zipfile
-import traceback
 import importlib
 import subprocess
 import time
