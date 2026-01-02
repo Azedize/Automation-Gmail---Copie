@@ -7,14 +7,13 @@ import importlib
 import subprocess
 import time
 from pathlib import Path
-from utils import ValidationUtils
 import tempfile
 import requests
+import io
 
 # ==========================================================
 # 🔹 FIX UTF-8 POUR WINDOWS CONSOLE
 # ==========================================================
-import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
@@ -31,9 +30,6 @@ from Log import DevLogger
 # Configuration des chemins
 SCRIPT_DIR = Path(__file__).resolve().parent
 
-# Flags d'état
-UPDATED_PIP_23_3 = False
-ALL_PACKAGES_INSTALLED = True
 
 # ==========================================================
 # 🔹 CLASSE GESTION DES DÉPENDANCES
@@ -103,8 +99,6 @@ class DependencyManager:
 
     @staticmethod
     def install_and_import(package, module_name=None, required_import=None, version=None):
-        """Installe et importe un package"""
-        global UPDATED_PIP_23_3, ALL_PACKAGES_INSTALLED
         
         if package.lower() == "pywin32":
             module_name = "win32api"
@@ -118,15 +112,15 @@ class DependencyManager:
                 importlib.import_module(f"{module_to_import}.{required_import}")
             return module
         except (ModuleNotFoundError, ImportError):
-            ALL_PACKAGES_INSTALLED = False
+            Settings.ALL_PACKAGES_INSTALLED = False
             print(f"[INFO] Installation de {package}...")
 
             # Mise à jour de pip si nécessaire
-            if not UPDATED_PIP_23_3:
+            if not Settings.UPDATED_PIP_23_3:
                 try:
                     print("[INFO] Mise à jour de pip...")
                     subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "pip==23.3"])
-                    UPDATED_PIP_23_3 = True
+                    Settings.UPDATED_PIP_23_3 = True
                 except subprocess.CalledProcessError:
                     sys.exit("[ERROR] Erreur lors de la mise à jour de pip")
 
@@ -336,7 +330,7 @@ def initialize_dependencies():
 # ==========================================================
 def main():
     try:
-        DevLogger.init_logger(log_file="Logs/my_project.log")
+        DevLogger.init_logger(log_file="logs/my_project.log")
 
         # if sys.platform == "win32":
         #         ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)

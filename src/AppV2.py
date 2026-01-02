@@ -2,7 +2,7 @@ import os
 import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from PyQt6.QtWidgets import *
-from PyQt6.QtGui import QIcon , QCursor 
+from PyQt6.QtGui import QIcon , QCursor,QColor, QPixmap , QGuiApplication
 from PyQt6.QtCore import Qt , QTimer , QThread, pyqtSignal 
 from PyQt6 import  uic 
 import shutil
@@ -19,9 +19,6 @@ from platformdirs import user_downloads_dir
 import win32gui       
 import win32process
 import win32con
-from PyQt6.QtGui import QColor, QPixmap
-from PyQt6 import uic
-from PyQt6.QtGui import QGuiApplication
 import copy
 import warnings
 
@@ -35,17 +32,23 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
 
-from config import settings as Settings
-from core import EncryptionService
-from core import SessionManager
-from models import BrowserManager
-from models import ExtensionManager
-from api import APIManager
-from utils import ValidationUtils
-from ui_utils import UIManager
-from services import JsonManager
-from Update import UpdateManager
-from Log import DevLogger
+
+try:
+    from config import settings as Settings
+    from core import EncryptionService
+    from core import SessionManager
+    from models import BrowserManager
+    from models import ExtensionManager
+    from api import APIManager
+    from utils import ValidationUtils
+    from ui_utils import UIManager
+    from services import JsonManager
+    from Update import UpdateManager
+    from Log import DevLogger
+except ImportError as e:
+    DevLogger.error(f"[ERROR] Import modules failed: {e}")
+
+
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 FIREFOX_LAUNCH = []
@@ -78,6 +81,9 @@ ENCRYPTED = EncryptionService.encrypt_message(json.dumps(DATA_AUTH), KEY)
 
 CHECK_URL_EX3 = f"http://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Ext3&k={ENCRYPTED}"
 SERVEUR_ZIP_URL_EX3 = f"http://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Ext3&k={ENCRYPTED}"
+
+
+
 
 
 
@@ -240,7 +246,6 @@ def Launch_Close_Chrome(selected_Browser , username):
 # -----------------------------
 # Génération complète de l'extension Chrome/Firefox
 # -----------------------------
-
 def Generate_User_Input_Data(window):
     # Récupération des données depuis l’UI
     input_data = window.textEdit_3.toPlainText().strip()
@@ -339,8 +344,15 @@ def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp 
 
 
 
+
+
+
+
 def Save_Email(params):
     return str(APIManager.save_email(params))
+
+
+
 
 
 
@@ -1083,7 +1095,6 @@ class MainWindow(QMainWindow):
 
 
     def _setup_comboboxes(self):
-        """Setup all comboboxes"""
         self._setup_browser_combobox()
         self._setup_isp_combobox()
         self._setup_scenario_combobox()
@@ -1159,11 +1170,6 @@ class MainWindow(QMainWindow):
 
 
     def Handle_Save(self):
-        """
-        Sends the current scenario state to the API and handles responses.
-        Displays user-friendly messages for errors and success.
-        """
-        # 1️⃣ Check if there are any actions to save
         if not self.STATE_STACK:
             UIManager.Show_Critical_Message(self, "No Data", "No actions to save. Please add actions before saving.", message_type="critical")
             return
@@ -1834,6 +1840,8 @@ class LoginWindow(QMainWindow):
         self.setWindowTitle("AutoMailPro")
 
 
+
+
     def Select_Ui_File(self) -> str:
 
         try:
@@ -1845,6 +1853,8 @@ class LoginWindow(QMainWindow):
             DevLogger.error(f"[SESSION ERROR] {e}")
 
         return Settings.AUTH_UI
+
+
 
 
     def Initialize_Login_Ui(self):
@@ -1912,12 +1922,15 @@ class LoginWindow(QMainWindow):
 
 
 
+
     def Update_Background_Image(self):
         if hasattr(self, "background_frame") and hasattr(self, "background_label"):
             pixmap = QPixmap(self.background_image_path)
             if not pixmap.isNull():
                 self.background_label.resize(self.background_frame.size())
                 self.background_label.setPixmap(pixmap)
+
+
 
 
     def Handle_Login(self):
@@ -1993,8 +2006,6 @@ class LoginWindow(QMainWindow):
 
         self.main_window.show()
         self.close()
-
-
 
 
 

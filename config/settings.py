@@ -56,6 +56,8 @@ class Settings:
 
     # Chemin de l’executable de Python
     PYTHON_PATH = None
+    UPDATED_PIP_23_3 = False
+    ALL_PACKAGES_INSTALLED = True
 
     # ═══════════════════════════════════════════════════════════
     # 🌐 Paramètres de l’API
