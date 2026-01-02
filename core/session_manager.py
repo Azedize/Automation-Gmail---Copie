@@ -35,7 +35,7 @@ class SessionManager:
 
     # ================== Vérification session locale ==================
     def check_session(self) -> Dict:
-        session_info = {"valid": False, "username": None, "date": None, "p_entity": None, "error": None}
+        session_info = {"valid": False, "username": None , "password": None, "date": None, "p_entity": None, "error": None}
 
         DevLogger.info(f"[INFO] Chemin du fichier session : {self.session_path}")
 
