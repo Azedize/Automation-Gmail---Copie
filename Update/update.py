@@ -24,6 +24,7 @@ if BASE_DIR not in sys.path:
 
 from config import settings as Settings
 from core import EncryptionService
+from Log import DevLogger
 
 
 
@@ -43,15 +44,16 @@ SERVEUR_ZIP_URL_EX3 = f"http://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv
 
 
 
+
+
 class UpdateManager:
-    """Gestionnaire de mise à jour pour l'application et les extensions"""
+
     
     # ==========================================================
     # 🔹 UTILITAIRES
     # ==========================================================
     @staticmethod
     def _read_local_version(path: str) -> Optional[str]:
-        """Lire une version depuis un fichier texte"""
         if not path or not os.path.isfile(path):
             return None
         try:
@@ -62,9 +64,8 @@ class UpdateManager:
 
     @staticmethod
     def _download_file(url: str, dest_path: str) -> bool:
-        """Télécharge un fichier avec progression"""
         try:
-            print(f"⬇️ Téléchargement depuis : {url}")
+            DevLogger.info(f"⬇️ Téléchargement depuis : {url}")
             response = requests.get(url, stream=True, verify=False, timeout=60)
             response.raise_for_status()
             total_size = int(response.headers.get("content-length", 0))
@@ -86,7 +87,6 @@ class UpdateManager:
 
     @staticmethod
     def _remove_readonly(func, path, exc_info):
-        """Supprime l'attribut readonly pour Windows"""
         os.chmod(path, stat.S_IWRITE)
         func(path)
 

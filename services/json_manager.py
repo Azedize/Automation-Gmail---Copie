@@ -542,7 +542,7 @@ class JsonManager:
             return "SUCCESS"
             
         except Exception as e:
-            print(f"❌ Erreur lors de la sauvegarde du fichier {traitement_file}: {e}")
+            DevLogger.error(f"❌ Erreur lors de la sauvegarde du fichier {traitement_file}: {e}")
             return "ERROR"
     
 

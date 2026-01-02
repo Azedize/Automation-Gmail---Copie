@@ -14,6 +14,8 @@ if ROOT_DIR not in sys.path:
 try:
     from config import Settings
     from core import EncryptionService
+    from Log import DevLogger
+
 except ImportError as e:
     raise ImportError(f"❌ Erreur d'importation: {e}")
 
@@ -41,9 +43,9 @@ class APIManager:
 
         for attempt in range(1, 4):
             try:
-                print(f"🌐 Tentative {attempt} - {method} {url}")
+                DevLogger.debug(f"🌐 Tentative {attempt} - {method} {url}")
                 response = self.session.request( method=method.upper(), url=url, data=data, json=json_data, params=params, timeout=timeout)
-                print(f"📥 HTTP {response.status_code}")
+                DevLogger.debug(f"📥 HTTP {response.status_code}")
 
                 if response.status_code == 200:
                     try:
@@ -54,11 +56,11 @@ class APIManager:
                     return {"status": "error", "error": f"HTTP {response.status_code}: accès refusé", "status_code": response.status_code}
                 else:
                     last_exception = f"HTTP {response.status_code}"
-                    print(f"⚠️ HTTP {response.status_code}: {response.text[:200]}")
+                    DevLogger.error(f"⚠️ HTTP {response.status_code}: {response.text[:200]}")
 
             except requests.RequestException as e:
                 last_exception = str(e)
-                print(f"⚠️ Erreur tentative {attempt}: {last_exception}")
+                DevLogger.error(f"⚠️ Erreur tentative {attempt}: {last_exception}")
 
             if attempt < 3:
                 time.sleep(2)  # Attente avant retry

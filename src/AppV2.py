@@ -1661,7 +1661,7 @@ class MainWindow(QMainWindow):
 
 
     def Scenario_Changed(self, name_selected):
-        DevLogger.debug("Scenario_Changed called with name_selected=%r", name_selected)
+        DevLogger.debug(f"Scenario_Changed called with name_selected={name_selected}")
 
         encrypted_key =UIManager.read_file_content(Settings.SESSION_PATH)
         if not encrypted_key:
@@ -1685,7 +1685,7 @@ class MainWindow(QMainWindow):
         
         try:
             result = response.json()
-            DevLogger.debug("Response JSON keys: %s", list(result.keys()))
+            DevLogger.debug(f"Response JSON keys: {list(result.keys())}")
         except ValueError:
             DevLogger.error("Failed to parse JSON from response. Response text (first 2000 chars):\n%s", response.text[:2000])
             return

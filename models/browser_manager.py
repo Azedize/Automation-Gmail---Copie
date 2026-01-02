@@ -22,8 +22,9 @@ if ROOT_DIR not in sys.path:
 try:
     from config import Settings
     from utils.validation_utils import ValidationUtils
+    from Log import DevLogger
 except ImportError as e:
-    print(f"Error importing modules: {e}")
+    DevLogger.error(f"Error importing modules: {e}")
 
 
 class BrowserManager:
@@ -34,7 +35,7 @@ class BrowserManager:
         exe_name = Settings.SUPPORTED_BROWSERS.get(
             browser_name_or_exe.lower(), {}
         ).get("exe_name", browser_name_or_exe)
-        print(f"🔍 Recherche de l'exécutable : {exe_name}")
+        DevLogger.info(f"🔍 Recherche de l'exécutable : {exe_name}")
 
         registry_paths = [
             (winreg.HKEY_LOCAL_MACHINE, winreg.KEY_READ | winreg.KEY_WOW64_32KEY),
@@ -50,14 +51,14 @@ class BrowserManager:
                 with winreg.OpenKey(hive, key_app_paths, 0, access) as key_obj:
                     path, _ = winreg.QueryValueEx(key_obj, None)
                     if path and ValidationUtils.path_exists(path):
-                        print(f"✅ Navigateur trouvé : {path}")
+                        DevLogger.info(f"✅ Navigateur trouvé : {path}")
                         return path
             except FileNotFoundError:
                 continue
             except Exception as e:
-                print(f"⚠️ Erreur registre ({hive}): {e}")
+                DevLogger.error(f"⚠️ Erreur registre ({hive}): {e}")
 
-        print(f"❌ Navigateur {exe_name} introuvable")
+        DevLogger.error(f"❌ Navigateur {exe_name} introuvable")
         return None
 
     # ---------------------- Firefox ----------------------
@@ -86,17 +87,17 @@ class BrowserManager:
     def create_firefox_profile(profile_name: str) -> Optional[str]:
         firefox_path = BrowserManager.get_browser_path("firefox.exe")
         if not firefox_path:
-            print("❌ Firefox introuvable.")
+            DevLogger.error("❌ Firefox introuvable.")
             return None
 
         existing_profiles = BrowserManager._get_firefox_profiles()
-        print("Profils existants avant création :", list(existing_profiles.keys()))
+        DevLogger.info("Profils existants avant création :", list(existing_profiles.keys()))
 
         profile_dir = os.path.join(Settings.FIREFOX_PROFILES, profile_name)
         os.makedirs(Settings.FIREFOX_PROFILES, exist_ok=True)
 
         if ValidationUtils.path_exists(profile_dir):
-            print(f"✅ Profil '{profile_name}' déjà existant : {profile_dir}")
+            DevLogger.info(f"✅ Profil '{profile_name}' déjà existant : {profile_dir}")
             return profile_dir
 
         cmd = f"{profile_name} {profile_dir}"
@@ -106,15 +107,15 @@ class BrowserManager:
                                 text=True)
 
         if result.returncode != 0:
-            print(f"❌ Échec création (code {result.returncode})")
-            print(result.stderr.strip())
+            DevLogger.error(f"❌ Échec création (code {result.returncode})")
+            DevLogger.error(result.stderr.strip())
             return None
 
         if ValidationUtils.path_exists(profile_dir):
-            print(f"✅ Profil créé : {profile_dir}")
+            DevLogger.info(f"✅ Profil créé : {profile_dir}")
             return profile_dir
 
-        print("❌ Le dossier du profil n'a pas été trouvé après création.")
+        DevLogger.error("❌ Le dossier du profil n'a pas été trouvé après création.")
         return None
 
     @staticmethod
@@ -176,9 +177,9 @@ class BrowserManager:
             if window["profile"] in target_profiles:
                 try:
                     win32gui.PostMessage(window["hwnd"], win32con.WM_CLOSE, 0, 0)
-                    print(f"✅ Fermeture : {window['profile']} - {window['title']}")
+                    DevLogger.info(f"✅ Fermeture : {window['profile']} - {window['title']}")
                 except Exception as e:
-                    print(f"❌ Erreur fermeture {window['profile']}: {e}")
+                    DevLogger.error(f"❌ Erreur fermeture {window['profile']}: {e}")
 
     # ---------------------- Chrome ----------------------
     @staticmethod
@@ -223,7 +224,7 @@ class BrowserManager:
     def Upload_EXTENSION_PROXY(profile_name: str, search_keys: List[str], results: List[Dict[str, Any]]):
         path_file = os.path.join(Settings.CONFIG_PROFILE, profile_name, "Secure Preferences")
         if not ValidationUtils.path_exists(path_file):
-            print(f"❌ Secure Preferences introuvable pour {profile_name}")
+            DevLogger.error(f"❌ Secure Preferences introuvable pour {profile_name}")
             return None
 
         try:
@@ -231,10 +232,10 @@ class BrowserManager:
                 data = json.load(f)
             results.clear()
             BrowserManager.Search_Keys(data, search_keys, results)
-            print(f"📌 Résultats pour {profile_name}: {results}")
+            DevLogger.info(f"📌 Résultats pour {profile_name}: {results}")
             return results
         except Exception as e:
-            print(f"❌ Erreur traitement Secure Preferences: {e}")
+            DevLogger.error(f"❌ Erreur traitement Secure Preferences: {e}")
             return None
 
 

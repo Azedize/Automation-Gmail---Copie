@@ -19,8 +19,9 @@ try:
     from config import settings
     from utils.validation_utils import ValidationUtils
     from api.base_client import APIManager
+    from Log import DevLogger
 except ImportError as e:
-    print(f"[ERROR] Import modules failed: {e}")
+    DevLogger.error(f"[ERROR] Import modules failed: {e}")
 
 
 class SessionManager:
@@ -38,10 +39,10 @@ class SessionManager:
             "error": None
         }
 
-        print(f"[INFO] Chemin du fichier session : {self.session_path}")
+        DevLogger.info(f"[INFO] Chemin du fichier session : {self.session_path}")
 
         if not ValidationUtils.path_exists(self.session_path):
-            print("[WARNING] ❌ Le fichier session.txt n'existe pas")
+            DevLogger.info("[WARNING] ❌ Le fichier session.txt n'existe pas")
             session_info["error"] = "FileNotFound"
             return session_info
 
@@ -50,7 +51,7 @@ class SessionManager:
                 encrypted = f.read().strip()
 
             if not encrypted:
-                print("[WARNING] ❌ Fichier session.txt vide")
+                DevLogger.info("[WARNING] ❌ Fichier session.txt vide")
                 session_info["error"] = "EmptyFile"
                 return session_info
 
@@ -58,14 +59,14 @@ class SessionManager:
             try:
                 decrypted = EncryptionService.decrypt_message(encrypted, self.key)
             except Exception as e:
-                print(f"[ERROR] Déchiffrement échoué : {e}")
+                DevLogger.error(f"[ERROR] Déchiffrement échoué : {e}")
                 session_info["error"] = f"DecryptError: {e}"
                 return session_info
 
             # Validation du format
             is_valid, data = ValidationUtils.validate_session_format(decrypted)
             if not is_valid:
-                print("[ERROR] Format session invalide")
+                DevLogger.info("[ERROR] Format session invalide")
                 session_info["error"] = "InvalidFormat"
                 return session_info
 
@@ -87,11 +88,11 @@ class SessionManager:
                     "p_entity": p_entity
                 })
             else:
-                print("[INFO] Session expirée")
+                DevLogger.info("[INFO] Session expirée")
                 session_info["error"] = "Expired"
 
         except Exception as e:
-            print(f"[ERROR] Lecture fichier session : {e}")
+            DevLogger.error(f"[ERROR] Lecture fichier session : {e}")
             session_info["error"] = f"FileReadError: {e}"
 
         return session_info
@@ -183,7 +184,7 @@ class SessionManager:
         either a tuple (entity, encrypted response) or an error code.
         """
         try:
-            print(f"🔹 [DEBUG] Input validation: username='{username}', password='{'*' * len(password)}'")
+            DevLogger.info(f"🔹 [DEBUG] Input validation: username='{username}', password='{'*' * len(password)}'")
 
             # ----------------- Input validation -----------------
             valid_user, msg_user = ValidationUtils.validate_qlineedit_text(
@@ -194,14 +195,14 @@ class SessionManager:
             )
 
             if not valid_user:
-                print(f"❌ [DEBUG] Invalid username: {msg_user}")
+                DevLogger.info(f"❌ [DEBUG] Invalid username: {msg_user}")
                 return -1
 
             if not valid_pass:
-                print(f"❌ [DEBUG] Invalid password: {msg_pass}")
+                DevLogger.info(f"❌ [DEBUG] Invalid password: {msg_pass}")
                 return -1
 
-            print("✅ [DEBUG] Input validation successful")
+            DevLogger.info("✅ [DEBUG] Input validation successful")
 
             # ----------------- Prepare API payload -----------------
             payload = {
@@ -211,12 +212,12 @@ class SessionManager:
                 "k": "mP5QXYrK9E67Y",
                 "l": "1"
             }
-            print(f"🔹 [DEBUG] API payload prepared: {payload}")
+            DevLogger.info(f"🔹 [DEBUG] API payload prepared: {payload}")
 
             # ----------------- API call with retry -----------------
             resp = None
             for attempt in range(1, 6):
-                print(f"🔁 [DEBUG] API attempt {attempt}/5")
+                DevLogger.info(f"🔁 [DEBUG] API attempt {attempt}/5")
 
                 result = APIManager.make_request(
                     "_APIACCESS_API",
@@ -228,14 +229,14 @@ class SessionManager:
                 resp = APIManager._handle_response(result, failure_default=None)
 
                 if resp is not None:
-                    print(f"✅ [DEBUG] API response received: {resp}")
+                    DevLogger.info(f"✅ [DEBUG] API response received: {resp}")
                     break
                 else:
-                    print("⚠️ [DEBUG] No response received, waiting before retry...")
+                    DevLogger.info("⚠️ [DEBUG] No response received, waiting before retry...")
                     time.sleep(2)
             else:
-                print("❌ [DEBUG] Connection failed after 5 attempts")
-                return -3  # Unable to connect to server
+                DevLogger.info("❌ [DEBUG] Connection failed after 5 attempts")
+                return -3  
 
             # ----------------- Handle known error codes BEFORE decryption -----------------
             if isinstance(resp, int) or str(resp) in ("-1", "-2", "-3", "-4", "-5"):
@@ -246,34 +247,33 @@ class SessionManager:
                     "-4": -4,
                     "-5": -5,
                 }
-                print(f"❌ [DEBUG] Error code received from API: {resp}")
+                DevLogger.info(f"❌ [DEBUG] Error code received from API: {resp}")
                 return error_codes.get(str(resp), -5)
 
             # ----------------- Decrypt response -----------------
             try:
-                print("🔓 [DEBUG] Attempting to decrypt API response...")
+                DevLogger.info("🔓 [DEBUG] Attempting to decrypt API response...")
                 entity = EncryptionService.decrypt_message(resp, self.key)
 
                 if not entity:
-                    print("❌ [DEBUG] Decryption failed: empty entity")
+                    DevLogger.info("❌ [DEBUG] Decryption failed: empty entity")
                     return -4
 
-                print(f"✅ [DEBUG] Decryption successful, entity: {entity}")
+                DevLogger.info(f"✅ [DEBUG] Decryption successful, entity: {entity}")
                 return (entity, resp)
 
             except Exception as e:
-                print(f"❌ [DEBUG] Exception during decryption: {e}")
+                DevLogger.error(f"❌ [DEBUG] Exception during decryption: {e}")
                 traceback.print_exc()
                 return -5
 
         except Exception as e:
-            print(f"❌ [DEBUG] Unexpected exception in check_api_credentials: {e}")
+            DevLogger.error(f"❌ [DEBUG] Unexpected exception in check_api_credentials: {e}")
             traceback.print_exc()
             return -5
 
 
 
 
-    
-# 🔹 Instance unique pour usage global
+
 SessionManager= SessionManager()
