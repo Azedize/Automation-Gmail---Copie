@@ -22,6 +22,7 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
 
+from Log import DevLogger
 
 
 
@@ -29,8 +30,6 @@ try:
     from config import settings as Settings
     from core import EncryptionService
     from core import SessionManager
-    from Update import UpdateManager
-    from Log import DevLogger
 except ImportError as e:
     DevLogger.error(f"[ERROR] Import modules failed: {e}")
 
