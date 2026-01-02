@@ -22,25 +22,22 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
 
-from config import settings as Settings
-from core import EncryptionService
-from Log import DevLogger
 
 
 
-DATA_AUTH = {
-        "login": "rep.test",
-        "password": "zsGEnntKD5q2Brp68yxT"
-}
+try:
+    from config import settings as Settings
+    from core import EncryptionService
+    from core import SessionManager
+    from Update import UpdateManager
+    from Log import DevLogger
+except ImportError as e:
+    DevLogger.error(f"[ERROR] Import modules failed: {e}")
 
-KEY_HEX = "f564292a5740af4fc4819c6e22f64765232ad35f56079854a0ad3996c68ee7a2"
-KEY     = bytes.fromhex(KEY_HEX)
-
-ENCRYPTED = EncryptionService.encrypt_message(json.dumps(DATA_AUTH), KEY)
 
 
-CHECK_URL_EX3 = f"http://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Ext3&k={ENCRYPTED}"
-SERVEUR_ZIP_URL_EX3 = f"http://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Ext3&k={ENCRYPTED}"
+
+
 
 
 
@@ -315,6 +312,16 @@ class UpdateManager:
             True -> extension à jour
             False -> échec
         """
+        SESSION_INFO = SessionManager.check_session()
+
+        if not SESSION_INFO["valid"]:
+            DevLogger.info("[SESSION] ❌ Session invalide. Impossible de continuer l’extraction.")
+            sys.exit()
+            return False
+        
+        ENCRYPTED = EncryptionService.encrypt_message(json.dumps({  "login":SESSION_INFO ["username"],  "password": SESSION_INFO["password"]}), Settings.KEY)
+        CHECK_URL_EX3 = f"http://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Ext3&k={ENCRYPTED}"
+
         try:
             print("\n🔎 Vérification des versions d'extension...")
 
@@ -395,7 +402,19 @@ class UpdateManager:
 
     @staticmethod
     def update_extension_from_server(remote_version=None) -> bool:
-        """Met à jour l'extension depuis le serveur"""
+        SESSION_INFO = SessionManager.check_session()
+
+        if not SESSION_INFO["valid"]:
+            DevLogger.info("[SESSION] ❌ Session invalide. Impossible de continuer l’extraction.")
+            sys.exit()
+            return False
+        
+        ENCRYPTED = EncryptionService.encrypt_message(json.dumps({  "login":SESSION_INFO ["username"],  "password": SESSION_INFO["password"]}), Settings.KEY)
+        SERVEUR_ZIP_URL_EX3 = f"http://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Ext3&k={ENCRYPTED}"
+
+            
+
+            # Telechargement
         try:
             print("📥 Téléchargement de la dernière version...")
             
