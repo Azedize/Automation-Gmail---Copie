@@ -1973,7 +1973,7 @@ class LoginWindow(QMainWindow):
             self.erreur_label.show()
             return
 
-        valid_session = SessionManager.create_session(username, decrypted_response_entity)
+        valid_session = SessionManager.create_session(username, password, decrypted_response_entity)
         if not valid_session:
             self.erreur_label.setText("Failed to create user session.")
             self.erreur_label.show()
