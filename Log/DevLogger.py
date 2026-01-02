@@ -1,24 +1,24 @@
 import logging
 import os
 import time
+from typing import Optional
 
 
 class DevLogger:
-    _logger = None
+    _logger: Optional[logging.Logger] = None
 
     @staticmethod
     def init_logger(
-        name: str = "DevLogger",
-        log_file: str = "logs/dev.log",
-        level=logging.DEBUG
-    ):
+        name: str = "DevLogger",   log_file: str = "logs/dev.log",  level: int = logging.DEBUG):
+
+
         if DevLogger._logger is not None:
             return
 
         logger = logging.getLogger(name)
         logger.setLevel(level)
 
-        # Empêche la duplication des handlers
+        # Empêcher la duplication des handlers
         if logger.handlers:
             DevLogger._logger = logger
             return
@@ -28,16 +28,23 @@ class DevLogger:
             datefmt="%Y-%m-%d %H:%M:%S"
         )
 
-        # Console
+        # ================= Console =================
         console_handler = logging.StreamHandler()
         console_handler.setLevel(level)
         console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)
 
-        # Fichier
+        # ================= File =================
         if log_file:
-            os.makedirs(os.path.dirname(log_file), exist_ok=True)
-            file_handler = logging.FileHandler(log_file, encoding="utf-8")
+            log_dir = os.path.dirname(log_file)
+            if log_dir:
+                os.makedirs(log_dir, exist_ok=True)
+
+            file_handler = logging.FileHandler(
+                log_file,
+                mode="w",              # 🔥 supprime l'ancien log
+                encoding="utf-8"
+            )
             file_handler.setLevel(level)
             file_handler.setFormatter(formatter)
             logger.addHandler(file_handler)
@@ -88,6 +95,7 @@ class DevLogger:
         elapsed = time.time() - start_time
         DevLogger.info(f"{msg} | Temps écoulé : {elapsed:.3f}s")
         return elapsed
+
 
 
 
