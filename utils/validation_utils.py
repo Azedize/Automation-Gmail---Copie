@@ -564,10 +564,10 @@ class ValidationUtils:
             return False, None
         
         parts = session_data.split("::", 2)
-        if len(parts) != 3:
+        if len(parts) != 4:
             return False, None
         
-        username, date_str, entity = parts
+        username, password ,date_str , entity = parts
         
         try:
             datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
@@ -576,6 +576,7 @@ class ValidationUtils:
         
         return True, {
             "username": username.strip(),
+            "password": password.strip(),
             "date": date_str.strip(),
             "entity": entity.strip()
         }

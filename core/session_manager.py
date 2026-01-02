@@ -61,14 +61,16 @@ class SessionManager:
                 session_info["error"] = "InvalidFormat"
                 return session_info
 
-            username, date_str, p_entity = data["username"], data["date"], data["entity"]
-            print("🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​username:", username, "date_str:", date_str, "p_entity:", p_entity)
+            username,password, date_str, p_entity = data["username"],data["password"], data["date"], data["entity"]
+
+            print("🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​username:", username,"password : ", password , "date_str:", date_str, "p_entity:", p_entity)
+
             last_session = datetime.datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
             last_session = self.timezone.localize(last_session)
             now = datetime.datetime.now(self.timezone)
 
             if (now - last_session) < datetime.timedelta(days=2):
-                session_info.update({"valid": True, "username": username, "date": last_session, "p_entity": p_entity})
+                session_info.update({"valid": True, "username": username , "password": password, "date": last_session, "p_entity": p_entity})
             else:
                 DevLogger.info("[INFO] Session expirée")
                 session_info["error"] = "Expired"
@@ -80,10 +82,10 @@ class SessionManager:
         return session_info
 
     # ================== Création de session ==================
-    def create_session(self, username: str, p_entity: str) -> bool:
+    def create_session(self, username: str,password: str, p_entity: str) -> bool:
         try:
             now = datetime.datetime.now(self.timezone)
-            session_data = f"{username}::{now.strftime('%Y-%m-%d %H:%M:%S')}::{p_entity}"
+            session_data = f"{username}::{password}::{now.strftime('%Y-%m-%d %H:%M:%S')}::{p_entity}"
 
             encrypted = EncryptionService.encrypt_message(session_data, self.key)
 
