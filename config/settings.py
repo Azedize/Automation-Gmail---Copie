@@ -140,15 +140,17 @@ class Settings:
     
     DATA_DIR = Path(os.getenv('APPDATA')) / 'AutoMailPro'
     SESSION_FILE = DATA_DIR / 'session.txt'
-    LOGS_DIR = BASE_DIR / 'Tools'  / 'logs'
+
+    TOOLS_DIR = BASE_DIR / 'Tools'
+    EXTENSIONS_DIR = TOOLS_DIR / 'Extensions'
+    LOGS_DIR = TOOLS_DIR / 'logs'
     
-    PROFILES_DIR = BASE_DIR / 'Tools' / 'Profiles'
+    PROFILES_DIR = TOOLS_DIR / 'Profiles'
     CHROME_PROFILES = PROFILES_DIR / 'chrome'
     FIREFOX_PROFILES = PROFILES_DIR / 'firefox'
     FAMILY_CHROME_DIR_PROFILES = PROFILES_DIR / 'Family_Chrome'
     
-    TOOLS_DIR = BASE_DIR / 'Tools'
-    EXTENSIONS_DIR = BASE_DIR / 'Tools' / 'Extensions'
+ 
     VERSION_LOCAL_EXT = os.path.join(EXTENSIONS_DIR, "version.txt")
     VERSION_LOCAL_PROGRAMM = os.path.join(BASE_DIR , "config", "version.txt")
 
@@ -172,13 +174,13 @@ class Settings:
 
 
 
-    BASE_DIRECTORY = os.path.join(BASE_DIR, 'tools', 'ExtensionEmail')
-    TEMPLATE_DIRECTORY_FIREFOX  = os.path.join(BASE_DIR, 'tools', 'ExtensionTemplateFirefox')
-    TEMPLATE_DIRECTORY_FAMILY_CHROME = os.path.join(BASE_DIR, 'tools', 'Extention_Family_Chrome')
+    BASE_DIRECTORY = os.path.join( TOOLS_DIR , 'ExtensionEmail')
+    TEMPLATE_DIRECTORY_FIREFOX  = os.path.join( TOOLS_DIR , 'ExtensionTemplateFirefox')
+    TEMPLATE_DIRECTORY_FAMILY_CHROME = os.path.join( TOOLS_DIR , 'Extention_Family_Chrome')
 
 
-    LOGS_DIRECTORY = os.path.join(BASE_DIR, 'tools', 'logs')
-    RESULT_FILE_PATH = os.path.join(BASE_DIR,  "tools", "result.txt")
+    LOGS_DIRECTORY = os.path.join(TOOLS_DIR, 'logs')
+    RESULT_FILE_PATH = os.path.join(TOOLS_DIR, "result.txt")
 
     APPDATA       = os.getenv("APPDATA")
     APP_NAME      = "SecureDesk"
