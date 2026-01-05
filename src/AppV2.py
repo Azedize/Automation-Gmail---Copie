@@ -187,7 +187,7 @@ def Stop_All_Processes(window):
             lambda: UIManager.Read_Result_Update_List(window))
         )
 
-    if SELECTED_BROWSER_GLOBAL != "firefox":
+    if SELECTED_BROWSER_GLOBAL.lower() != "firefox":
         for pid in PROCESS_PIDS[:]:
             try:
                 DevLogger.info(f"Attempting to terminate process with PID {pid}...")
@@ -305,14 +305,14 @@ def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp 
 
     Launch_Close_Chrome(selected_Browser , username)
     browser_path = (
-        BrowserManager.get_browser_path("chrome.exe") if selected_Browser == "chrome"
-        else BrowserManager.get_browser_path("firefox") if selected_Browser == "firefox"
-        else BrowserManager.get_browser_path("msedge.exe") if selected_Browser == "edge"
+        BrowserManager.get_browser_path("chrome.exe") if selected_Browser.lower() == "chrome"
+        else BrowserManager.get_browser_path("firefox") if selected_Browser.lower() == "firefox"
+        else BrowserManager.get_browser_path("msedge.exe") if selected_Browser.lower() == "edge"
         else BrowserManager.get_browser_path("dragon.exe")  
     )
   
 
-    if selected_Browser == "firefox":
+    if selected_Browser.lower() == "firefox":
         ensure_web_ext_installed()
 
     DevLogger.info("browser path   :",   browser_path    or "Non trouvé")
@@ -490,7 +490,7 @@ class ExtractionThread(QThread):
                                 log_message(f"[INFO]  Erreur lors de la suppression de {dir_to_delete} : {e}")
 
                   
-                    if self.selected_Browser == "firefox":
+                    if self.selected_Browser.lower() == "firefox":
 
                         ExtensionManager.create_extension_for_email(
                             profile_email, profile_password,
@@ -610,7 +610,7 @@ class ExtractionThread(QThread):
 
 
 
-
+# le programme is runing dans une interface 
 
 
 # et qui traite les fichiers de session et LOGS générés dans le dossier Downloads.
@@ -760,7 +760,7 @@ class CloseBrowserThread(QThread):
             pid = int(pid)
             if pid in PROCESS_PIDS: 
                 log_message(f"[INFO] Attempting to terminate process:  {email}.")
-                if selected_Browser == "firefox":
+                if selected_Browser.lower() == "firefox":
                     try:
                         DevLogger.info("browser : ", selected_Browser)
                         DevLogger.info('✅✅✅✅✅✅✅✅PID : ', pid)
@@ -780,8 +780,8 @@ class CloseBrowserThread(QThread):
                     except Exception as e:
                         return f"⚠️ Erreur lors de la fermeture du processus {file_name}: {e}"
             try:
-                os.remove(os.path.join(Settings.FIREFOX_PROFILES if selected_Browser == "firefox" else Settings.FAMILY_CHROME_DIR_PROFILES , email , "data.txt"))
-                return f"🗑️ Fichier session supprimé : {os.path.join(Settings.FIREFOX_PROFILES if selected_Browser == "firefox" else Settings.FAMILY_CHROME_DIR_PROFILES , email , "data.txt")}"
+                os.remove(os.path.join(Settings.FIREFOX_PROFILES if selected_Browser.lower() == "firefox" else Settings.FAMILY_CHROME_DIR_PROFILES , email , "data.txt"))
+                return f"🗑️ Fichier session supprimé : {os.path.join(Settings.FIREFOX_PROFILES if selected_Browser.lower() == "firefox" else Settings.FAMILY_CHROME_DIR_PROFILES , email , "data.txt")}"
             except Exception as e:
                 return f"⚠️ Erreur lors de la suppression du fichier {file_name}: {e}"
 
