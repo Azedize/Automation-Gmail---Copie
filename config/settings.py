@@ -290,7 +290,7 @@ class Settings:
             cls.PROFILES_DIR,
             cls.CHROME_PROFILES,
             cls.FIREFOX_PROFILES,
-            cls.PROFILES_DIR_FAMILY_CHROME,
+            cls.FAMILY_CHROME_DIR_PROFILES,
             cls.EXTENSIONS_DIR,
             cls.EXTENTIONS_DIR_FIREFOX
         ]
