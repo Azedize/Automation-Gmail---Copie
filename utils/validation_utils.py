@@ -5,13 +5,21 @@ import re
 import random
 import string
 import uuid
-import zipfile
 from typing import Dict, List, Any, Optional, Tuple, Union, Callable
 from datetime import datetime
 from urllib.parse import urlparse
 from PyQt6.QtWidgets import QLineEdit, QMessageBox, QApplication
 from PyQt6.QtCore import QTimer
-import traceback
+import sys
+
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
+
+try:
+    from Log import DevLogger
+except ImportError as e:
+    DevLogger.error(f"Error importing modules: {e}")
 
 class ValidationUtils:
     """Classe de validation unifiée pour toutes les validations et générations"""
@@ -785,6 +793,18 @@ class ValidationUtils:
                 return data_dict[key]
         return possible_keys[0] if possible_keys else ""
     
+
+    @staticmethod
+    def get_email_from_log_file(file_name):
+        file_name = os.path.basename(file_name)
+        match = re.search(r"log_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z_([\w.+-]+@[\w.-]+\.[a-zA-Z]{2,6})\.txt", file_name)
+        if match:
+            DevLogger.info(f"   - Email extrait : {match.group(1)}")
+            email = match.group(1)
+            return email
+        else:
+            DevLogger.info(f"[Email Extraction] Aucun email trouvé dans {file_name}")
+            return None
 
 
 # Instance globale pour une utilisation facile

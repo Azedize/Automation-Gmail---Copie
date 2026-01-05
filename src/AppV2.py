@@ -675,7 +675,7 @@ class CloseBrowserThread(QThread):
         try:
             global CURRENT_HOUR, CURRENT_DATE
 
-            email = self.get_email_from_log_file(os.path.join(downloads_folder, log_file))  
+            email = ValidationUtils.get_email_from_log_file(os.path.join(downloads_folder, log_file))  
             if not email:
                 return f"⚠️ Erreur dans le fichier {log_file}: Email non trouvé."
 
@@ -796,7 +796,7 @@ class CloseBrowserThread(QThread):
         except Exception as e:
             return f"⚠️ Erreur dans le fichier {file_name} : {e}"
 
-
+#  le programme is runindans une interface logique 
 
     def find_firefox_window(self, profile_email, timeout=30):
         entry = next((e for e in FIREFOX_LAUNCH if e['profile'] == profile_email), None)
@@ -890,17 +890,7 @@ class CloseBrowserThread(QThread):
 
 
 
-    def get_email_from_log_file(self, file_name):
-        file_name = os.path.basename(file_name)
-        match = re.search(r"log_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z_([\w.+-]+@[\w.-]+\.[a-zA-Z]{2,6})\.txt", file_name)
-        if match:
-            DevLogger.info(f"   - Email extrait : {match.group(1)}")
-            email = match.group(1)
-            return email
-        else:
-            DevLogger.info(f"[Email Extraction] Aucun email trouvé dans {file_name}")
-            return None
-
+ 
 
 
 

@@ -63,7 +63,7 @@ class SessionManager:
 
             username,password, date_str, p_entity = data["username"],data["password"], data["date"], data["entity"]
 
-            print("🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​username:", username,"password : ", password , "date_str:", date_str, "p_entity:", p_entity)
+            # print("🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​username:", username,"password : ", password , "date_str:", date_str, "p_entity:", p_entity)
 
             last_session = datetime.datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
             last_session = self.timezone.localize(last_session)
