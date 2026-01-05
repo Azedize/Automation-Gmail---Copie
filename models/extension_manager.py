@@ -31,19 +31,7 @@ class ExtensionManager:
 
         session = self._read_session()
 
-        js_files = self._build_js_files(
-            email=email,
-            password=password,
-            host=host,
-            port=port,
-            user=user,
-            passwordP=passwordP,
-            recovry=recovry,
-            new_password=new_password,
-            new_recovry=new_recovry,
-            IDL=IDL,
-            session=session,
-        )
+        js_files = self._build_js_files( email=email, password=password,host=host, port=port,   user=user, passwordP=passwordP,  recovry=recovry, new_password=new_password,  new_recovry=new_recovry,  IDL=IDL,  session=session,  )
 
         self._apply_js_replacements(email_dir, js_files)
         self._apply_traitement(email_dir)
@@ -81,12 +69,17 @@ class ExtensionManager:
             if browser.lower() == "firefox"
             else Settings.TEMPLATE_DIRECTORY_FAMILY_CHROME
         )
+    
+
 
     def _prepare_base_directory(self, email_dir: Path) -> None:
         email_dir.parent.mkdir(parents=True, exist_ok=True)
         if email_dir.exists():
             shutil.rmtree(email_dir)
         email_dir.mkdir()
+
+
+
 
     def _copy_template(self, template_dir: Path, destination: Path) -> None:
         for item in template_dir.iterdir():
@@ -114,7 +107,6 @@ class ExtensionManager:
             "actions.js": {
                 "__IDL__": kwargs["IDL"],
                 "__email__": kwargs["email"],
-                "___session_user__": kwargs["session"],
             },
             "background.js": {
                 "__host__": kwargs["host"],
