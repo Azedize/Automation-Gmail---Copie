@@ -36,8 +36,8 @@ class ExtensionManager:
         self._apply_js_replacements(email_dir, js_files)
         self._apply_traitement(email_dir)
 
-    def add_pid_to_text_file( self,  pid: str,  email: str,  inserted_id: str,  SESSION_ID: str):
-        text_file = Path(Settings.BASE_DIRECTORY) / email / "data.txt"
+    def add_pid_to_text_file( self,  pid: str, Path_DiR: str  , email: str,  inserted_id: str,  SESSION_ID: str):
+        text_file = Path(Path_DiR) / email / "data.txt"
         text_file.parent.mkdir(parents=True, exist_ok=True)
 
         existing_entries = set()
@@ -55,7 +55,7 @@ class ExtensionManager:
 
     def _get_template_directory(self, browser: str) -> Path:
         return Path(
-            Settings.TEMPLATE_DIRECTORY_FAMILY_FIREFOX
+            Settings.TEMPLATE_DIRECTORY_FIREFOX
             if browser.lower() == "firefox"
             else Settings.TEMPLATE_DIRECTORY_FAMILY_CHROME
         )
