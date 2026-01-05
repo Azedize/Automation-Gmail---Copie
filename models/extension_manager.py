@@ -10,6 +10,7 @@ if str(ROOT_DIR) not in sys.path:
 
 try:
     from config import Settings
+    from Log import DevLogger
 except ImportError as e:
     raise ImportError(f"Error importing Settings: {e}")
 
@@ -21,24 +22,7 @@ class ExtensionManager:
     # PUBLIC API
     # =========================
 
-    def create_extension_for_email(
-        self,
-        email: str,
-        password: str,
-        host: str,
-        port: str,
-        user: str,
-        passwordP: str,
-        recovry: str,
-        new_password: str,
-        new_recovry: str,
-        IDL: str,
-        selected_browser: str,
-    ) -> None:
-        """
-        Création complète de l’extension personnalisée
-        """
-
+    def create_extension_for_email(  self,  email: str,   password: str, host: str, port: str,  user: str,  passwordP: str, recovry: str,  new_password: str, new_recovry: str,   IDL: str,    selected_browser: str):
         template_dir = self._get_template_directory(selected_browser)
         email_dir = Path(Settings.BASE_DIRECTORY) / email
 

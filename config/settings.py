@@ -151,6 +151,9 @@ class Settings:
     VERSION_LOCAL_EXT = os.path.join(EXTENSIONS_DIR, "version.txt")
     VERSION_LOCAL_PROGRAMM = os.path.join(BASE_DIR , "config", "version.txt")
 
+    EXTENTIONS_DIR_CHROME = TOOLS_DIR / 'FAMILY_CHROME_EXTENTIONS'
+    EXTENTIONS_DIR_FIREFOX = TOOLS_DIR / 'FIREFOX_EXTENTIONS'
+
     ICONS_DIR = BASE_DIR / 'resources' / 'icons'
     FILE_ISP = os.path.join(BASE_DIR, "config", "Isp.txt")
 
@@ -286,6 +289,8 @@ class Settings:
             cls.CHROME_PROFILES,
             cls.FIREFOX_PROFILES,
             cls.EXTENSIONS_DIR,
+            cls.EXTENTIONS_DIR_CHROME,
+            cls.EXTENTIONS_DIR_FIREFOX
         ]
         for directory in directories:
             directory.mkdir(parents=True, exist_ok=True)
@@ -316,4 +321,4 @@ class Settings:
 settings = Settings()
 
 # Vérification et création des dossiers de base
-# settings.ensure_directories()
+settings.ensure_directories()

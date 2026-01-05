@@ -293,7 +293,7 @@ def main():
             DevLogger.info("APPLICATION À JOUR")
 
         if len(sys.argv) == 1:
-            DevLogger.info("Lancement script principal")
+            DevLogger.info("Lancement de l'application principale")
             encrypted_key, secret_key = EncryptionService.generate_encrypted_key()
             # ❌ Ne jamais logger ces clés
 

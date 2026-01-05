@@ -128,6 +128,7 @@ def ensure_web_ext_installed():
         return
     
     if shutil.which('npm') is None:
+        DevLogger.error("❌ npm n'est pas installé.")
         return
     
     if shutil.which('web-ext') is not None:
@@ -309,9 +310,7 @@ def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp 
         else BrowserManager.get_browser_path("msedge.exe") if selected_Browser == "edge"
         else BrowserManager.get_browser_path("dragon.exe")  
     )
-    DevLogger.info("browser path   :",   browser_path    or "Non найд")
-
-    DevLogger.info("le programme is runing dans une interface superstar et tres professionnelle et 100% secure")
+  
 
     if selected_Browser == "firefox":
         ensure_web_ext_installed()
@@ -412,6 +411,7 @@ class ExtractionThread(QThread):
         SELECTED_BROWSER_GLOBAL=self.selected_Browser
         remaining_emails = self.data_list[:]  
         log_message("[INFO] Processing started")
+        DevLogger.info("Processing started")
 
 
         session_info = SessionManager.check_session()
@@ -428,8 +428,8 @@ class ExtractionThread(QThread):
 
             Settings.RESULTATS_EX = BrowserManager.Upload_EXTENTION_PROXY("default", Settings.CLES_RECHERCHE, Settings.RESULTATS)
             DevLogger.info("↕️​↕️​↕️​↕️​↕️​ Résultats EX2 :")
-            for item in Settings.RESULTATS_EX:
-                DevLogger.info(json.dumps(item, indent=4, ensure_ascii=False))
+            # for item in Settings.RESULTATS_EX:
+            #     DevLogger.info(json.dumps(item, indent=4, ensure_ascii=False))
 
 
         while remaining_emails or PROCESS_PIDS:
@@ -437,6 +437,7 @@ class ExtractionThread(QThread):
             if self.stop_flag:  
                 LOGS_RUNNING=False 
                 log_message("[INFO] Processing interrupted by user.")
+                DevLogger.info("Processing interrupted by user.")
                 break
 
 
@@ -444,6 +445,7 @@ class ExtractionThread(QThread):
                 next_email = remaining_emails.pop(0)  
                 email_value = ValidationUtils.get_key_from_dict(next_email, ["email", "Email"])
                 log_message(f"[INFO] Processing the email:  {email_value}")
+                DevLogger.info(f"Processing the email:  {email_value}")
 
                 try:
                     profile_email = ValidationUtils.get_key_from_dict(next_email, ["email", "Email"])
@@ -535,6 +537,7 @@ class ExtractionThread(QThread):
                             "--no-default-browser-check",
                             "--disable-sync"
                         ]
+                        
                         process = subprocess.Popen(command) 
                         PROCESS_PIDS.append(process.pid) 
 
@@ -598,7 +601,6 @@ class ExtractionThread(QThread):
         time.sleep(3)
         LOGS_RUNNING=False
         self.finished.emit()
-
 
 
 
