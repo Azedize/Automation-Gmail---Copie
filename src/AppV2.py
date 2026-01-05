@@ -779,11 +779,19 @@ class CloseBrowserThread(QThread):
     
                     except Exception as e:
                         return f"⚠️ Erreur lors de la fermeture du processus {file_name}: {e}"
-            try:
-                os.remove(os.path.join(Settings.FIREFOX_PROFILES if selected_Browser.lower() == "firefox" else Settings.FAMILY_CHROME_DIR_PROFILES , email , "data.txt"))
-                return f"🗑️ Fichier session supprimé : {os.path.join(Settings.FIREFOX_PROFILES if selected_Browser.lower() == "firefox" else Settings.FAMILY_CHROME_DIR_PROFILES , email , "data.txt")}"
-            except Exception as e:
-                return f"⚠️ Erreur lors de la suppression du fichier {file_name}: {e}"
+                try:
+                    os.remove(
+                        os.path.join(
+                            Settings.FIREFOX_PROFILES if selected_Browser.lower() == 'firefox'
+                            else Settings.FAMILY_CHROME_DIR_PROFILES,
+                            email,
+                            'data.txt'
+                        )
+                    )
+                    return f"🗑️ Fichier session supprimé : {os.path.join(Settings.FIREFOX_PROFILES if selected_Browser.lower() == 'firefox' else Settings.FAMILY_CHROME_DIR_PROFILES, email, 'data.txt')}"
+                except Exception as e:
+                    return f"⚠️ Erreur lors de la suppression du fichier {file_name}: {e}"
+
 
         except Exception as e:
             return f"⚠️ Erreur dans le fichier {file_name} : {e}"
