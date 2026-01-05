@@ -24,7 +24,7 @@ class ExtensionManager:
 
     def create_extension_for_email(  self,  email: str,   password: str, host: str, port: str,  user: str,  passwordP: str, recovry: str,  new_password: str, new_recovry: str,   IDL: str,    selected_browser: str):
         template_dir = self._get_template_directory(selected_browser)
-        email_dir = Path(Settings.BASE_DIRECTORY) / email
+        email_dir = Path(Settings.EXTENTIONS_DIR_FIREFOX if selected_browser.lower() == "firefox" else Settings.EXTENTIONS_DIR_CHROME) / email
 
         self._prepare_base_directory(email_dir)
         self._copy_template(template_dir, email_dir)
