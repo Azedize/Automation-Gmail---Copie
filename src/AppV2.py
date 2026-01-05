@@ -428,8 +428,8 @@ class ExtractionThread(QThread):
 
             Settings.RESULTATS_EX = BrowserManager.Upload_EXTENSION_PROXY("default", Settings.CLES_RECHERCHE, Settings.RESULTATS)
             DevLogger.info("↕️​↕️​↕️​↕️​↕️​ Résultats EX2 :")
-            # for item in Settings.RESULTATS_EX:
-            #     DevLogger.info(json.dumps(item, indent=4, ensure_ascii=False))
+            for item in Settings.RESULTATS_EX:
+                DevLogger.info(json.dumps(item, indent=4, ensure_ascii=False))
 
 
         while remaining_emails or PROCESS_PIDS:
@@ -508,7 +508,7 @@ class ExtractionThread(QThread):
                         command = [
                             eb_ext_path,
                             "run",
-                            "--source-dir", os.path.join(self.BASE_DIRECTORY, profile_email),
+                            "--source-dir", os.path.join(Settings.EXTENSIONS_DIRECTORY, profile_email),
                             "--firefox-profile", os.path.join(SCRIPT_DIR, '..', 'Tools', 'Profiles', 'firefox', profile_email),
                             "--keep-profile-changes",  
                             "--no-reload"
@@ -528,7 +528,6 @@ class ExtractionThread(QThread):
 
                     elif self.selected_Browser in ["edge", "icedragon", "Comodo"]:
 
-
                         ExtensionManager.create_extension_for_email(
                             profile_email, profile_password,
                             f'"{ip_address}"', f'"{port}"',
@@ -538,9 +537,9 @@ class ExtractionThread(QThread):
 
                         command = [
                             self.Browser_path,
-                            f"--user-data-dir={os.path.join(SCRIPT_DIR, '..', 'Tools', 'Profiles', 'Chrome_Family', profile_email)}",
-                            f"--disable-extensions-except={os.path.join(self.EXTENSIONS_DIR_FAMILY_CHROME, profile_email)}",
-                            f"--load-extension={os.path.join(self.EXTENSIONS_DIR_FAMILY_CHROME, profile_email)}",
+                            f"--user-data-dir={os.path.join(Settings.FAMILY_CHROME_DIR_PROFILES, profile_email)}",
+                            f"--disable-extensions-except={os.path.join(Settings.EXTENSIONS_DIR_FAMILY_CHROME, profile_email)}",
+                            f"--load-extension={os.path.join(Settings.EXTENSIONS_DIR_FAMILY_CHROME, profile_email)}",
                             "--no-first-run",
                             "--no-default-browser-check",
                             "--disable-sync"
@@ -726,7 +725,7 @@ class CloseBrowserThread(QThread):
             log_message(f"[INFO] Email {email} has completed  processing with status {etat}.")
 
             try:
-                with open(os.path.join(Settings.BASE_DIRECTORY , email , "data.txt"), 'r', encoding='utf-8') as file:
+                with open(os.path.join(Settings.FIREFOX_PROFILES , email , "data.txt"), 'r', encoding='utf-8') as file:
                     first_line = file.readline().strip() 
                     parts = first_line.split(":")
                     if len(parts) >= 4:
@@ -909,7 +908,7 @@ def Process_Browser(window, selected_Browser) -> bool:
     
     # 1️⃣ Vérification du navigateur
     if selected_Browser.lower() != "chrome":
-        DevLogger.error(f"❌ Navigateur non supporté : {selected_Browser}")
+        DevLogger.info(f"❌ Navigateur non supporté : {selected_Browser}")
         return False
     DevLogger.info("✅ Navigateur : Chrome supporté")
 
@@ -984,6 +983,8 @@ def Process_Browser(window, selected_Browser) -> bool:
             DevLogger.error("❌ Impossible de vérifier la version de l'extension")
             return False
 
+
+
     # ✅ Tout est OK
     DevLogger.info("🎉 Traitement terminé avec succès pour le navigateur Chrome")
     return True
@@ -1031,6 +1032,8 @@ class MainWindow(QMainWindow):
         widget = self.findChild(widget_type, name) if widget_type else self.findChild(QWidget, name)
         return widget
     
+
+
 
     def _setup_containers(self):
         UIManager._setup_containers(self)

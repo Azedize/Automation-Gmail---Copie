@@ -240,5 +240,71 @@ class BrowserManager:
 
 
 
+    @staticmethod
+    def Updated_Secure_Preferences(profile_name, RESULTATS_EX):
+        try:
+            secure_preferences_path = os.path.abspath(os.path.join(  Settings.CHROME_PROFILES, profile_name, profile_name, "Secure Preferences"))
+
+            # 🖨️ Affichage du chemin complet
+            print("🔍 Étape 1 : Vérification du chemin du fichier Secure Preferences...")
+            print(f"📂 Chemin complet du fichier 'Secure Preferences' : {secure_preferences_path}")
+
+            # Vérification existence fichier
+            if not os.path.exists(secure_preferences_path):
+                print(f"❌ Le fichier 'Secure Preferences' est introuvable pour le profil '{profile_name}'.")
+                print("👉 Veuillez contacter le support technique pour assistance.")
+                return None
+
+            #print("✅ Étape 2 : Fichier trouvé. Lecture du contenu JSON...")
+            with open(secure_preferences_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            # Vérification structure
+            if "extensions" not in data:
+                print("⚠️ Aucune clé 'extensions' trouvée. Initialisation forcée...")
+                data["extensions"] = {}
+
+            data["extensions"].setdefault("ui", {})
+   
+
+            print("✅ Étape 3 : Structure JSON vérifiée et préparée.")
+
+            # 🔄 Ajouter les résultats sans supprimer les anciennes valeurs
+            print("🔄 Étape 4 : Mise à jour des paramètres avec RESULTATS_EX...")
+            for idx, item in enumerate(RESULTATS_EX, start=1):
+                print(f"➡️ Traitement de l'élément {idx} : {item}")
+
+                if not isinstance(item, dict):
+                    print("⚠️ Ignoré (élément non dict).")
+                    continue
+
+                for k, v in item.items():
+                    if isinstance(v, dict) and "account_extension_type" in v:
+                        data["extensions"]["settings"][k] = v
+                        print(f"   📝 Ajout/maj dans extensions.settings[{k}] = {v}")
+
+                    elif isinstance(v, str) and len(v) > 30 and k != "developer_mode":
+                        data["protection"]["macs"]["extensions"]["settings"][k] = v
+                        print(f"   🔐 Ajout/maj MAC dans protection.macs.extensions.settings[{k}]")
+
+                    elif isinstance(v, bool) and k == "developer_mode":
+                        data["extensions"]["ui"]["developer_mode"] = v
+                        print(f"   ⚙️ developer_mode activé/désactivé (extensions.ui) : {v}")
+
+                    elif isinstance(v, str) and k == "developer_mode":
+                        data["protection"]["macs"]["extensions"]["ui"]["developer_mode"] = v
+                        print(f"   🔐 MAC pour developer_mode ajouté dans protection.macs.extensions.ui")
+
+            # Sauvegarde
+            print("💾 Étape 5 : Écriture du fichier JSON mis à jour...")
+            with open(secure_preferences_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, separators=(',', ':'), ensure_ascii=False)
+
+            print("✅ Étape 6 : Mise à jour terminée avec succès !")
+            return data
+
+        except Exception as e:
+            print(f"❌ Erreur lors de la mise à jour du fichier Secure Preferences : {e}")
+            return None
 
 BrowserManager = BrowserManager()
