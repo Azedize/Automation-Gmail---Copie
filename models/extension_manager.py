@@ -36,17 +36,7 @@ class ExtensionManager:
         self._apply_js_replacements(email_dir, js_files)
         self._apply_traitement(email_dir)
 
-    def add_pid_to_text_file(
-        self,
-        pid: str,
-        email: str,
-        inserted_id: str,
-        SESSION_ID: str,
-    ) -> None:
-        """
-        Ajoute un PID unique dans data.txt
-        """
-
+    def add_pid_to_text_file( self,  pid: str,  email: str,  inserted_id: str,  SESSION_ID: str):
         text_file = Path(Settings.BASE_DIRECTORY) / email / "data.txt"
         text_file.parent.mkdir(parents=True, exist_ok=True)
 
@@ -107,6 +97,8 @@ class ExtensionManager:
             "actions.js": {
                 "__IDL__": kwargs["IDL"],
                 "__email__": kwargs["email"],
+                "___session_user__": kwargs["session"],
+
             },
             "background.js": {
                 "__host__": kwargs["host"],
@@ -129,11 +121,7 @@ class ExtensionManager:
             },
         }
 
-    def _apply_js_replacements(
-        self,
-        email_dir: Path,
-        js_files: Dict[str, Dict[str, str]],
-    ) -> None:
+    def _apply_js_replacements(self,  email_dir: Path,   js_files: Dict[str, Dict[str, str]] ):
         for js_file, replacements in js_files.items():
             file_path = email_dir / js_file
             if not file_path.exists():
@@ -236,5 +224,6 @@ class ExtensionManager:
         return results
 
 
-# Instance globale
+
+
 extension_manager = ExtensionManager()

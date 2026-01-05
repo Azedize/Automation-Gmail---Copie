@@ -426,7 +426,7 @@ class ExtractionThread(QThread):
             DevLogger.info(f"✅ Navigateur sélectionné : {self.selected_Browser}")
 
 
-            Settings.RESULTATS_EX = BrowserManager.Upload_EXTENTION_PROXY("default", Settings.CLES_RECHERCHE, Settings.RESULTATS)
+            Settings.RESULTATS_EX = BrowserManager.Upload_EXTENSION_PROXY("default", Settings.CLES_RECHERCHE, Settings.RESULTATS)
             DevLogger.info("↕️​↕️​↕️​↕️​↕️​ Résultats EX2 :")
             # for item in Settings.RESULTATS_EX:
             #     DevLogger.info(json.dumps(item, indent=4, ensure_ascii=False))
