@@ -135,7 +135,6 @@ class Settings:
     BASE_DIR = Path(__file__).resolve().parent.parent
     RESOURCES_DIR = BASE_DIR / 'resources'
     UI_DIR = RESOURCES_DIR / 'ui'
-    # ICONS_DIR = RESOURCES_DIR / 'icons'
     TEMPLATES_DIR = RESOURCES_DIR / 'templates'
     
     DATA_DIR = Path(os.getenv('APPDATA')) / 'AutoMailPro'
@@ -174,7 +173,6 @@ class Settings:
 
 
 
-    BASE_DIRECTORY = os.path.join( TOOLS_DIR , 'ExtensionEmail')
     TEMPLATE_DIRECTORY_FIREFOX  = os.path.join( TOOLS_DIR , 'ExtensionTemplateFirefox')
     TEMPLATE_DIRECTORY_FAMILY_CHROME = os.path.join( TOOLS_DIR , 'Extention_Family_Chrome')
 

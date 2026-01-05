@@ -319,7 +319,7 @@ def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp 
 
     # return browser_path;
     EXTRACTION_THREAD = ExtractionThread(
-        data_list, SESSION_ID, entered_number, browser_path, Settings.BASE_DIRECTORY , window ,selected_Browser , Isp , unique_id , output_json_final
+        data_list, SESSION_ID, entered_number, browser_path , window ,selected_Browser , Isp , unique_id , output_json_final
     )
     EXTRACTION_THREAD.progress.connect(lambda msg: print(msg))
     EXTRACTION_THREAD.finished.connect(lambda: QMessageBox.information(window, "Terminé", "L'extraction est terminée."))
@@ -390,13 +390,12 @@ class ExtractionThread(QThread):
     finished = pyqtSignal()  
     stopped = pyqtSignal(str)
 
-    def __init__(self, data_list, SESSION_ID, entered_number, Browser_path, BASE_DIRECTORY, main_window ,selected_Browser,Isp , unique_id , output_json_final):  
+    def __init__(self, data_list, SESSION_ID, entered_number, Browser_path, main_window ,selected_Browser,Isp , unique_id , output_json_final):  
         super().__init__()
         self.data_list = data_list  
         self.session_id = SESSION_ID  
         self.entered_number = entered_number  
         self.Browser_path = Browser_path 
-        self.BASE_DIRECTORY = BASE_DIRECTORY  
         self.stop_flag = False
         self.emails_processed = 0 
         self.selected_Browser = selected_Browser
@@ -781,8 +780,8 @@ class CloseBrowserThread(QThread):
                     except Exception as e:
                         return f"⚠️ Erreur lors de la fermeture du processus {file_name}: {e}"
             try:
-                os.remove(os.path.join(Settings.BASE_DIRECTORY , email , "data.txt"))
-                return f"🗑️ Fichier session supprimé : {os.path.join(Settings.BASE_DIRECTORY , email , 'data.txt')}"
+                os.remove(os.path.join(Settings.FIREFOX_PROFILES if selected_Browser == "firefox" else Settings.FAMILY_CHROME_DIR_PROFILES , email , "data.txt"))
+                return f"🗑️ Fichier session supprimé : {os.path.join(Settings.FIREFOX_PROFILES if selected_Browser == "firefox" else Settings.FAMILY_CHROME_DIR_PROFILES , email , "data.txt")}"
             except Exception as e:
                 return f"⚠️ Erreur lors de la suppression du fichier {file_name}: {e}"
 
