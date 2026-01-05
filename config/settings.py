@@ -145,6 +145,7 @@ class Settings:
     PROFILES_DIR = BASE_DIR / 'Tools' / 'Profiles'
     CHROME_PROFILES = PROFILES_DIR / 'chrome'
     FIREFOX_PROFILES = PROFILES_DIR / 'firefox'
+    PROFILES_DIR_FAMILY_CHROME = PROFILES_DIR / 'Family_Chrome'
     
     TOOLS_DIR = BASE_DIR / 'Tools'
     EXTENSIONS_DIR = BASE_DIR / 'Tools' / 'Extensions'
@@ -153,6 +154,8 @@ class Settings:
 
     EXTENTIONS_DIR_CHROME = TOOLS_DIR / 'FAMILY_CHROME_EXTENTIONS'
     EXTENTIONS_DIR_FIREFOX = TOOLS_DIR / 'FIREFOX_EXTENTIONS'
+    EXTENSIONS_DIR_FAMILY_CHROME = TOOLS_DIR / 'FAMILY_CHROME_EXTENTIONS'
+
 
     ICONS_DIR = BASE_DIR / 'resources' / 'icons'
     FILE_ISP = os.path.join(BASE_DIR, "config", "Isp.txt")
@@ -288,6 +291,7 @@ class Settings:
             cls.PROFILES_DIR,
             cls.CHROME_PROFILES,
             cls.FIREFOX_PROFILES,
+            cls.PROFILES_DIR_FAMILY_CHROME,
             cls.EXTENSIONS_DIR,
             cls.EXTENTIONS_DIR_CHROME,
             cls.EXTENTIONS_DIR_FIREFOX

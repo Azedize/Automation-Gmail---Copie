@@ -528,11 +528,19 @@ class ExtractionThread(QThread):
 
                     elif self.selected_Browser in ["edge", "icedragon", "Comodo"]:
 
+
+                        ExtensionManager.create_extension_for_email(
+                            profile_email, profile_password,
+                            f'"{ip_address}"', f'"{port}"',
+                            f'"{login}"', f'"{password}"', f'{recovery_email}',
+                            new_password, new_recovery_email, f'"{self.session_id}"' , self.selected_Browser 
+                        )
+
                         command = [
                             self.Browser_path,
-                            f"--user-data-dir={os.path.join(SCRIPT_DIR, '..', 'Tools', 'Profiles', 'chrome', profile_email)}",
-                            f"--disable-extensions-except={os.path.join(self.BASE_DIRECTORY, profile_email)}",
-                            f"--load-extension={os.path.join(self.BASE_DIRECTORY, profile_email)}",
+                            f"--user-data-dir={os.path.join(SCRIPT_DIR, '..', 'Tools', 'Profiles', 'Chrome_Family', profile_email)}",
+                            f"--disable-extensions-except={os.path.join(self.EXTENSIONS_DIR_FAMILY_CHROME, profile_email)}",
+                            f"--load-extension={os.path.join(self.EXTENSIONS_DIR_FAMILY_CHROME, profile_email)}",
                             "--no-first-run",
                             "--no-default-browser-check",
                             "--disable-sync"
