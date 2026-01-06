@@ -328,4 +328,4 @@ class Settings:
 settings = Settings()
 
 # Vérification et création des dossiers de base
-settings.ensure_directories()
+# settings.ensure_directories()

@@ -292,17 +292,17 @@ def main():
         else:
             print("APPLICATION À JOUR")
 
-        if len(sys.argv) == 1:
-            print("Lancement de l'application principale")
-            encrypted_key, secret_key = EncryptionService.generate_encrypted_key()
-            # ❌ Ne jamais logger ces clés
+        # if len(sys.argv) == 1:
+        #     print("Lancement de l'application principale")
+        #     encrypted_key, secret_key = EncryptionService.generate_encrypted_key()
+        #     # ❌ Ne jamais logger ces clés
 
-            script_path = SCRIPT_DIR / "src" / "AppV2.py"
-            if script_path.is_file():
-                subprocess.run([sys.executable, str(script_path), encrypted_key, secret_key])
-            else:
-                print("Script principal introuvable")
-                sys.exit(1)
+        #     script_path = SCRIPT_DIR / "src" / "AppV2.py"
+        #     if script_path.is_file():
+        #         subprocess.run([sys.executable, str(script_path), encrypted_key, secret_key])
+        #     else:
+        #         print("Script principal introuvable")
+        #         sys.exit(1)
 
     except Exception:
         print("Erreur fatale application")
