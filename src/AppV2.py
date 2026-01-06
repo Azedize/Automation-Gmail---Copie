@@ -1516,7 +1516,7 @@ class MainWindow(QMainWindow):
             )
             return
         print("Input is within range.")
-        DevLogger.info("Selected entries:", entered_number)
+        # DevLogger.info("Selected entries:", entered_number)
         print("✅ Input within range")
 
 
