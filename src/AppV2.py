@@ -1533,7 +1533,7 @@ class MainWindow(QMainWindow):
 
 
         with ThreadPoolExecutor(max_workers=2) as executor:
-            executor.submit(Start_Extraction, window, data_list , entered_number, selected_Browser, self.Isp.currentText() , unique_id , result_json, session_info["username"] ,LOGS_THREAD)
+            executor.submit(Start_Extraction, window, data_list , entered_number, selected_Browser, self.Isp.currentText() , unique_id , result_json, session_info["username"] , self.LOGS_THREAD)
             executor.submit(self.LOGS_THREAD.start)
 
 
