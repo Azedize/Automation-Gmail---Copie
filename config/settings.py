@@ -275,7 +275,7 @@ class Settings:
     
 
 
-        
+            
     @classmethod
     def ensure_directories(cls):
         """Créer les dossiers nécessaires s’ils n’existent pas"""
@@ -292,15 +292,15 @@ class Settings:
         ]
 
         for directory in directories:
-            if not directory.exists():
+            path = Path(directory)  # تحويل النص إلى Path
+            if not path.exists():
                 try:
-                    directory.mkdir(parents=True)
-                    print(f"✅ Dossier créé: {directory}")
+                    path.mkdir(parents=True, exist_ok=True)  # ينشئ كل المجلدات المفقودة
+                    print(f"✅ Dossier créé: {path}")
                 except Exception as e:
-                    print(f"💥 Erreur lors de la création du dossier {directory}: {e}")
+                    print(f"💥 Erreur lors de la création du dossier {path}: {e}")
             else:
-                print(f"ℹ️ Dossier déjà existant: {directory}")
-
+                print(f"ℹ️ Dossier déjà existant: {path}")
     
     @classmethod
     def get_encryption_key_bytes(cls) -> bytes:
