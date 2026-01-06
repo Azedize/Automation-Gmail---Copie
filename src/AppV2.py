@@ -1381,7 +1381,8 @@ class MainWindow(QMainWindow):
         try:
             result = Generate_User_Input_Data(window)
 
-            if not result:  
+            if not result: 
+                print("No data returned from Generate_User_Input_Data") 
                 return
             data_list, entered_number = result  
 
