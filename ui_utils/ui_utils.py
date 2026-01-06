@@ -512,9 +512,9 @@ class UIManager:
             text_to_copy = "\n".join(items)
             clipboard = QApplication.clipboard()
             clipboard.setText(text_to_copy)
-            print(f"[DEBUG] 📋 {len(items)} éléments copiés dans le presse-papiers.")
-        else:
-            print("[DEBUG] ⚠️ Aucun QListWidget trouvé dans cet onglet.")
+            #print(f"[DEBUG] 📋 {len(items)} éléments copiés dans le presse-papiers.")
+        # else:
+            #print("[DEBUG] ⚠️ Aucun QListWidget trouvé dans cet onglet.")
 
 
 
@@ -522,20 +522,20 @@ class UIManager:
     def Copy_Logs_To_Clipboard(self):
             log_box = self.findChild(QGroupBox, "log")
             if not log_box:
-                print("[DEBUG] ❌ QGroupBox 'log' introuvable.")
+                #print("[DEBUG] ❌ QGroupBox 'log' introuvable.")
                 return
 
             labels = log_box.findChildren(QLabel)
 
             if not labels:
-                print("[DEBUG] ⚠️ Aucun QLabel trouvé dans 'log'.")
+                #print("[DEBUG] ⚠️ Aucun QLabel trouvé dans 'log'.")
                 return
 
             log_lines = [label.text() for label in labels]
             text_to_copy = "\n".join(log_lines)
 
             QApplication.clipboard().setText(text_to_copy)
-            print(f"[DEBUG] 📋 {len(log_lines)} lignes de LOGS copiées dans le presse-papiers.")
+            #print(f"[DEBUG] 📋 {len(log_lines)} lignes de LOGS copiées dans le presse-papiers.")
 
 
         #Ajoute une nouvelle ligne de log dans la zone de log (interface utilisateur).
@@ -611,7 +611,7 @@ class UIManager:
                                     border:None;
                                 }}
                             """)
-                            print(f"[🎯] Style appliqué sur QLabel (index 0): '{first_label.text()}'")
+                            #print(f"[🎯] Style appliqué sur QLabel (index 0): '{first_label.text()}'")
 
                         # 🎨 Appliquer style aux autres QLabels
                         for label in label_list[1:]:
@@ -642,7 +642,7 @@ class UIManager:
                                         border:None;
                                     }}
                                 """)
-                                print(f"[🎯] Style appliqué sur QLabel: '{label.text()}'")
+                                #print(f"[🎯] Style appliqué sur QLabel: '{label.text()}'")
 
 
                     buttons = [child for child in widget.children() if isinstance(child, QPushButton)]
@@ -792,7 +792,7 @@ class UIManager:
                                     border:None;
                                 }}
                             """)
-                            print(f"[🎯] Dernier widget - QLabel (0) spéciale: '{label_list[0].text()}'")
+                            #print(f"[🎯] Dernier widget - QLabel (0) spéciale: '{label_list[0].text()}'")
 
                         # 🎨 Toutes les autres QLabels
                         for label in label_list[1:]:
@@ -823,7 +823,7 @@ class UIManager:
                                         border:None;
                                     }
                                 """)
-                                print(f"[🎯] Dernier widget - QLabel Random: '{label.text()}'")
+                                #print(f"[🎯] Dernier widget - QLabel Random: '{label.text()}'")
 
 
 
@@ -956,10 +956,10 @@ class UIManager:
 
                 # Récupérer tous les QTextEdit dans le widget
                 QTextEdits = [child for child in widget.children() if isinstance(child, QTextEdit)]
-                print(f"[🔍] Nombre de QTextEdit détectés : {len(QTextEdits)}")
+                #print(f"[🔍] Nombre de QTextEdit détectés : {len(QTextEdits)}")
 
                 for idx, qtextedit in enumerate(QTextEdits):
-                    print(f"[➡️] Préparation du QTextEdit numéro {idx}")
+                    #print(f"[➡️] Préparation du QTextEdit numéro {idx}")
 
                     # ✅ إخفاء الـ scrollbars
                     qtextedit.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -968,15 +968,15 @@ class UIManager:
 
                     def create_handler(te, index):
                         def handler(event):
-                            print(f"[🖱️] Clic détecté sur le QTextEdit numéro {index}")
+                            #print(f"[🖱️] Clic détecté sur le QTextEdit numéro {index}")
                             try:
                                 dialog = CustomTextDialog(te, texte_initial=te.toPlainText())
                                 if dialog.exec():  # Si l’utilisateur clique sur "Enregistrer"
                                     new_text = dialog.get_text()
                                     te.setPlainText(new_text)
-                                    print(f"[✅] Nouveau texte saisi pour QTextEdit {index} :\n{new_text}")
-                                else:
-                                    print(f"[⚠️] Modification annulée (QTextEdit {index})")
+                                    #print(f"[✅] Nouveau texte saisi pour QTextEdit {index} :\n{new_text}")
+                                # else:
+                                    #print(f"[⚠️] Modification annulée (QTextEdit {index})")
                                 # ✅ دايمًا ننحي الفوكس سواء سجل أو لغى
                                 te.clearFocus()
                             except Exception as e:
@@ -984,7 +984,7 @@ class UIManager:
                         return handler
 
                     qtextedit.mousePressEvent = create_handler(qtextedit, idx)
-                    print(f"[🔗] Gestionnaire de clic associé au QTextEdit numéro {idx}")
+                    #print(f"[🔗] Gestionnaire de clic associé au QTextEdit numéro {idx}")
 
 
 
@@ -995,7 +995,7 @@ class UIManager:
                 qlineedits = [child for child in widget.children() if isinstance(child, QLineEdit)]
                 checkbox_qlineedit = None  # ⚠️ تخزين QLineEdit المرتبط بـ QCheckBox
 
-                print("[🔍] Total QLineEdits détectés:", len(qlineedits))
+                #print("[🔍] Total QLineEdits détectés:", len(qlineedits))
 
                 # إذا كان آخر QLineEdit داخل widget يحتوي على QCheckBox، نحذفه من القائمة
                 if qlineedits:
@@ -1003,17 +1003,17 @@ class UIManager:
                     parent_widget = last_qlineedit.parent()
                     if parent_widget:
                         contains_checkbox = any(isinstance(child, QCheckBox) for child in parent_widget.children())
-                        print(f"[🧩] Dernier QLineEdit détecté. Contient QCheckBox ? {contains_checkbox}")
+                        #print(f"[🧩] Dernier QLineEdit détecté. Contient QCheckBox ? {contains_checkbox}")
                         if contains_checkbox:
                             checkbox_qlineedit = last_qlineedit  # ✅ نحفظه ولكن لا نحذفه
                             qlineedits.pop()  # حذف العنصر الأخير
-                            print("[📦] QLineEdit avec QCheckBox stocké séparément.")
+                            #print("[📦] QLineEdit avec QCheckBox stocké séparément.")
 
                 # ربط المحققين للـ QLineEdits العادية
                 for idx, qlineedit in enumerate(qlineedits):
                     def create_validator(line_edit, default_val):
                         def validator():
-                            print(f"[📝] Validation déclenchée pour QLineEdit[{idx}] avec valeur par défaut: {default_val}")
+                            #print(f"[📝] Validation déclenchée pour QLineEdit[{idx}] avec valeur par défaut: {default_val}")
                             ValidationUtils.validate_qlineedit_with_range(line_edit, default_val)
                         return validator
 
@@ -1024,14 +1024,14 @@ class UIManager:
 
                 # ربط المحقق الخاص بـ QLineEdit مع QCheckBox
                 if checkbox_qlineedit:
-                    print("[🔗] Connexion du QLineEdit contenant QCheckBox à une validation personnalisée.")
+                    #print("[🔗] Connexion du QLineEdit contenant QCheckBox à une validation personnalisée.")
                     def validate_checkbox_qlineedit():
-                        print("[✅] Validation personnalisée déclenchée pour QLineEdit avec QCheckBox.")
+                        #print("[✅] Validation personnalisée déclenchée pour QLineEdit avec QCheckBox.")
                         UIManager.Validate_Checkbox_Linked_Qlineedit(checkbox_qlineedit)
 
                     checkbox_qlineedit.editingFinished.connect(validate_checkbox_qlineedit)
                 # else:
-                    # print("[⚠️] Aucun QLineEdit avec QCheckBox détecté.")
+                    # #print("[⚠️] Aucun QLineEdit avec QCheckBox détecté.")
 
 
 
@@ -1040,14 +1040,14 @@ class UIManager:
     @staticmethod
     def Validate_Checkbox_Linked_Qlineedit( qlineedit: QLineEdit):
         if qlineedit is None:
-            print("[❌ ERREUR] Le QLineEdit est None. Validation ignorée.")
+            #print("[❌ ERREUR] Le QLineEdit est None. Validation ignorée.")
             return
 
         parent_widget = qlineedit.parent()
         full_state = parent_widget.property("full_state") if parent_widget else None
 
         text = qlineedit.text().strip()
-        print(f"[🔍 INFO] Texte saisi dans QLineEdit associé à QCheckBox : '{text}'")
+        #print(f"[🔍 INFO] Texte saisi dans QLineEdit associé à QCheckBox : '{text}'")
 
         old_style = qlineedit.styleSheet()
         cleaned_style = ValidationUtils.remove_border_from_style(old_style)
@@ -1063,43 +1063,43 @@ class UIManager:
             if sub_id in ["open_spam", "open_inbox"]:
                 if checkbox and checkbox.isChecked():
                     if text :
-                        print("[✅ CONDITION VALIDE] Checkbox cochée et texte valide.")
+                        #print("[✅ CONDITION VALIDE] Checkbox cochée et texte valide.")
                         def apply_ok():
                             qlineedit.setStyleSheet(cleaned_style)
                             qlineedit.setToolTip("")
-                            print("[🔔 INFO] Bordure retirée et tooltip supprimé.")
+                            #print("[🔔 INFO] Bordure retirée et tooltip supprimé.")
                         QTimer.singleShot(0, apply_ok)
                         return
                     else:
-                        print("[⚠️ TEXTE INVALIDE] Champ vide ou numérique malgré checkbox cochée.")
+                        #print("[⚠️ TEXTE INVALIDE] Champ vide ou numérique malgré checkbox cochée.")
                         qlineedit.setText(sub_label or "Google")
 
                         def apply_error():
                             new_style = ValidationUtils.inject_border_into_style(cleaned_style)
                             qlineedit.setStyleSheet(new_style)
                             qlineedit.setToolTip("Texte invalide. Valeur remplacée par défaut depuis full_state.")
-                            print("[🔔 INFO] Erreur appliquée avec bordure rouge.")
+                            #print("[🔔 INFO] Erreur appliquée avec bordure rouge.")
                         QTimer.singleShot(0, apply_error)
                         return
 
         # 🧾 Sinon: validation classique (ancienne logique)
         if text.isdigit() or len(text) < 4:
-            print("[⚠️ INVALIDE] Le texte est un nombre ou trop court (<4).")
+            #print("[⚠️ INVALIDE] Le texte est un nombre ou trop court (<4).")
             qlineedit.setText("Google")
 
             def apply_error():
                 new_style = ValidationUtils.inject_border_into_style(cleaned_style)
                 qlineedit.setStyleSheet(new_style)
                 qlineedit.setToolTip("Le texte est un nombre ou trop court, veuillez corriger la saisie.")
-                print("[🔔 INFO] Bordure rouge appliquée et tooltip invitant à corriger la saisie.")
+                #print("[🔔 INFO] Bordure rouge appliquée et tooltip invitant à corriger la saisie.")
             QTimer.singleShot(0, apply_error)
         else:
-            print("[✅ VALIDE] Texte non numérique et au moins 4 caractères.")
+            #print("[✅ VALIDE] Texte non numérique et au moins 4 caractères.")
 
             def apply_ok():
                 qlineedit.setStyleSheet(cleaned_style)
                 qlineedit.setToolTip("")
-                print("[🔔 INFO] Bordure retirée et tooltip supprimé.")
+                #print("[🔔 INFO] Bordure retirée et tooltip supprimé.")
             QTimer.singleShot(0, apply_ok)
 
 
@@ -1374,10 +1374,10 @@ class UIManager:
         """Setup ISP selection combobox"""
         window.Isp = UIManager._find_widget(window, "Isps", QComboBox)
         if window.Isp is None:
-            print("🔧 [DEBUG] Combobox des ISPs introuvable")
+            #print("🔧 [DEBUG] Combobox des ISPs introuvable")
             return
         
-        print("🔧 [DEBUG] Configuration du combobox des ISPs")
+        #print("🔧 [DEBUG] Configuration du combobox des ISPs")
         
         # Appliquer le style
         UIManager._apply_combobox_style(window, window.Isp)
@@ -1438,9 +1438,9 @@ class UIManager:
         """Setup scenario selection combobox"""
         window.saveSanario = UIManager._find_widget(window , "saveSanario", QComboBox)
         if  window.saveSanario is  None:
-            print("🔧 [DEBUG] Le save scenario not found")
+            #print("🔧 [DEBUG] Le save scenario not found")
             return
-        print("🔧 [DEBUG] Le save scenario  found ")
+        #print("🔧 [DEBUG] Le save scenario  found ")
         
         UIManager._apply_combobox_style(window ,window.saveSanario)
         window.saveSanario.currentTextChanged.connect(window.Scenario_Changed)
@@ -1460,20 +1460,20 @@ class UIManager:
         """
         button = UIManager._find_widget(window, "LogOut", QPushButton)
         if not button:
-            print("⚠️ [DEBUG] Logout button not found")
+            #print("⚠️ [DEBUG] Logout button not found")
             return None
         
         button.setLayoutDirection(Qt.LayoutDirection.RightToLeft)
         
         if callback:
             button.clicked.connect(callback)
-            print(f"✅ [DEBUG] Logout button connected to {callback}")
+            #print(f"✅ [DEBUG] Logout button connected to {callback}")
         
         icon_path = os.path.join(Settings.ICONS_DIR, "LogOut4.png")
         if ValidationUtils.path_exists(icon_path):
             button.setIcon(QIcon(icon_path))
             button.setIconSize(QSize(18, 18))
-            print(f"✅ [DEBUG] Icon applied to Logout button: {icon_path}")
+            #print(f"✅ [DEBUG] Icon applied to Logout button: {icon_path}")
         
         return button
 
