@@ -1437,6 +1437,7 @@ class MainWindow(QMainWindow):
             if not result:  
                 return
             data_list, entered_number = result  
+            print("✅ User input data generated successfully. Data list:", data_list, "Entered number:", entered_number)
 
         except Exception as e:
             QMessageBox.critical(window, "Error", f"Error while parsing the JSON: {e}")
@@ -1445,8 +1446,9 @@ class MainWindow(QMainWindow):
         current_time = datetime.datetime.now()
         CURRENT_DATE = current_time.strftime("%Y-%m-%d")
         CURRENT_HOUR = current_time.strftime("%H-%M-%S") 
+        print("✅ Current date and hour set:", CURRENT_DATE, CURRENT_HOUR)
 
-        DevLogger.info("📦 JSON Final:")
+        # DevLogger.info("📦 JSON Final:")
         result_json = JsonManager.generate_json_data(self.scenario_layout)
         DevLogger.info(json.dumps(result_json, indent=2, ensure_ascii=False))
 
