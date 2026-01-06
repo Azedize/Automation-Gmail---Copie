@@ -1,16 +1,16 @@
-[2026-01-05 16:31:45] [DEBUG] ✅ Logger initialisé avec succès
-[2026-01-05 16:31:45] [INFO] Démarrage application principale
-[2026-01-05 16:31:45] [INFO] Initialisation des dépendances
-[2026-01-05 16:31:45] [INFO] pywin32 déjà installé
-[2026-01-05 16:31:46] [INFO] Vérification mise à jour
-[2026-01-05 16:31:46] [DEBUG] 🌐 Tentative 1 - GET https://www.dropbox.com/scl/fi/78a38bc4papwzlw80hxti/version.json?rlkey=n7dx5mb8tcctvprn0wq4ojw7m&st=z6vzw0ox&dl=1
-[2026-01-05 16:31:47] [DEBUG] 📥 HTTP 200
-[2026-01-05 16:31:47] [INFO] MISE À JOUR EXTENSIONS REQUISE
-[2026-01-05 16:31:47] [INFO] Téléchargement mise à jour depuis serveur
-[2026-01-05 16:31:48] [INFO] ZIP téléchargé avec succès
-[2026-01-05 16:31:48] [INFO] Ancien dossier cible supprimé
-[2026-01-05 16:31:49] [INFO] Extraction ZIP temporaire terminée
-[2026-01-05 16:31:49] [INFO] Sous-dossier extrait : tools
-[2026-01-05 16:31:50] [INFO] Extraction terminée dans : D:\Automation Gmail - Copie\Tools
-[2026-01-05 16:31:50] [INFO] UPDATE EFFECTUÉ
-[2026-01-05 16:31:50] [INFO] Lancement de l'application principale
+[2026-01-06 11:58:41] [DEBUG] ✅ Logger initialisé avec succès
+[2026-01-06 11:58:41] [INFO] Démarrage application principale
+[2026-01-06 11:58:41] [INFO] Initialisation des dépendances
+[2026-01-06 11:58:41] [INFO] pywin32 déjà installé
+[2026-01-06 11:58:41] [INFO] Vérification mise à jour
+[2026-01-06 11:58:41] [DEBUG] 🌐 Tentative 1 - GET https://www.dropbox.com/scl/fi/78a38bc4papwzlw80hxti/version.json?rlkey=n7dx5mb8tcctvprn0wq4ojw7m&st=z6vzw0ox&dl=1
+[2026-01-06 11:58:43] [DEBUG] 📥 HTTP 200
+[2026-01-06 11:58:43] [INFO] MISE À JOUR EXTENSIONS REQUISE
+[2026-01-06 11:58:43] [INFO] Téléchargement mise à jour depuis serveur
+[2026-01-06 11:58:54] [INFO] ZIP téléchargé avec succès
+[2026-01-06 11:58:54] [INFO] Ancien dossier cible supprimé
+[2026-01-06 11:58:55] [INFO] Extraction ZIP temporaire terminée
+[2026-01-06 11:58:55] [INFO] Sous-dossier extrait : tools
+[2026-01-06 11:58:55] [INFO] Extraction terminée dans : D:\Automation Gmail - Copie\Tools
+[2026-01-06 11:58:55] [INFO] UPDATE EFFECTUÉ
+[2026-01-06 11:58:55] [INFO] Lancement de l'application principale

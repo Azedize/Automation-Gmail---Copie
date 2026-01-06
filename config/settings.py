@@ -153,8 +153,8 @@ class Settings:
     VERSION_LOCAL_EXT = os.path.join(EXTENSIONS_DIR, "version.txt")
     VERSION_LOCAL_PROGRAMM = os.path.join(BASE_DIR , "config", "version.txt")
 
-    EXTENTIONS_DIR_FIREFOX = TOOLS_DIR / 'FIREFOX_EXTENTIONS'
-    EXTENSIONS_DIR_FAMILY_CHROME = TOOLS_DIR / 'FAMILY_CHROME_EXTENTIONS'
+    EXTENTIONS_DIR_FIREFOX = TOOLS_DIR / 'extensions' / 'FIREFOX_EXTENTIONS'
+    EXTENSIONS_DIR_FAMILY_CHROME = TOOLS_DIR / 'extensions' / 'FAMILY_CHROME_EXTENTIONS'
 
 
     ICONS_DIR = BASE_DIR / 'resources' / 'icons'
@@ -292,7 +292,8 @@ class Settings:
             cls.FIREFOX_PROFILES,
             cls.FAMILY_CHROME_DIR_PROFILES,
             cls.EXTENSIONS_DIR,
-            cls.EXTENTIONS_DIR_FIREFOX
+            cls.EXTENTIONS_DIR_FIREFOX,
+            cls.EXTENSIONS_DIR_FAMILY_CHROME
         ]
         for directory in directories:
             directory.mkdir(parents=True, exist_ok=True)
