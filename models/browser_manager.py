@@ -61,6 +61,8 @@ class BrowserManager:
         DevLogger.error(f"❌ Navigateur {exe_name} introuvable")
         return None
 
+    
+    
     # ---------------------- Firefox ----------------------
     @staticmethod
     def _get_firefox_profiles() -> Dict[str, str]:
@@ -307,4 +309,27 @@ class BrowserManager:
             print(f"❌ Erreur lors de la mise à jour du fichier Secure Preferences : {e}")
             return None
 
+
+
+    @staticmethod
+    def close_chrome_profile(profile_name: str, user_data_dir: str):
+        closed_any = False
+
+        # Parcours tous les process Chrome
+        for proc in psutil.process_iter(['name', 'cmdline']):
+            try:
+                if proc.info['name'] != 'chrome.exe':
+                    continue
+
+                cmdline = " ".join(proc.info['cmdline'])
+                
+                # Vérifie que le profil et le user-data-dir correspondent
+                if f"--profile-directory={profile_name}" in cmdline and f"--user-data-dir={user_data_dir}" in cmdline:
+                    proc.terminate()  # fermeture propre
+                    closed_any = True
+
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
+
+        return closed_any
 BrowserManager = BrowserManager()
