@@ -1521,6 +1521,7 @@ class MainWindow(QMainWindow):
                 message_type="critical"
             )
             return
+        print("Input is within range.")
         DevLogger.info("Selected entries:", entered_number)
         print("✅ Input within range")
 
