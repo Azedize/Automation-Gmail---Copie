@@ -1311,7 +1311,7 @@ class MainWindow(QMainWindow):
 
 
     def Update_Logs_Display(self, log_entry):
-        UIManager.Update_Logs_Display(self, log_entry, self.log_layout)
+        UIManager.Update_Logs_Display( log_entry, self.log_layout)
 
 
 
