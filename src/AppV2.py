@@ -277,14 +277,11 @@ def Generate_User_Input_Data(window):
 
 
 
-def Extraction_Finished( window , LOGS_THREAD  ):
-    LOGS_THREAD.stop()  
-    LOGS_THREAD.wait()  
-    QTimer.singleShot(100, lambda: UIManager.Read_Result_Update_List(window))
+
 
 
 # 🛠️ Démarre le processus d'extraction en lançant le thread principal avec les paramètres utilisateur, après validation des entrées et préparation de l'environnement.
-def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp , unique_id , output_json_final , username ,LOGS_THREAD ):
+def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp , unique_id , output_json_final , username):
     global EXTRACTION_THREAD 
     DevLogger.info("Starting extraction process...")
     
@@ -340,7 +337,6 @@ def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp 
     EXTRACTION_THREAD.progress.connect(lambda msg: print(msg))
     EXTRACTION_THREAD.finished.connect(lambda: QMessageBox.information(window, "Terminé", "L'extraction est terminée."))
     EXTRACTION_THREAD.stopped.connect(lambda msg: QMessageBox.warning(window, "Arrêté", msg))
-    EXTRACTION_THREAD.finished.connect(lambda: Extraction_Finished(window , LOGS_THREAD  ))
     EXTRACTION_THREAD.start()
 
 
@@ -1347,7 +1343,10 @@ class MainWindow(QMainWindow):
             return "ERROR"
 
 
-
+    def Extraction_Finished(self, window):
+        self.LOGS_THREAD.stop()  
+        self.LOGS_THREAD.wait()  
+        QTimer.singleShot(100, lambda: UIManager.Read_Result_Update_List(window))
 
 
 
@@ -1530,12 +1529,12 @@ class MainWindow(QMainWindow):
             return
 
         DevLogger.info(f"✅ Process ID obtenu: {unique_id}")
-        print("🚀 Lancement de l'extraction avec ThreadPoolExecutor")
 
 
         with ThreadPoolExecutor(max_workers=2) as executor:
-            executor.submit(Start_Extraction, window, data_list , entered_number, selected_Browser, self.Isp.currentText() , unique_id , result_json, session_info["username"] , self.LOGS_THREAD)
+            executor.submit(Start_Extraction, window, data_list , entered_number, selected_Browser, self.Isp.currentText() , unique_id , result_json, session_info["username"])
             executor.submit(self.LOGS_THREAD.start)
+        EXTRACTION_THREAD.finished.connect(lambda: self.Extraction_Finished(window))
 
 
 
