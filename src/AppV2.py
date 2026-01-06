@@ -277,10 +277,6 @@ def Generate_User_Input_Data(window):
 
 
 
-
-
-
-# 🛠️ Démarre le processus d'extraction en lançant le thread principal avec les paramètres utilisateur, après validation des entrées et préparation de l'environnement.
 def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp , unique_id , output_json_final , username):
     global EXTRACTION_THREAD 
     DevLogger.info("Starting extraction process...")
@@ -296,8 +292,6 @@ def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp 
             "Numeric value required. Please check your input and try again.",
             message_type="critical"
         )
-
-
         return
 
     email_count = len(data_list)
@@ -312,9 +306,6 @@ def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp 
         return
     DevLogger.info("Selected entries:", entered_number)
 
-
-
-
     Launch_Close_Chrome(selected_Browser , username)
     browser_path = (
         BrowserManager.get_browser_path("chrome.exe") if selected_Browser.lower() == "chrome"
@@ -323,26 +314,21 @@ def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp 
         else BrowserManager.get_browser_path("dragon.exe")  
     )
   
-
     if selected_Browser.lower() == "firefox":
         ensure_web_ext_installed()
 
     DevLogger.info("browser path   :",   browser_path    or "Non trouvé")
 
-    # return browser_path;
     EXTRACTION_THREAD = ExtractionThread(
         data_list, SESSION_ID, entered_number, browser_path , window ,selected_Browser , Isp , unique_id , output_json_final
     )
-    # data_list, SESSION_ID, entered_number, Browser_path, main_window ,selected_Browser,Isp , unique_id , output_json_final
+    
+    # ✅ هذا هو التغيير الرئيسي: ربط الإشارة هنا
+    EXTRACTION_THREAD.finished.connect(lambda: window.Extraction_Finished(window))
+    
     EXTRACTION_THREAD.progress.connect(lambda msg: print(msg))
-    EXTRACTION_THREAD.finished.connect(lambda: QMessageBox.information(window, "Terminé", "L'extraction est terminée."))
     EXTRACTION_THREAD.stopped.connect(lambda msg: QMessageBox.warning(window, "Arrêté", msg))
     EXTRACTION_THREAD.start()
-
-
-
-
-
 
 
 
@@ -1165,6 +1151,8 @@ class MainWindow(QMainWindow):
         self.LOGS_THREAD.log_signal.connect(self.Update_Logs_Display)
 
 
+
+
     
     def _setup_miscellaneous(self):
         UIManager._setup_miscellaneous(self)
@@ -1534,7 +1522,6 @@ class MainWindow(QMainWindow):
         with ThreadPoolExecutor(max_workers=2) as executor:
             executor.submit(Start_Extraction, window, data_list , entered_number, selected_Browser, self.Isp.currentText() , unique_id , result_json, session_info["username"])
             executor.submit(self.LOGS_THREAD.start)
-        EXTRACTION_THREAD.finished.connect(lambda: self.Extraction_Finished(window))
 
 
 
