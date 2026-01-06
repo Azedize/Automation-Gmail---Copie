@@ -142,7 +142,6 @@ class Settings:
 
     TOOLS_DIR = BASE_DIR / 'Tools'
     EXTENSIONS_DIR = TOOLS_DIR / 'Extensions'
-    LOGS_DIR = TOOLS_DIR / 'logs'
     
     PROFILES_DIR = TOOLS_DIR / 'Profiles'
     CHROME_PROFILES = PROFILES_DIR / 'chrome'
@@ -286,8 +285,8 @@ class Settings:
         """Créer les dossiers nécessaires s’ils n’existent pas"""
         directories = [
             cls.DATA_DIR,
-            cls.LOGS_DIR,
             cls.PROFILES_DIR,
+            cls.LOGS_DIRECTORY,
             cls.CHROME_PROFILES,
             cls.FIREFOX_PROFILES,
             cls.FAMILY_CHROME_DIR_PROFILES,
