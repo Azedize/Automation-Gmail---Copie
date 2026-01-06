@@ -1689,42 +1689,52 @@ class MainWindow(QMainWindow):
 
 
 
-
     def Scenario_Changed(self, name_selected):
-        print(f"Scenario_Changed called with name_selected={name_selected}")
+        print("\n" + "="*80)
+        print(f"🔹 Scenario_Changed called with name_selected={name_selected}")
+        print("="*80 + "\n")
 
-        encrypted_key =UIManager.read_file_content(Settings.SESSION_PATH)
+        # قراءة session
+        encrypted_key = UIManager.read_file_content(Settings.SESSION_PATH)
         if not encrypted_key:
+            print("⚠️ Session vide ou fichier introuvable:", Settings.SESSION_PATH)
             return
+        print(f"🔑 Encrypted key loaded: {len(encrypted_key)} chars")
+
         payload = {"encrypted": encrypted_key, "name": name_selected}
+        print(f"📤 Payload prepared: {payload}")
 
+        # إرسال الطلب
         try:
+            t0_req = time.time()
             response = requests.post(Settings.API_ENDPOINTS['_ON_SCENARIO_CHANGED_API'], json=payload, timeout=10)
+            t1_req = time.time()
+            print(f"✅ Request sent successfully in {t1_req - t0_req:.3f}s. HTTP Status: {response.status_code}")
         except requests.exceptions.RequestException as e:
-            print("RequestException while calling API: %s", e)
+            print(f"❌ RequestException while calling API: {e}")
             return
 
-    
+        # التحقق من حالة HTTP
         if response.status_code != 200:
             try:
-                print("HTTP %s: %s", response.status_code, response.text[:1000])
+                print(f"❌ HTTP {response.status_code}:\n{response.text[:1000]}")
             except Exception:
-                print("HTTP %s and failed to read response.text", response.status_code)
+                print(f"❌ HTTP {response.status_code} and failed to read response.text")
             return
 
-        
+        # قراءة JSON
         try:
             result = response.json()
-            print(f"Response JSON keys: {list(result.keys())}")
+            print(f"🔍 Response JSON keys: {list(result.keys())}")
         except ValueError:
-            print("Failed to parse JSON from response. Response text (first 2000 chars):\n%s", response.text[:2000])
+            print(f"❌ Failed to parse JSON from response. Response text (first 2000 chars):\n{response.text[:2000]}")
             return
 
-
+        # التحقق من session
         try:
             session_ok = result.get("session", True)
             if session_ok is False:
-                print("Session expirée. Redirection vers login.")
+                print("🔒 Session expirée. Redirection vers login.")
                 try:
                     self.login_window = LoginWindow()
                     self.login_window.setFixedSize(Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT)
@@ -1735,15 +1745,17 @@ class MainWindow(QMainWindow):
                     self.login_window.move(x, y)
                     self.login_window.show()
                     self.close()
-                except Exception:
-                    print("Erreur pendant l'affichage de la fenêtre de login")
+                except Exception as e:
+                    print("❌ Erreur pendant l'affichage de la fenêtre de login:", e)
                 return
-        except Exception:
-            print("Erreur en vérifiant la clé 'session' du résultat")
+            else:
+                print("✅ Session valide")
+        except Exception as e:
+            print("⚠️ Erreur en vérifiant la clé 'session' du résultat:", e)
             return
 
-
-
+        # حذف كل widgets القديمة
+        print("\n🧹 Nettoyage de la layout avant chargement du scénario...")
         for i in reversed(range(self.scenario_layout.count())):
             item = self.scenario_layout.itemAt(i)
             if item:
@@ -1754,90 +1766,86 @@ class MainWindow(QMainWindow):
                     widget.deleteLater()
                 else:
                     print(f"📦 Élément non-widget trouvé à l'index {i}")
- 
+
+        # معالجة السيناريو
         try:
-            if result.get("success"):
-                scenario = result.get("scenario")
-                if scenario is None:
-                    print("Le champ 'scenario' est manquant dans la réponse.")
+            if not result.get("success"):
+                print(f"❌ API returned success=false; error: {result.get('error')}")
+                return
+
+            scenario = result.get("scenario")
+            if scenario is None:
+                print("❌ Le champ 'scenario' est manquant dans la réponse.")
+                return
+
+            state_stack = scenario.get("state_stack")
+            if not isinstance(state_stack, list):
+                print(f"⚠️ state_stack n'est pas une liste (type={type(state_stack)}). Tentative de conversion...")
+                if isinstance(state_stack, str):
+                    try:
+                        state_stack = json.loads(state_stack)
+                        print(f"✅ state_stack loaded from string; length={len(state_stack)}")
+                    except Exception as e:
+                        print("❌ Impossible de parser state_stack string:", e)
+                        return
+                else:
+                    print("❌ state_stack a un format inattendu:", repr(state_stack))
                     return
 
-            
-                state_stack = scenario.get("state_stack")
-                if not isinstance(state_stack, list):
-                    print("state_stack n'est pas une liste (type=%s). Tentative de conversion...", type(state_stack))
-                    
-                    if isinstance(state_stack, str):
-                        try:
-                            state_stack = json.loads(state_stack)
-                            print("state_stack loaded from string; length=%d", len(state_stack))
-                        except Exception:
-                            print("Impossible de parser state_stack string")
-                            return
-                    else:
-                        print("state_stack a un format inattendu: %r", state_stack)
-                        return
+            self.STATE_STACK = state_stack
+            print(f"📥 Scénario récupéré avec {len(self.STATE_STACK)} états.\n")
 
-                self.STATE_STACK = state_stack
-                print("Scénario récupéré avec %d états.", len(self.STATE_STACK))
+            # نسخ آمن للمعالجة
+            state_stack_copy = copy.deepcopy(self.STATE_STACK)
 
-                state_stack_copy = copy.deepcopy(self.STATE_STACK)
-
-                for index, state in enumerate(state_stack_copy, start=1):
-                    print("Processing state #%d", index)
-                    try:
-                        pretty = json.dumps(state, indent=2, ensure_ascii=False, default=str)
-                        print("State #%d preview: %s", index, pretty[:2000])  # لا تطبع كل شيء لو كبير
-                    except Exception:
-                        print("Cannot JSON-dump state #%d; fallback to repr", index)
-                        print("State #%d repr: %s", index, repr(state)[:1000])
-
-                    
-                    try:
-                        t0 = time.time()
-                        self.Load_State(state)
-                        t1 = time.time()
-                        print("Load_State for #%d succeeded in %.3fs", index, t1 - t0)
-                        
-                        try:
-                            self.Update_Actions_Color_Handle_Last_Button()
-                        except Exception:
-                            print("Update_Actions_Color_Handle_Last_Button failed after state #%d", index)
-                    except Exception as e:
-                        print("Erreur pendant Load_State() pour l'état #%d: %s", index, e)
-                        continue
-
-                print("Scénario chargé avec succès.")
+            # تحميل كل حالة
+            for index, state in enumerate(state_stack_copy, start=1):
+                print(f"\n[🧩] Processing state #{index}")
+                try:
+                    pretty = json.dumps(state, indent=2, ensure_ascii=False, default=str)
+                    print(f"Preview state #{index} (first 500 chars):\n{pretty[:500]}...")
+                except Exception:
+                    print(f"⚠️ Cannot JSON-dump state #{index}; fallback to repr")
+                    print(repr(state)[:500], "...")
 
                 try:
-                    unique_states = []
-                    seen = set()
-                    for state in self.STATE_STACK:
-                        try:
-                            state_key = json.dumps(state, sort_keys=True, ensure_ascii=False, default=str)
-                        except Exception:
-                            print("json.dumps failed for a state during dedup; using repr fallback")
-                            state_key = repr(state)
-                        if state_key not in seen:
-                            seen.add(state_key)
-                            unique_states.append(state)
-                    self.STATE_STACK = unique_states
-                    print("self.STATE_STACK dédupliqué, nouveau length=%d", len(self.STATE_STACK))
-                except Exception:
-                    print("Échec de suppression des doublons")
-            else:
-                print("API returned success=false; error: %s", result.get("error"))
-        except Exception:
-            print("Erreur pendant le traitement du résultat JSON")
+                    t0 = time.time()
+                    self.Load_State(state)
+                    t1 = time.time()
+                    print(f"✅ Load_State for #{index} succeeded in {t1 - t0:.3f}s")
 
+                    try:
+                        self.Update_Actions_Color_Handle_Last_Button()
+                        print("✅ Update_Actions_Color_Handle_Last_Button succeeded")
+                    except Exception as e:
+                        print(f"⚠️ Update_Actions_Color_Handle_Last_Button failed after state #{index}: {e}")
+                except Exception as e:
+                    print(f"❌ Erreur pendant Load_State() pour l'état #{index}: {e}")
+                    continue
 
+            print("\n🎉 Scénario chargé avec succès.\n")
 
+            # إزالة الحالات المكررة
+            try:
+                unique_states = []
+                seen = set()
+                for state in self.STATE_STACK:
+                    try:
+                        state_key = json.dumps(state, sort_keys=True, ensure_ascii=False, default=str)
+                    except Exception:
+                        state_key = repr(state)
+                    if state_key not in seen:
+                        seen.add(state_key)
+                        unique_states.append(state)
+                self.STATE_STACK = unique_states
+                print(f"🧹 self.STATE_STACK dédupliqué, nouveau length={len(self.STATE_STACK)}")
+            except Exception as e:
+                print("⚠️ Échec de suppression des doublons:", e)
 
+        except Exception as e:
+            print("❌ Erreur pendant le traitement du résultat JSON:", e)
 
-
-
-
-
+        print("\n" + "="*80 + "\n")
 
 
 
