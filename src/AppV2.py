@@ -1510,6 +1510,7 @@ class MainWindow(QMainWindow):
             return
 
         email_count = len(data_list)
+        print("Total email count:", email_count)
         if entered_number > email_count:
             print("❌ Input out of range: entered number exceeds email count")
             UIManager.Show_Critical_Message(
