@@ -1521,14 +1521,18 @@ class MainWindow(QMainWindow):
 
 
 
-
+        print("Launching Close Chrome Thread...")
         self.Launch_Close_Chrome(selected_Browser , username)
+
+        print("Getting Browser Path...")
         browser_path = (
             BrowserManager.get_browser_path("chrome.exe") if selected_Browser.lower() == "chrome"
             else BrowserManager.get_browser_path("firefox") if selected_Browser.lower() == "firefox"
             else BrowserManager.get_browser_path("msedge.exe") if selected_Browser.lower() == "edge"
             else BrowserManager.get_browser_path("dragon.exe")  
         )
+
+        print("Browser path found:", browser_path or "Not found")
     
 
         if selected_Browser.lower() == "firefox":
