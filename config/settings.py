@@ -11,10 +11,6 @@ class Settings:
     # ═══════════════════════════════════════════════════════════
     #  DATA AUTH
     # ═══════════════════════════════════════════════════════════
-    DATA_AUTH = {
-            "login": "rep.test",
-            "password": "zsGEnntKD5q2Brp68yxT"
-    }
 
     KEY_HEX = "f564292a5740af4fc4819c6e22f64765232ad35f56079854a0ad3996c68ee7a2"
     KEY     = bytes.fromhex(KEY_HEX)
