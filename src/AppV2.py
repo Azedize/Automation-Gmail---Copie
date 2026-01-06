@@ -561,6 +561,7 @@ class ExtractionThread(QThread):
 
 
 class CloseBrowserThread(QThread):
+    print("🚀 [THREAD INIT] CloseBrowserThread initialisation")
 
     progress = pyqtSignal(str)
 
