@@ -448,7 +448,7 @@ class ExtractionThread(QThread):
                 next_email = remaining_emails.pop(0)  
                 email_value = ValidationUtils.get_key_from_dict(next_email, ["email", "Email"])
                 log_message(f"[INFO] Processing the email:  {email_value}")
-                DevLogger.info(f"Processing the email:  {email_value}")
+                # DevLogger.info(f"Processing the email:  {email_value}")
 
                 try:
                     profile_email = ValidationUtils.get_key_from_dict(next_email, ["email", "Email"])
@@ -554,6 +554,7 @@ class ExtractionThread(QThread):
                         ExtensionManager.add_pid_to_text_file(process.pid , Settings.EXTENTIONS_DIR_FAMILY_CHROME, profile_email , inserted_id ,self.session_id)
                     
                     else:
+                        print("🔹 Chrome-based browser selected.")
 
                         ValidationUtils.ensure_path_exists(Settings.CHROME_PROFILES, is_file=False)
 
