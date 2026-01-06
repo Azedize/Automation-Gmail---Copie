@@ -22,17 +22,30 @@ class DevLogger:
         آمن مع Threads و PyQt
         """
 
+        print("🟡 [LOGGER] Initialisation du logger...")
+
         if DevLogger._logger is not None:
+            print("⚠️ [LOGGER] Logger déjà initialisé — skip")
             return
 
         # ================= Queue =================
-        log_queue = Queue(-1)  # غير محدودة
-        queue_handler = QueueHandler(log_queue)
+        print("🟢 [LOGGER] Création de la Queue")
+        log_queue = Queue(-1)
 
+        try:
+            queue_handler = QueueHandler(log_queue)
+            print("✅ [LOGGER] QueueHandler OK")
+        except Exception as e:
+            print("❌ [LOGGER] Erreur QueueHandler:", e)
+            raise
+
+        # ================= Logger =================
         logger = logging.getLogger(name)
         logger.setLevel(level)
         logger.addHandler(queue_handler)
         logger.propagate = False
+
+        print(f"🧠 [LOGGER] Logger '{name}' configuré")
 
         # ================= Formatter =================
         formatter = logging.Formatter(
@@ -43,38 +56,55 @@ class DevLogger:
         handlers = []
 
         # ================= Console =================
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(level)
-        console_handler.setFormatter(formatter)
-        handlers.append(console_handler)
+        try:
+            console_handler = logging.StreamHandler()
+            console_handler.setLevel(level)
+            console_handler.setFormatter(formatter)
+            handlers.append(console_handler)
+            print("🖥️ [LOGGER] Console handler OK")
+        except Exception as e:
+            print("❌ [LOGGER] Erreur Console handler:", e)
+            raise
 
         # ================= File =================
         if log_file:
-            log_dir = os.path.dirname(log_file)
-            if log_dir:
-                os.makedirs(log_dir, exist_ok=True)
+            try:
+                log_dir = os.path.dirname(log_file)
+                if log_dir:
+                    os.makedirs(log_dir, exist_ok=True)
+                    print(f"📁 [LOGGER] Dossier log prêt: {log_dir}")
 
-            file_handler = logging.FileHandler(
-                log_file,
-                mode="a",            # ✅ append (مهم)
-                encoding="utf-8"
-            )
-            file_handler.setLevel(level)
-            file_handler.setFormatter(formatter)
-            handlers.append(file_handler)
+                file_handler = logging.FileHandler(
+                    log_file,
+                    mode="a",
+                    encoding="utf-8"
+                )
+                file_handler.setLevel(level)
+                file_handler.setFormatter(formatter)
+                handlers.append(file_handler)
+                print(f"📄 [LOGGER] File handler OK: {log_file}")
+            except Exception as e:
+                print("❌ [LOGGER] Erreur File handler:", e)
+                raise
 
         # ================= Listener =================
-        listener = QueueListener(
-            log_queue,
-            *handlers,
-            respect_handler_level=True
-        )
-        listener.start()
+        try:
+            listener = QueueListener(
+                log_queue,
+                *handlers,
+                respect_handler_level=True
+            )
+            listener.start()
+            print("🚀 [LOGGER] QueueListener démarré")
+        except Exception as e:
+            print("❌ [LOGGER] Erreur QueueListener:", e)
+            raise
 
         DevLogger._logger = logger
         DevLogger._listener = listener
         DevLogger._queue = log_queue
 
+        print("🎉 [LOGGER] Logger prêt à l'utilisation")
         DevLogger.debug("✅ Async Logger initialisé avec succès")
 
     # =========================
@@ -84,31 +114,39 @@ class DevLogger:
     @staticmethod
     def debug(msg: str):
         if DevLogger._logger:
+            print(f"🐞 [DEBUG] {msg}")
             DevLogger._logger.debug(msg)
+        else:
+            print("⚠️ [DEBUG] Logger non initialisé")
 
     @staticmethod
     def info(msg: str):
         if DevLogger._logger:
+            print(f"ℹ️ [INFO] {msg}")
             DevLogger._logger.info(msg)
 
     @staticmethod
     def warning(msg: str):
         if DevLogger._logger:
+            print(f"⚠️ [WARNING] {msg}")
             DevLogger._logger.warning(msg)
 
     @staticmethod
     def error(msg: str):
         if DevLogger._logger:
+            print(f"❌ [ERROR] {msg}")
             DevLogger._logger.error(msg)
 
     @staticmethod
     def critical(msg: str):
         if DevLogger._logger:
+            print(f"🔥 [CRITICAL] {msg}")
             DevLogger._logger.critical(msg)
 
     @staticmethod
     def exception(msg: str):
         if DevLogger._logger:
+            print(f"💥 [EXCEPTION] {msg}")
             DevLogger._logger.exception(msg)
 
     # =========================
@@ -118,23 +156,23 @@ class DevLogger:
     @staticmethod
     def log_time(msg: str, start_time: float):
         elapsed = time.time() - start_time
+        print(f"⏱️ [TIMER] {msg} → {elapsed:.3f}s")
         DevLogger.info(f"{msg} | Temps écoulé : {elapsed:.3f}s")
         return elapsed
 
     # =========================
-    # Arrêt propre (optionnel)
+    # Arrêt propre
     # =========================
 
     @staticmethod
     def shutdown():
+        print("🛑 [LOGGER] Arrêt du logger...")
         if DevLogger._listener:
             DevLogger._listener.stop()
             DevLogger._listener = None
             DevLogger._logger = None
             DevLogger._queue = None
-
-
-
+            print("✅ [LOGGER] Logger arrêté proprement")
 
 
 DevLogger = DevLogger()
