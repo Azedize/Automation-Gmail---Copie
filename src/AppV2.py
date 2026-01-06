@@ -22,6 +22,7 @@ import win32con
 import copy
 import warnings
 from threading import Lock
+from pathlib import Path
 
 warnings.simplefilter("ignore", urllib3.exceptions.InsecureRequestWarning)
 urllib3.disable_warnings()
@@ -479,8 +480,16 @@ class ExtractionThread(QThread):
                     inserted_id=Save_Email(params)
                     new_password = ValidationUtils.generate_secure_password(16)
 
-                    session_directory = os.path.join(Settings.LOGS_DIRECTORY, f"{CURRENT_DATE}_{CURRENT_HOUR}")
-                    os.makedirs(session_directory, exist_ok=True)
+                    # 🔹 Création du chemin du dossier de session
+                    session_directory = Path(Settings.LOGS_DIRECTORY) / f"{CURRENT_DATE}_{CURRENT_HOUR}"
+
+                    try:
+                        # 🛠️ Crée le dossier de session et tous les dossiers parents manquants
+                        session_directory.mkdir(parents=True, exist_ok=True)
+                        print(f"✅ Dossier de session créé avec succès : {session_directory}")
+                    except Exception as e:
+                        # 💥 Affiche une erreur si le dossier n'a pas pu être créé
+                        print(f"💥 Erreur lors de la création du dossier de session {session_directory} : {e}")
 
                     logs_subdirs = [os.path.join(Settings.LOGS_DIRECTORY, d) for d in os.listdir(Settings.LOGS_DIRECTORY) if os.path.isdir(os.path.join(Settings.LOGS_DIRECTORY, d))]
                     logs_subdirs.sort(key=os.path.getctime)
