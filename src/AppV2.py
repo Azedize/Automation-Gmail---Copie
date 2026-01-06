@@ -1190,12 +1190,22 @@ class MainWindow(QMainWindow):
         with open(Settings.SESSION_PATH, "r", encoding="utf-8") as f:
             encrypted_key = f.read().strip()
 
+        # 4️⃣ Prepare the payload
+        if encrypted_key == "":
+            UIManager.Show_Critical_Message(self, "Invalid Session", "[❌] Your session file is invalid. Please restart the application.", message_type="critical")
+            return
+        else :
+            print("Encrypted key read successfully.")
+
+
         payload = {
             # ⚠️ Ton PHP attend "encrypted", pas "decrypted_key"
             "encrypted": encrypted_key,
             "state": self.STATE_STACK[-1],
             "state_stack": self.STATE_STACK
         }
+
+        print(f"Payload: {payload}")
 
         try:
             result = APIManager.handle_save_scenario(payload)
