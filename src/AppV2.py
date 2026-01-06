@@ -1469,6 +1469,7 @@ class MainWindow(QMainWindow):
 
 
         with ThreadPoolExecutor(max_workers=2) as executor:
+            print("Submitting Start_Extraction to executor")
             executor.submit(self.Start_Extraction, window, data_list , entered_number, selected_Browser, self.Isp.currentText() , unique_id , result_json, session_info["username"])
             executor.submit(self.LOGS_THREAD.start)
         
@@ -1487,6 +1488,7 @@ class MainWindow(QMainWindow):
     # 🛠️ Démarre le processus d'extraction en lançant le thread principal avec les paramètres utilisateur, après validation des entrées et préparation de l'environnement.
     def Start_Extraction(self, window, data_list, entered_number , selected_Browser , Isp , unique_id , output_json_final , username):
         global EXTRACTION_THREAD 
+        print("Starting extraction process...")
         DevLogger.info("Starting extraction process...")
         
         ValidationUtils.ensure_path_exists(Settings.LOGS_DIRECTORY)
