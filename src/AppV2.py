@@ -221,6 +221,12 @@ def Stop_All_Processes(window):
 
 
 
+# 🚀 Lance un thread pour fermer automatiquement les processus Chrome actifs.
+def Launch_Close_Chrome(selected_Browser , username):
+    global CLOSE_BROWSER_THREAD
+    CLOSE_BROWSER_THREAD = CloseBrowserThread( selected_Browser ,username)
+    CLOSE_BROWSER_THREAD.progress.connect(lambda msg: print(msg))
+    CLOSE_BROWSER_THREAD.start()
 
 
 
@@ -267,6 +273,71 @@ def Generate_User_Input_Data(window):
     )
 
 
+
+
+
+
+
+
+
+# 🛠️ Démarre le processus d'extraction en lançant le thread principal avec les paramètres utilisateur, après validation des entrées et préparation de l'environnement.
+def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp , unique_id , output_json_final , username):
+    global EXTRACTION_THREAD 
+    DevLogger.info("Starting extraction process...")
+    
+    ValidationUtils.ensure_path_exists(Settings.LOGS_DIRECTORY)
+    
+    try:
+        entered_number = int(entered_number)
+    except ValueError:
+        UIManager.Show_Critical_Message(
+            window,
+            "Input Error - Invalid Format",
+            "Numeric value required. Please check your input and try again.",
+            message_type="critical"
+        )
+
+
+        return
+
+    email_count = len(data_list)
+    if entered_number > email_count:
+        UIManager.Show_Critical_Message(
+            window,
+            "Range Error - Exceeded Limit",
+            f"Maximum allowed entries: {email_count}\n"
+            f"Please enter a value between 1 and {email_count}.",
+            message_type="critical"
+        )
+        return
+    DevLogger.info("Selected entries:", entered_number)
+
+
+
+
+    Launch_Close_Chrome(selected_Browser , username)
+    browser_path = (
+        BrowserManager.get_browser_path("chrome.exe") if selected_Browser.lower() == "chrome"
+        else BrowserManager.get_browser_path("firefox") if selected_Browser.lower() == "firefox"
+        else BrowserManager.get_browser_path("msedge.exe") if selected_Browser.lower() == "edge"
+        else BrowserManager.get_browser_path("dragon.exe")  
+    )
+  
+
+    if selected_Browser.lower() == "firefox":
+        ensure_web_ext_installed()
+
+    DevLogger.info("browser path   :",   browser_path    or "Non trouvé")
+
+    # return browser_path;
+    EXTRACTION_THREAD = ExtractionThread(
+        data_list, SESSION_ID, entered_number, browser_path , window ,selected_Browser , Isp , unique_id , output_json_final
+    )
+    # data_list, SESSION_ID, entered_number, Browser_path, main_window ,selected_Browser,Isp , unique_id , output_json_final
+    EXTRACTION_THREAD.progress.connect(lambda msg: print(msg))
+    EXTRACTION_THREAD.finished.connect(lambda: QMessageBox.information(window, "Terminé", "L'extraction est terminée."))
+    EXTRACTION_THREAD.stopped.connect(lambda msg: QMessageBox.warning(window, "Arrêté", msg))
+    EXTRACTION_THREAD.start()
 
 
 
@@ -554,7 +625,6 @@ class ExtractionThread(QThread):
 
 
 class CloseBrowserThread(QThread):
-    print("🚀 [THREAD INIT] CloseBrowserThread initialisation")
 
     progress = pyqtSignal(str)
 
@@ -1376,11 +1446,9 @@ class MainWindow(QMainWindow):
         try:
             result = Generate_User_Input_Data(window)
 
-            if not result: 
-                print("No data returned from Generate_User_Input_Data") 
+            if not result:  
                 return
             data_list, entered_number = result  
-            print(f"Data List: {data_list}, Entered Number: {entered_number}")
 
         except Exception as e:
             QMessageBox.critical(window, "Error", f"Error while parsing the JSON: {e}")
@@ -1464,132 +1532,9 @@ class MainWindow(QMainWindow):
 
 
         with ThreadPoolExecutor(max_workers=2) as executor:
-            print("Submitting Start_Extraction to executor")
-            executor.submit(self.Start_Extraction, window, data_list , entered_number, selected_Browser, self.Isp.currentText() , unique_id , result_json, session_info["username"])
+            executor.submit(Start_Extraction, window, data_list , entered_number, selected_Browser, self.Isp.currentText() , unique_id , result_json, session_info["username"])
             executor.submit(self.LOGS_THREAD.start)
-        
-
-
-
-
-
-
-
-
-
-
-
-
-    # 🛠️ Démarre le processus d'extraction en lançant le thread principal avec les paramètres utilisateur, après validation des entrées et préparation de l'environnement.
-    def Start_Extraction(self, window, data_list, entered_number , selected_Browser , Isp , unique_id , output_json_final , username):
-        global EXTRACTION_THREAD 
-        print("Starting extraction process...")
-        DevLogger.info("Starting extraction process...")
-        
-        ValidationUtils.ensure_path_exists(Settings.LOGS_DIRECTORY)
-        
-        try:
-            entered_number = int(entered_number)
-            print("✅ Valid input: number entered =", entered_number)
-        except ValueError:
-            print("❌ Invalid input: not a number")
-            UIManager.Show_Critical_Message(
-                window,
-                "Input Error - Invalid Format",
-                "Numeric value required. Please check your input and try again.",
-                message_type="critical"
-            )
-
-
-            return
-
-        email_count = len(data_list)
-        print("Total email count:", email_count)
-        if entered_number > email_count:
-            print("❌ Input out of range: entered number exceeds email count")
-            UIManager.Show_Critical_Message(
-                window,
-                "Range Error - Exceeded Limit",
-                f"Maximum allowed entries: {email_count}\n"
-                f"Please enter a value between 1 and {email_count}.",
-                message_type="critical"
-            )
-            return
-        print("Input is within range.")
-        # DevLogger.info("Selected entries:", entered_number)
-        print("✅ Input within range")
-
-
-
-        print("Launching Close Chrome Thread...")
-        self.Launch_Close_Chrome(selected_Browser , username)
-
-        print("Getting Browser Path...")
-        browser_path = (
-            BrowserManager.get_browser_path("chrome.exe") if selected_Browser.lower() == "chrome"
-            else BrowserManager.get_browser_path("firefox") if selected_Browser.lower() == "firefox"
-            else BrowserManager.get_browser_path("msedge.exe") if selected_Browser.lower() == "edge"
-            else BrowserManager.get_browser_path("dragon.exe")  
-        )
-
-        print("Browser path found:", browser_path or "Not found")
-    
-
-        if selected_Browser.lower() == "firefox":
-            ensure_web_ext_installed()
-
-        DevLogger.info("browser path   :",   browser_path    or "Non trouvé")
-
-        # return browser_path;
-        EXTRACTION_THREAD = ExtractionThread(
-            data_list, SESSION_ID, entered_number, browser_path , window ,selected_Browser , Isp , unique_id , output_json_final
-        )
-        # data_list, SESSION_ID, entered_number, Browser_path, main_window ,selected_Browser,Isp , unique_id , output_json_final
-        EXTRACTION_THREAD.progress.connect(lambda msg: print(msg))
-        EXTRACTION_THREAD.finished.connect(lambda: QMessageBox.information(window, "Terminé", "L'extraction est terminée."))
         EXTRACTION_THREAD.finished.connect(lambda: self.Extraction_Finished(window))
-        EXTRACTION_THREAD.stopped.connect(lambda msg: QMessageBox.warning(window, "Arrêté", msg))
-        EXTRACTION_THREAD.start()
-
-
-
-
-
-
-
-    # 🚀 Lance un thread pour fermer automatiquement les processus Chrome actifs.
-    def Launch_Close_Chrome(self , selected_Browser , username):
-        print("🚀 Launching Close Chrome Thread...")
-        global CLOSE_BROWSER_THREAD
-        CLOSE_BROWSER_THREAD = CloseBrowserThread( selected_Browser ,username)
-        CLOSE_BROWSER_THREAD.progress.connect(lambda msg: print(msg))
-        CLOSE_BROWSER_THREAD.start()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
