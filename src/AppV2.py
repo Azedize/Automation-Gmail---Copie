@@ -412,13 +412,15 @@ class ExtractionThread(QThread):
         SELECTED_BROWSER_GLOBAL=self.selected_Browser
         remaining_emails = self.data_list[:]  
         log_message("[INFO] Processing started")
-        DevLogger.info("Processing started")
+        # DevLogger.info("Processing started")
+        print("🚀 Processing started")
 
 
         session_info = SessionManager.check_session()
 
         if not session_info["valid"]:
-            DevLogger.info("[SESSION] ❌ Session invalide. Impossible de continuer l’extraction.")
+            # DevLogger.info("[SESSION] ❌ Session invalide. Impossible de continuer l’extraction.")
+            print("❌ Session invalide. Impossible de continuer l’extraction.")
             self.stopped.emit("Session invalide. Veuillez vous reconnecter.")
             return
         

@@ -2,37 +2,51 @@ import logging
 import os
 import time
 from typing import Optional
+from queue import Queue
+from logging.handlers import QueueHandler, QueueListener
 
 
 class DevLogger:
     _logger: Optional[logging.Logger] = None
+    _listener: Optional[QueueListener] = None
+    _queue: Optional[Queue] = None
 
     @staticmethod
     def init_logger(
-        name: str = "DevLogger",   log_file: str = "logs/dev.log",  level: int = logging.DEBUG):
-
+        name: str = "DevLogger",
+        log_file: str = "logs/dev.log",
+        level: int = logging.DEBUG
+    ):
+        """
+        Logger غير حاجز (Async)
+        آمن مع Threads و PyQt
+        """
 
         if DevLogger._logger is not None:
             return
 
+        # ================= Queue =================
+        log_queue = Queue(-1)  # غير محدودة
+        queue_handler = QueueHandler(log_queue)
+
         logger = logging.getLogger(name)
         logger.setLevel(level)
+        logger.addHandler(queue_handler)
+        logger.propagate = False
 
-        # Empêcher la duplication des handlers
-        if logger.handlers:
-            DevLogger._logger = logger
-            return
-
+        # ================= Formatter =================
         formatter = logging.Formatter(
-            "[%(asctime)s] [%(levelname)s] %(message)s",
+            "[%(asctime)s] [%(levelname)s] [%(threadName)s] %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S"
         )
+
+        handlers = []
 
         # ================= Console =================
         console_handler = logging.StreamHandler()
         console_handler.setLevel(level)
         console_handler.setFormatter(formatter)
-        logger.addHandler(console_handler)
+        handlers.append(console_handler)
 
         # ================= File =================
         if log_file:
@@ -42,15 +56,26 @@ class DevLogger:
 
             file_handler = logging.FileHandler(
                 log_file,
-                mode="w",              # 🔥 supprime l'ancien log
+                mode="a",            # ✅ append (مهم)
                 encoding="utf-8"
             )
             file_handler.setLevel(level)
             file_handler.setFormatter(formatter)
-            logger.addHandler(file_handler)
+            handlers.append(file_handler)
+
+        # ================= Listener =================
+        listener = QueueListener(
+            log_queue,
+            *handlers,
+            respect_handler_level=True
+        )
+        listener.start()
 
         DevLogger._logger = logger
-        DevLogger.debug("✅ Logger initialisé avec succès")
+        DevLogger._listener = listener
+        DevLogger._queue = log_queue
+
+        DevLogger.debug("✅ Async Logger initialisé avec succès")
 
     # =========================
     # Méthodes de log
@@ -95,6 +120,18 @@ class DevLogger:
         elapsed = time.time() - start_time
         DevLogger.info(f"{msg} | Temps écoulé : {elapsed:.3f}s")
         return elapsed
+
+    # =========================
+    # Arrêt propre (optionnel)
+    # =========================
+
+    @staticmethod
+    def shutdown():
+        if DevLogger._listener:
+            DevLogger._listener.stop()
+            DevLogger._listener = None
+            DevLogger._logger = None
+            DevLogger._queue = None
 
 
 
