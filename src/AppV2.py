@@ -612,7 +612,6 @@ class ExtractionThread(QThread):
 
 # le programme is runing dans une interface 
 
-
 # et qui traite les fichiers de session et LOGS générés dans le dossier Downloads.
 class CloseBrowserThread(QThread):
 
@@ -635,10 +634,7 @@ class CloseBrowserThread(QThread):
     def run(self):
 
         time.sleep(10)
-        session = ""
-        if ValidationUtils.path_exists(Settings.SESSION_PATH):
-            with open(Settings.SESSION_PATH, "r", encoding="utf-8") as f:
-                session = f.read().strip()
+
 
         while not self.stop_flag:  
 
@@ -661,7 +657,7 @@ class CloseBrowserThread(QThread):
             with ThreadPoolExecutor() as executor:
                 futures = []
                 for file_name in files:
-                    futures.append(executor.submit(self.process_session_file, file_name, self.downloads_folder , self.selected_Browser, session))
+                    futures.append(executor.submit(self.process_session_file, file_name, self.downloads_folder , self.selected_Browser))
 
                 for future in as_completed(futures):
                     result = future.result() 
@@ -706,7 +702,7 @@ class CloseBrowserThread(QThread):
             return f"⚠️ Erreur dans le fichier {log_file} : {e}"
 
 
-    def process_session_file(self, file_name, downloads_folder , selected_Browser, session):
+    def process_session_file(self, file_name, downloads_folder , selected_Browser):
         try:
             try:
                 with open(os.path.join(downloads_folder, file_name), 'r', encoding='utf-8') as file:
