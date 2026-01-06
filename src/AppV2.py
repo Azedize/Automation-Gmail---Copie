@@ -1450,7 +1450,9 @@ class MainWindow(QMainWindow):
 
         # DevLogger.info("📦 JSON Final:")
         result_json = JsonManager.generate_json_data(self.scenario_layout)
-        DevLogger.info(json.dumps(result_json, indent=2, ensure_ascii=False))
+        # DevLogger.info(json.dumps(result_json, indent=2, ensure_ascii=False))
+        print("✅ Final JSON generated. Data:", json.dumps(result_json, indent=2, ensure_ascii=False))
+
 
 
         if not result_json or result_json == []:
@@ -1476,9 +1478,11 @@ class MainWindow(QMainWindow):
                 )
                 return
             else:
+                print("✅ JSON file saved with status:", save_status)
                 DevLogger.info(f"✅ Fichier JSON sauvegardé avec statut: {save_status}")
         except Exception as e:
             DevLogger.error(f"❌ Erreur lors de la sauvegarde du JSON: {e}")
+            print("❌ Error saving JSON file:", e)
             UIManager.Show_Critical_Message(
                 window,
                 "Error - Save Configuration",
@@ -1491,6 +1495,7 @@ class MainWindow(QMainWindow):
             with open(Settings.FILE_ISP, 'w', encoding='utf-8') as f:
                 f.write(self.Isp.currentText().strip())
         except Exception as e:
+            print("❌ Error writing to Isp.txt:", e)
             DevLogger.error(f"❌ Erreur lors de l'écriture dans Isp.txt : {e}")
 
         json_string = json.dumps(result_json)
@@ -1509,6 +1514,7 @@ class MainWindow(QMainWindow):
 
         if unique_id == -1:
             DevLogger.error("❌ Error getting process ID")
+            print("❌ Error getting process ID")
             UIManager.Show_Critical_Message(
                 window,
                 "Error - Process Save",
@@ -1517,7 +1523,7 @@ class MainWindow(QMainWindow):
                 message_type="critical"
             )
             return
-
+        print("✅ Obtained Process ID:", unique_id)
         DevLogger.info(f"✅ Process ID obtenu: {unique_id}")
 
 
