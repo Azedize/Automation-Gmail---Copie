@@ -1385,6 +1385,7 @@ class MainWindow(QMainWindow):
                 print("No data returned from Generate_User_Input_Data") 
                 return
             data_list, entered_number = result  
+            print(f"Data List: {data_list}, Entered Number: {entered_number}")
 
         except Exception as e:
             QMessageBox.critical(window, "Error", f"Error while parsing the JSON: {e}")
