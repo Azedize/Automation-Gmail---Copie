@@ -280,7 +280,7 @@ class Settings:
     
 
 
-    
+        
     @classmethod
     def ensure_directories(cls):
         """Créer les dossiers nécessaires s’ils n’existent pas"""
@@ -295,8 +295,17 @@ class Settings:
             cls.EXTENTIONS_DIR_FIREFOX,
             cls.EXTENSIONS_DIR_FAMILY_CHROME
         ]
+
         for directory in directories:
-            directory.mkdir(parents=True, exist_ok=True)
+            if not directory.exists():
+                try:
+                    directory.mkdir(parents=True)
+                    print(f"✅ Dossier créé: {directory}")
+                except Exception as e:
+                    print(f"💥 Erreur lors de la création du dossier {directory}: {e}")
+            else:
+                print(f"ℹ️ Dossier déjà existant: {directory}")
+
     
     @classmethod
     def get_encryption_key_bytes(cls) -> bytes:
