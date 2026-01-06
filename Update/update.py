@@ -31,7 +31,7 @@ try:
     from core import EncryptionService
     from core import SessionManager
 except ImportError as e:
-    DevLogger.error(f"[ERROR] Import modules failed: {e}")
+    print(f"[ERROR] Import modules failed: {e}")
 
 
 
@@ -61,7 +61,7 @@ class UpdateManager:
     @staticmethod
     def _download_file(url: str, dest_path: str) -> bool:
         try:
-            DevLogger.info(f"⬇️ Téléchargement depuis : {url}")
+            print(f"⬇️ Téléchargement depuis : {url}")
             response = requests.get(url, stream=True, verify=False, timeout=60)
             response.raise_for_status()
             total_size = int(response.headers.get("content-length", 0))
@@ -314,7 +314,7 @@ class UpdateManager:
         SESSION_INFO = SessionManager.check_session()
 
         if not SESSION_INFO["valid"]:
-            DevLogger.info("[SESSION] ❌ Session invalide. Impossible de continuer l’extraction.")
+            print("[SESSION] ❌ Session invalide. Impossible de continuer l’extraction.")
             sys.exit()
             return False
         
@@ -406,7 +406,7 @@ class UpdateManager:
         SESSION_INFO = SessionManager.check_session()
 
         if not SESSION_INFO["valid"]:
-            DevLogger.info("[SESSION] ❌ Session invalide. Impossible de continuer l’extraction.")
+            print("[SESSION] ❌ Session invalide. Impossible de continuer l’extraction.")
             sys.exit()
             return False
         

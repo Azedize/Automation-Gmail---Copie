@@ -105,7 +105,7 @@ class DevLogger:
         DevLogger._queue = log_queue
 
         print("🎉 [LOGGER] Logger prêt à l'utilisation")
-        DevLogger.debug("✅ Async Logger initialisé avec succès")
+        print("✅ Async Logger initialisé avec succès")
 
     # =========================
     # Méthodes de log
@@ -157,7 +157,7 @@ class DevLogger:
     def log_time(msg: str, start_time: float):
         elapsed = time.time() - start_time
         print(f"⏱️ [TIMER] {msg} → {elapsed:.3f}s")
-        DevLogger.info(f"{msg} | Temps écoulé : {elapsed:.3f}s")
+        print(f"{msg} | Temps écoulé : {elapsed:.3f}s")
         return elapsed
 
     # =========================

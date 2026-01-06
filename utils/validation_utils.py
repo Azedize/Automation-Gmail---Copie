@@ -19,7 +19,7 @@ if ROOT_DIR not in sys.path:
 try:
     from Log import DevLogger
 except ImportError as e:
-    DevLogger.error(f"Error importing modules: {e}")
+    print(f"Error importing modules: {e}")
 
 class ValidationUtils:
     """Classe de validation unifiée pour toutes les validations et générations"""
@@ -831,11 +831,11 @@ class ValidationUtils:
         file_name = os.path.basename(file_name)
         match = re.search(r"log_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z_([\w.+-]+@[\w.-]+\.[a-zA-Z]{2,6})\.txt", file_name)
         if match:
-            DevLogger.info(f"   - Email extrait : {match.group(1)}")
+            print(f"   - Email extrait : {match.group(1)}")
             email = match.group(1)
             return email
         else:
-            DevLogger.info(f"[Email Extraction] Aucun email trouvé dans {file_name}")
+            print(f"[Email Extraction] Aucun email trouvé dans {file_name}")
             return None
 
 

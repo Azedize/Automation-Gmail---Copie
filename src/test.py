@@ -57,7 +57,7 @@ def get_browser_path(browser_name_or_exe: str) -> Optional[str]:
         browser_name_or_exe.lower(), {}
     ).get("exe_name", browser_name_or_exe)
 
-    DevLogger.info(f"🔍 Recherche de l'exécutable : {exe_name}")
+    print(f"🔍 Recherche de l'exécutable : {exe_name}")
 
     registry_paths = [
         (winreg.HKEY_LOCAL_MACHINE, winreg.KEY_READ | winreg.KEY_WOW64_32KEY),
@@ -73,14 +73,14 @@ def get_browser_path(browser_name_or_exe: str) -> Optional[str]:
             with winreg.OpenKey(hive, key_app_paths, 0, access) as key_obj:
                 path, _ = winreg.QueryValueEx(key_obj, None)
                 if path and ValidationUtils.path_exists(path):
-                    DevLogger.info(f"✅ Chrome trouvé : {path}")
+                    print(f"✅ Chrome trouvé : {path}")
                     return path
         except FileNotFoundError:
             continue
         except Exception as e:
-            DevLogger.error(f"⚠️ Erreur registre : {e}")
+            print(f"⚠️ Erreur registre : {e}")
 
-    DevLogger.error("❌ Chrome introuvable")
+    print("❌ Chrome introuvable")
     return None
 
 
@@ -100,7 +100,7 @@ def launch_chrome_with_profile(
 
     # ✅ Création automatique du user-data-dir si inexistant
     if not os.path.isdir(user_data_dir):
-        DevLogger.warning(f"📂 Création user-data-dir : {user_data_dir}")
+        print(f"📂 Création user-data-dir : {user_data_dir}")
         os.makedirs(user_data_dir, exist_ok=True)
 
     cmd = [
@@ -111,9 +111,9 @@ def launch_chrome_with_profile(
         url
     ]
 
-    DevLogger.info("🚀 Lancement Chrome")
-    DevLogger.info(f"   👤 Profil : {profile_name}")
-    DevLogger.info(f"   📂 UserData : {user_data_dir}")
+    print("🚀 Lancement Chrome")
+    print(f"   👤 Profil : {profile_name}")
+    print(f"   📂 UserData : {user_data_dir}")
 
     subprocess.Popen(cmd, shell=False)
 
@@ -127,7 +127,7 @@ def close_chrome_by_profile_after_delay(
     user_data_dir: str,
     delay: int = 10
 ):
-    DevLogger.info(f"⏳ Attente {delay}s avant fermeture du profil : {profile_name}")
+    print(f"⏳ Attente {delay}s avant fermeture du profil : {profile_name}")
     time.sleep(delay)
 
     closed = False
@@ -143,7 +143,7 @@ def close_chrome_by_profile_after_delay(
                 f"--profile-directory={profile_name}" in cmdline
                 and f"--user-data-dir={user_data_dir}" in cmdline
             ):
-                DevLogger.info(f"❌ Fermeture Chrome (profil={profile_name})")
+                print(f"❌ Fermeture Chrome (profil={profile_name})")
                 proc.terminate()
                 closed = True
 
@@ -151,7 +151,7 @@ def close_chrome_by_profile_after_delay(
             continue
 
     if not closed:
-        DevLogger.warning("⚠️ Aucun Chrome trouvé pour ce profil")
+        print("⚠️ Aucun Chrome trouvé pour ce profil")
 
 
 # ============================================================

@@ -30,7 +30,7 @@ if ROOT_DIR not in sys.path:
 # ==========================================================
 from config import Settings
 from core import EncryptionService
-from Log import DevLogger
+# from Log import DevLogger
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 
@@ -44,10 +44,10 @@ class DependencyManager:
         python_exe = sys.executable
         spec = importlib.util.find_spec("win32api")
         if spec:
-            DevLogger.info("pywin32 déjà installé")
+            print("pywin32 déjà installé")
             return True
 
-        DevLogger.info("Installation de pywin32...")
+        print("Installation de pywin32...")
         site_packages = Path(python_exe).parent / "Lib" / "site-packages"
         folders_to_remove = ["win32", "pywin32_system32"]
 
@@ -56,9 +56,9 @@ class DependencyManager:
             if folder_path.exists():
                 try:
                     shutil.rmtree(folder_path)
-                    DevLogger.info(f"Suppression de {folder}")
+                    print(f"Suppression de {folder}")
                 except PermissionError:
-                    DevLogger.warning(f"Impossible de supprimer {folder} (fermez IDE/console)")
+                    print(f"Impossible de supprimer {folder} (fermez IDE/console)")
 
         try:
             subprocess.run(
@@ -67,9 +67,9 @@ class DependencyManager:
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL
             )
-            DevLogger.info("pywin32 installé avec succès")
+            print("pywin32 installé avec succès")
         except subprocess.CalledProcessError:
-            DevLogger.error("Échec installation pywin32")
+            print("Échec installation pywin32")
             return False
 
         postinstall_script = Path(python_exe).parent / "Scripts" / "pywin32_postinstall.py"
@@ -81,12 +81,12 @@ class DependencyManager:
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL
                 )
-                DevLogger.info("Post-installation terminée")
+                print("Post-installation terminée")
             except subprocess.CalledProcessError:
-                DevLogger.error("Échec post-installation pywin32")
+                print("Échec post-installation pywin32")
                 return False
 
-        DevLogger.info("Redémarrage script dans 10s...")
+        print("Redémarrage script dans 10s...")
         time.sleep(10)
         subprocess.run([python_exe, sys.argv[0]])
         sys.exit(0)
@@ -104,28 +104,28 @@ class DependencyManager:
             return module
         except (ModuleNotFoundError, ImportError):
             Settings.ALL_PACKAGES_INSTALLED = False
-            DevLogger.info(f"Installation de {package}...")
+            print(f"Installation de {package}...")
 
             if not Settings.UPDATED_PIP_23_3:
                 try:
-                    DevLogger.info("Mise à jour pip...")
+                    print("Mise à jour pip...")
                     subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "pip==23.3"])
                     Settings.UPDATED_PIP_23_3 = True
                 except subprocess.CalledProcessError:
-                    DevLogger.warning("Erreur mise à jour pip")
+                    print("Erreur mise à jour pip")
                     sys.exit()
 
             try:
                 subprocess.check_call([sys.executable, "-m", "pip", "install", install_spec])
-                DevLogger.info(f"{package} installé")
+                print(f"{package} installé")
             except subprocess.CalledProcessError:
-                DevLogger.error(f"Erreur installation {package}")
+                print(f"Erreur installation {package}")
                 sys.exit()
 
             try:
                 return importlib.import_module(module_to_import)
             except ImportError as e:
-                DevLogger.error(f"Erreur import {module_to_import}")
+                print(f"Erreur import {module_to_import}")
                 sys.exit()
 
 
@@ -137,19 +137,19 @@ class UpdateManager:
     @staticmethod
     def _read_local_version(path):
         if not path or not os.path.exists(path):
-            DevLogger.warning("Version locale introuvable")
+            print("Version locale introuvable")
             return None
         try:
             with open(path, "r", encoding="utf-8") as f:
                 return f.read().strip()
         except Exception:
-            DevLogger.error("Erreur lecture version locale")
+            print("Erreur lecture version locale")
             return None
 
     @staticmethod
     def _download_and_extract(zip_url, target_dir, clean_target=False, extract_subdir=None):
         try:
-            DevLogger.info("Téléchargement mise à jour depuis serveur")
+            print("Téléchargement mise à jour depuis serveur")
             with tempfile.TemporaryDirectory() as tmpdir:
                 zip_path = os.path.join(tmpdir, "update.zip")
                 import requests
@@ -159,15 +159,15 @@ class UpdateManager:
                     for chunk in r.iter_content(8192):
                         if chunk:
                             f.write(chunk)
-                DevLogger.info("ZIP téléchargé avec succès")
+                print("ZIP téléchargé avec succès")
 
                 if clean_target and os.path.exists(target_dir):
                     shutil.rmtree(target_dir)
-                    DevLogger.info("Ancien dossier cible supprimé")
+                    print("Ancien dossier cible supprimé")
 
                 with zipfile.ZipFile(zip_path, "r") as z:
                     z.extractall(tmpdir)
-                DevLogger.info("Extraction ZIP temporaire terminée")
+                print("Extraction ZIP temporaire terminée")
 
                 extracted_root = next(
                     os.path.join(tmpdir, d)
@@ -180,7 +180,7 @@ class UpdateManager:
                     candidate = os.path.join(extracted_root, extract_subdir)
                     if os.path.exists(candidate):
                         extracted_dir = candidate
-                        DevLogger.info(f"Sous-dossier extrait : {extract_subdir}")
+                        print(f"Sous-dossier extrait : {extract_subdir}")
 
                 if not os.path.exists(target_dir):
                     os.makedirs(target_dir)
@@ -195,15 +195,15 @@ class UpdateManager:
                     else:
                         shutil.move(s, d)
 
-                DevLogger.info(f"Extraction terminée dans : {target_dir}")
+                print(f"Extraction terminée dans : {target_dir}")
 
         except Exception:
-            DevLogger.exception("Erreur téléchargement/extraction update")
+            print("Erreur téléchargement/extraction update")
             raise
 
     @staticmethod
     def check_and_update() -> bool:
-        DevLogger.info("Vérification mise à jour")
+        print("Vérification mise à jour")
         try:
             from api.base_client import APIManager
             response = APIManager.make_request("__CHECK_URL_PROGRAMM__", method="GET", timeout=10)
@@ -219,7 +219,7 @@ class UpdateManager:
             local_ext = UpdateManager._read_local_version(Settings.VERSION_LOCAL_EXT)
 
             if not local_program or local_program != server_program:
-                DevLogger.info("MISE À JOUR PROGRAMME REQUISE")
+                print("MISE À JOUR PROGRAMME REQUISE")
                 UpdateManager._download_and_extract(
                     Settings.API_ENDPOINTS["__SERVER_ZIP_URL_PROGRAM__"],
                     ROOT_DIR,
@@ -229,7 +229,7 @@ class UpdateManager:
                 return True
 
             if not local_ext or local_ext != server_ext:
-                DevLogger.info("MISE À JOUR EXTENSIONS REQUISE")
+                print("MISE À JOUR EXTENSIONS REQUISE")
                 tools_dir = Settings.TOOLS_DIR
                 if not os.path.exists(tools_dir):
                     os.makedirs(tools_dir)
@@ -241,11 +241,11 @@ class UpdateManager:
                 )
                 return True
 
-            DevLogger.info("APPLICATION À JOUR – AUCUNE ACTION")
+            print("APPLICATION À JOUR – AUCUNE ACTION")
             return False
 
         except Exception:
-            DevLogger.exception("Erreur critique update")
+            print("Erreur critique update")
             return True
 
 
@@ -253,7 +253,7 @@ class UpdateManager:
 # 🔹 INITIALISATION DÉPENDANCES
 # ==========================================================
 def initialize_dependencies():
-    DevLogger.info("Initialisation des dépendances")
+    print("Initialisation des dépendances")
     DependencyManager.install_and_verify_pywin32()
 
     global requests, urllib3, PyQt6, cryptography_module, psutil, pytz, tqdm, platformdirs, selenium
@@ -276,24 +276,24 @@ def initialize_dependencies():
 # ==========================================================
 def main():
     try:
-        DevLogger.init_logger(log_file="Log/LogDev/my_project.log")
-        DevLogger.info("Démarrage application principale")
+        # DevLogger.init_logger(log_file="Log/LogDev/my_project.log")
+        print("Démarrage application principale")
 
         initialize_dependencies()
 
         pythonw_path = Settings.find_pythonw()
         if not pythonw_path:
-            DevLogger.critical("pythonw.exe introuvable")
+            # DevLogger.critical("pythonw.exe introuvable")
             sys.exit(1)
 
         updated = UpdateManager.check_and_update()
         if updated:
-            DevLogger.info("UPDATE EFFECTUÉ")
+            print("UPDATE EFFECTUÉ")
         else:
-            DevLogger.info("APPLICATION À JOUR")
+            print("APPLICATION À JOUR")
 
         if len(sys.argv) == 1:
-            DevLogger.info("Lancement de l'application principale")
+            print("Lancement de l'application principale")
             encrypted_key, secret_key = EncryptionService.generate_encrypted_key()
             # ❌ Ne jamais logger ces clés
 
@@ -301,11 +301,11 @@ def main():
             if script_path.is_file():
                 subprocess.run([sys.executable, str(script_path), encrypted_key, secret_key])
             else:
-                DevLogger.error("Script principal introuvable")
+                print("Script principal introuvable")
                 sys.exit(1)
 
     except Exception:
-        DevLogger.exception("Erreur fatale application")
+        print("Erreur fatale application")
         sys.exit(1)
 
 
