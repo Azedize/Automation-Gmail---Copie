@@ -45,7 +45,6 @@ try:
     from ui_utils import UIManager
     from services import JsonManager
     from Update import UpdateManager
-    from Log import DevLogger
 except ImportError as e:
     print(f"[ERROR] Import modules failed: {e}")
 
