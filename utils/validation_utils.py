@@ -173,10 +173,16 @@ class ValidationUtils:
         
         return True, data_list, f"Format valide - {len(data_list)} entrées traitées"
     
+
+
+
+
+
+
     @staticmethod
     def process_user_input(input_data: str, entered_number_text: str) -> dict:
         """
-        Traite et valide les données d'entrée utilisateur complètes
+        Traite et valide les données d'entrée utilisateur complètes avec affichage debug
         """
         print("🔵 [START] process_user_input")
 
@@ -192,14 +198,18 @@ class ValidationUtils:
         # --------------------
         # Validation de base
         # --------------------
+        print("📝 Vérification de la présence des données...")
         if not input_data or not input_data.strip():
+            print("⚠️ Input data manquant!")
             result.update({
                 "error_title": "Error - Missing Data",
                 "error_message": "Please enter the required information before proceeding."
             })
             return result
 
+        print("📝 Vérification du numéro saisi...")
         if not entered_number_text or not entered_number_text.strip():
+            print("⚠️ Numéro manquant!")
             result.update({
                 "error_title": "Error - Missing Number",
                 "error_message": "Please enter the number of operations to process."
@@ -207,6 +217,7 @@ class ValidationUtils:
             return result
 
         if not entered_number_text.isdigit():
+            print(f"❌ Numéro invalide: {entered_number_text}")
             result.update({
                 "error_title": "Error - Invalid Input",
                 "error_message": "Please enter a valid numerical value in the number field."
@@ -214,14 +225,18 @@ class ValidationUtils:
             return result
 
         entered_number = int(entered_number_text)
+        print(f"✅ Numéro saisi valide: {entered_number}")
 
         try:
             # --------------------
             # Parsing des lignes
             # --------------------
+            print("📄 Parsing des lignes...")
             lines = [line.strip() for line in input_data.split("\n") if line.strip()]
+            print(f"🔹 Nombre de lignes trouvées: {len(lines)}")
 
             if len(lines) < 2:
+                print("⚠️ Pas de données après l'entête!")
                 result.update({
                     "error_title": "Error - Invalid Format",
                     "error_message": "Header detected but no data rows found."
@@ -230,9 +245,11 @@ class ValidationUtils:
 
             header = [k.strip() for k in lines[0].split(";")]
             data_lines = lines[1:]
+            print(f"🔹 Entête détectée: {header}")
+            print(f"🔹 Lignes de données détectées: {len(data_lines)}")
 
             # --------------------
-            # Définition des patterns (comme la fonction originale)
+            # Définition des patterns
             # --------------------
             mandatory_patterns = [
                 ["email", "passwordEmail", "ipAddress", "port"],
@@ -247,11 +264,13 @@ class ValidationUtils:
             all_valid_keys = set()
             for pat in mandatory_patterns + optional_patterns:
                 all_valid_keys.update(pat)
+            print(f"🔹 Clés valides reconnues: {all_valid_keys}")
 
             # --------------------
             # Vérification des clés
             # --------------------
             if not any(set(pat).issubset(header) for pat in mandatory_patterns):
+                print("❌ Clés obligatoires manquantes!")
                 result.update({
                     "error_title": "Error - Required Keys Missing",
                     "error_message": (
@@ -262,6 +281,7 @@ class ValidationUtils:
 
             invalid_keys = [k for k in header if k not in all_valid_keys]
             if invalid_keys:
+                print(f"❌ Clés invalides détectées: {invalid_keys}")
                 result.update({
                     "error_title": "Error - Invalid Keys",
                     "error_message": f"Invalid keys detected: {', '.join(invalid_keys)}"
@@ -271,12 +291,14 @@ class ValidationUtils:
             # --------------------
             # Conversion en data_list
             # --------------------
+            print("🔄 Conversion des lignes en dictionnaires...")
             data_list = []
 
             for index, line in enumerate(data_lines, start=1):
                 values = [v.strip() for v in line.split(";")]
 
                 if len(values) != len(header):
+                    print(f"❌ Ligne {index} - nombre de valeurs différent de l'entête!")
                     result.update({
                         "error_title": "Error - Key/Value Mismatch",
                         "error_message": f"Line {index}: number of values does not match header."
@@ -284,11 +306,14 @@ class ValidationUtils:
                     return result
 
                 data_list.append(dict(zip(header, values)))
+            print(f"✅ Conversion réussie - Total objets: {len(data_list)}")
 
             # --------------------
             # Validation de la plage
             # --------------------
+            print(f"🔢 Vérification de la plage du numéro saisi: {entered_number}")
             if entered_number > len(data_list):
+                print(f"⚠️ Numéro saisi hors plage! Maximum autorisé: {len(data_list)}")
                 result.update({
                     "error_title": "Error - Invalid Range",
                     "error_message": (
@@ -300,6 +325,7 @@ class ValidationUtils:
             # --------------------
             # Succès
             # --------------------
+            print("✅ Toutes les validations réussies! Données prêtes à l'emploi.")
             result.update({
                 "success": True,
                 "data_list": data_list,
@@ -310,6 +336,7 @@ class ValidationUtils:
             })
 
         except Exception as e:
+            print(f"💥 Exception capturée: {e}")
             result.update({
                 "error_title": "Operation Failed - System Error",
                 "error_message": f"Critical failure during data processing: {str(e)}"
@@ -319,7 +346,12 @@ class ValidationUtils:
         return result
 
 
-    
+
+
+
+
+
+
     @staticmethod
     def _validate_entries_detailed(data_list: List[Dict]) -> Dict[str, Any]:
         """Validation détaillée de chaque entrée"""

@@ -236,11 +236,17 @@ def Launch_Close_Chrome(selected_Browser , username):
 # Génération complète de l'extension Chrome/Firefox
 # -----------------------------
 def Generate_User_Input_Data(window):
+    print("🟢 [START] Generate_User_Input_Data")
+
     # Récupération des données depuis l’UI
+    print("📝 Lecture des données depuis l'interface...")
     input_data = window.textEdit_3.toPlainText().strip()
     entered_number_text = window.textEdit_4.toPlainText().strip()
+    print(f"🔹 Données brutes:\n{input_data[:100]}{'...' if len(input_data) > 100 else ''}")
+    print(f"🔹 Numéro saisi: {entered_number_text}")
 
     # Appel de la logique de validation
+    print("⚙️ Appel de process_user_input pour validation...")
     validation_result = ValidationUtils.process_user_input(
         input_data,
         entered_number_text
@@ -248,15 +254,19 @@ def Generate_User_Input_Data(window):
 
     # En cas d’erreur → affichage UI
     if not validation_result["success"]:
+        print(f"❌ Validation échouée: {validation_result['error_title']} - {validation_result['error_message']}")
         UIManager.Show_Critical_Message(
             window,
             validation_result["error_title"],
             validation_result["error_message"],
             message_type=validation_result.get("error_type", "critical")
         )
+        print("🟢 [END] Generate_User_Input_Data (Erreur)")
         return None
 
     # Succès → même retour que la fonction originale
+    print(f"✅ Validation réussie! Nombre de lignes valides: {len(validation_result['data_list'])}")
+    print("🟢 [END] Generate_User_Input_Data (Succès)")
     return (
         validation_result["data_list"],
         validation_result["entered_number"]
