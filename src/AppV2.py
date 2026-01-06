@@ -279,7 +279,8 @@ def Generate_User_Input_Data(window):
 
 def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp , unique_id , output_json_final , username):
     global EXTRACTION_THREAD 
-    DevLogger.info("Starting extraction process...")
+    # DevLogger.info("Starting extraction process...")
+    print("🚀 Starting extraction process...")
     
     ValidationUtils.ensure_path_exists(Settings.LOGS_DIRECTORY)
     
@@ -304,7 +305,8 @@ def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp 
             message_type="critical"
         )
         return
-    DevLogger.info("Selected entries:", entered_number)
+    # DevLogger.info("Selected entries:", entered_number)
+    print("✅ Selected entries:", entered_number)
 
     Launch_Close_Chrome(selected_Browser , username)
     browser_path = (
@@ -317,7 +319,8 @@ def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp 
     if selected_Browser.lower() == "firefox":
         ensure_web_ext_installed()
 
-    DevLogger.info("browser path   :",   browser_path    or "Non trouvé")
+    # DevLogger.info("browser path   :",   browser_path    or "Non trouvé")
+    print("✅ browser path   :",   browser_path    or "Non trouvé")
 
     EXTRACTION_THREAD = ExtractionThread(
         data_list, SESSION_ID, entered_number, browser_path , window ,selected_Browser , Isp , unique_id , output_json_final
@@ -1524,7 +1527,7 @@ class MainWindow(QMainWindow):
             )
             return
         print("✅ Obtained Process ID:", unique_id)
-        DevLogger.info(f"✅ Process ID obtenu: {unique_id}")
+        # DevLogger.info(f"✅ Process ID obtenu: {unique_id}")
 
 
         with ThreadPoolExecutor(max_workers=2) as executor:
