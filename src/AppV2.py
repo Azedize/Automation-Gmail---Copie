@@ -221,13 +221,6 @@ def Stop_All_Processes(window):
 
 
 
-# 🚀 Lance un thread pour fermer automatiquement les processus Chrome actifs.
-def Launch_Close_Chrome(selected_Browser , username):
-    print("🚀 Launching Close Chrome Thread...")
-    global CLOSE_BROWSER_THREAD
-    CLOSE_BROWSER_THREAD = CloseBrowserThread( selected_Browser ,username)
-    CLOSE_BROWSER_THREAD.progress.connect(lambda msg: print(msg))
-    CLOSE_BROWSER_THREAD.start()
 
 
 
@@ -1529,7 +1522,7 @@ class MainWindow(QMainWindow):
 
 
 
-        Launch_Close_Chrome(selected_Browser , username)
+        self.Launch_Close_Chrome(selected_Browser , username)
         browser_path = (
             BrowserManager.get_browser_path("chrome.exe") if selected_Browser.lower() == "chrome"
             else BrowserManager.get_browser_path("firefox") if selected_Browser.lower() == "firefox"
@@ -1560,6 +1553,13 @@ class MainWindow(QMainWindow):
 
 
 
+    # 🚀 Lance un thread pour fermer automatiquement les processus Chrome actifs.
+    def Launch_Close_Chrome(self , selected_Browser , username):
+        print("🚀 Launching Close Chrome Thread...")
+        global CLOSE_BROWSER_THREAD
+        CLOSE_BROWSER_THREAD = CloseBrowserThread( selected_Browser ,username)
+        CLOSE_BROWSER_THREAD.progress.connect(lambda msg: print(msg))
+        CLOSE_BROWSER_THREAD.start()
 
 
 
