@@ -223,6 +223,7 @@ def Stop_All_Processes(window):
 
 # 🚀 Lance un thread pour fermer automatiquement les processus Chrome actifs.
 def Launch_Close_Chrome(selected_Browser , username):
+    print("🚀 Launching Close Chrome Thread...")
     global CLOSE_BROWSER_THREAD
     CLOSE_BROWSER_THREAD = CloseBrowserThread( selected_Browser ,username)
     CLOSE_BROWSER_THREAD.progress.connect(lambda msg: print(msg))
@@ -1495,7 +1496,9 @@ class MainWindow(QMainWindow):
         
         try:
             entered_number = int(entered_number)
+            print("✅ Valid input: number entered =", entered_number)
         except ValueError:
+            print("❌ Invalid input: not a number")
             UIManager.Show_Critical_Message(
                 window,
                 "Input Error - Invalid Format",
@@ -1508,6 +1511,7 @@ class MainWindow(QMainWindow):
 
         email_count = len(data_list)
         if entered_number > email_count:
+            print("❌ Input out of range: entered number exceeds email count")
             UIManager.Show_Critical_Message(
                 window,
                 "Range Error - Exceeded Limit",
@@ -1517,6 +1521,7 @@ class MainWindow(QMainWindow):
             )
             return
         DevLogger.info("Selected entries:", entered_number)
+        print("✅ Input within range")
 
 
 
