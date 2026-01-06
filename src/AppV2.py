@@ -1530,6 +1530,7 @@ class MainWindow(QMainWindow):
             return
 
         DevLogger.info(f"✅ Process ID obtenu: {unique_id}")
+        print("🚀 Lancement de l'extraction avec ThreadPoolExecutor")
 
 
         with ThreadPoolExecutor(max_workers=2) as executor:
