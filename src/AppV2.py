@@ -485,26 +485,13 @@ class ExtractionThread(QThread):
                     # 🔹 Chemin du dossier de session
                     session_directory = Path(Settings.LOGS_DIRECTORY) / f"{CURRENT_DATE}_{CURRENT_HOUR}"
 
-                    print(f"🔍 Vérification du dossier de session : {session_directory}")
-
                     try:
-                        if session_directory.exists():
-                            if session_directory.is_dir():
-                                print(f"✅ Le dossier existe déjà : {session_directory}")
-                            else:
-                                print(f"⚠️ Un fichier existe avec le même nom que le dossier attendu : {session_directory}")
-                        else:
-                            # 🛠️ Crée le dossier de session et tous les dossiers parents manquants
+                        # Crée le dossier seulement s'il n'existe pas déjà
+                        if not session_directory.exists():
                             session_directory.mkdir(parents=True, exist_ok=True)
-                            print(f"✅ Dossier de session créé avec succès : {session_directory}")
-                    except PermissionError:
-                        print(f"💥 Erreur de permission : vous n'avez pas les droits pour créer ce dossier : {session_directory}")
-                    except FileNotFoundError:
-                        print(f"💥 Chemin introuvable : un dossier parent est manquant ou invalide : {session_directory}")
-                    except OSError as e:
-                        print(f"💥 Erreur système lors de la création du dossier : {e}")
-                    except Exception as e:
-                        print(f"💥 Erreur inconnue lors de la création du dossier : {e}")
+                    except Exception:
+                        # Ici on peut laisser passer silencieusement les erreurs si tu veux
+                        pass
 
                     # 🔹 Vérification finale pour diagnostiquer le problème si nécessaire
                     if not session_directory.exists():
