@@ -611,6 +611,14 @@ class ExtractionThread(QThread):
                             BrowserManager.get_browser_path("chrome.exe"),
                             f"--user-data-dir={os.path.join(Settings.CHROME_PROFILES, profile_email)}",
                             f'--profile-directory={profile_email}',
+                            '--lang=En-US',
+                            '--no-first-run',
+                        ]
+                        time.sleep(2)
+                        command1 = [
+                            BrowserManager.get_browser_path("chrome.exe"),
+                            f"--user-data-dir={os.path.join(Settings.CHROME_PROFILES, profile_email)}",
+                            f'--profile-directory={profile_email}',
                             f'{url}',
                             '--lang=En-US',
                             '--no-first-run',
@@ -618,7 +626,8 @@ class ExtractionThread(QThread):
 
 
                         process = subprocess.Popen(command) 
-                        PROCESS_PIDS.append(process.pid)  
+                        process1 = subprocess.Popen(command1)
+                        PROCESS_PIDS.append(process1.pid)  
                         print('➡️➡️➡️➡️➡️➡️ PROCESS_PIDS : ' ,PROCESS_PIDS)
                         # ExtensionManager.add_pid_to_text_file(process.pid,Settings.CHROME_PROFILES , profile_email , inserted_id , self.session_id)
              
