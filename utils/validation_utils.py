@@ -551,58 +551,26 @@ class ValidationUtils:
     
     
     
-
     @staticmethod
     def ensure_path_exists(path: str, is_file: bool = True) -> bool:
-        """
-        S'assure qu'un chemin existe, le crée si nécessaire
-        avec affichage détaillé (DEBUG)
-        """
+        """S'assure qu'un chemin existe, le crée si nécessaire"""
         try:
-            print("🔍 [DEBUG] Début ensure_path_exists")
-            print(f"📌 [DEBUG] Path reçu      : {path}")
-            print(f"📌 [DEBUG] Type           : {'Fichier' if is_file else 'Dossier'}")
-
-            # =============================
-            # 📄 CAS : FICHIER
-            # =============================
             if is_file:
                 directory = os.path.dirname(path)
-                print(f"📁 [DEBUG] Dossier parent : {directory if directory else 'Aucun'}")
+                if directory and not os.path.exists(directory):
+                    os.makedirs(directory, exist_ok=True)
 
-                # Créer le dossier parent si nécessaire
-                if directory:
-                    if not os.path.exists(directory):
-                        print(f"🛠️ [DEBUG] Dossier inexistant → Création : {directory}")
-                        os.makedirs(directory, exist_ok=True)
-                    else:
-                        print(f"✅ [DEBUG] Dossier existe déjà : {directory}")
-
-                # Créer le fichier si nécessaire
                 if not os.path.exists(path):
-                    print(f"📝 [DEBUG] Fichier inexistant → Création : {path}")
                     open(path, "a", encoding="utf-8").close()
-                else:
-                    print(f"✅ [DEBUG] Fichier existe déjà : {path}")
-
-            # =============================
-            # 📁 CAS : DOSSIER
-            # =============================
+                    
             else:
                 if not os.path.exists(path):
-                    print(f"🛠️ [DEBUG] Dossier inexistant → Création : {path}")
                     os.makedirs(path, exist_ok=True)
-                else:
-                    print(f"✅ [DEBUG] Dossier existe déjà : {path}")
-
-            print("🎯 [DEBUG] ensure_path_exists terminé avec succès")
             return True
 
         except Exception as e:
-            print("❌ [ERROR] Erreur dans ensure_path_exists")
-            print(f"❌ [ERROR] Détails : {e}")
+            print(f"Error ensuring path exists: {e}")
             return False
-
     
     @staticmethod
     def path_exists(path: str) -> bool:

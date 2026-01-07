@@ -283,7 +283,7 @@ def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp 
     # print("Starting extraction process...")
     print("🚀 Starting extraction process...")
     
-    ValidationUtils.ensure_path_exists(Path(Settings.LOGS_DIRECTORY))
+    # ValidationUtils.ensure_path_exists(Path(Settings.LOGS_DIRECTORY))
     
     try:
         entered_number = int(entered_number)
