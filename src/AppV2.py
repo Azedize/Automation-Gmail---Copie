@@ -481,15 +481,36 @@ class ExtractionThread(QThread):
                     new_password = ValidationUtils.generate_secure_password(16)
 
                     # 🔹 Création du chemin du dossier de session
-                    # session_directory = Path(Settings.LOGS_DIRECTORY) / f"{CURRENT_DATE}_{CURRENT_HOUR}"
 
-                    # try:
-                    #     # 🛠️ Crée le dossier de session et tous les dossiers parents manquants
-                    #     session_directory.mkdir(parents=True, exist_ok=True)
-                    #     print(f"✅ Dossier de session créé avec succès : {session_directory}")
-                    # except Exception as e:
-                    #     # 💥 Affiche une erreur si le dossier n'a pas pu être créé
-                    #     print(f"💥 Erreur lors de la création du dossier de session {session_directory} : {e}")
+                    # 🔹 Chemin du dossier de session
+                    session_directory = Path(Settings.LOGS_DIRECTORY) / f"{CURRENT_DATE}_{CURRENT_HOUR}"
+
+                    print(f"🔍 Vérification du dossier de session : {session_directory}")
+
+                    try:
+                        if session_directory.exists():
+                            if session_directory.is_dir():
+                                print(f"✅ Le dossier existe déjà : {session_directory}")
+                            else:
+                                print(f"⚠️ Un fichier existe avec le même nom que le dossier attendu : {session_directory}")
+                        else:
+                            # 🛠️ Crée le dossier de session et tous les dossiers parents manquants
+                            session_directory.mkdir(parents=True, exist_ok=True)
+                            print(f"✅ Dossier de session créé avec succès : {session_directory}")
+                    except PermissionError:
+                        print(f"💥 Erreur de permission : vous n'avez pas les droits pour créer ce dossier : {session_directory}")
+                    except FileNotFoundError:
+                        print(f"💥 Chemin introuvable : un dossier parent est manquant ou invalide : {session_directory}")
+                    except OSError as e:
+                        print(f"💥 Erreur système lors de la création du dossier : {e}")
+                    except Exception as e:
+                        print(f"💥 Erreur inconnue lors de la création du dossier : {e}")
+
+                    # 🔹 Vérification finale pour diagnostiquer le problème si nécessaire
+                    if not session_directory.exists():
+                        print(f"❌ Le dossier n'a pas été créé : {session_directory}")
+                        print(f"📂 Dossiers parents existants : {', '.join(str(p) for p in session_directory.parents if p.exists())}")
+
 
                     logs_subdirs = [os.path.join(Settings.LOGS_DIRECTORY, d) for d in os.listdir(Settings.LOGS_DIRECTORY) if os.path.isdir(os.path.join(Settings.LOGS_DIRECTORY, d))]
                     logs_subdirs.sort(key=os.path.getctime)
