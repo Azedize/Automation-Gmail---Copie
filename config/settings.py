@@ -1,331 +1,168 @@
 import os
-from pathlib import Path
 import sys
 import json
-
-
-
+from pathlib import Path
 
 
 class Settings:
     # ═══════════════════════════════════════════════════════════
-    #  DATA AUTH
+    # 🔐 DATA AUTH
     # ═══════════════════════════════════════════════════════════
 
     KEY_HEX = "f564292a5740af4fc4819c6e22f64765232ad35f56079854a0ad3996c68ee7a2"
-    KEY     = bytes.fromhex(KEY_HEX)
-
-
-
+    KEY = bytes.fromhex(KEY_HEX)
 
     # ═══════════════════════════════════════════════════════════
-    #  Sopport des navigateurs
+    # 🌐 SUPPORTED BROWSERS
     # ═══════════════════════════════════════════════════════════
-
 
     SUPPORTED_BROWSERS = {
-        "chrome": {
-            "exe_name": "chrome.exe",
-            "display_name": "Google Chrome"
-        },
-        "firefox": {
-            "exe_name": "firefox.exe",
-            "display_name": "Mozilla Firefox"
-        },
-        "edge": {
-            "exe_name": "msedge.exe",
-            "display_name": "Microsoft Edge"
-        },
-        "icedragon": {
-            "exe_name": "dragon.exe",
-            "display_name": "Ice Dragon"
-     
-        },
-        "comodo": {
-            "exe_name": "chrome.exe",  
-            "display_name": "Comodo Dragon"
-        }
+        "chrome": {"exe_name": "chrome.exe", "display_name": "Google Chrome"},
+        "firefox": {"exe_name": "firefox.exe", "display_name": "Mozilla Firefox"},
+        "edge": {"exe_name": "msedge.exe", "display_name": "Microsoft Edge"},
+        "icedragon": {"exe_name": "dragon.exe", "display_name": "Ice Dragon"},
+        "comodo": {"exe_name": "chrome.exe", "display_name": "Comodo Dragon"},
     }
-    # ═══════════════════════════════════════════════════════════
-    # 🌐 Paramètres de l’environnement
-    # ═══════════════════════════════════════════════════════════
-
-    # Chemin de l’executable de Python
-    PYTHON_PATH = None
-    UPDATED_PIP_23_3 = False
-    ALL_PACKAGES_INSTALLED = True
 
     # ═══════════════════════════════════════════════════════════
-    # 🌐 Paramètres de l’API
+    # 🌐 API
     # ═══════════════════════════════════════════════════════════
 
     API_BASE_URL = "https://reporting.nrb-apps.com"
-    API_TIMEOUT = 15  # en secondes
+    API_TIMEOUT = 15
     API_RETRY_COUNT = 3
-    API_RETRY_DELAY = 5  # en secondes
-    
-    # ═══════════════════════════════════════════════════════════
-    # 🌐 Header
-    # ═══════════════════════════════════════════════════════════
+    API_RETRY_DELAY = 5
+
     HEADER = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'application/json, text/plain, */*',
-        'Accept-Language': 'en-US,en;q=0.9,ar;q=0.8',
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "en-US,en;q=0.9,ar;q=0.8",
     }
 
-
-    API_ENDPOINTS = {
-        '_APIACCESS_API': 'https://reporting.nrb-apps.com/pub/chk_usr1.php?rv4=1',
-        '_SAVE_EMAIL_API': 'https://reporting.nrb-apps.com/pub/h_new.php?k=mP5Q2XYrK9E67Y1&rID=1&rv4=1',
-        '_SEND_STATUS_API': 'http://reporting.nrb-apps.com:8585/rep/pub/email_status.php?k=mP5Q2XYrK9E67Y1&rID=1&rv4=1',
-        '_SAVE_PROCESS_API': 'https://reporting.nrb-apps.com/pub/SaveProcess.php?k=mP5QXYrK9E67Y&rID=1&rv4=1',
-        '_MAIN_API': "https://apps1.nrb-apps.com/pub/chk_usr1.php",
-        '_DOWNLOAD_EXTRACTT_API'    :  "https://github.com/Azedize/Programme/archive/refs/heads/main.zip",
-        '_CHECK_VERSION_API'        :  "https://www.dropbox.com/scl/fi/78a38bc4papwzlw80hxti/version.json?rlkey=n7dx5mb8tcctvprn0wq4ojw7m&st=z6vzw0ox&dl=1",
-        '_HANDLE_SAVE_API'          :  "http://localhost/auth-api/add_scenario.php",
-        '_LOAD_SCENARIOS_API'       :  "http://localhost/auth-api/get_scenarios.php",
-        '_ON_SCENARIO_CHANGED_API'  :  "http://localhost/auth-api/get_scenario_by_name.php",
-        '__CHECK_URL_PROGRAMM__': "https://www.dropbox.com/scl/fi/78a38bc4papwzlw80hxti/version.json?rlkey=n7dx5mb8tcctvprn0wq4ojw7m&st=z6vzw0ox&dl=1",
-        '__SERVER_ZIP_URL_PROGRAM__': "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/master.zip"
-    }
-
-
-
-
-    # =========================================
-    # 🌐 URL UPDATE PROGRAMM
-    # =========================================
-
-
-    # les clés pour générer la clé finale
-    CLE1 = "pr"
-    CLE2 = "rep"
-    COMBINED_KEYS = f"&{CLE1}&{CLE2}"
-
-
-
-    
     # ═══════════════════════════════════════════════════════════
-    # 🔐 Paramètres de chiffrement
+    # 📁 PATHS (Pathlib only)
     # ═══════════════════════════════════════════════════════════
-    
-    ENCRYPTION_KEY_HEX = 'f564292a5740af4fc4819c6e22f64765232ad35f56079854a0ad3996c68ee7a2'
-    
-    
-    
-    
-    
-    AES_BLOCK_SIZE = 128    
-    AES_KEY_LENGTH = 32         
-    AES_IV_LENGTH = 16         
-    AES_SALT_LENGTH = 16        
-    PBKDF2_ITERATIONS = 100_000
-    AES_IV_LENGTH_CBC = 16        
-    AES_IV_LENGTH_GCM = 12        
 
-
-    # ═══════════════════════════════════════════════════════════
-    # 📁 Paramètres des chemins
-    # ═══════════════════════════════════════════════════════════
-    
     BASE_DIR = Path(__file__).resolve().parent.parent
-    RESOURCES_DIR = BASE_DIR / 'resources'
-    UI_DIR = RESOURCES_DIR / 'ui'
-    TEMPLATES_DIR = RESOURCES_DIR / 'templates'
-    
-    DATA_DIR = Path(os.getenv('APPDATA')) / 'AutoMailPro'
-    SESSION_FILE = DATA_DIR / 'session.txt'
+    RESOURCES_DIR = BASE_DIR / "resources"
+    UI_DIR = RESOURCES_DIR / "ui"
+    TEMPLATES_DIR = RESOURCES_DIR / "templates"
+    ICONS_DIR = RESOURCES_DIR / "icons"
 
-    TOOLS_DIR = BASE_DIR / 'Tools'
-    EXTENSIONS_DIR = TOOLS_DIR / 'Extensions'
-    
-    PROFILES_DIR = TOOLS_DIR / 'Profiles'
-    CHROME_PROFILES = PROFILES_DIR / 'chrome'
-    FIREFOX_PROFILES = PROFILES_DIR / 'firefox'
-    FAMILY_CHROME_DIR_PROFILES = PROFILES_DIR / 'Family_Chrome'
-    
- 
-    VERSION_LOCAL_EXT = os.path.join(EXTENSIONS_DIR, "version.txt")
-    VERSION_LOCAL_PROGRAMM = os.path.join(BASE_DIR , "config", "version.txt")
+    TOOLS_DIR = BASE_DIR / "Tools"
+    EXTENSIONS_DIR = TOOLS_DIR / "Extensions"
+    PROFILES_DIR = TOOLS_DIR / "Profiles"
 
-    EXTENTIONS_DIR_FIREFOX = TOOLS_DIR / 'extensions' / 'FIREFOX_EXTENTIONS'
-    EXTENSIONS_DIR_FAMILY_CHROME = TOOLS_DIR / 'extensions' / 'FAMILY_CHROME_EXTENTIONS'
+    CHROME_PROFILES = PROFILES_DIR / "chrome"
+    FIREFOX_PROFILES = PROFILES_DIR / "firefox"
+    FAMILY_CHROME_DIR_PROFILES = PROFILES_DIR / "Family_Chrome"
 
+    EXTENTIONS_DIR_FIREFOX = TOOLS_DIR / "extensions" / "FIREFOX_EXTENTIONS"
+    EXTENSIONS_DIR_FAMILY_CHROME = TOOLS_DIR / "extensions" / "FAMILY_CHROME_EXTENTIONS"
 
-    ICONS_DIR = BASE_DIR / 'resources' / 'icons'
-    FILE_ISP = os.path.join(BASE_DIR, "config", "Isp.txt")
+    LOGS_DIRECTORY = TOOLS_DIR / "logs"
+    RESULT_FILE_PATH = TOOLS_DIR / "result.txt"
 
+    APPDATA = Path(os.getenv("APPDATA", Path.home()))
+    APP_NAME = "AutoMailPro"
+    APPDATA_DIR = APPDATA / APP_NAME
+    SESSION_PATH = APPDATA_DIR / "session.txt"
 
     # ═══════════════════════════════════════════════════════════
-    # Chemin Extentions
+    # 🔑 ENCRYPTION
     # ═══════════════════════════════════════════════════════════
 
-    CONFIG_PROFILE              = r"C:\RepProxy\template Profile"
-    SECURE_PREFERENCES_TEMPLATE = r"C:\RepProxy\template Profile\default\Secure Preferences"
-    EXTENTION_EX3               = r"C:\RepProxy\Ext3"
-    MANIFEST_PATH_EX3           = os.path.join(EXTENTION_EX3, "manifest.json")
-    VERSION_LOCAL_EX3           = os.path.join(EXTENTION_EX3, "version.txt")
-
-
-
-    TEMPLATE_DIRECTORY_FIREFOX  = os.path.join( TOOLS_DIR , 'ExtensionTemplateFirefox')
-    TEMPLATE_DIRECTORY_FAMILY_CHROME = os.path.join( TOOLS_DIR , 'Extention_Family_Chrome')
-
-
-    LOGS_DIRECTORY = os.path.join(TOOLS_DIR, 'logs')
-    RESULT_FILE_PATH = os.path.join(TOOLS_DIR, "result.txt")
-
-    APPDATA       = os.getenv("APPDATA")
-    APP_NAME      = "SecureDesk"
-    APPDATA_DIR   = os.path.join(APPDATA, APP_NAME)
-
-    SESSION_PATH  = os.path.join(APPDATA_DIR, "session.txt")
+    ENCRYPTION_KEY_HEX = KEY_HEX
+    AES_BLOCK_SIZE = 128
+    AES_KEY_LENGTH = 32
+    AES_IV_LENGTH = 16
+    PBKDF2_ITERATIONS = 100_000
 
     # ═══════════════════════════════════════════════════════════
-    # 🔑 Recherche clés spécifiques
+    # 🖥️ UI SETTINGS
     # ═══════════════════════════════════════════════════════════
-    RESULTATS=[]
-    CLES_RECHERCHE = ["cglaeklndjbecchejgkdpblljkmgkacg","dkbionknflglndapchlcfnelgchogjnl", "developer_mode"]
-    RESULTATS_EX = []
 
-
-
-    ARROW_DOWN_PATH      = os.path.join(ICONS_DIR, "arrow_Down.png").replace("\\", "/")
-    ARROW_UP_PATH        = os.path.join(ICONS_DIR, "arrow_up.png").replace("\\", "/")
-    ARROW_DOWN_W_PATH    = os.path.join(ICONS_DIR, "arrow_Down_w.png")
-    ARROW_UP_W_PATH      = os.path.join(ICONS_DIR, "arrow_up_w.png")
-
-    DOWN_EXISTS    = os.path.exists(ARROW_DOWN_PATH)
-    UP_EXISTS      = os.path.exists(ARROW_UP_PATH)
-    DOWN_EXISTS_W  = os.path.exists(ARROW_DOWN_W_PATH)
-    UP_EXISTS_W    = os.path.exists(ARROW_UP_W_PATH)
-
-    # ═══════════════════════════════════════════════════════════
-    # 🖥️ Paramètres de l’interface
-    # ═══════════════════════════════════════════════════════════
-    
     WINDOW_WIDTH = 1710
     WINDOW_HEIGHT = 1005
-    
-    PRIMARY_COLOR = '#669bbc'
-    SECONDARY_COLOR = '#b2cddd'
-    ACCENT_COLOR = '#d90429'
-    SUCCESS_COLOR = '#2e7d32'
-    WARNING_COLOR = '#ed6c02'
-    ERROR_COLOR = '#d32f2f'
-    INFO_COLOR = '#0288d1'
-    
-    FONT_FAMILY = 'Times, Times New Roman, serif'
+
+    PRIMARY_COLOR = "#669bbc"
+    SECONDARY_COLOR = "#b2cddd"
+    ACCENT_COLOR = "#d90429"
+
+    FONT_FAMILY = "Times New Roman"
     FONT_SIZE_SMALL = 12
     FONT_SIZE_MEDIUM = 14
     FONT_SIZE_LARGE = 16
-    
-    # ═══════════════════════════════════════════════════════════
-    # ⚙️ Paramètres de l’application
-    # ═══════════════════════════════════════════════════════════
-    
 
-    
+    # ═══════════════════════════════════════════════════════════
+    # ⚙️ APP SETTINGS
+    # ═══════════════════════════════════════════════════════════
+
     SESSION_VALIDITY_DAYS = 2
-    SESSION_TIMEZONE = 'Africa/Casablanca'
-    
-    SERVICES = {
-                "Gmail": "Gmail.png",
-                # "Hotmail": "Hotmail.png",
-                # "Yahoo": "Yahoo.png"
-            }
- 
-    MAX_CONCURRENT_BROWSERS = 10
-    THREAD_POOL_SIZE = 4
-    
-    # ═══════════════════════════════════════════════════════════
-    # 🔍 Paramètres de mise à jour
-    # ═══════════════════════════════════════════════════════════
-    
-    UPDATE_CHECK_URL = (
-        "https://www.dropbox.com/scl/fi/78a38bc4papwzlw80hxti/"
-        "version.json?rlkey=n7dx5mb8tcctvprn0wq4ojw7m&st=z6vzw0ox&dl=1"
-    )
-    UPDATE_DOWNLOAD_URL = (
-        "https://github.com/Azedize/Programme/archive/refs/heads/main.zip"
-    )
-    
+    SESSION_TIMEZONE = "Africa/Casablanca"
 
-    
-
-    
     # ═══════════════════════════════════════════════════════════
-    # 📂 Déclaration des chemins UI globaux Interface
+    # 🛠️ PATH INITIALIZATION (CRITICAL)
     # ═══════════════════════════════════════════════════════════
 
-
-    INTERFACE_UI      = os.path.abspath(os.path.join(BASE_DIR,  "resources", 'ui', "interface.ui"))
-    AUTH_UI           = os.path.abspath(os.path.join(BASE_DIR, "resources", 'ui', "Auth.ui"))
-    FILE_ACTIONS_JSON = os.path.join(BASE_DIR, "config", "action.json")
-    AUTH_BACKGROUND   = os.path.join(BASE_DIR,"resources" , "icons", "baghround.jpg")
-    APP_ICON          = os.path.join(BASE_DIR,"resources" , "icons", "logo.jpg")
-    # ═══════════════════════════════════════════════════════════
-    # Méthodes utilitaires
-    # ═══════════════════════════════════════════════════════════
-    
-
-    
-    STATUS_LIST = ["all", "bad_proxy", "completed", "account_closed", "password_changed", "code_de_validation",
-                    "recoverychanged", "Activite_suspecte", "validation_capcha", "restore_account", "others"]
-    
-
-
-            
     @classmethod
     def ensure_directories(cls):
-        """Créer les dossiers nécessaires s’ils n’existent pas"""
+        """
+        🔍 Vérifie et crée tous les dossiers nécessaires
+        ❌ Empêche les erreurs Windows (file vs directory)
+        """
+
         directories = [
-            cls.DATA_DIR,
-            cls.PROFILES_DIR,
+            cls.APPDATA_DIR,
+            cls.TOOLS_DIR,
             cls.LOGS_DIRECTORY,
+            cls.PROFILES_DIR,
             cls.CHROME_PROFILES,
             cls.FIREFOX_PROFILES,
             cls.FAMILY_CHROME_DIR_PROFILES,
             cls.EXTENSIONS_DIR,
             cls.EXTENTIONS_DIR_FIREFOX,
-            cls.EXTENSIONS_DIR_FAMILY_CHROME
+            cls.EXTENSIONS_DIR_FAMILY_CHROME,
         ]
 
-        for directory in directories:
-            path = Path(directory)  # تحويل النص إلى Path
-            if not path.exists():
-                try:
-                    path.mkdir(parents=True, exist_ok=True)  # ينشئ كل المجلدات المفقودة
-                    print(f"✅ Dossier créé: {path}")
-                except Exception as e:
-                    print(f"💥 Erreur lors de la création du dossier {path}: {e}")
+        for path in directories:
+            path = Path(path)
+
+            if path.exists():
+                if not path.is_dir():
+                    raise RuntimeError(f"❌ Path exists but is not a directory: {path}")
+                else:
+                    print(f"ℹ️ Directory exists: {path}")
             else:
-                print(f"ℹ️ Dossier déjà existant: {path}")
-    
+                path.mkdir(parents=True, exist_ok=True)
+                print(f"✅ Directory created: {path}")
+
+    # ═══════════════════════════════════════════════════════════
+    # 🧠 UTILS
+    # ═══════════════════════════════════════════════════════════
+
     @classmethod
     def get_encryption_key_bytes(cls) -> bytes:
-        """Obtenir la clé de chiffrement au format bytes"""
         return bytes.fromhex(cls.ENCRYPTION_KEY_HEX)
-
 
     @classmethod
     def find_pythonw(cls):
-        base_dir = os.path.dirname(sys.executable)
-        candidate = os.path.join(base_dir, "pythonw.exe")
-        if os.path.isfile(candidate):
+        base_dir = Path(sys.executable).parent
+        candidate = base_dir / "pythonw.exe"
+        if candidate.exists():
             return candidate
 
         for path in os.environ.get("PATH", "").split(os.pathsep):
-            candidate = os.path.join(path.strip('"'), "pythonw.exe")
-            if os.path.isfile(candidate):
+            candidate = Path(path.strip('"')) / "pythonw.exe"
+            if candidate.exists():
                 return candidate
 
         return None
 
 
+# ═══════════════════════════════════════════════════════════
+# 🚀 INITIALIZATION
+# ═══════════════════════════════════════════════════════════
 
-# Création d’une instance unique utilisée dans tout le projet
 settings = Settings()
-
-# Vérification et création des dossiers de base
-# settings.ensure_directories()
+Settings.ensure_directories()
