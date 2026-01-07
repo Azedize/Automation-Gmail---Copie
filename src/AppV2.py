@@ -702,9 +702,9 @@ class CloseBrowserThread(QThread):
 
             print(f"📧 [LOG] Email détecté: {email}")
 
-            session_folder = f"{CURRENT_DATE}_{CURRENT_HOUR}"
-            target_folder = os.path.join(Settings.LOGS_DIRECTORY, session_folder)
-            os.makedirs(target_folder, exist_ok=True)
+            # session_folder = f"{CURRENT_DATE}_{CURRENT_HOUR}"
+            # target_folder = os.path.join(Settings.LOGS_DIRECTORY, session_folder)
+            # os.makedirs(target_folder, exist_ok=True)
 
             target_file = os.path.join(target_folder, f"{email}_{CURRENT_HOUR}.txt")
 
