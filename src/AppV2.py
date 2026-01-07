@@ -2088,8 +2088,9 @@ def main():
 
     app = QApplication(sys.argv)
 
-    if ValidationUtils.path_exists(Settings.APP_ICON):
-        app.setWindowIcon(QIcon(Settings.APP_ICON))
+
+    if ValidationUtils.path_exists(Path(Settings.APP_ICON)):
+        app.setWindowIcon(QIcon(str(Path(Settings.APP_ICON))))  # تحويل Path إلى str لـ QIcon
 
     if session_valid:
         try:
