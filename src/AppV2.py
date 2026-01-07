@@ -481,15 +481,15 @@ class ExtractionThread(QThread):
                     new_password = ValidationUtils.generate_secure_password(16)
 
                     # 🔹 Création du chemin du dossier de session
-                    session_directory = Path(Settings.LOGS_DIRECTORY) / f"{CURRENT_DATE}_{CURRENT_HOUR}"
+                    # session_directory = Path(Settings.LOGS_DIRECTORY) / f"{CURRENT_DATE}_{CURRENT_HOUR}"
 
-                    try:
-                        # 🛠️ Crée le dossier de session et tous les dossiers parents manquants
-                        session_directory.mkdir(parents=True, exist_ok=True)
-                        print(f"✅ Dossier de session créé avec succès : {session_directory}")
-                    except Exception as e:
-                        # 💥 Affiche une erreur si le dossier n'a pas pu être créé
-                        print(f"💥 Erreur lors de la création du dossier de session {session_directory} : {e}")
+                    # try:
+                    #     # 🛠️ Crée le dossier de session et tous les dossiers parents manquants
+                    #     session_directory.mkdir(parents=True, exist_ok=True)
+                    #     print(f"✅ Dossier de session créé avec succès : {session_directory}")
+                    # except Exception as e:
+                    #     # 💥 Affiche une erreur si le dossier n'a pas pu être créé
+                    #     print(f"💥 Erreur lors de la création du dossier de session {session_directory} : {e}")
 
                     logs_subdirs = [os.path.join(Settings.LOGS_DIRECTORY, d) for d in os.listdir(Settings.LOGS_DIRECTORY) if os.path.isdir(os.path.join(Settings.LOGS_DIRECTORY, d))]
                     logs_subdirs.sort(key=os.path.getctime)
@@ -702,9 +702,9 @@ class CloseBrowserThread(QThread):
 
             print(f"📧 [LOG] Email détecté: {email}")
 
-            # session_folder = f"{CURRENT_DATE}_{CURRENT_HOUR}"
-            # target_folder = os.path.join(Settings.LOGS_DIRECTORY, session_folder)
-            # os.makedirs(target_folder, exist_ok=True)
+            session_folder = f"{CURRENT_DATE}_{CURRENT_HOUR}"
+            target_folder = os.path.join(Settings.LOGS_DIRECTORY, session_folder)
+            os.makedirs(target_folder, exist_ok=True)
 
             target_file = os.path.join(target_folder, f"{email}_{CURRENT_HOUR}.txt")
 
