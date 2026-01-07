@@ -480,17 +480,158 @@ class ExtractionThread(QThread):
                     inserted_id=Save_Email(params)
                     new_password = ValidationUtils.generate_secure_password(16)
 
-                    # 🔹 Création du chemin du dossier de session
-                    # session_directory = Path(Settings.LOGS_DIRECTORY) / f"{CURRENT_DATE}_{CURRENT_HOUR}"
+            # Création du dossier de session avec diagnostic détaillé
+                    session_directory = Path(Settings.LOGS_DIRECTORY) / f"{CURRENT_DATE}_{CURRENT_HOUR}"
 
-                    # try:
-                    #     # 🛠️ Crée le dossier de session et tous les dossiers parents manquants
-                    #     session_directory.mkdir(parents=True, exist_ok=True)
-                    #     print(f"✅ Dossier de session créé avec succès : {session_directory}")
-                    # except Exception as e:
-                    #     # 💥 Affiche une erreur si le dossier n'a pas pu être créé
-                    #     print(f"💥 Erreur lors de la création du dossier de session {session_directory} : {e}")
+                    print("=" * 80)
+                    print("🔍 DIAGNOSTIC DÉTAILLÉ - CRÉATION DOSSIER DE SESSION")
+                    print("=" * 80)
 
+                    # 1. Afficher les valeurs des variables
+                    print(f"📋 VARIABLES UTILISÉES:")
+                    print(f"   • Settings.LOGS_DIRECTORY = '{Settings.LOGS_DIRECTORY}'")
+                    print(f"   • CURRENT_DATE = '{CURRENT_DATE}'")
+                    print(f"   • CURRENT_HOUR = '{CURRENT_HOUR}'")
+                    print(f"   • Chemin complet = '{session_directory}'")
+
+                    # 2. Vérifier le type et l'existence des chemins
+                    print(f"\n🔍 VÉRIFICATION DES CHEMINS:")
+                    try:
+                        logs_dir_path = Path(Settings.LOGS_DIRECTORY)
+                        print(f"   • LOGS_DIRECTORY est de type: {type(Settings.LOGS_DIRECTORY)}")
+                        print(f"   • Chemin logs (Path): {logs_dir_path}")
+                        print(f"   • Chemin logs existe: {logs_dir_path.exists()}")
+                        if logs_dir_path.exists():
+                            print(f"   • Chemin logs est un dossier: {logs_dir_path.is_dir()}")
+                            print(f"   • Permissions d'écriture: {os.access(str(logs_dir_path), os.W_OK)}")
+                    except Exception as e:
+                        print(f"   ❌ Erreur vérification LOGS_DIRECTORY: {e}")
+
+                    # 3. Vérifier le format des dates
+                    print(f"\n📅 VÉRIFICATION DES DATES:")
+                    try:
+                        print(f"   • CURRENT_DATE type: {type(CURRENT_DATE)}")
+                        print(f"   • CURRENT_HOUR type: {type(CURRENT_HOUR)}")
+                        print(f"   • CURRENT_DATE longueur: {len(CURRENT_DATE) if CURRENT_DATE else 'None'}")
+                        print(f"   • CURRENT_HOUR longueur: {len(CURRENT_HOUR) if CURRENT_HOUR else 'None'}")
+                        
+                        # Vérifier les caractères problématiques
+                        import string
+                        valid_chars = string.ascii_letters + string.digits + "_- "
+                        
+                        if CURRENT_DATE:
+                            invalid_chars_date = [c for c in CURRENT_DATE if c not in valid_chars]
+                            if invalid_chars_date:
+                                print(f"   ⚠️ Caractères invalides dans CURRENT_DATE: {invalid_chars_date}")
+                        
+                        if CURRENT_HOUR:
+                            invalid_chars_hour = [c for c in CURRENT_HOUR if c not in valid_chars]
+                            if invalid_chars_hour:
+                                print(f"   ⚠️ Caractères invalides dans CURRENT_HOUR: {invalid_chars_hour}")
+                    except Exception as e:
+                        print(f"   ❌ Erreur vérification dates: {e}")
+
+                    # 4. Essayer de créer le dossier parent d'abord
+                    print(f"\n🛠️ CRÉATION DES DOSSIERS:")
+                    try:
+                        print(f"   • Tentative création LOGS_DIRECTORY si inexistant...")
+                        logs_dir_path.mkdir(parents=True, exist_ok=True)
+                        print(f"   ✅ LOGS_DIRECTORY créé/validé")
+                        
+                        print(f"   • Tentative création session_directory: {session_directory}")
+                        
+                        # Essayer différentes méthodes
+                        print(f"   • Méthode 1: Path.mkdir() avec parents=True, exist_ok=True")
+                        session_directory.mkdir(parents=True, exist_ok=True)
+                        
+                        print(f"   • Vérification création...")
+                        if session_directory.exists():
+                            print(f"   ✅ Dossier de session créé avec succès: {session_directory}")
+                            print(f"   • Chemin absolu: {session_directory.absolute()}")
+                            print(f"   • Permissions dossier: {oct(session_directory.stat().st_mode)[-3:]}")
+                        else:
+                            print(f"   ❌ Dossier non créé après mkdir()")
+                            
+                    except FileExistsError as fee:
+                        print(f"   ⚠️ FileExistsError: {fee}")
+                        print(f"   ℹ️ Le dossier existe déjà")
+                    except OSError as ose:
+                        print(f"   ❌ OSError: {ose}")
+                        print(f"   • errno: {ose.errno}")
+                        print(f"   • strerror: {ose.strerror}")
+                        print(f"   • filename: {ose.filename}")
+                        
+                        # Diagnostic supplémentaire pour l'erreur 267
+                        if hasattr(ose, 'errno') and ose.errno == 267:
+                            print(f"   🔍 ERREUR 267 - DIAGNOSTIC AVANCÉ:")
+                            print(f"      • Le chemin ressemble-t-il à un fichier? {str(session_directory).endswith('.')}")
+                            
+                            # Vérifier si un fichier avec ce nom existe déjà
+                            if os.path.exists(str(session_directory)):
+                                if os.path.isfile(str(session_directory)):
+                                    print(f"      ⚠️ Un FICHIER existe déjà avec ce nom!")
+                                else:
+                                    print(f"      ℹ️ Un DOSSIER existe déjà avec ce nom")
+                            
+                            # Vérifier les caractères interdits
+                            invalid_chars = '<>:"|?*'
+                            path_str = str(session_directory)
+                            found_invalid = [c for c in invalid_chars if c in path_str]
+                            if found_invalid:
+                                print(f"      ⚠️ Caractères interdits trouvés: {found_invalid}")
+                                
+                    except PermissionError as pe:
+                        print(f"   ❌ PermissionError: {pe}")
+                        print(f"   • Tentative avec permissions différentes...")
+                        try:
+                            # Essayer avec os.makedirs
+                            os.makedirs(str(session_directory), exist_ok=True, mode=0o777)
+                            print(f"   ✅ Réessai avec os.makedirs réussi")
+                        except Exception as e2:
+                            print(f"   ❌ Échec réessai: {e2}")
+                            
+                    except Exception as e:
+                        print(f"   ❌ Exception générale: {type(e).__name__}: {e}")
+                        
+                        # Tentative alternative avec os.makedirs
+                        print(f"   • Tentative alternative avec os.makedirs...")
+                        try:
+                            os.makedirs(str(session_directory), exist_ok=True)
+                            print(f"   ✅ os.makedirs réussi")
+                        except Exception as e2:
+                            print(f"   ❌ os.makedirs échoué: {e2}")
+
+                    # 5. Vérification finale
+                    print(f"\n✅ VÉRIFICATION FINALE:")
+                    try:
+                        if session_directory.exists():
+                            print(f"   ✓ Dossier existe: OUI")
+                            print(f"   ✓ Chemin: {session_directory.absolute()}")
+                            print(f"   ✓ Taille chemin: {len(str(session_directory))} caractères")
+                            
+                            # Tester l'écriture
+                            test_file = session_directory / "test_write.txt"
+                            try:
+                                test_file.write_text("test")
+                                test_file.unlink()
+                                print(f"   ✓ Écriture possible: OUI")
+                            except:
+                                print(f"   ⚠️ Écriture possible: NON (problème permissions)")
+                        else:
+                            print(f"   ❌ Dossier existe: NON")
+                            print(f"   • Dernier recours: créer dans TEMP")
+                            import tempfile
+                            temp_dir = Path(tempfile.gettempdir()) / "AutoMailPro" / f"{CURRENT_DATE}_{CURRENT_HOUR}"
+                            temp_dir.mkdir(parents=True, exist_ok=True)
+                            session_directory = temp_dir
+                            print(f"   ✅ Dossier créé dans TEMP: {session_directory}")
+                            
+                    except Exception as e:
+                        print(f"   ❌ Erreur vérification finale: {e}")
+
+                    print("=" * 80)
+                    print("🔚 FIN DIAGNOSTIC")
+                    print("=" * 80)
                     logs_subdirs = [os.path.join(Settings.LOGS_DIRECTORY, d) for d in os.listdir(Settings.LOGS_DIRECTORY) if os.path.isdir(os.path.join(Settings.LOGS_DIRECTORY, d))]
                     logs_subdirs.sort(key=os.path.getctime)
 
@@ -702,9 +843,33 @@ class CloseBrowserThread(QThread):
 
             print(f"📧 [LOG] Email détecté: {email}")
 
-            session_folder = f"{CURRENT_DATE}_{CURRENT_HOUR}"
-            target_folder = os.path.join(Settings.LOGS_DIRECTORY, session_folder)
-            os.makedirs(target_folder, exist_ok=True)
+
+            try:
+                print("🔎 [DEBUG] Début création du dossier de session")
+
+                print(f"📅 CURRENT_DATE = {CURRENT_DATE}")
+                print(f"⏰ CURRENT_HOUR = {CURRENT_HOUR}")
+
+                session_folder = f"{CURRENT_DATE}_{CURRENT_HOUR}"
+                print(f"📂 Nom du dossier session : {session_folder}")
+
+                print(f"📁 LOGS_DIRECTORY = {Settings.LOGS_DIRECTORY}")
+
+                target_folder = os.path.join(Settings.LOGS_DIRECTORY, session_folder)
+                print(f"📍 Chemin final du dossier : {target_folder}")
+
+                if not os.path.exists(Settings.LOGS_DIRECTORY):
+                    print("⚠️ [WARNING] LOGS_DIRECTORY n'existe pas")
+
+                os.makedirs(target_folder, exist_ok=True)
+
+                print("✅ [SUCCESS] Dossier créé ou déjà existant")
+
+            except Exception as e:
+                print("❌ [ERROR] Erreur lors de la création du dossier")
+                print(f"📛 Type erreur : {type(e).__name__}")
+                print(f"📄 Message : {e}")
+
 
             target_file = os.path.join(target_folder, f"{email}_{CURRENT_HOUR}.txt")
 
