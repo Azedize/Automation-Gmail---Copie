@@ -1,0 +1,7 @@
+# Sensitive & local data
+tools/Profiles/
+.env
+*.key
+*.log
+__pycache__/
+*.pyc
