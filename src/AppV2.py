@@ -1,3 +1,4 @@
+from curses import window
 import os
 import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -1465,7 +1466,7 @@ class MainWindow(QMainWindow):
         print("✅ Current date and hour set:", CURRENT_DATE, CURRENT_HOUR)
 
         # print("📦 JSON Final:")
-        result_json = JsonManager.generate_json_data(self.scenario_layout)
+        result_json = JsonManager.generate(self.scenario_layout , selected_Browser)
         print(json.dumps(result_json, indent=2, ensure_ascii=False))
         print("✅ Final JSON generated. Data:", json.dumps(result_json, indent=2, ensure_ascii=False))
 
@@ -1484,6 +1485,7 @@ class MainWindow(QMainWindow):
 
         try:
             save_status = JsonManager.save_json_to_file(result_json, selected_Browser)
+
             if save_status == "ERROR":
                 UIManager.Show_Critical_Message(
                     window,
@@ -1495,10 +1497,9 @@ class MainWindow(QMainWindow):
                 return
             else:
                 print("✅ JSON file saved with status:", save_status)
-                print(f"✅ Fichier JSON sauvegardé avec statut: {save_status}")
+
         except Exception as e:
             print(f"❌ Erreur lors de la sauvegarde du JSON: {e}")
-            print("❌ Error saving JSON file:", e)
             UIManager.Show_Critical_Message(
                 window,
                 "Error - Save Configuration",
