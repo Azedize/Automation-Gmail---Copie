@@ -1466,7 +1466,7 @@ class MainWindow(QMainWindow):
 
         # print("📦 JSON Final:")
         result_json = JsonManager.generate_json_data(self.scenario_layout)
-        # print(json.dumps(result_json, indent=2, ensure_ascii=False))
+        print(json.dumps(result_json, indent=2, ensure_ascii=False))
         print("✅ Final JSON generated. Data:", json.dumps(result_json, indent=2, ensure_ascii=False))
 
 
