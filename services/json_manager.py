@@ -285,7 +285,8 @@ class JsonManager:
     # ==============================
     # MODIFY JSON
     # ==============================
-    def process_and_modify_json(self, input_json):
+    @staticmethod
+    def process_and_modify_json( input_json):
         output, found = [], False
 
         for el in input_json:
