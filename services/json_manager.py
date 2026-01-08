@@ -518,7 +518,7 @@ class JsonManager:
     def save_json_to_file( json_data: List[Dict[str, Any]],  selected_browser: str) -> str:
 
         browser_lower = selected_browser.lower()
-        
+
         if browser_lower == "firefox":
             template_dir = Settings.TEMPLATE_DIRECTORY_FIREFOX
         elif browser_lower == "chrome":
@@ -551,6 +551,7 @@ class JsonManager:
     @staticmethod
     def generate_json_data(scenario_layout: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         try:
+            json_data = JsonManager.create_initial_json()
             # Étape 1: Traitement des widgets
             json_data = JsonManager.process_widget_data(scenario_layout)
             
