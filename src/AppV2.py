@@ -1,4 +1,3 @@
-from curses import window
 import os
 import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -1521,7 +1520,7 @@ class MainWindow(QMainWindow):
             'p_owner': session_info["username"],
             'p_entity': session_info["p_entity"],
             'p_isp': self.Isp.currentText(),
-            'p_action_name': json_string,  # CORRECTION: Utiliser json_string au lieu de json.dumps(result_json)
+            'p_action_name': json_string,  
             'p_app': 'V4',
             'p_python_version': f"{sys.version_info.major}.{sys.version_info.minor}", 
             'p_browser': self.browser.currentText(),
