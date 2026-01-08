@@ -50,7 +50,8 @@ class JsonManager:
     # ==============================
     # MAIN PIPELINE
     # ==============================
-    def generate(self, scenario_layout, selected_browser: str):
+    @staticmethod
+    def generate(window, scenario_layout, selected_browser: str):
 
         output_json = [{"process": "login", "sleep": 1}]
 
@@ -68,8 +69,8 @@ class JsonManager:
             hidden_id = full_state.get("id")
             show_on_init = full_state.get("showOnInit", False)
 
-            checkbox = next(iter(self.get_children(widget, QCheckBox)), None)
-            qlineedits = self.get_children(widget, QLineEdit)
+            checkbox = next(iter(JsonManager.get_children(widget, QCheckBox)), None)
+            qlineedits = JsonManager.get_children(widget, QLineEdit)
 
             # ==========================
             # CASE 1: NORMAL ACTION (NO showOnInit, NO google/youtube)
@@ -77,18 +78,18 @@ class JsonManager:
             if (
                 hidden_id
                 and not show_on_init
-                and not hidden_id.startswith((self.GOOGLE_PREFIX, self.YOUTUBE_PREFIX))
+                and not hidden_id.startswith((JsonManager.GOOGLE_PREFIX, JsonManager.YOUTUBE_PREFIX))
             ):
                 if len(qlineedits) > 1:
-                    limit = self.parse_random_range(qlineedits[0].text())
-                    sleep = self.parse_random_range(qlineedits[1].text())
+                    limit = JsonManager.parse_random_range(qlineedits[0].text())
+                    sleep = JsonManager.parse_random_range(qlineedits[1].text())
                     output_json.append({
                         "process": hidden_id,
                         "limit": limit,
                         "sleep": sleep
                     })
                 elif qlineedits:
-                    sleep = self.parse_random_range(qlineedits[0].text())
+                    sleep = JsonManager.parse_random_range(qlineedits[0].text())
                     output_json.append({
                         "process": hidden_id,
                         "sleep": sleep
@@ -102,10 +103,10 @@ class JsonManager:
             if (
                 hidden_id
                 and not show_on_init
-                and hidden_id.startswith(self.YOUTUBE_PREFIX)
+                and hidden_id.startswith(JsonManager.YOUTUBE_PREFIX)
             ):
-                limit = self.parse_random_range(qlineedits[0].text()) if len(qlineedits) > 1 else 0
-                sleep = self.parse_random_range(qlineedits[1].text()) if len(qlineedits) > 1 else 0
+                limit = JsonManager.parse_random_range(qlineedits[0].text()) if len(qlineedits) > 1 else 0
+                sleep = JsonManager.parse_random_range(qlineedits[1].text()) if len(qlineedits) > 1 else 0
 
                 output_json.append({
                     "process": "CheckLoginYoutube",
@@ -148,11 +149,11 @@ class JsonManager:
                     sub_state = sub_widget.property("full_state") or {}
                     sub_id = sub_state.get("id")
 
-                    if sub_state.get("showOnInit") or sub_id.startswith((self.GOOGLE_PREFIX, self.YOUTUBE_PREFIX)):
+                    if sub_state.get("showOnInit") or sub_id.startswith((JsonManager.GOOGLE_PREFIX, JsonManager.YOUTUBE_PREFIX)):
                         break
 
-                    sleep_txt = next((c.text() for c in self.get_children(sub_widget, QLineEdit)), "0")
-                    sleep = self.parse_random_range(sleep_txt)
+                    sleep_txt = next((c.text() for c in JsonManager.get_children(sub_widget, QLineEdit)), "0")
+                    sleep = JsonManager.parse_random_range(sleep_txt)
 
                     sub_process.append({
                         "process": sub_id,
@@ -160,13 +161,13 @@ class JsonManager:
                     })
                     i += 1
 
-                combo = next(iter(self.get_children(widget, QComboBox)), None)
+                combo = next(iter(JsonManager.get_children(widget, QComboBox)), None)
                 action = "return_back" if combo and combo.currentText() == "Return back" else "next"
                 if sub_process:
                     sub_process.append({"process": action})
 
-                limit_loop = self.parse_random_range(qlineedits[0].text()) if len(qlineedits) > 1 else 0
-                start_loop = self.parse_random_range(qlineedits[1].text()) if len(qlineedits) > 1 else 0
+                limit_loop = JsonManager.parse_random_range(qlineedits[0].text()) if len(qlineedits) > 1 else 0
+                start_loop = JsonManager.parse_random_range(qlineedits[1].text()) if len(qlineedits) > 1 else 0
 
                 output_json.append({
                     "process": "loop",
@@ -181,7 +182,7 @@ class JsonManager:
             # CASE 4: showOnInit WITHOUT checkbox
             # ==========================
             if show_on_init and not checkbox:
-                sleep = self.parse_random_range(qlineedits[0].text()) if qlineedits else 0
+                sleep = JsonManager.parse_random_range(qlineedits[0].text()) if qlineedits else 0
                 output_json.append({
                     "process": hidden_id,
                     "sleep": sleep
@@ -192,8 +193,8 @@ class JsonManager:
             # ==========================
             # CASE 5: GOOGLE / YOUTUBE with search
             # ==========================
-            if hidden_id and hidden_id.startswith((self.GOOGLE_PREFIX, self.YOUTUBE_PREFIX)):
-                sleep = self.parse_random_range(qlineedits[0].text()) if qlineedits else 0
+            if hidden_id and hidden_id.startswith((JsonManager.GOOGLE_PREFIX, JsonManager.YOUTUBE_PREFIX)):
+                sleep = JsonManager.parse_random_range(qlineedits[0].text()) if qlineedits else 0
                 action = {"process": hidden_id, "sleep": sleep}
 
                 if checkbox and checkbox.isChecked():
@@ -208,16 +209,17 @@ class JsonManager:
         # ==============================
         # POST PROCESSING
         # ==============================
-        output_json = self.process_and_split_json(output_json)
-        output_json = self.process_and_handle_last_element(output_json)
-        output_json = self.process_and_modify_json(output_json)
+        output_json = JsonManager.process_and_split_json(output_json)
+        output_json = JsonManager.process_and_handle_last_element(output_json)
+        output_json = JsonManager.process_and_modify_json(output_json)
 
         return output_json
 
     # ==============================
     # SPLIT JSON
     # ==============================
-    def process_and_split_json(self, input_json):
+    @staticmethod
+    def process_and_split_json( input_json):
         output, section, current = [], [], None
 
         def flush():
@@ -235,7 +237,7 @@ class JsonManager:
                 continue
 
             if el.get("process") == "loop":
-                allowed = self.ALLOWED_ITEMS.get(current, [])
+                allowed = JsonManager.ALLOWED_ITEMS.get(current, [])
                 sub = el["sub_process"]
 
                 if any(s["process"] == "select_all" for s in sub) or any(s["process"] in allowed for s in sub):
@@ -253,11 +255,12 @@ class JsonManager:
     # ==============================
     # HANDLE LAST ELEMENT
     # ==============================
-    def process_and_handle_last_element(self, input_json):
+    @staticmethod
+    def process_and_handle_last_element( input_json):
         output = []
 
         for el in input_json:
-            if el.get("process") in self.EXCLUDED_PROCESSES:
+            if el.get("process") in JsonManager.EXCLUDED_PROCESSES:
                 continue
 
             if el.get("process") == "loop":
