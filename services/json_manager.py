@@ -516,7 +516,7 @@ class JsonManager:
     
     @staticmethod
     def save_json_to_file( json_data: List[Dict[str, Any]],  selected_browser: str) -> str:
-        # Déterminer le répertoire cible
+
         browser_lower = selected_browser.lower()
         
         if browser_lower == "firefox":

@@ -22,7 +22,6 @@ if ROOT_DIR not in sys.path:
 try:
     from config import Settings
     from utils.validation_utils import ValidationUtils
-    from Log import DevLogger
 except ImportError as e:
     print(f"Error importing modules: {e}")
 

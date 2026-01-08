@@ -327,7 +327,7 @@ def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp 
         data_list, SESSION_ID, entered_number, browser_path , window ,selected_Browser , Isp , unique_id , output_json_final
     )
     
-    # ✅ هذا هو التغيير الرئيسي: ربط الإشارة هنا
+
     EXTRACTION_THREAD.finished.connect(lambda: window.Extraction_Finished(window))
     
     EXTRACTION_THREAD.progress.connect(lambda msg: print(msg))
@@ -1351,23 +1351,6 @@ class MainWindow(QMainWindow):
 
 
 
-    def Save_Json_To_File(self, json_data, selected_browser):
-        if selected_browser.lower() == "firefox":
-            template_dir = Settings.TEMPLATE_DIRECTORY_FIREFOX
-        elif selected_browser.lower() == "chrome":
-            template_dir = Settings.EXTENTION_EX3
-        else:
-            template_dir = Settings.TEMPLATE_DIRECTORY_FAMILY_CHROME  
-
-        traitement_file = os.path.join(template_dir, 'traitement.json')
-
-        try:
-            os.makedirs(template_dir, exist_ok=True)
-            with open(traitement_file, 'w', encoding='utf-8') as f:
-                json.dump(json_data, f, ensure_ascii=False, indent=4)
-            return "SUCCESS" if template_dir != Settings.EXTENTION_EX3 else "SUCCESS_FAMILY"
-        except Exception as e:
-            return "ERROR"
 
 
     def Extraction_Finished(self, window):
@@ -1454,13 +1437,7 @@ class MainWindow(QMainWindow):
         
         LOGS_RUNNING = True
 
-        output_json = [
-            {
-                "process": "login",  
-                "sleep": 1  
-            }
-        ]
-
+      
         if self.scenario_layout.count() == 0:
             UIManager.Show_Critical_Message(
                 window,
