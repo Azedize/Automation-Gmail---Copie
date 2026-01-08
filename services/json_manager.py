@@ -551,22 +551,26 @@ class JsonManager:
     @staticmethod
     def generate_json_data(scenario_layout: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         try:
-            json_data = JsonManager.create_initial_json()
-            # Étape 1: Traitement des widgets
-            json_data = JsonManager.process_widget_data(scenario_layout)
+            # Étape 1: Commencer avec le login
+            json_data = JsonManager.create_initial_json()  # Ajouter l'élément login initial
             
-            # Étape 2: Division en sections
-            json_data = JsonManager.split_json_sections(json_data)
+            # Étape 2: Traitement des widgets
+            widget_data = JsonManager.process_widget_data(scenario_layout)
             
-            # Étape 3: Gestion des derniers éléments
+            # Étape 3: Division en sections
+            if widget_data:  # Vérifier s'il y a des données de widget
+                json_data.extend(JsonManager.split_json_sections(widget_data))
+            
+            # Étape 4: Gestion des derniers éléments
             json_data = JsonManager.handle_last_element(json_data)
             
-            # Étape 4: Modification finale
+            # Étape 5: Modification finale
             json_data = JsonManager.modify_json_structure(json_data)
             
             return json_data
             
         except Exception:
+            # En cas d'erreur, retourner au moins le login
             return []
         
 
