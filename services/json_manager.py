@@ -51,7 +51,7 @@ class JsonManager:
     # MAIN PIPELINE
     # ==============================
     @staticmethod
-    def generate(window, scenario_layout, selected_browser: str):
+    def generate(scenario_layout, selected_browser: str):
 
         output_json = [{"process": "login", "sleep": 1}]
 
