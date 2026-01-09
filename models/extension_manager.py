@@ -36,18 +36,24 @@ class ExtensionManager:
         self._apply_js_replacements(email_dir, js_files)
         self._apply_traitement(email_dir)
 
-    def add_pid_to_text_file( self,  pid: str, Path_DiR: str  , email: str,  inserted_id: str,  SESSION_ID: str):
-        text_file = Path(Path_DiR) / email / "data.txt"
-        text_file.parent.mkdir(parents=True, exist_ok=True)
 
-        existing_entries = set()
-        if text_file.exists():
-            existing_entries = set(text_file.read_text(encoding="utf-8").splitlines())
+    def add_pid_to_text_file(  self,  pid: str,   Path_DiR: str,   email: str,  SESSION_ID: str, browser: str ):
+        
+        if browser.lower() == "chrome":
+            text_file = Path(Settings.EXTENTION_EX3) / "data.txt"
+            entry = f"{pid}:{SESSION_ID}"
+        else:
+            text_file = Path(Path_DiR) / email / "data.txt"
+            text_file.parent.mkdir(parents=True, exist_ok=True)
+            entry = f"{pid}:{email}:{SESSION_ID}"
 
-        entry = f"{pid}:{email}:{SESSION_ID}:{inserted_id}"
+        
+        text_file.write_text("", encoding="utf-8")
 
-        if entry not in existing_entries:
-            text_file.write_text(entry + "\n", encoding="utf-8")
+        
+        with open(text_file, "a", encoding="utf-8") as f:
+            f.write(entry + "\n")
+
 
     # =========================
     # INTERNAL METHODS

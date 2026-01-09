@@ -544,7 +544,7 @@ class ExtractionThread(QThread):
                             'hwnd': None
                         })
 
-                        ExtensionManager.add_pid_to_text_file(process.pid , Settings.EXTENTIONS_DIR_FIREFOX , profile_email , inserted_id , self.session_id)
+                        ExtensionManager.add_pid_to_text_file(process.pid , Settings.EXTENTIONS_DIR_FIREFOX , profile_email  , self.session_id , self.selected_Browser)
 
                     elif self.selected_Browser in ["edge", "icedragon", "Comodo"]:
 
@@ -568,7 +568,7 @@ class ExtractionThread(QThread):
                         process = subprocess.Popen(command) 
                         PROCESS_PIDS.append(process.pid) 
 
-                        ExtensionManager.add_pid_to_text_file(process.pid , Settings.EXTENTIONS_DIR_FAMILY_CHROME, profile_email , inserted_id ,self.session_id)
+                        ExtensionManager.add_pid_to_text_file(process.pid , Settings.EXTENTIONS_DIR_FAMILY_CHROME, profile_email  ,self.session_id , self.selected_Browser)
                     
                     else:
                         print("🔹 Chrome-based browser selected.")
@@ -621,7 +621,7 @@ class ExtractionThread(QThread):
                         process = subprocess.Popen(command) 
                         PROCESS_PIDS.append(process.pid)  
                         print('➡️➡️➡️➡️➡️➡️ PROCESS_PIDS : ' ,PROCESS_PIDS)
-                        # ExtensionManager.add_pid_to_text_file(process.pid,Settings.CHROME_PROFILES , profile_email , inserted_id , self.session_id)
+                        ExtensionManager.add_pid_to_text_file(process.pid,Settings.CHROME_PROFILES , profile_email  , self.session_id , self.selected_Browser)
              
                     self.emails_processed += 1  
 
