@@ -310,7 +310,6 @@ def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp 
     print("✅ Selected entries:", entered_number)
 
     Launch_Close_Chrome(selected_Browser , username)
-    print("✅ Launched Close Chrome thread.")
     browser_path = (
         BrowserManager.get_browser_path("chrome.exe") if selected_Browser.lower() == "chrome"
         else BrowserManager.get_browser_path("firefox") if selected_Browser.lower() == "firefox"
@@ -450,7 +449,7 @@ class ExtractionThread(QThread):
                 next_email = remaining_emails.pop(0)  
                 email_value = ValidationUtils.get_key_from_dict(next_email, ["email", "Email"])
                 log_message(f"[INFO] Processing the email:  {email_value}")
-                print(f"Processing the email:  {email_value}")
+                # print(f"Processing the email:  {email_value}")
 
                 try:
                     profile_email = ValidationUtils.get_key_from_dict(next_email, ["email", "Email"])
@@ -545,7 +544,7 @@ class ExtractionThread(QThread):
                             'hwnd': None
                         })
 
-                        ExtensionManager.add_pid_to_text_file(process.pid , Settings.EXTENTIONS_DIR_FIREFOX , profile_email  , self.session_id , self.selected_Browser.lower())
+                        ExtensionManager.add_pid_to_text_file(process.pid , Settings.EXTENTIONS_DIR_FIREFOX , profile_email , inserted_id , self.session_id , self.selected_Browser.lower())
 
                     elif self.selected_Browser in ["edge", "icedragon", "Comodo"]:
 
@@ -569,7 +568,7 @@ class ExtractionThread(QThread):
                         process = subprocess.Popen(command) 
                         PROCESS_PIDS.append(process.pid) 
 
-                        ExtensionManager.add_pid_to_text_file(process.pid , Settings.EXTENTIONS_DIR_FAMILY_CHROME, profile_email  ,self.session_id , self.selected_Browser.lower())
+                        ExtensionManager.add_pid_to_text_file(process.pid , Settings.EXTENTIONS_DIR_FAMILY_CHROME, profile_email , inserted_id ,self.session_id , self.selected_Browser.lower())
                     
                     else:
                         print("🔹 Chrome-based browser selected.")
@@ -622,9 +621,7 @@ class ExtractionThread(QThread):
                         process = subprocess.Popen(command) 
                         PROCESS_PIDS.append(process.pid)  
                         print('➡️➡️➡️➡️➡️➡️ PROCESS_PIDS : ' ,PROCESS_PIDS)
-                        print("🌐 Browser utilisé :", self.selected_Browser.lower())
-
-                        ExtensionManager.add_pid_to_text_file(process.pid,Settings.CHROME_PROFILES , profile_email  , self.session_id ,self.selected_Browser.lower())
+                        ExtensionManager.add_pid_to_text_file(process.pid,Settings.CHROME_PROFILES , profile_email , inserted_id , self.session_id , self.selected_Browser.lower)
              
                     self.emails_processed += 1  
 
