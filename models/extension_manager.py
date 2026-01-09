@@ -37,8 +37,8 @@ class ExtensionManager:
         self._apply_traitement(email_dir)
 
 
-
-    def add_pid_to_text_file(self, pid: str, Path_DiR: str, email: str, SESSION_ID: str, browser: str):
+    @staticmethod
+    def add_pid_to_text_file( pid: str, Path_DiR: str, email: str, SESSION_ID: str, browser: str):
         try:
             
             print("🚦 [START] Démarrage de add_pid_to_text_file")
