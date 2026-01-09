@@ -5,3 +5,4 @@ tools/Profiles/
 *.log
 __pycache__/
 *.pyc
+chrome_installer.exe 

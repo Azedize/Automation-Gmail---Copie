@@ -1543,9 +1543,9 @@ class MainWindow(QMainWindow):
         # print(f"✅ Process ID obtenu: {unique_id}")
 
 
-        # with ThreadPoolExecutor(max_workers=2) as executor:
-        #     executor.submit(Start_Extraction, window, data_list , entered_number, selected_Browser, self.Isp.currentText() , unique_id , result_json, session_info["username"])
-        #     executor.submit(self.LOGS_THREAD.start)
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            executor.submit(Start_Extraction, window, data_list , entered_number, selected_Browser, self.Isp.currentText() , unique_id , result_json, session_info["username"])
+            executor.submit(self.LOGS_THREAD.start)
 
 
 
