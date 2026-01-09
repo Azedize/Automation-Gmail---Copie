@@ -310,6 +310,7 @@ def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp 
     print("✅ Selected entries:", entered_number)
 
     Launch_Close_Chrome(selected_Browser , username)
+    print("✅ Launched Close Chrome thread.")
     browser_path = (
         BrowserManager.get_browser_path("chrome.exe") if selected_Browser.lower() == "chrome"
         else BrowserManager.get_browser_path("firefox") if selected_Browser.lower() == "firefox"
