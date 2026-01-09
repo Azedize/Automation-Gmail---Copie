@@ -450,7 +450,7 @@ class ExtractionThread(QThread):
                 next_email = remaining_emails.pop(0)  
                 email_value = ValidationUtils.get_key_from_dict(next_email, ["email", "Email"])
                 log_message(f"[INFO] Processing the email:  {email_value}")
-                # print(f"Processing the email:  {email_value}")
+                print(f"Processing the email:  {email_value}")
 
                 try:
                     profile_email = ValidationUtils.get_key_from_dict(next_email, ["email", "Email"])
