@@ -40,6 +40,7 @@ class ExtensionManager:
 
     def add_pid_to_text_file(self, pid: str, Path_DiR: str, email: str, SESSION_ID: str, browser: str):
         try:
+            
             print("🚦 [START] Démarrage de add_pid_to_text_file")
             print(f"🧭 [INPUT] browser = {browser}")
             print(f"🆔 [INPUT] pid = {pid}")
