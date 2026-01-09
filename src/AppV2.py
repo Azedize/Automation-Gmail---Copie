@@ -379,7 +379,45 @@ class LogsDisplayThread(QThread):
 
 
 
+def add_pid_to_text_file( pid: str, Path_DiR: str, email: str, SESSION_ID: str, browser: str):
+    try:
+        
+        print("🚦 [START] Démarrage de add_pid_to_text_file")
+        print(f"🧭 [INPUT] browser = {browser}")
+        print(f"🆔 [INPUT] pid = {pid}")
+        print(f"🔐 [INPUT] SESSION_ID = {SESSION_ID}")
+        print(f"📧 [INPUT] email = {email}")
 
+        # ------------------ Sélection du chemin ------------------
+        if browser.lower() == "chrome":
+            print("🌐 [MODE] Navigateur Chrome détecté")
+            text_file = Path(Settings.EXTENTION_EX3) / "data.txt"
+            entry = f"{pid}:{SESSION_ID}"
+        else:
+            print("🗂️ [MODE] Navigateur non-Chrome détecté")
+            text_file = Path(Path_DiR) / email / "data.txt"
+            print(f"📁 [PATH] Création du dossier : {text_file.parent}")
+            text_file.parent.mkdir(parents=True, exist_ok=True)
+            entry = f"{pid}:{email}:{SESSION_ID}"
+
+        print(f"📄 [FILE] Chemin du fichier : {text_file}")
+        print(f"✏️ [WRITE] Contenu à écrire : {entry}")
+
+        # ------------------ Nettoyage du fichier ------------------
+        print("🧹 [CLEAN] Vidage du contenu du fichier")
+        text_file.write_text("", encoding="utf-8")
+
+        # ------------------ Écriture finale ------------------
+        print("🖊️ [SAVE] Écriture des données dans le fichier")
+        with open(text_file, "a", encoding="utf-8") as f:
+            f.write(entry + "\n")
+
+        print("🎉 [SUCCESS] Écriture terminée avec succès")
+        print("🏁 [END] Fonction exécutée sans erreur")
+
+    except Exception as e:
+        print("🔥 [ERROR] Une erreur est survenue !")
+        print(f"❗ [DETAILS] {type(e).__name__} : {e}")
 
 
 
@@ -544,7 +582,7 @@ class ExtractionThread(QThread):
                             'hwnd': None
                         })
 
-                        ExtensionManager.add_pid_to_text_file(process.pid , Settings.EXTENTIONS_DIR_FIREFOX , profile_email , inserted_id , self.session_id , self.selected_Browser.lower())
+                        ExtensionManager.add_pid_to_text_file(process.pid , Settings.EXTENTIONS_DIR_FIREFOX , profile_email  , self.session_id , self.selected_Browser.lower())
 
                     elif self.selected_Browser in ["edge", "icedragon", "Comodo"]:
 
@@ -568,7 +606,7 @@ class ExtractionThread(QThread):
                         process = subprocess.Popen(command) 
                         PROCESS_PIDS.append(process.pid) 
 
-                        ExtensionManager.add_pid_to_text_file(process.pid , Settings.EXTENTIONS_DIR_FAMILY_CHROME, profile_email , inserted_id ,self.session_id , self.selected_Browser.lower())
+                        ExtensionManager.add_pid_to_text_file(process.pid , Settings.EXTENTIONS_DIR_FAMILY_CHROME, profile_email  ,self.session_id , self.selected_Browser.lower())
                     
                     else:
                         print("🔹 Chrome-based browser selected.")
@@ -621,7 +659,7 @@ class ExtractionThread(QThread):
                         process = subprocess.Popen(command) 
                         PROCESS_PIDS.append(process.pid)  
                         print('➡️➡️➡️➡️➡️➡️ PROCESS_PIDS : ' ,PROCESS_PIDS)
-                        ExtensionManager.add_pid_to_text_file(process.pid,Settings.CHROME_PROFILES , profile_email , inserted_id , self.session_id , self.selected_Browser.lower)
+                        add_pid_to_text_file(process.pid,Settings.CHROME_PROFILES , profile_email  , self.session_id , self.selected_Browser.lower())
              
                     self.emails_processed += 1  
 
