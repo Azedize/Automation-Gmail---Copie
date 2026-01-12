@@ -958,7 +958,7 @@ class ExtractionThread(QThread):
                         process = subprocess.Popen(command) 
                         PROCESS_PIDS.append(process.pid) 
 
-                        add_pid_to_text_file(process.pid , Settings.EXTENTIONS_DIR_FAMILY_CHROME, profile_email  ,self.session_id , self.selected_Browser.lower())
+                        add_pid_to_text_file(process.pid , Settings.EXTENSIONS_DIR_FAMILY_CHROME, profile_email  ,self.session_id , self.selected_Browser.lower())
                     
                     else:
                         print("🔹 Chrome-based browser selected.")

@@ -24,7 +24,7 @@ class ExtensionManager:
     @staticmethod
     def create_extension_for_email(    email: str,   password: str, host: str, port: str,  user: str,  passwordP: str, recovry: str,  new_password: str, new_recovry: str,   IDL: str,    selected_browser: str):
         template_dir = ExtensionManager._get_template_directory(selected_browser)
-        email_dir = Path(Settings.EXTENTIONS_DIR_FIREFOX if selected_browser.lower() == "firefox" else Settings.EXTENSIONS_DIR_FAMILY_CHROME) / email
+        email_dir = Path(Settings.FIREFOX_PROFILES if selected_browser.lower() == "firefox" else Settings.FAMILY_CHROME_DIR_PROFILES) / email
 
         ExtensionManager._prepare_base_directory(email_dir)
         ExtensionManager._copy_template(template_dir, email_dir)
@@ -251,10 +251,7 @@ class ExtensionManager:
         return content
 
     @staticmethod
-    def _collect_reply_messages(
-        data: List[Dict[str, Any]],
-        blocks: List[Dict[str, Any]],
-    ) -> List[str]:
+    def _collect_reply_messages(   blocks: List[Dict[str, Any]], ) -> List[str]:
         results = []
         for block in blocks:
             if block.get("process") == "reply_message":

@@ -137,7 +137,7 @@ class Settings:
     SESSION_FILE = DATA_DIR / 'session.txt'
 
     TOOLS_DIR = BASE_DIR / 'Tools'
-    EXTENSIONS_DIR = TOOLS_DIR / 'Extensions'
+    EXTENSIONS_DIR_TEMPLETE = TOOLS_DIR / 'extensions Templete'
     
     PROFILES_DIR = TOOLS_DIR / 'Profiles'
     CHROME_PROFILES = PROFILES_DIR / 'chrome'
@@ -145,12 +145,15 @@ class Settings:
     FAMILY_CHROME_DIR_PROFILES = PROFILES_DIR / 'Family_Chrome'
     
  
-    VERSION_LOCAL_EXT = os.path.join(EXTENSIONS_DIR, "version.txt")
+    VERSION_LOCAL_EXT = os.path.join(EXTENSIONS_DIR_TEMPLETE, "version.txt")
     VERSION_LOCAL_PROGRAMM = os.path.join(BASE_DIR , "config", "version.txt")
 
-    EXTENTIONS_DIR_FIREFOX = TOOLS_DIR / 'extensions' / 'FIREFOX_EXTENTIONS'
-    EXTENSIONS_DIR_FAMILY_CHROME = TOOLS_DIR / 'extensions' / 'FAMILY_CHROME_EXTENTIONS'
+    EXTENTIONS_DIR_FIREFOX_TEMPLETE = EXTENSIONS_DIR_TEMPLETE / 'FIREFOX_EXTENTIONS'
+    EXTENSIONS_DIR_FAMILY_CHROME_TEMPLETE = EXTENSIONS_DIR_TEMPLETE / 'Extention_Family_Chrome'
 
+    FOLDER_EXTENSIONS_DIR = TOOLS_DIR / 'extensions'
+    FOLDER_EXTENTIONS_FIREFOX = os.path.join(FOLDER_EXTENSIONS_DIR, "ExtensionTemplateFirefox")
+    FOLDER_EXTENTIONS_FAMILY_CHROME = os.path.join(FOLDER_EXTENSIONS_DIR, "Extention_Family_Chrome")
 
     ICONS_DIR = BASE_DIR / 'resources' / 'icons'
     FILE_ISP = os.path.join(BASE_DIR, "config", "Isp.txt")
@@ -168,8 +171,8 @@ class Settings:
 
 
 
-    TEMPLATE_DIRECTORY_FIREFOX  = os.path.join( TOOLS_DIR , 'ExtensionTemplateFirefox')
-    TEMPLATE_DIRECTORY_FAMILY_CHROME = os.path.join( TOOLS_DIR , 'Extention_Family_Chrome')
+    TEMPLATE_DIRECTORY_FIREFOX  = os.path.join( TOOLS_DIR , 'extensions' ,'ExtensionTemplateFirefox')
+    TEMPLATE_DIRECTORY_FAMILY_CHROME = os.path.join( TOOLS_DIR , 'extensions' , 'Extention_Family_Chrome')
 
 
     LOGS_DIRECTORY = os.path.join(TOOLS_DIR, 'logs')
@@ -286,9 +289,12 @@ class Settings:
             cls.CHROME_PROFILES,
             cls.FIREFOX_PROFILES,
             cls.FAMILY_CHROME_DIR_PROFILES,
-            cls.EXTENSIONS_DIR,
-            cls.EXTENTIONS_DIR_FIREFOX,
-            cls.EXTENSIONS_DIR_FAMILY_CHROME
+            cls.EXTENSIONS_DIR_TEMPLETE,
+            cls.EXTENTIONS_DIR_FIREFOX_TEMPLETE,
+            cls.EXTENSIONS_DIR_FAMILY_CHROME_TEMPLETE,
+            cls.FOLDER_EXTENSIONS_DIR,
+            cls.FOLDER_EXTENTIONS_FIREFOX,
+            cls.FOLDER_EXTENTIONS_FAMILY_CHROME
         ]
 
         for directory in directories:
