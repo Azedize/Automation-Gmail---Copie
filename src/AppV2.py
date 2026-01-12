@@ -1552,12 +1552,12 @@ class MainWindow(QMainWindow):
         current_time = datetime.datetime.now()
         CURRENT_DATE = current_time.strftime("%Y-%m-%d")
         CURRENT_HOUR = current_time.strftime("%H-%M-%S") 
-        print("✅ Current date and hour set:", CURRENT_DATE, CURRENT_HOUR)
+        # print("✅ Current date and hour set:", CURRENT_DATE, CURRENT_HOUR)
 
         # print("📦 JSON Final:")
         result_json = JsonManager.generate(self.scenario_layout , selected_Browser)
-        print(json.dumps(result_json, indent=2, ensure_ascii=False))
-        print("✅ Final JSON generated. Data:", json.dumps(result_json, indent=2, ensure_ascii=False))
+        # print(json.dumps(result_json, indent=2, ensure_ascii=False))
+        # print("✅ Final JSON generated. Data:", json.dumps(result_json, indent=2, ensure_ascii=False))
 
 
 
