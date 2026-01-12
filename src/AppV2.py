@@ -489,9 +489,9 @@ class ExtractionThread(QThread):
 
 
             Settings.RESULTATS_EX = BrowserManager.Upload_EXTENSION_PROXY("default", Settings.CLES_RECHERCHE, Settings.RESULTATS)
-            print("↕️​↕️​↕️​↕️​↕️​ Résultats EX2 :")
-            for item in Settings.RESULTATS_EX:
-                print(json.dumps(item, indent=4, ensure_ascii=False))
+            # print("↕️​↕️​↕️​↕️​↕️​ Résultats EX2 :")
+            # for item in Settings.RESULTATS_EX:
+            #     print(json.dumps(item, indent=4, ensure_ascii=False))
 
 
         while remaining_emails or PROCESS_PIDS:
@@ -652,9 +652,9 @@ class ExtractionThread(QThread):
                         else:
                             print("✅ JSON file copied successfully to the template profile.")
                             # affiche de Resultats_EX pour vérification
-                            print("↕️​↕️​↕️​↕️​↕️​ Résultats EX :")
-                            for item in Settings.RESULTATS_EX:
-                                print(json.dumps(item, indent=4, ensure_ascii=False))
+                            # print("↕️​↕️​↕️​↕️​↕️​ Résultats EX :")
+                            # for item in Settings.RESULTATS_EX:
+                            #     print(json.dumps(item, indent=4, ensure_ascii=False))
                             BrowserManager.Updated_Secure_Preferences(profile_email, Settings.RESULTATS_EX)
 
                         time.sleep(2)
@@ -716,13 +716,15 @@ class CloseBrowserThread(QThread):
         print("🚀 [THREAD] CloseBrowserThread démarré")
         time.sleep(10)
         time.sleep(10)
+        # affiche self.stop_flag 
+        print(f" Stop flag initial : {self.stop_flag} ")
 
         while not self.stop_flag and PROCESS_PIDS:
             print("🌀 [THREAD] Boucle principale en cours...")
             # affiche self.stop_flag and PROCESS_PIDS
-            print(f"🔁 [THREAD] Boucle active | stop_flag: {self.stop_flag}")
-            print(f"🔁 [THREAD] Boucle active | PROCESS_PIDS: {PROCESS_PIDS}")
-            print(f"🔁 [THREAD] Boucle active | PID restants: {len(PROCESS_PIDS)}")
+            print(f"🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠 [THREAD] Boucle active | stop_flag: {self.stop_flag}")
+            print(f"🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠[THREAD] Boucle active | PROCESS_PIDS: {PROCESS_PIDS}")
+            print(f"🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠[THREAD] Boucle active | PID restants: {len(PROCESS_PIDS)}")
 
             try:
                 # ملفات الجلسات و logs

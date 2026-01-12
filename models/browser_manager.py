@@ -221,7 +221,7 @@ class BrowserManager:
                     current_path = f"{path_trace}/{k}" if path_trace else k
                     if k in search_keys:
                         results.append({k: v})
-                        print(f"🔑 Clé trouvée : {current_path} ➜ Valeur : {v}")
+                        # print(f"🔑 Clé trouvée : {current_path} ➜ Valeur : {v}")
                     BrowserManager.Search_Keys(v, search_keys, results, current_path)
             elif isinstance(data, list):
                 for idx, item in enumerate(data):
@@ -254,8 +254,8 @@ class BrowserManager:
 
             if results:
                 print(f"📌 Résultats trouvés pour {profile_name}:")
-                for idx, item in enumerate(results, start=1):
-                    print(f"   {idx}. {item}")
+                # for idx, item in enumerate(results, start=1):
+                #     print(f"   {idx}. {item}")
             else:
                 print("⚠️ Aucun résultat trouvé pour les clés spécifiées.")
 
@@ -322,10 +322,10 @@ class BrowserManager:
             # 🔄 Traitement des résultats
             print("🔄 Application des RESULTATS_EX...")
             for idx, item in enumerate(RESULTATS_EX, start=1):
-                print(f"\n➡️ Élément {idx} : {item}")
+                # print(f"\n➡️ Élément {idx} : {item}")
 
                 if not isinstance(item, dict):
-                    print("⚠️ Ignoré : élément non dict.")
+                    # print("⚠️ Ignoré : élément non dict.")
                     continue
 
                 for k, v in item.items():
@@ -333,22 +333,22 @@ class BrowserManager:
                     # 🧩 Extension settings
                     if isinstance(v, dict) and "account_extension_type" in v:
                         data["extensions"]["settings"][k] = v
-                        print(f"   🧩 extensions.settings[{k}] mis à jour.")
+                        # print(f"   🧩 extensions.settings[{k}] mis à jour.")
 
                     # 🔐 MAC extensions settings
                     elif isinstance(v, str) and len(v) > 30 and k != "developer_mode":
                         data["protection"]["macs"]["extensions"]["settings"][k] = v
-                        print(f"   🔐 MAC ajouté pour extensions.settings[{k}].")
+                        # print(f"   🔐 MAC ajouté pour extensions.settings[{k}].")
 
                     # ⚙️ Developer mode (UI)
                     elif isinstance(v, bool) and k == "developer_mode":
                         data["extensions"]["ui"]["developer_mode"] = v
-                        print(f"   ⚙️ developer_mode = {v}")
+                        # print(f"   ⚙️ developer_mode = {v}")
 
                     # 🔐 MAC developer mode
                     elif isinstance(v, str) and k == "developer_mode":
                         data["protection"]["macs"]["extensions"]["ui"]["developer_mode"] = v
-                        print("   🔐 MAC developer_mode enregistré.")
+                        # print("   🔐 MAC developer_mode enregistré.")
 
                     else:
                         print(f"   ⚠️ Clé ignorée : {k}")
@@ -358,14 +358,14 @@ class BrowserManager:
             with open(secure_preferences_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, separators=(',', ':'), ensure_ascii=False)
 
-            print("✅ Mise à jour terminée avec succès.")
-            print("🔐 ===== FIN : Secure Preferences =====\n")
+            # print("✅ Mise à jour terminée avec succès.")
+            # print("🔐 ===== FIN : Secure Preferences =====\n")
 
             return data
 
         except Exception as e:
-            print("\n❌ ERREUR CRITIQUE lors de la mise à jour Secure Preferences")
-            print(f"🧨 Détail : {e}\n")
+            # print("\n❌ ERREUR CRITIQUE lors de la mise à jour Secure Preferences")
+            # print(f"🧨 Détail : {e}\n")
             return None
 
 
