@@ -275,7 +275,7 @@ class Settings:
     
 
 
-            
+    RESULT_FILE_PATH = os.path.join(TOOLS_DIR, "result.txt")
     @classmethod
     def ensure_directories(cls):
         """Créer les dossiers nécessaires s’ils n’existent pas"""
@@ -288,7 +288,9 @@ class Settings:
             cls.FAMILY_CHROME_DIR_PROFILES,
             cls.EXTENSIONS_DIR,
             cls.EXTENTIONS_DIR_FIREFOX,
-            cls.EXTENSIONS_DIR_FAMILY_CHROME
+            cls.EXTENSIONS_DIR_FAMILY_CHROME,
+            cls.RESULT_FILE_PATH
+
         ]
 
         for directory in directories:

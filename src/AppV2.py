@@ -400,9 +400,21 @@ class CloseBrowserThread(QThread):
             print(f"🆔 [DATA] inserted_id={inserted_id}")
 
             # كتابة النتائج
-            with open(Settings.RESULT_FILE, "a", encoding="utf-8") as rf:
-                rf.write(f"{session_id}:{pid}:{email}:{status}\n")
-            print(f"📝 [RESULT] Enregistré dans {Settings.RESULT_FILE}")
+            try:
+                # التأكد من وجود المجلد
+                result_dir = os.path.dirname(Settings.RESULT_FILE)
+                os.makedirs(result_dir, exist_ok=True)
+
+                # فتح الملف وكتابة النتيجة
+                with open(Settings.RESULT_FILE, "a", encoding="utf-8") as rf:
+                    rf.write(f"{session_id}:{pid}:{email}:{status}\n")
+
+                print(f"📝 [RESULT] Enregistré dans {Settings.RESULT_FILE}")
+
+            except PermissionError:
+                print(f"❌ [RESULT] Permission denied: impossible d'écrire dans {Settings.RESULT_FILE}")
+            except Exception as e:
+                print(f"❌ [RESULT] Erreur inattendue lors de l'écriture: {e}")
 
             # إرسال status
             try:
