@@ -245,16 +245,13 @@ class CloseBrowserThread(QThread):
     # 🔁 THREAD PRINCIPAL
     # ======================================================
 
-    # affiche self.stop_flag and PROCESS_PIDS
-        # print(f"🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠[THREAD] Boucle active | stop_flag: {self.stop_flag}")
-        # print(f"🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠[THREAD] Boucle active | PROCESS_PIDS: {PROCESS_PIDS}")
-
+    
     def run(self):
         print("🚀 [THREAD] CloseBrowserThread démarré")
-        time.sleep(10)
-        time.sleep(10)
-        time.sleep(10)
-        time.sleep(10)
+        time.sleep(15)
+        # time.sleep(10)
+        # time.sleep(10)
+        # time.sleep(10)
         # affiche self.stop_flag 
         print(f" Stop flag initial : {self.stop_flag} ")
 
@@ -560,7 +557,6 @@ class CloseBrowserThread(QThread):
             pass
 
     
-
 
 
 
