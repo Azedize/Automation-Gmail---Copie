@@ -700,9 +700,11 @@ class ExtractionThread(QThread):
 class CloseBrowserThread(QThread):
 
     progress = pyqtSignal(str)
+    print("🚀 [THREAD] Définition de CloseBrowserThread")
 
     def __init__(self, selected_Browser, username):
         super().__init__()
+        print("🚀 [THREAD] Initialisation de CloseBrowserThread")
 
         self.selected_Browser = selected_Browser
         self.username = username
@@ -922,7 +924,6 @@ class CloseBrowserThread(QThread):
 
         except Exception as e:
             print(f"❌ [SESSION] Erreur inattendue pour {file_name}: {e}")
-
 
     # ======================================================
     # 🌐 GESTION NAVIGATEURS
