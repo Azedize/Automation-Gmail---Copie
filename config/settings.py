@@ -296,7 +296,7 @@ class Settings:
             if not path.exists():
                 try:
                     path.mkdir(parents=True, exist_ok=True)  # ينشئ كل المجلدات المفقودة
-                    print(f"✅ Dossier créé: {path}")
+                    # print(f"✅ Dossier créé: {path}")
                 except Exception as e:
                     print(f"💥 Erreur lors de la création du dossier {path}: {e}")
             else:

@@ -325,8 +325,8 @@ class JsonManager:
             return "SUCCESS"
 
         except Exception as e:
-            print("❌ Error while saving JSON file")
-            print(f"❌ Exception: {e}")
+            #print("❌ Error while saving JSON file")
+            #print(f"❌ Exception: {e}")
             return "ERROR"
 
 # Singleton pour une utilisation globale

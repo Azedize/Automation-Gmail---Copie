@@ -228,474 +228,6 @@ def Stop_All_Processes(window):
 
 
 
-# -----------------------------
-# Génération complète de l'extension Chrome/Firefox
-# -----------------------------
-def Generate_User_Input_Data(window):
-    print("🟢 [START] Generate_User_Input_Data")
-
-    # Récupération des données depuis l’UI
-    print("📝 Lecture des données depuis l'interface...")
-    input_data = window.textEdit_3.toPlainText().strip()
-    entered_number_text = window.textEdit_4.toPlainText().strip()
-    print(f"🔹 Données brutes:\n{input_data[:100]}{'...' if len(input_data) > 100 else ''}")
-    print(f"🔹 Numéro saisi: {entered_number_text}")
-
-    # Appel de la logique de validation
-    print("⚙️ Appel de process_user_input pour validation...")
-    validation_result = ValidationUtils.process_user_input(
-        input_data,
-        entered_number_text
-    )
-
-    # En cas d’erreur → affichage UI
-    if not validation_result["success"]:
-        print(f"❌ Validation échouée: {validation_result['error_title']} - {validation_result['error_message']}")
-        UIManager.Show_Critical_Message(
-            window,
-            validation_result["error_title"],
-            validation_result["error_message"],
-            message_type=validation_result.get("error_type", "critical")
-        )
-        print("🟢 [END] Generate_User_Input_Data (Erreur)")
-        return None
-
-    # Succès → même retour que la fonction originale
-    print(f"✅ Validation réussie! Nombre de lignes valides: {len(validation_result['data_list'])}")
-    print("🟢 [END] Generate_User_Input_Data (Succès)")
-    return (
-        validation_result["data_list"],
-        validation_result["entered_number"]
-    )
-
-# le programme is runing dans une interface 
-
-
-
-
-def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp , unique_id , output_json_final , username):
-    global EXTRACTION_THREAD , CLOSE_BROWSER_THREAD
-    # print("Starting extraction process...")
-    print("🚀 Starting extraction process...")
-    
-    # ValidationUtils.ensure_path_exists(Path(Settings.LOGS_DIRECTORY))
-    
-    try:
-        entered_number = int(entered_number)
-    except ValueError:
-        UIManager.Show_Critical_Message(
-            window,
-            "Input Error - Invalid Format",
-            "Numeric value required. Please check your input and try again.",
-            message_type="critical"
-        )
-        return
-
-    email_count = len(data_list)
-    if entered_number > email_count:
-        UIManager.Show_Critical_Message(
-            window,
-            "Range Error - Exceeded Limit",
-            f"Maximum allowed entries: {email_count}\n"
-            f"Please enter a value between 1 and {email_count}.",
-            message_type="critical"
-        )
-        return
-    # print("Selected entries:", entered_number)
-    print("✅ Selected entries:", entered_number)
-
-         
-    print("Launching CloseBrowserThread...")
-    CLOSE_BROWSER_THREAD = CloseBrowserThread( selected_Browser ,username)
-    CLOSE_BROWSER_THREAD.progress.connect(lambda msg: print(msg))
-    CLOSE_BROWSER_THREAD.start()
-
-    print("Determining browser path...")
-
-    browser_path = (
-        BrowserManager.get_browser_path("chrome.exe") if selected_Browser.lower() == "chrome"
-        else BrowserManager.get_browser_path("firefox") if selected_Browser.lower() == "firefox"
-        else BrowserManager.get_browser_path("msedge.exe") if selected_Browser.lower() == "edge"
-        else BrowserManager.get_browser_path("dragon.exe")  
-    )
-  
-    if selected_Browser.lower() == "firefox":
-        ensure_web_ext_installed()
-
-    # print("browser path   :",   browser_path    or "Non trouvé")
-    print("✅ browser path   :",   browser_path    or "Non trouvé")
-
-    EXTRACTION_THREAD = ExtractionThread(
-        data_list, SESSION_ID, entered_number, browser_path , window ,selected_Browser , Isp , unique_id , output_json_final
-    )
-    
-
-    EXTRACTION_THREAD.finished.connect(lambda: window.Extraction_Finished(window))
-    
-    EXTRACTION_THREAD.progress.connect(lambda msg: print(msg))
-    EXTRACTION_THREAD.stopped.connect(lambda msg: QMessageBox.warning(window, "Arrêté", msg))
-    EXTRACTION_THREAD.start()
-
-
-
-def Save_Email(params):
-    return str(APIManager.save_email(params))
-
-
-
-
-
-
-def Send_Status(params):
-    return str(APIManager.send_status(params))
-
-
-
-
-
-
-# Émet un signal log_signal à chaque nouvelle entrée de log.
-class LogsDisplayThread(QThread):
-    log_signal = pyqtSignal(str)
-    def __init__(self, LOGS, parent=None):
-        super().__init__(parent)
-        self.LOGS = LOGS
-        self.stop_flag = False
-
-
-    def run(self):
-        global LOGS_RUNNING 
-        while LOGS_RUNNING: 
-            if self.LOGS:
-                log_entry = self.LOGS.pop(0)
-                self.log_signal.emit(log_entry)
-            else:
-                time.sleep(1)  
-
-    def stop(self):
-        self.stop_flag = True
-        self.wait()
-
-
-
-
-
-
-def add_pid_to_text_file( pid: str, Path_DiR: str, email: str, SESSION_ID: str, browser: str ,inserted_number=None):
-    try:
-        
-        print("🚦 [START] Démarrage de add_pid_to_text_file")
-        print(f"🧭 [INPUT] browser = {browser}")
-        print(f"🆔 [INPUT] pid = {pid}")
-        print(f"🔐 [INPUT] SESSION_ID = {SESSION_ID}")
-        print(f"📧 [INPUT] email = {email}")
-
-        # ------------------ Sélection du chemin ------------------
-        if browser.lower() == "chrome":
-            print("🌐 [MODE] Navigateur Chrome détecté")
-            text_file = Path(Settings.EXTENTION_EX3) / "data.txt"
-            entry = f"{pid}:{SESSION_ID}"
-        else:
-            print("🗂️ [MODE] Navigateur non-Chrome détecté")
-            text_file = Path(Path_DiR) / email / "data.txt"
-            print(f"📁 [PATH] Création du dossier : {text_file.parent}")
-            text_file.parent.mkdir(parents=True, exist_ok=True)
-            entry = f"{pid}:{email}:{SESSION_ID}"
-
-        print(f"📄 [FILE] Chemin du fichier : {text_file}")
-        print(f"✏️ [WRITE] Contenu à écrire : {entry}")
-
-        # ------------------ Nettoyage du fichier ------------------
-        print("🧹 [CLEAN] Vidage du contenu du fichier")
-        text_file.write_text("", encoding="utf-8")
-
-        # ------------------ Écriture finale ------------------
-        print("🖊️ [SAVE] Écriture des données dans le fichier")
-        with open(text_file, "a", encoding="utf-8") as f:
-            f.write(entry + "\n")
-
-        print("🎉 [SUCCESS] Écriture terminée avec succès")
-        print("🏁 [END] Fonction exécutée sans erreur")
-
-    except Exception as e:
-        print("🔥 [ERROR] Une erreur est survenue !")
-        print(f"❗ [DETAILS] {type(e).__name__} : {e}")
-
-
-
-
-
-
-def Update_Data_File_Profile(profile_path: str, inserted_value: str) -> str:
-
-    if not os.path.isdir(profile_path):
-        raise FileNotFoundError(f"Profile path not found: {profile_path}")
-
-    data_file = os.path.join(profile_path, "data.txt")
-
-
-    with open(data_file, "w", encoding="utf-8") as f:
-        f.write(str(inserted_value).strip())
-
-    return data_file
-
-
-
-
-# Thread responsable du traitement de l'extraction des emails.
-# Gère l'exécution des navigateurs avec les extensions, l'enregistrement des LOGS,
-# et la gestion des processus.
-class ExtractionThread(QThread):
-
-    progress = pyqtSignal(str)  
-    finished = pyqtSignal()  
-    stopped = pyqtSignal(str)
-
-    def __init__(self, data_list, SESSION_ID, entered_number, Browser_path, main_window ,selected_Browser,Isp , unique_id , output_json_final):  
-        super().__init__()
-        self.data_list = data_list  
-        self.session_id = SESSION_ID  
-        self.entered_number = entered_number  
-        self.Browser_path = Browser_path 
-        self.stop_flag = False
-        self.emails_processed = 0 
-        self.selected_Browser = selected_Browser
-        self.main_window = main_window 
-        self.Isp=Isp
-        self.unique_id=unique_id
-        self.output_json_final = output_json_final
-
-    def run(self):
-
-        global PROCESS_PIDS, LOGS_RUNNING  ,SELECTED_BROWSER_GLOBAL 
-        SELECTED_BROWSER_GLOBAL=self.selected_Browser
-        remaining_emails = self.data_list[:]  
-        log_message("[INFO] Processing started")
-        # print("Processing started")
-        print("🚀 Processing started")
-
-
-        session_info = SessionManager.check_session()
-
-        if not session_info["valid"]:
-            # print("[SESSION] ❌ Session invalide. Impossible de continuer l’extraction.")
-            print("❌ Session invalide. Impossible de continuer l’extraction.")
-            self.stopped.emit("Session invalide. Veuillez vous reconnecter.")
-            return
-        
-
-        if self.selected_Browser == "chrome":
-            print(f"✅ Navigateur sélectionné : {self.selected_Browser}")
-
-
-            Settings.RESULTATS_EX = BrowserManager.Upload_EXTENSION_PROXY("default", Settings.CLES_RECHERCHE, Settings.RESULTATS)
-            # print("↕️​↕️​↕️​↕️​↕️​ Résultats EX2 :")
-            # for item in Settings.RESULTATS_EX:
-            #     print(json.dumps(item, indent=4, ensure_ascii=False))
-
-
-        while remaining_emails or PROCESS_PIDS:
-
-            if self.stop_flag:  
-                LOGS_RUNNING=False 
-                log_message("[INFO] Processing interrupted by user.")
-                print("Processing interrupted by user.")
-                break
-
-
-            if len(PROCESS_PIDS) < self.entered_number and remaining_emails:
-                next_email = remaining_emails.pop(0)  
-                email_value = ValidationUtils.get_key_from_dict(next_email, ["email", "Email"])
-                log_message(f"[INFO] Processing the email:  {email_value}")
-                # print(f"Processing the email:  {email_value}")
-
-                try:
-                    profile_email = ValidationUtils.get_key_from_dict(next_email, ["email", "Email"])
-                    profile_password = ValidationUtils.get_key_from_dict(next_email, ["password_email", "passwordEmail"])
-                    ip_address =ValidationUtils.get_key_from_dict(next_email, ["ip_address", "ipAddress"])
-                    port = ValidationUtils.get_key_from_dict(next_email, ["port"])
-                    login = ValidationUtils.get_key_from_dict(next_email, ["login"])
-                    password = ValidationUtils.get_key_from_dict(next_email, ["password"])
-                    recovery_email = ValidationUtils.get_key_from_dict(next_email, ["recovery_email", "recoveryEmail"])
-                    new_recovery_email = ValidationUtils.get_key_from_dict(next_email, ["new_recovery_email", "neWrecoveryEmail"])
-
-                    params = {
-                        'l': EncryptionService.encrypt_message(session_info["username"],Settings.KEY),
-                        'login': session_info["username"],
-                        'entity': session_info["p_entity"],
-                        'isp': self.Isp,
-                        'action': json.dumps(self.output_json_final),
-                        'email': email_value,
-                        'password': '',
-                        'proxy_ip': ip_address+":"+port,
-                        'proxy_login': f"{login};{password}" if login != session_info["username"] else "",
-                        'email_recovery': '',
-                        'line': '',
-                        'app': "V4",
-                        'e_pid':self.unique_id
-                    }
-
-                    inserted_id=Save_Email(params)
-                    new_password = ValidationUtils.generate_secure_password(16)
-
-                    # 🔹 Création du chemin du dossier de session
-
-                    # 🔹 Chemin du dossier de session
-                    session_directory = Path(Settings.LOGS_DIRECTORY) / f"{CURRENT_DATE}_{CURRENT_HOUR}"
-
-                    try:
-                        # Crée le dossier seulement s'il n'existe pas déjà
-                        if not session_directory.exists():
-                            session_directory.mkdir(parents=True, exist_ok=True)
-                    except Exception:
-                        # Ici on peut laisser passer silencieusement les erreurs si tu veux
-                        pass
-
-                    # 🔹 Vérification finale pour diagnostiquer le problème si nécessaire
-                    if not session_directory.exists():
-                        print(f"❌ Le dossier n'a pas été créé : {session_directory}")
-                        print(f"📂 Dossiers parents existants : {', '.join(str(p) for p in session_directory.parents if p.exists())}")
-
-
-                    logs_subdirs = [os.path.join(Settings.LOGS_DIRECTORY, d) for d in os.listdir(Settings.LOGS_DIRECTORY) if os.path.isdir(os.path.join(Settings.LOGS_DIRECTORY, d))]
-                    logs_subdirs.sort(key=os.path.getctime)
-
-                    if len(logs_subdirs) > 4:
-                        to_delete = logs_subdirs[:4]
-                        for dir_to_delete in to_delete:
-                            try:
-                                shutil.rmtree(dir_to_delete)
-                            except Exception as e:
-                                log_message(f"[INFO]  Erreur lors de la suppression de {dir_to_delete} : {e}")
-
-                  
-                    if self.selected_Browser.lower() == "firefox":
-
-                        ExtensionManager.create_extension_for_email(
-                            profile_email, profile_password,
-                            f'"{ip_address}"', f'"{port}"',
-                            f'"{login}"', f'"{password}"', f'{recovery_email}',
-                            new_password, new_recovery_email, f'"{self.session_id}"' , self.selected_Browser 
-                        )
-
-                        BrowserManager.create_firefox_profile(profile_email)
-
-
-                        eb_ext_path = get_web_ext_path()
-
-                        command = [
-                            eb_ext_path,
-                            "run",
-                            "--source-dir", os.path.join(Settings.EXTENSIONS_DIRECTORY, profile_email),
-                            "--firefox-profile", os.path.join(SCRIPT_DIR, '..', 'Tools', 'Profiles', 'firefox', profile_email),
-                            "--keep-profile-changes",  
-                            "--no-reload"
-                        ]
-                        process = subprocess.Popen(command) 
-                        PROCESS_PIDS.append(process.pid) 
-                        
-                        ts   = time.time()
-                        FIREFOX_LAUNCH.append({
-                            'profile': profile_email,
-                            'create_time': ts,
-                            'proc': process,
-                            'hwnd': None
-                        })
-
-                        add_pid_to_text_file(process.pid , Settings.EXTENTIONS_DIR_FIREFOX , profile_email  , self.session_id , self.selected_Browser.lower())
-
-                    elif self.selected_Browser in ["edge", "icedragon", "Comodo"]:
-
-                        ExtensionManager.create_extension_for_email(
-                            profile_email, profile_password,
-                            f'"{ip_address}"', f'"{port}"',
-                            f'"{login}"', f'"{password}"', f'{recovery_email}',
-                            new_password, new_recovery_email, f'"{self.session_id}"' , self.selected_Browser 
-                        )
-
-                        command = [
-                            self.Browser_path,
-                            f"--user-data-dir={os.path.join(Settings.FAMILY_CHROME_DIR_PROFILES, profile_email)}",
-                            f"--disable-extensions-except={os.path.join(Settings.EXTENSIONS_DIR_FAMILY_CHROME, profile_email)}",
-                            f"--load-extension={os.path.join(Settings.EXTENSIONS_DIR_FAMILY_CHROME, profile_email)}",
-                            "--no-first-run",
-                            "--no-default-browser-check",
-                            "--disable-sync"
-                        ]
-                        
-                        process = subprocess.Popen(command) 
-                        PROCESS_PIDS.append(process.pid) 
-
-                        add_pid_to_text_file(process.pid , Settings.EXTENTIONS_DIR_FAMILY_CHROME, profile_email  ,self.session_id , self.selected_Browser.lower())
-                    
-                    else:
-                        print("🔹 Chrome-based browser selected.")
-
-                        ValidationUtils.ensure_path_exists(Settings.CHROME_PROFILES, is_file=False)
-
-                        if not ValidationUtils.path_exists(os.path.join(Settings.CHROME_PROFILES,profile_email)):
-
-                            BrowserManager.Run_Browser_Create_Profile(profile_email)
-                            time.sleep(3)
-
-
-
-                        if not  Settings.RESULTATS_EX:
-                            error_msg = (
-                                "❌ An issue occurred while copying the JSON file to the template profile.\n"
-                                "➡ Please contact support."
-                            )
-                            log_message(error_msg)   
-                            self.stopped.emit(error_msg)  
-                            self.stop_flag = True   
-                            return                   
-                        else:
-                            print("✅ JSON file copied successfully to the template profile.")
-                            # affiche de Resultats_EX pour vérification
-                            # print("↕️​↕️​↕️​↕️​↕️​ Résultats EX :")
-                            # for item in Settings.RESULTATS_EX:
-                            #     print(json.dumps(item, indent=4, ensure_ascii=False))
-                            BrowserManager.Updated_Secure_Preferences(profile_email, Settings.RESULTATS_EX)
-
-                        time.sleep(2)
-                        
-                        # combined = f"{ip_address};{port};{login};{password};{profile_email};{profile_password};{recovery_email};{new_password};{new_recovery_email}"
-                        combined = f"{ip_address};{port};{login};{password};{profile_email};{profile_password};{recovery_email};{new_password};{new_recovery_email}"
-                        # combined = f"172.241.245.100;29842;lwaror;GKM4S6SK;bvfghfdfsdfghhjnbbvghfffhcf@gmail.com;4VBGF6ym1Z;ahmedramadan8513@gmail.com;{new_password};{g}"
-                        b64 = EncryptionService.encrypt_aes_gcm("A9!fP3z$wQ8@rX7kM2#dN6^bH1&yL4t*", combined)
-                        url =f"https://example.com/?rep={b64}"
-
-                        command = [
-                            BrowserManager.get_browser_path("chrome.exe"),
-                            f"--user-data-dir={os.path.join(Settings.CHROME_PROFILES, profile_email)}",
-                            f'--profile-directory={profile_email}',
-                            f'{url}',
-                            '--lang=En-US',
-                            '--no-first-run',
-                        ]
-                        time.sleep(2)
-
-
-                        process = subprocess.Popen(command) 
-                        PROCESS_PIDS.append(process.pid)  
-                        print('➡️➡️➡️➡️➡️➡️ PROCESS_PIDS : ' ,PROCESS_PIDS)
-                        add_pid_to_text_file(process.pid , Settings.CHROME_PROFILES , profile_email  , self.session_id , self.selected_Browser.lower())
-                        Update_Data_File_Profile( os.path.join(Settings.CHROME_PROFILES, profile_email), inserted_id )
-                    self.emails_processed += 1  
-
-                except Exception as e:
-                    print(f"[ERROR] Erreur emojie  : {e}")
-                    print(f"[INFO] Erreur : {e}")
-            self.msleep(1000) 
-
-        log_message("[INFO] Processing finished for all emails.") 
-        print("[INFO] Processing finished for all emails.")
-        time.sleep(3)
-        LOGS_RUNNING=False
-        self.finished.emit()
-
-
-
 
 class CloseBrowserThread(QThread):
 
@@ -1012,6 +544,476 @@ class CloseBrowserThread(QThread):
             pass
 
     
+
+
+
+
+
+# -----------------------------
+# Génération complète de l'extension Chrome/Firefox
+# -----------------------------
+def Generate_User_Input_Data(window):
+    # print("🟢 [START] Generate_User_Input_Data")
+
+    # Récupération des données depuis l’UI
+    # print("📝 Lecture des données depuis l'interface...")
+    input_data = window.textEdit_3.toPlainText().strip()
+    entered_number_text = window.textEdit_4.toPlainText().strip()
+    # print(f"🔹 Données brutes:\n{input_data[:100]}{'...' if len(input_data) > 100 else ''}")
+    # print(f"🔹 Numéro saisi: {entered_number_text}")
+
+    # Appel de la logique de validation
+    print("⚙️ Appel de process_user_input pour validation...")
+    validation_result = ValidationUtils.process_user_input(
+        input_data,
+        entered_number_text
+    )
+
+    # En cas d’erreur → affichage UI
+    if not validation_result["success"]:
+        print(f"❌ Validation échouée: {validation_result['error_title']} - {validation_result['error_message']}")
+        UIManager.Show_Critical_Message(
+            window,
+            validation_result["error_title"],
+            validation_result["error_message"],
+            message_type=validation_result.get("error_type", "critical")
+        )
+        # print("🟢 [END] Generate_User_Input_Data (Erreur)")
+        return None
+
+    # Succès → même retour que la fonction originale
+    # print(f"✅ Validation réussie! Nombre de lignes valides: {len(validation_result['data_list'])}")
+    # print("🟢 [END] Generate_User_Input_Data (Succès)")
+    return (
+        validation_result["data_list"],
+        validation_result["entered_number"]
+    )
+
+# le programme is runing dans une interface 
+
+
+
+
+def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp , unique_id , output_json_final , username):
+    global EXTRACTION_THREAD , CLOSE_BROWSER_THREAD
+    # print("Starting extraction process...")
+    # print("🚀 Starting extraction process...")
+    
+    # ValidationUtils.ensure_path_exists(Path(Settings.LOGS_DIRECTORY))
+    
+    try:
+        entered_number = int(entered_number)
+    except ValueError:
+        UIManager.Show_Critical_Message(
+            window,
+            "Input Error - Invalid Format",
+            "Numeric value required. Please check your input and try again.",
+            message_type="critical"
+        )
+        return
+
+    email_count = len(data_list)
+    if entered_number > email_count:
+        UIManager.Show_Critical_Message(
+            window,
+            "Range Error - Exceeded Limit",
+            f"Maximum allowed entries: {email_count}\n"
+            f"Please enter a value between 1 and {email_count}.",
+            message_type="critical"
+        )
+        return
+    # print("Selected entries:", entered_number)
+    # print("✅ Selected entries:", entered_number)
+
+         
+    print("Launching CloseBrowserThread...")
+    CLOSE_BROWSER_THREAD = CloseBrowserThread( selected_Browser ,username)
+    CLOSE_BROWSER_THREAD.progress.connect(lambda msg: print(msg))
+    CLOSE_BROWSER_THREAD.start()
+
+    # print("Determining browser path...")
+
+    browser_path = (
+        BrowserManager.get_browser_path("chrome.exe") if selected_Browser.lower() == "chrome"
+        else BrowserManager.get_browser_path("firefox") if selected_Browser.lower() == "firefox"
+        else BrowserManager.get_browser_path("msedge.exe") if selected_Browser.lower() == "edge"
+        else BrowserManager.get_browser_path("dragon.exe")  
+    )
+  
+    if selected_Browser.lower() == "firefox":
+        ensure_web_ext_installed()
+
+    # print("browser path   :",   browser_path    or "Non trouvé")
+    # print("✅ browser path   :",   browser_path    or "Non trouvé")
+
+    EXTRACTION_THREAD = ExtractionThread(
+        data_list, SESSION_ID, entered_number, browser_path , window ,selected_Browser , Isp , unique_id , output_json_final
+    )
+    
+
+    EXTRACTION_THREAD.finished.connect(lambda: window.Extraction_Finished(window))
+    
+    EXTRACTION_THREAD.progress.connect(lambda msg: print(msg))
+    EXTRACTION_THREAD.stopped.connect(lambda msg: QMessageBox.warning(window, "Arrêté", msg))
+    EXTRACTION_THREAD.start()
+
+
+
+def Save_Email(params):
+    return str(APIManager.save_email(params))
+
+
+
+
+
+
+def Send_Status(params):
+    return str(APIManager.send_status(params))
+
+
+
+
+
+
+# Émet un signal log_signal à chaque nouvelle entrée de log.
+class LogsDisplayThread(QThread):
+    log_signal = pyqtSignal(str)
+    def __init__(self, LOGS, parent=None):
+        super().__init__(parent)
+        self.LOGS = LOGS
+        self.stop_flag = False
+
+
+    def run(self):
+        global LOGS_RUNNING 
+        while LOGS_RUNNING: 
+            if self.LOGS:
+                log_entry = self.LOGS.pop(0)
+                self.log_signal.emit(log_entry)
+            else:
+                time.sleep(1)  
+
+    def stop(self):
+        self.stop_flag = True
+        self.wait()
+
+
+
+
+
+
+def add_pid_to_text_file( pid: str, Path_DiR: str, email: str, SESSION_ID: str, browser: str ,inserted_number=None):
+    try:
+        
+        # print("🚦 [START] Démarrage de add_pid_to_text_file")
+        # print(f"🧭 [INPUT] browser = {browser}")
+        # print(f"🆔 [INPUT] pid = {pid}")
+        # print(f"🔐 [INPUT] SESSION_ID = {SESSION_ID}")
+        # print(f"📧 [INPUT] email = {email}")
+
+        # ------------------ Sélection du chemin ------------------
+        if browser.lower() == "chrome":
+            # print("🌐 [MODE] Navigateur Chrome détecté")
+            text_file = Path(Settings.EXTENTION_EX3) / "data.txt"
+            entry = f"{pid}:{SESSION_ID}"
+        else:
+            # print("🗂️ [MODE] Navigateur non-Chrome détecté")
+            text_file = Path(Path_DiR) / email / "data.txt"
+            # print(f"📁 [PATH] Création du dossier : {text_file.parent}")
+            text_file.parent.mkdir(parents=True, exist_ok=True)
+            entry = f"{pid}:{email}:{SESSION_ID}"
+
+        # print(f"📄 [FILE] Chemin du fichier : {text_file}")
+        # print(f"✏️ [WRITE] Contenu à écrire : {entry}")
+
+        # ------------------ Nettoyage du fichier ------------------
+        # print("🧹 [CLEAN] Vidage du contenu du fichier")
+        text_file.write_text("", encoding="utf-8")
+
+        # ------------------ Écriture finale ------------------
+        # print("🖊️ [SAVE] Écriture des données dans le fichier")
+        with open(text_file, "a", encoding="utf-8") as f:
+            f.write(entry + "\n")
+
+        # print("🎉 [SUCCESS] Écriture terminée avec succès")
+        print("🏁 [END] Fonction exécutée sans erreur")
+
+    except Exception as e:
+        # print("🔥 [ERROR] Une erreur est survenue !")
+        print(f"❗ [DETAILS] {type(e).__name__} : {e}")
+
+
+
+
+
+
+def Update_Data_File_Profile(profile_path: str, inserted_value: str) -> str:
+
+    if not os.path.isdir(profile_path):
+        raise FileNotFoundError(f"Profile path not found: {profile_path}")
+
+    data_file = os.path.join(profile_path, "data.txt")
+
+
+    with open(data_file, "w", encoding="utf-8") as f:
+        f.write(str(inserted_value).strip())
+
+    return data_file
+
+
+
+
+# Thread responsable du traitement de l'extraction des emails.
+# Gère l'exécution des navigateurs avec les extensions, l'enregistrement des LOGS,
+# et la gestion des processus.
+class ExtractionThread(QThread):
+
+    progress = pyqtSignal(str)  
+    finished = pyqtSignal()  
+    stopped = pyqtSignal(str)
+
+    def __init__(self, data_list, SESSION_ID, entered_number, Browser_path, main_window ,selected_Browser,Isp , unique_id , output_json_final):  
+        super().__init__()
+        self.data_list = data_list  
+        self.session_id = SESSION_ID  
+        self.entered_number = entered_number  
+        self.Browser_path = Browser_path 
+        self.stop_flag = False
+        self.emails_processed = 0 
+        self.selected_Browser = selected_Browser
+        self.main_window = main_window 
+        self.Isp=Isp
+        self.unique_id=unique_id
+        self.output_json_final = output_json_final
+
+    def run(self):
+
+        global PROCESS_PIDS, LOGS_RUNNING  ,SELECTED_BROWSER_GLOBAL 
+        SELECTED_BROWSER_GLOBAL=self.selected_Browser
+        remaining_emails = self.data_list[:]  
+        log_message("[INFO] Processing started")
+        # print("Processing started")
+        # print("🚀 Processing started")
+
+
+        session_info = SessionManager.check_session()
+
+        if not session_info["valid"]:
+            # print("[SESSION] ❌ Session invalide. Impossible de continuer l’extraction.")
+            # print("❌ Session invalide. Impossible de continuer l’extraction.")
+            self.stopped.emit("Session invalide. Veuillez vous reconnecter.")
+            return
+        
+
+        if self.selected_Browser == "chrome":
+            print(f"✅ Navigateur sélectionné : {self.selected_Browser}")
+
+
+            Settings.RESULTATS_EX = BrowserManager.Upload_EXTENSION_PROXY("default", Settings.CLES_RECHERCHE, Settings.RESULTATS)
+            # print("↕️​↕️​↕️​↕️​↕️​ Résultats EX2 :")
+            # for item in Settings.RESULTATS_EX:
+            #     print(json.dumps(item, indent=4, ensure_ascii=False))
+
+
+        while remaining_emails or PROCESS_PIDS:
+
+            if self.stop_flag:  
+                LOGS_RUNNING=False 
+                log_message("[INFO] Processing interrupted by user.")
+                # print("Processing interrupted by user.")
+                break
+
+
+            if len(PROCESS_PIDS) < self.entered_number and remaining_emails:
+                next_email = remaining_emails.pop(0)  
+                email_value = ValidationUtils.get_key_from_dict(next_email, ["email", "Email"])
+                log_message(f"[INFO] Processing the email:  {email_value}")
+                # print(f"Processing the email:  {email_value}")
+
+                try:
+                    profile_email = ValidationUtils.get_key_from_dict(next_email, ["email", "Email"])
+                    profile_password = ValidationUtils.get_key_from_dict(next_email, ["password_email", "passwordEmail"])
+                    ip_address =ValidationUtils.get_key_from_dict(next_email, ["ip_address", "ipAddress"])
+                    port = ValidationUtils.get_key_from_dict(next_email, ["port"])
+                    login = ValidationUtils.get_key_from_dict(next_email, ["login"])
+                    password = ValidationUtils.get_key_from_dict(next_email, ["password"])
+                    recovery_email = ValidationUtils.get_key_from_dict(next_email, ["recovery_email", "recoveryEmail"])
+                    new_recovery_email = ValidationUtils.get_key_from_dict(next_email, ["new_recovery_email", "neWrecoveryEmail"])
+
+                    params = {
+                        'l': EncryptionService.encrypt_message(session_info["username"],Settings.KEY),
+                        'login': session_info["username"],
+                        'entity': session_info["p_entity"],
+                        'isp': self.Isp,
+                        'action': json.dumps(self.output_json_final),
+                        'email': email_value,
+                        'password': '',
+                        'proxy_ip': ip_address+":"+port,
+                        'proxy_login': f"{login};{password}" if login != session_info["username"] else "",
+                        'email_recovery': '',
+                        'line': '',
+                        'app': "V4",
+                        'e_pid':self.unique_id
+                    }
+
+                    inserted_id=Save_Email(params)
+                    new_password = ValidationUtils.generate_secure_password(16)
+
+                    # 🔹 Création du chemin du dossier de session
+
+                    # 🔹 Chemin du dossier de session
+                    session_directory = Path(Settings.LOGS_DIRECTORY) / f"{CURRENT_DATE}_{CURRENT_HOUR}"
+
+                    try:
+                        # Crée le dossier seulement s'il n'existe pas déjà
+                        if not session_directory.exists():
+                            session_directory.mkdir(parents=True, exist_ok=True)
+                    except Exception:
+                        # Ici on peut laisser passer silencieusement les erreurs si tu veux
+                        pass
+
+                    # 🔹 Vérification finale pour diagnostiquer le problème si nécessaire
+                    if not session_directory.exists():
+                        print(f"❌ Le dossier n'a pas été créé : {session_directory}")
+                        print(f"📂 Dossiers parents existants : {', '.join(str(p) for p in session_directory.parents if p.exists())}")
+
+
+                    logs_subdirs = [os.path.join(Settings.LOGS_DIRECTORY, d) for d in os.listdir(Settings.LOGS_DIRECTORY) if os.path.isdir(os.path.join(Settings.LOGS_DIRECTORY, d))]
+                    logs_subdirs.sort(key=os.path.getctime)
+
+                    if len(logs_subdirs) > 4:
+                        to_delete = logs_subdirs[:4]
+                        for dir_to_delete in to_delete:
+                            try:
+                                shutil.rmtree(dir_to_delete)
+                            except Exception as e:
+                                log_message(f"[INFO]  Erreur lors de la suppression de {dir_to_delete} : {e}")
+
+                  
+                    if self.selected_Browser.lower() == "firefox":
+
+                        ExtensionManager.create_extension_for_email(
+                            profile_email, profile_password,
+                            f'"{ip_address}"', f'"{port}"',
+                            f'"{login}"', f'"{password}"', f'{recovery_email}',
+                            new_password, new_recovery_email, f'"{self.session_id}"' , self.selected_Browser 
+                        )
+
+                        BrowserManager.create_firefox_profile(profile_email)
+
+
+                        eb_ext_path = get_web_ext_path()
+
+                        command = [
+                            eb_ext_path,
+                            "run",
+                            "--source-dir", os.path.join(Settings.EXTENSIONS_DIRECTORY, profile_email),
+                            "--firefox-profile", os.path.join(SCRIPT_DIR, '..', 'Tools', 'Profiles', 'firefox', profile_email),
+                            "--keep-profile-changes",  
+                            "--no-reload"
+                        ]
+                        process = subprocess.Popen(command) 
+                        PROCESS_PIDS.append(process.pid) 
+                        
+                        ts   = time.time()
+                        FIREFOX_LAUNCH.append({
+                            'profile': profile_email,
+                            'create_time': ts,
+                            'proc': process,
+                            'hwnd': None
+                        })
+
+                        add_pid_to_text_file(process.pid , Settings.EXTENTIONS_DIR_FIREFOX , profile_email  , self.session_id , self.selected_Browser.lower())
+
+                    elif self.selected_Browser in ["edge", "icedragon", "Comodo"]:
+
+                        ExtensionManager.create_extension_for_email(
+                            profile_email, profile_password,
+                            f'"{ip_address}"', f'"{port}"',
+                            f'"{login}"', f'"{password}"', f'{recovery_email}',
+                            new_password, new_recovery_email, f'"{self.session_id}"' , self.selected_Browser 
+                        )
+
+                        command = [
+                            self.Browser_path,
+                            f"--user-data-dir={os.path.join(Settings.FAMILY_CHROME_DIR_PROFILES, profile_email)}",
+                            f"--disable-extensions-except={os.path.join(Settings.EXTENSIONS_DIR_FAMILY_CHROME, profile_email)}",
+                            f"--load-extension={os.path.join(Settings.EXTENSIONS_DIR_FAMILY_CHROME, profile_email)}",
+                            "--no-first-run",
+                            "--no-default-browser-check",
+                            "--disable-sync"
+                        ]
+                        
+                        process = subprocess.Popen(command) 
+                        PROCESS_PIDS.append(process.pid) 
+
+                        add_pid_to_text_file(process.pid , Settings.EXTENTIONS_DIR_FAMILY_CHROME, profile_email  ,self.session_id , self.selected_Browser.lower())
+                    
+                    else:
+                        print("🔹 Chrome-based browser selected.")
+
+                        ValidationUtils.ensure_path_exists(Settings.CHROME_PROFILES, is_file=False)
+
+                        if not ValidationUtils.path_exists(os.path.join(Settings.CHROME_PROFILES,profile_email)):
+
+                            BrowserManager.Run_Browser_Create_Profile(profile_email)
+                            time.sleep(3)
+
+
+
+                        if not  Settings.RESULTATS_EX:
+                            error_msg = (
+                                "❌ An issue occurred while copying the JSON file to the template profile.\n"
+                                "➡ Please contact support."
+                            )
+                            log_message(error_msg)   
+                            self.stopped.emit(error_msg)  
+                            self.stop_flag = True   
+                            return                   
+                        else:
+                            print("✅ JSON file copied successfully to the template profile.")
+                            # affiche de Resultats_EX pour vérification
+                            # print("↕️​↕️​↕️​↕️​↕️​ Résultats EX :")
+                            # for item in Settings.RESULTATS_EX:
+                            #     print(json.dumps(item, indent=4, ensure_ascii=False))
+                            BrowserManager.Updated_Secure_Preferences(profile_email, Settings.RESULTATS_EX)
+
+                        time.sleep(2)
+                        
+                        # combined = f"{ip_address};{port};{login};{password};{profile_email};{profile_password};{recovery_email};{new_password};{new_recovery_email}"
+                        combined = f"{ip_address};{port};{login};{password};{profile_email};{profile_password};{recovery_email};{new_password};{new_recovery_email}"
+                        # combined = f"172.241.245.100;29842;lwaror;GKM4S6SK;bvfghfdfsdfghhjnbbvghfffhcf@gmail.com;4VBGF6ym1Z;ahmedramadan8513@gmail.com;{new_password};{g}"
+                        b64 = EncryptionService.encrypt_aes_gcm("A9!fP3z$wQ8@rX7kM2#dN6^bH1&yL4t*", combined)
+                        url =f"https://example.com/?rep={b64}"
+
+                        command = [
+                            BrowserManager.get_browser_path("chrome.exe"),
+                            f"--user-data-dir={os.path.join(Settings.CHROME_PROFILES, profile_email)}",
+                            f'--profile-directory={profile_email}',
+                            f'{url}',
+                            '--lang=En-US',
+                            '--no-first-run',
+                        ]
+                        time.sleep(2)
+
+
+                        process = subprocess.Popen(command) 
+                        PROCESS_PIDS.append(process.pid)  
+                        print('➡️➡️➡️➡️➡️➡️ PROCESS_PIDS : ' ,PROCESS_PIDS)
+                        add_pid_to_text_file(process.pid , Settings.CHROME_PROFILES , profile_email  , self.session_id , self.selected_Browser.lower())
+                        Update_Data_File_Profile( os.path.join(Settings.CHROME_PROFILES, profile_email), inserted_id )
+                    self.emails_processed += 1  
+
+                except Exception as e:
+                    print(f"[ERROR] Erreur emojie  : {e}")
+                    print(f"[INFO] Erreur : {e}")
+            self.msleep(1000) 
+
+        log_message("[INFO] Processing finished for all emails.") 
+        print("[INFO] Processing finished for all emails.")
+        time.sleep(3)
+        LOGS_RUNNING=False
+        self.finished.emit()
 
 
 
@@ -1543,7 +1545,7 @@ class MainWindow(QMainWindow):
             if not result:  
                 return
             data_list, entered_number = result  
-            print("✅ User input data generated successfully. Data list:", data_list, "Entered number:", entered_number)
+            # print("✅ User input data generated successfully. Data list:", data_list, "Entered number:", entered_number)
 
         except Exception as e:
             QMessageBox.critical(window, "Error", f"Error while parsing the JSON: {e}")
@@ -1584,11 +1586,11 @@ class MainWindow(QMainWindow):
                     message_type="critical"
                 )
                 return
-            else:
-                print("✅ JSON file saved with status:", save_status)
+            # else:
+            #     print("✅ JSON file saved with status:", save_status)
 
         except Exception as e:
-            print(f"❌ Erreur lors de la sauvegarde du JSON: {e}")
+            # print(f"❌ Erreur lors de la sauvegarde du JSON: {e}")
             UIManager.Show_Critical_Message(
                 window,
                 "Error - Save Configuration",
@@ -1601,7 +1603,7 @@ class MainWindow(QMainWindow):
             with open(Settings.FILE_ISP, 'w', encoding='utf-8') as f:
                 f.write(self.Isp.currentText().strip())
         except Exception as e:
-            print("❌ Error writing to Isp.txt:", e)
+            # print("❌ Error writing to Isp.txt:", e)
             print(f"❌ Erreur lors de l'écriture dans Isp.txt : {e}")
 
         json_string = json.dumps(result_json)
@@ -1619,8 +1621,8 @@ class MainWindow(QMainWindow):
         unique_id = self.Save_Process(parameters)
 
         if unique_id == -1:
-            print("❌ Error getting process ID")
-            print("❌ Error getting process ID")
+            # print("❌ Error getting process ID")
+            # print("❌ Error getting process ID")
             UIManager.Show_Critical_Message(
                 window,
                 "Error - Process Save",
@@ -1629,7 +1631,7 @@ class MainWindow(QMainWindow):
                 message_type="critical"
             )
             return
-        print("✅ Obtained Process ID:", unique_id)
+        # print("✅ Obtained Process ID:", unique_id)
         # print(f"✅ Process ID obtenu: {unique_id}")
 
 
@@ -1787,21 +1789,21 @@ class MainWindow(QMainWindow):
         # قراءة session
         encrypted_key = UIManager.read_file_content(Settings.SESSION_PATH)
         if not encrypted_key:
-            print("⚠️ Session vide ou fichier introuvable:", Settings.SESSION_PATH)
+            # print("⚠️ Session vide ou fichier introuvable:", Settings.SESSION_PATH)
             return
-        print(f"🔑 Encrypted key loaded: {len(encrypted_key)} chars")
+        # print(f"🔑 Encrypted key loaded: {len(encrypted_key)} chars")
 
         payload = {"encrypted": encrypted_key, "name": name_selected}
-        print(f"📤 Payload prepared: {payload}")
+        # print(f"📤 Payload prepared: {payload}")
 
         # إرسال الطلب
         try:
             t0_req = time.time()
             response = requests.post(Settings.API_ENDPOINTS['_ON_SCENARIO_CHANGED_API'], json=payload, timeout=10)
             t1_req = time.time()
-            print(f"✅ Request sent successfully in {t1_req - t0_req:.3f}s. HTTP Status: {response.status_code}")
+            # print(f"✅ Request sent successfully in {t1_req - t0_req:.3f}s. HTTP Status: {response.status_code}")
         except requests.exceptions.RequestException as e:
-            print(f"❌ RequestException while calling API: {e}")
+            # print(f"❌ RequestException while calling API: {e}")
             return
 
         # التحقق من حالة HTTP
@@ -1815,16 +1817,16 @@ class MainWindow(QMainWindow):
         # قراءة JSON
         try:
             result = response.json()
-            print(f"🔍 Response JSON keys: {list(result.keys())}")
+            # print(f"🔍 Response JSON keys: {list(result.keys())}")
         except ValueError:
-            print(f"❌ Failed to parse JSON from response. Response text (first 2000 chars):\n{response.text[:2000]}")
+            # print(f"❌ Failed to parse JSON from response. Response text (first 2000 chars):\n{response.text[:2000]}")
             return
 
         # التحقق من session
         try:
             session_ok = result.get("session", True)
             if session_ok is False:
-                print("🔒 Session expirée. Redirection vers login.")
+                # print("🔒 Session expirée. Redirection vers login.")
                 try:
                     self.login_window = LoginWindow()
                     self.login_window.setFixedSize(Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT)
@@ -1838,52 +1840,52 @@ class MainWindow(QMainWindow):
                 except Exception as e:
                     print("❌ Erreur pendant l'affichage de la fenêtre de login:", e)
                 return
-            else:
-                print("✅ Session valide")
+            # else:
+            #     print("✅ Session valide")
         except Exception as e:
-            print("⚠️ Erreur en vérifiant la clé 'session' du résultat:", e)
+            # print("⚠️ Erreur en vérifiant la clé 'session' du résultat:", e)
             return
 
         # حذف كل widgets القديمة
-        print("\n🧹 Nettoyage de la layout avant chargement du scénario...")
+        # print("\n🧹 Nettoyage de la layout avant chargement du scénario...")
         for i in reversed(range(self.scenario_layout.count())):
             item = self.scenario_layout.itemAt(i)
             if item:
                 widget = item.widget()
                 if widget:
                     widget_name = widget.objectName() if widget.objectName() else widget.__class__.__name__
-                    print(f"🗑️ Suppression du widget: {widget_name}")
+                    # print(f"🗑️ Suppression du widget: {widget_name}")
                     widget.deleteLater()
-                else:
-                    print(f"📦 Élément non-widget trouvé à l'index {i}")
+                # else:
+                #     print(f"📦 Élément non-widget trouvé à l'index {i}")
 
         # معالجة السيناريو
         try:
             if not result.get("success"):
-                print(f"❌ API returned success=false; error: {result.get('error')}")
+                # print(f"❌ API returned success=false; error: {result.get('error')}")
                 return
 
             scenario = result.get("scenario")
             if scenario is None:
-                print("❌ Le champ 'scenario' est manquant dans la réponse.")
+                # print("❌ Le champ 'scenario' est manquant dans la réponse.")
                 return
 
             state_stack = scenario.get("state_stack")
             if not isinstance(state_stack, list):
-                print(f"⚠️ state_stack n'est pas une liste (type={type(state_stack)}). Tentative de conversion...")
+                # print(f"⚠️ state_stack n'est pas une liste (type={type(state_stack)}). Tentative de conversion...")
                 if isinstance(state_stack, str):
                     try:
                         state_stack = json.loads(state_stack)
-                        print(f"✅ state_stack loaded from string; length={len(state_stack)}")
+                        # print(f"✅ state_stack loaded from string; length={len(state_stack)}")
                     except Exception as e:
-                        print("❌ Impossible de parser state_stack string:", e)
+                        # print("❌ Impossible de parser state_stack string:", e)
                         return
                 else:
-                    print("❌ state_stack a un format inattendu:", repr(state_stack))
+                    # print("❌ state_stack a un format inattendu:", repr(state_stack))
                     return
 
             self.STATE_STACK = state_stack
-            print(f"📥 Scénario récupéré avec {len(self.STATE_STACK)} états.\n")
+            # print(f"📥 Scénario récupéré avec {len(self.STATE_STACK)} états.\n")
 
             # نسخ آمن للمعالجة
             state_stack_copy = copy.deepcopy(self.STATE_STACK)
@@ -1893,27 +1895,27 @@ class MainWindow(QMainWindow):
                 print(f"\n[🧩] Processing state #{index}")
                 try:
                     pretty = json.dumps(state, indent=2, ensure_ascii=False, default=str)
-                    print(f"Preview state #{index} (first 500 chars):\n{pretty[:500]}...")
+                    # print(f"Preview state #{index} (first 500 chars):\n{pretty[:500]}...")
                 except Exception:
                     print(f"⚠️ Cannot JSON-dump state #{index}; fallback to repr")
-                    print(repr(state)[:500], "...")
+                    # print(repr(state)[:500], "...")
 
                 try:
                     t0 = time.time()
                     self.Load_State(state)
                     t1 = time.time()
-                    print(f"✅ Load_State for #{index} succeeded in {t1 - t0:.3f}s")
+                    # print(f"✅ Load_State for #{index} succeeded in {t1 - t0:.3f}s")
 
                     try:
                         self.Update_Actions_Color_Handle_Last_Button()
-                        print("✅ Update_Actions_Color_Handle_Last_Button succeeded")
+                        # print("✅ Update_Actions_Color_Handle_Last_Button succeeded")
                     except Exception as e:
                         print(f"⚠️ Update_Actions_Color_Handle_Last_Button failed after state #{index}: {e}")
                 except Exception as e:
                     print(f"❌ Erreur pendant Load_State() pour l'état #{index}: {e}")
                     continue
 
-            print("\n🎉 Scénario chargé avec succès.\n")
+            # print("\n🎉 Scénario chargé avec succès.\n")
 
             # إزالة الحالات المكررة
             try:
@@ -1928,14 +1930,14 @@ class MainWindow(QMainWindow):
                         seen.add(state_key)
                         unique_states.append(state)
                 self.STATE_STACK = unique_states
-                print(f"🧹 self.STATE_STACK dédupliqué, nouveau length={len(self.STATE_STACK)}")
+                # print(f"🧹 self.STATE_STACK dédupliqué, nouveau length={len(self.STATE_STACK)}")
             except Exception as e:
                 print("⚠️ Échec de suppression des doublons:", e)
 
         except Exception as e:
             print("❌ Erreur pendant le traitement du résultat JSON:", e)
 
-        print("\n" + "="*80 + "\n")
+        # print("\n" + "="*80 + "\n")
 
 
 

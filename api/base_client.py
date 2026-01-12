@@ -47,7 +47,7 @@ class APIManager:
 
         for attempt in range(1, 4):
             try:
-                print(f"🌐 Tentative {attempt} - {method} {url}")
+                #print(f"🌐 Tentative {attempt} - {method} {url}")
 
                 response = self.session.request(
                     method=method.upper(),
@@ -58,7 +58,7 @@ class APIManager:
                     timeout=timeout
                 )
 
-                print(f"📥 HTTP {response.status_code}")
+                #print(f"📥 HTTP {response.status_code}")
 
                 if response.status_code == 200:
                     try:
@@ -73,11 +73,11 @@ class APIManager:
                     }
                 else:
                     last_exception = f"HTTP {response.status_code}"
-                    print(f"⚠️ HTTP {response.status_code} - réponse tronquée: {response.text[:100]}")
+                    #print(f"⚠️ HTTP {response.status_code} - réponse tronquée: {response.text[:100]}")
 
             except requests.RequestException as e:
                 last_exception = str(e)
-                print(f"⚠️ Erreur tentative {attempt}: {last_exception}")
+                #print(f"⚠️ Erreur tentative {attempt}: {last_exception}")
 
             if attempt < 3:
                 time.sleep(2)
@@ -98,7 +98,7 @@ class APIManager:
         if result.get("status") == "success":
             return result.get("data", success_default)
         else:
-            print(f"❌ API Error: {result.get('error')}")
+            #print(f"❌ API Error: {result.get('error')}")
             return failure_default
 
     # --------------------- Méthodes API ---------------------
