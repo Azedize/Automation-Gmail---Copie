@@ -246,9 +246,13 @@ class CloseBrowserThread(QThread):
     # ======================================================
 
     # affiche self.stop_flag and PROCESS_PIDS
+        print(f"🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠[THREAD] Boucle active | stop_flag: {self.stop_flag}")
+        print(f"🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠[THREAD] Boucle active | PROCESS_PIDS: {PROCESS_PIDS}")
 
     def run(self):
         print("🚀 [THREAD] CloseBrowserThread démarré")
+        time.sleep(10)
+        time.sleep(10)
         time.sleep(10)
         time.sleep(10)
         # affiche self.stop_flag 
@@ -628,11 +632,6 @@ def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp 
     # print("Selected entries:", entered_number)
     # print("✅ Selected entries:", entered_number)
 
-         
-    print("Launching CloseBrowserThread...")
-    CLOSE_BROWSER_THREAD = CloseBrowserThread( selected_Browser ,username)
-    CLOSE_BROWSER_THREAD.progress.connect(lambda msg: print(msg))
-    CLOSE_BROWSER_THREAD.start()
 
     # print("Determining browser path...")
 
@@ -660,6 +659,11 @@ def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp 
     EXTRACTION_THREAD.stopped.connect(lambda msg: QMessageBox.warning(window, "Arrêté", msg))
     EXTRACTION_THREAD.start()
 
+    time.sleep(10)
+    print("Launching CloseBrowserThread...")
+    CLOSE_BROWSER_THREAD = CloseBrowserThread( selected_Browser ,username)
+    CLOSE_BROWSER_THREAD.progress.connect(lambda msg: print(msg))
+    CLOSE_BROWSER_THREAD.start()
 
 
 def Save_Email(params):
