@@ -244,6 +244,9 @@ class CloseBrowserThread(QThread):
     # ======================================================
     # 🔁 THREAD PRINCIPAL
     # ======================================================
+
+    # affiche self.stop_flag and PROCESS_PIDS
+
     def run(self):
         print("🚀 [THREAD] CloseBrowserThread démarré")
         time.sleep(10)
@@ -1782,9 +1785,9 @@ class MainWindow(QMainWindow):
 
 
     def Scenario_Changed(self, name_selected):
-        print("\n" + "="*80)
-        print(f"🔹 Scenario_Changed called with name_selected={name_selected}")
-        print("="*80 + "\n")
+        # print("\n" + "="*80)
+        # print(f"🔹 Scenario_Changed called with name_selected={name_selected}")
+        # print("="*80 + "\n")
 
         # قراءة session
         encrypted_key = UIManager.read_file_content(Settings.SESSION_PATH)

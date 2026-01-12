@@ -177,9 +177,9 @@ class UpdateManager:
         try:
             from api.base_client import APIManager
 
-            print("\n" + "=" * 80)
-            print("🔍 CHECK UPDATE")
-            print("=" * 80)
+            # print("\n" + "=" * 80)
+            # print("🔍 CHECK UPDATE")
+            # print("=" * 80)
 
             # Vérification serveur
             response = APIManager.make_request(
@@ -334,14 +334,14 @@ class UpdateManager:
                 remote_version = data.get("version_Extention")
                 remote_manifest_version = data.get("manifest_version")
 
-                print("\n=== JSON Response ===")
-                print(json.dumps(data, indent=4, ensure_ascii=False))
-                print("\n=== Versions récupérées ===")
-                print(f"➤ version_Extention : {remote_version}")
-                print(f"➤ manifest_version  : {remote_manifest_version}")
+                # print("\n=== JSON Response ===")
+                # print(json.dumps(data, indent=4, ensure_ascii=False))
+                # print("\n=== Versions récupérées ===")
+                # print(f"➤ version_Extention : {remote_version}")
+                # print(f"➤ manifest_version  : {remote_manifest_version}")
 
             except Exception as e:
-                print(f"❌ Impossible de récupérer la version distante: {e}")
+                # print(f"❌ Impossible de récupérer la version distante: {e}")
                 if window:
                     from ui_utils import UIManager
                     UIManager.Show_Critical_Message(
@@ -354,11 +354,11 @@ class UpdateManager:
 
             # Vérification fichiers locaux
             if not os.path.exists(Settings.MANIFEST_PATH_EX3):
-                print("❌ Fichier manifest.json local introuvable")
+                # print("❌ Fichier manifest.json local introuvable")
                 return False
                 
             if not os.path.exists(Settings.VERSION_LOCAL_EX3):
-                print("❌ Fichier version locale introuvable")
+                # print("❌ Fichier version locale introuvable")
                 return False
 
             # Lecture manifest local
@@ -369,12 +369,12 @@ class UpdateManager:
             # Lecture version locale
             local_version = UpdateManager._read_local_version(Settings.VERSION_LOCAL_EX3)
 
-            print(f"📄 Version locale : {local_version}")
-            print(f"📄 Manifest local : {local_manifest_version}")
+            # print(f"📄 Version locale : {local_version}")
+            # print(f"📄 Manifest local : {local_manifest_version}")
 
             # Vérification compatibilité manifest
             if str(local_manifest_version) != str(remote_manifest_version):
-                print("⚠️ Manifest incompatible, mise à jour automatique impossible")
+                # print("⚠️ Manifest incompatible, mise à jour automatique impossible")
                 if window:
                     from ui_utils import UIManager
                     UIManager.Show_Critical_Message(
@@ -387,14 +387,14 @@ class UpdateManager:
 
             # Vérification différence de version
             if local_version != remote_version:
-                print(f"🔄 Mise à jour requise (nouvelle version: {remote_version})")
+                # print(f"🔄 Mise à jour requise (nouvelle version: {remote_version})")
                 return remote_version  # retourne la version pour mise à jour
             else:
-                print("✅ Extension locale à jour")
+                # print("✅ Extension locale à jour")
                 return True
 
         except Exception as e:
-            print(f"❌ Erreur dans check_version_extension: {e}")
+            # print(f"❌ Erreur dans check_version_extension: {e}")
             traceback.print_exc()
             return False
 
@@ -406,12 +406,12 @@ class UpdateManager:
         SESSION_INFO = SessionManager.check_session()
 
         if not SESSION_INFO["valid"]:
-            print("[SESSION] ❌ Session invalide. Impossible de continuer l’extraction.")
+            # print("[SESSION] ❌ Session invalide. Impossible de continuer l’extraction.")
             sys.exit()
             return False
         
-        print("\n🚀 Mise à jour de l'extension...")
-        print(f"➤ Username : {SESSION_INFO['username']}\n➤ Password : {SESSION_INFO['password']}\n")
+        # print("\n🚀 Mise à jour de l'extension...")
+        # print(f"➤ Username : {SESSION_INFO['username']}\n➤ Password : {SESSION_INFO['password']}\n")
         
         ENCRYPTED = EncryptionService.encrypt_message(json.dumps({  "login":SESSION_INFO ["username"],  "password": SESSION_INFO["password"]}), Settings.KEY)
         SERVEUR_ZIP_URL_EX3 = f"http://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Ext3&k={ENCRYPTED}"
@@ -420,7 +420,7 @@ class UpdateManager:
 
             # Telechargement
         try:
-            print("📥 Téléchargement de la dernière version...")
+            # print("📥 Téléchargement de la dernière version...")
             
             with tempfile.TemporaryDirectory() as tmpdir:
                 zip_path = os.path.join(tmpdir, "Ext3.zip")
@@ -431,14 +431,14 @@ class UpdateManager:
 
                 # Suppression ancienne version
                 if os.path.exists(Settings.EXTENTION_EX3):
-                    print(f"🗑️ Suppression ancien dossier {Settings.EXTENTION_EX3}")
+                    # print(f"🗑️ Suppression ancien dossier {Settings.EXTENTION_EX3}")
                     shutil.rmtree(
                         Settings.EXTENTION_EX3,
                         onerror=UpdateManager._remove_readonly
                     )
 
                 # Extraction
-                print("📂 Extraction du fichier ZIP...")
+                # print("📂 Extraction du fichier ZIP...")
                 with zipfile.ZipFile(zip_path, 'r') as zip_ref:
                     zip_ref.extractall(tmpdir)
 
@@ -451,12 +451,12 @@ class UpdateManager:
                         break
 
                 if extracted_dir is None:
-                    print("❌ Dossier extrait introuvable")
+                    # print("❌ Dossier extrait introuvable")
                     return False
 
                 # Déplacement vers destination finale
                 shutil.move(extracted_dir, Settings.EXTENTION_EX3)
-                print(f"✅ Mise à jour réussie : {Settings.EXTENTION_EX3}")
+                # print(f"✅ Mise à jour réussie : {Settings.EXTENTION_EX3}")
                 
                 return True
 
