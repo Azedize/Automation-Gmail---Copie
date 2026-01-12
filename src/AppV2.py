@@ -700,11 +700,9 @@ class ExtractionThread(QThread):
 class CloseBrowserThread(QThread):
 
     progress = pyqtSignal(str)
-    print("🚀 [THREAD] Définition de CloseBrowserThread")
 
     def __init__(self, selected_Browser, username):
         super().__init__()
-        print("🚀 [THREAD] Initialisation de CloseBrowserThread")
 
         self.selected_Browser = selected_Browser
         self.username = username
@@ -801,24 +799,16 @@ class CloseBrowserThread(QThread):
     # ======================================================
     def process_session_file(self, file_name, downloads_folder, selected_Browser):
 
-        print(f"📄 [SESSION] Analyse début: {file_name}")
+        print(f"📄 [SESSION] Analyse: {file_name}")
 
         try:
             session_path = os.path.join(downloads_folder, file_name)
-            print(f"📂 [PATH] Session path: {session_path}")
 
-            if not os.path.exists(session_path):
-                print(f"⚠️ [SESSION] Fichier introuvable: {session_path}")
-                return
+            with file_lock:
+                with open(session_path, "r", encoding="utf-8") as f:
+                    content = f.read().strip()
 
-            with open(session_path, "r", encoding="utf-8") as f:
-                content = f.read().strip()
-
-            if not content:
-                print(f"⚠️ [SESSION] Fichier vide: {session_path}")
-                return
-
-            print(f"🧠 [SESSION] Contenu lu: {content}")
+            print(f"🧠 [SESSION] Contenu: {content}")
 
             match = re.search(
                 r"session_id:(\w+)_PID:(\d+)_Email:([\w.@]+)_Status:(\w+)",
@@ -826,7 +816,7 @@ class CloseBrowserThread(QThread):
             )
 
             if not match:
-                print(f"❌ [SESSION] Format invalide → suppression du fichier: {session_path}")
+                print("⚠️ [SESSION] Format invalide → suppression")
                 os.remove(session_path)
                 return
 
@@ -835,14 +825,13 @@ class CloseBrowserThread(QThread):
 
             print(f"✅ [SESSION] Email={email} | PID={pid} | Status={status}")
 
-            # ======================================
-            # ✅ تحديد مسار data.txt حسب المتصفح
-            # ======================================
             if selected_Browser.lower() == "chrome":
                 data_file = os.path.join(Settings.CHROME_PROFILES, email, "data.txt")
             else:
                 base_path = self._get_profile_base_path(selected_Browser)
                 data_file = os.path.join(base_path, email, "data.txt")
+
+            print(f"🔍 [DATA] Lecture: {data_file}")
 
             print(f"🔍 [DATA] Chemin data.txt: {data_file}")
 
@@ -871,6 +860,7 @@ class CloseBrowserThread(QThread):
 
             print(f"🆔 [DATA] inserted_id={inserted_id}")
 
+
             # ======================================
             # Écriture résultat
             # ======================================
@@ -881,49 +871,23 @@ class CloseBrowserThread(QThread):
             except Exception as e_rf:
                 print(f"❌ [RESULT] Impossible d'écrire dans {Settings.RESULT_FILE}: {e_rf}")
 
-            # ======================================
-            # Envoi status API
-            # ======================================
-            try:
-                print(f"📤 [API] Envoi status pour {email}")
-                Send_Status({
-                    "id": inserted_id,
-                    "login": self.username,
-                    "status": "OK" if status == "completed" else "NotOK",
-                    "error": "" if status == "completed" else status
-                })
-                print(f"✅ [API] Status envoyé pour {email}")
-            except Exception as e_api:
-                print(f"❌ [API] Erreur envoi status pour {email}: {e_api}")
+            print("📤 [API] Envoi status")
+            Send_Status({
+                "id": inserted_id,
+                "login": self.username,
+                "status": "OK" if status == "completed" else "NotOK",
+                "error": "" if status == "completed" else status
+            })
 
-            # ======================================
-            # Fermeture navigateur
-            # ======================================
-            try:
-                self._close_browser_process(pid, email, selected_Browser)
-            except Exception as e_proc:
-                print(f"❌ [PROC] Erreur fermeture navigateur {email}: {e_proc}")
+            self._close_browser_process(pid, email, selected_Browser)
 
-            # ======================================
-            # Nettoyage fichiers
-            # ======================================
-            try:
-                os.remove(session_path)
-                print(f"🗑️ [CLEAN] Fichier session supprimé: {session_path}")
-            except Exception as e_rm_sess:
-                print(f"⚠️ [CLEAN] Impossible de supprimer session {session_path}: {e_rm_sess}")
+            os.remove(session_path)
+            os.remove(data_file)
 
-            try:
-                if os.path.exists(data_file):
-                    os.remove(data_file)
-                    print(f"🗑️ [CLEAN] data.txt supprimé: {data_file}")
-            except Exception as e_rm_data:
-                print(f"⚠️ [CLEAN] Impossible de supprimer data.txt {data_file}: {e_rm_data}")
-
-            print(f"✅ [SESSION] Traitement terminé pour {email}\n")
+            print(f"🗑️ [CLEAN] Session & data supprimés: {email}")
 
         except Exception as e:
-            print(f"❌ [SESSION] Erreur inattendue pour {file_name}: {e}")
+            print(f"❌ [SESSION] Erreur {file_name}: {e}")
 
     # ======================================================
     # 🌐 GESTION NAVIGATEURS
