@@ -399,24 +399,22 @@ class CloseBrowserThread(QThread):
 
             print(f"🆔 [DATA] inserted_id={inserted_id}")
 
-            # كتابة النتائج
+           
             try:
-                # التأكد من وجود المجلد
-                result_dir = os.path.dirname(Settings.RESULT_FILE)
+                result_dir = os.path.dirname(Settings.RESULT_FILE_PATH)
                 os.makedirs(result_dir, exist_ok=True)
 
-                # فتح الملف وكتابة النتيجة
-                with open(Settings.RESULT_FILE, "a", encoding="utf-8") as rf:
+                with open(Settings.RESULT_FILE_PATH, "a", encoding="utf-8") as rf:
                     rf.write(f"{session_id}:{pid}:{email}:{status}\n")
 
-                print(f"📝 [RESULT] Enregistré dans {Settings.RESULT_FILE}")
+                print(f"📝 [RESULT] Enregistré dans {Settings.RESULT_FILE_PATH}")
 
             except PermissionError:
-                print(f"❌ [RESULT] Permission denied: impossible d'écrire dans {Settings.RESULT_FILE}")
+                print(f"❌ [RESULT] Permission denied: impossible d'écrire dans {Settings.RESULT_FILE_PATH}")
             except Exception as e:
                 print(f"❌ [RESULT] Erreur inattendue lors de l'écriture: {e}")
 
-            # إرسال status
+            
             try:
                 print(f"📤 [API] Envoi status pour {email}")
                 Send_Status({
@@ -429,10 +427,9 @@ class CloseBrowserThread(QThread):
             except Exception as e_api:
                 print(f"❌ [API] Erreur envoi status pour {email}: {e_api}")
 
-            # إغلاق المتصفح
+             
             self._close_browser_process(pid, email, selected_Browser)
 
-            # حذف الملفات
             try:
                 os.remove(session_path)
                 print(f"🗑️ [CLEAN] Session supprimée: {session_path}")
@@ -478,7 +475,7 @@ class CloseBrowserThread(QThread):
             elif b in ["edge", "icedragon", "comodo"]:
                 os.kill(pid, signal.SIGTERM)
             else:
-                BrowserManager.close_chrome_process(
+                BrowserManager.close_chrome_profile(
                     email,
                     os.path.join(Settings.CHROME_PROFILES, email)
                 )

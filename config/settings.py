@@ -288,9 +288,7 @@ class Settings:
             cls.FAMILY_CHROME_DIR_PROFILES,
             cls.EXTENSIONS_DIR,
             cls.EXTENTIONS_DIR_FIREFOX,
-            cls.EXTENSIONS_DIR_FAMILY_CHROME,
-            cls.RESULT_FILE_PATH
-
+            cls.EXTENSIONS_DIR_FAMILY_CHROME
         ]
 
         for directory in directories:
