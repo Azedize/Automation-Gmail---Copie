@@ -246,8 +246,8 @@ class CloseBrowserThread(QThread):
     # ======================================================
 
     # affiche self.stop_flag and PROCESS_PIDS
-        print(f"🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠[THREAD] Boucle active | stop_flag: {self.stop_flag}")
-        print(f"🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠[THREAD] Boucle active | PROCESS_PIDS: {PROCESS_PIDS}")
+        # print(f"🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠[THREAD] Boucle active | stop_flag: {self.stop_flag}")
+        # print(f"🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠[THREAD] Boucle active | PROCESS_PIDS: {PROCESS_PIDS}")
 
     def run(self):
         print("🚀 [THREAD] CloseBrowserThread démarré")
@@ -881,7 +881,7 @@ class ExtractionThread(QThread):
 
                     # 🔹 Vérification finale pour diagnostiquer le problème si nécessaire
                     if not session_directory.exists():
-                        print(f"❌ Le dossier n'a pas été créé : {session_directory}")
+                        # print(f"❌ Le dossier n'a pas été créé : {session_directory}")
                         print(f"📂 Dossiers parents existants : {', '.join(str(p) for p in session_directory.parents if p.exists())}")
 
 
@@ -978,14 +978,14 @@ class ExtractionThread(QThread):
                             self.stop_flag = True   
                             return                   
                         else:
-                            print("✅ JSON file copied successfully to the template profile.")
+                            # print("✅ JSON file copied successfully to the template profile.")
                             # affiche de Resultats_EX pour vérification
                             # print("↕️​↕️​↕️​↕️​↕️​ Résultats EX :")
                             # for item in Settings.RESULTATS_EX:
                             #     print(json.dumps(item, indent=4, ensure_ascii=False))
                             BrowserManager.Updated_Secure_Preferences(profile_email, Settings.RESULTATS_EX)
 
-                        time.sleep(2)
+                        time.sleep(1)
                         
                         # combined = f"{ip_address};{port};{login};{password};{profile_email};{profile_password};{recovery_email};{new_password};{new_recovery_email}"
                         combined = f"{ip_address};{port};{login};{password};{profile_email};{profile_password};{recovery_email};{new_password};{new_recovery_email}"
@@ -1001,7 +1001,7 @@ class ExtractionThread(QThread):
                             '--lang=En-US',
                             '--no-first-run',
                         ]
-                        time.sleep(2)
+                        time.sleep(1)
 
 
                         process = subprocess.Popen(command) 
