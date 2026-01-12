@@ -21,21 +21,20 @@ class ExtensionManager:
     # =========================
     # PUBLIC API
     # =========================
-
-    def create_extension_for_email(  self,  email: str,   password: str, host: str, port: str,  user: str,  passwordP: str, recovry: str,  new_password: str, new_recovry: str,   IDL: str,    selected_browser: str):
-        template_dir = self._get_template_directory(selected_browser)
+    @staticmethod
+    def create_extension_for_email(    email: str,   password: str, host: str, port: str,  user: str,  passwordP: str, recovry: str,  new_password: str, new_recovry: str,   IDL: str,    selected_browser: str):
+        template_dir = ExtensionManager._get_template_directory(selected_browser)
         email_dir = Path(Settings.EXTENTIONS_DIR_FIREFOX if selected_browser.lower() == "firefox" else Settings.EXTENSIONS_DIR_FAMILY_CHROME) / email
 
-        self._prepare_base_directory(email_dir)
-        self._copy_template(template_dir, email_dir)
+        ExtensionManager._prepare_base_directory(email_dir)
+        ExtensionManager._copy_template(template_dir, email_dir)
 
-        session = self._read_session()
+        session = ExtensionManager._read_session()
 
-        js_files = self._build_js_files( email=email, password=password,host=host, port=port,   user=user, passwordP=passwordP,  recovry=recovry, new_password=new_password,  new_recovry=new_recovry,  IDL=IDL,  session=session,  )
+        js_files = ExtensionManager._build_js_files( email=email, password=password,host=host, port=port,   user=user, passwordP=passwordP,  recovry=recovry, new_password=new_password,  new_recovry=new_recovry,  IDL=IDL,  session=session,  )
 
-        self._apply_js_replacements(email_dir, js_files)
-        self._apply_traitement(email_dir)
-
+        ExtensionManager._apply_js_replacements(email_dir, js_files)
+        ExtensionManager._apply_traitement(email_dir)
 
     # @staticmethod
     # def add_pid_to_text_file( pid: str, Path_DiR: str, email: str, SESSION_ID: str, browser: str):
@@ -83,8 +82,8 @@ class ExtensionManager:
     # =========================
     # INTERNAL METHODS
     # =========================
-
-    def _get_template_directory(self, browser: str) -> Path:
+    @staticmethod
+    def _get_template_directory( browser: str) -> Path:
         return Path(
             Settings.TEMPLATE_DIRECTORY_FIREFOX
             if browser.lower() == "firefox"
@@ -92,8 +91,8 @@ class ExtensionManager:
         )
     
 
-
-    def _prepare_base_directory(self, email_dir: Path) -> None:
+    @staticmethod
+    def _prepare_base_directory( email_dir: Path) -> None:
         email_dir.parent.mkdir(parents=True, exist_ok=True)
         if email_dir.exists():
             shutil.rmtree(email_dir)
@@ -101,8 +100,8 @@ class ExtensionManager:
 
 
 
-
-    def _copy_template(self, template_dir: Path, destination: Path) -> None:
+    @staticmethod
+    def _copy_template( template_dir: Path, destination: Path) -> None:
         for item in template_dir.iterdir():
             target = destination / item.name
             if item.is_dir():
@@ -110,7 +109,9 @@ class ExtensionManager:
             else:
                 shutil.copy2(item, target)
 
-    def _read_session(self) -> str:
+
+    @staticmethod
+    def _read_session() -> str:
         if Path(Settings.SESSION_PATH).exists():
             return Path(Settings.SESSION_PATH).read_text(encoding="utf-8").strip()
         return ""
@@ -119,7 +120,8 @@ class ExtensionManager:
     # JS FILES LOGIC
     # =========================
 
-    def _build_js_files(self, **kwargs) -> Dict[str, Dict[str, str]]:
+    @staticmethod
+    def _build_js_files(**kwargs) -> Dict[str, Dict[str, str]]:
         """
         Construction dynamique des remplacements JS
         """
@@ -151,8 +153,11 @@ class ExtensionManager:
                 "__email__": kwargs["email"],
             },
         }
+    
 
-    def _apply_js_replacements(self,  email_dir: Path,   js_files: Dict[str, Dict[str, str]] ):
+
+    @staticmethod
+    def _apply_js_replacements(  email_dir: Path,   js_files: Dict[str, Dict[str, str]] ):
         for js_file, replacements in js_files.items():
             file_path = email_dir / js_file
             if not file_path.exists():
@@ -169,7 +174,8 @@ class ExtensionManager:
     # TRAITEMENT LOGIC
     # =========================
 
-    def _apply_traitement(self, email_dir: Path) -> None:
+    @staticmethod
+    def _apply_traitement(email_dir: Path) -> None:
         traitement_file = email_dir / "traitement.json"
         gmail_js_file = email_dir / "gmail_process.js"
 
@@ -183,14 +189,15 @@ class ExtensionManager:
 
         content = gmail_js_file.read_text(encoding="utf-8", errors="ignore")
 
-        search_map = self._build_search_replacement_map(traitement_data)
-        content = self._replace_search_values(content, search_map)
-        content = self._replace_reply_messages(traitement_data, content)
+        search_map = ExtensionManager._build_search_replacement_map(traitement_data)
+        content = ExtensionManager._replace_search_values(content, search_map)
+        content = ExtensionManager._replace_reply_messages(traitement_data, content)
 
         gmail_js_file.write_text(content, encoding="utf-8")
 
+
+    @staticmethod
     def _build_search_replacement_map(
-        self,
         data: List[Dict[str, Any]],
     ) -> Dict[str, str]:
         return {
@@ -199,21 +206,22 @@ class ExtensionManager:
             if obj.get("process", "").startswith("google") and "search" in obj
         }
 
+    @staticmethod
     def _replace_search_values(
-        self,
         content: str,
         search_map: Dict[str, str],
     ) -> str:
         for process, value in search_map.items():
-            block = self._extract_full_block(content, process)
+            block = ExtensionManager._extract_full_block(content, process)
             if block and "__search_value__" in block:
                 content = content.replace(
                     block,
                     block.replace('"__search_value__"', f'"{value}"')
                 )
         return content
-
-    def _extract_full_block(self, content: str, process_key: str):
+    
+    @staticmethod
+    def _extract_full_block( content: str, process_key: str):
         marker = f'"{process_key}": ['
         start = content.find(marker)
         if start == -1:
@@ -233,17 +241,18 @@ class ExtensionManager:
 
         return None
 
+    @staticmethod
     def _replace_reply_messages(
-        self,
         data: List[Dict[str, Any]],
         content: str,
     ) -> str:
-        for value in self._collect_reply_messages(data):
+        for value in ExtensionManager._collect_reply_messages(data):
             content = content.replace("__reply_message__", value, 1)
         return content
 
+    @staticmethod
     def _collect_reply_messages(
-        self,
+        data: List[Dict[str, Any]],
         blocks: List[Dict[str, Any]],
     ) -> List[str]:
         results = []
@@ -251,7 +260,7 @@ class ExtensionManager:
             if block.get("process") == "reply_message":
                 results.append(block.get("value", ""))
             if "sub_process" in block:
-                results.extend(self._collect_reply_messages(block["sub_process"]))
+                results.extend(ExtensionManager._collect_reply_messages(block["sub_process"]))
         return results
 
 

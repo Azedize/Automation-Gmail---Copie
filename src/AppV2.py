@@ -1523,11 +1523,12 @@ class MainWindow(QMainWindow):
             log_message(f"[UPDATE ERROR] {e}")
 
 
-        selected_Browser = self.browser.currentText().lower()
+        selected_Browser = self.browser.currentText()
 
-        if not Process_Browser(window, selected_Browser):
-            print("❌ Navigateur non traité :", selected_Browser)
-            return
+        if  selected_Browser and selected_Browser.lower() == "chrome":
+            if not Process_Browser(window, selected_Browser):
+                print("❌ Navigateur non traité :", selected_Browser)
+                return
 
         print("🌐 Navigateur traité avec succès :", selected_Browser)
 
