@@ -252,15 +252,14 @@ class CloseBrowserThread(QThread):
         # time.sleep(10)
         # time.sleep(10)
         # time.sleep(10)
-        # affiche self.stop_flag 
         print(f" Stop flag initial : {self.stop_flag} ")
 
         while not self.stop_flag and PROCESS_PIDS:
             print("🌀 [THREAD] Boucle principale en cours...")
             # affiche self.stop_flag and PROCESS_PIDS
-            print(f"🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠 [THREAD] Boucle active | stop_flag: {self.stop_flag}")
-            print(f"🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠[THREAD] Boucle active | PROCESS_PIDS: {PROCESS_PIDS}")
-            print(f"🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠🤠[THREAD] Boucle active | PID restants: {len(PROCESS_PIDS)}")
+            print(f"🤠[THREAD] Boucle active | stop_flag: {self.stop_flag}")
+            print(f"🤠[THREAD] Boucle active | PROCESS_PIDS: {PROCESS_PIDS}")
+            print(f"🤠[THREAD] Boucle active | PID restants: {len(PROCESS_PIDS)}")
 
             try:
                 # ملفات الجلسات و logs
@@ -1032,39 +1031,36 @@ class ExtractionThread(QThread):
 
 
 
+
 def Process_Browser(window, selected_Browser) -> bool:
-    """
-    Préparer et valider le navigateur pour l'application
-    Version simplifiée avec print et sans rapport
-    """
-    print(f"\n🌐 Démarrage du traitement du navigateur : {selected_Browser}")
+    # print(f"\n🌐 Démarrage du traitement du navigateur : {selected_Browser}")
     
     # 1️⃣ Vérification du navigateur
     if selected_Browser.lower() != "chrome":
-        print(f"❌ Navigateur non supporté : {selected_Browser}")
+        # print(f"❌ Navigateur non supporté : {selected_Browser}")
         return False
-    print("✅ Navigateur : Chrome supporté")
+    # print("✅ Navigateur : Chrome supporté")
 
     # 2️⃣ Vérification du dossier de configuration
     config_profile = Settings.CONFIG_PROFILE
     if not os.path.exists(config_profile):
-        print(f"❌ Dossier de configuration introuvable : {config_profile}")
+        # print(f"❌ Dossier de configuration introuvable : {config_profile}")
         return False
-    print(f"✅ Dossier de configuration trouvé : {config_profile}")
+    # print(f"✅ Dossier de configuration trouvé : {config_profile}")
 
     # 3️⃣ Vérification du fichier secure_preferences
     secure_prefs = Settings.SECURE_PREFERENCES_TEMPLATE
     if not os.path.exists(secure_prefs):
-        print(f"❌ Fichier sécurisé introuvable : {secure_prefs}")
+        # print(f"❌ Fichier sécurisé introuvable : {secure_prefs}")
         return False
 
     # Lecture du fichier JSON
     try:
         with open(secure_prefs, "r", encoding="utf-8") as f:
             data = json.load(f)
-        print("✅ Fichier JSON chargé avec succès")
+        # print("✅ Fichier JSON chargé avec succès")
     except Exception as e:
-        print(f"❌ Erreur lecture fichier JSON : {e}")
+        # print(f"❌ Erreur lecture fichier JSON : {e}")
         return False
 
     # 4️⃣ Vérification des clés JSON
@@ -1530,7 +1526,10 @@ class MainWindow(QMainWindow):
         selected_Browser = self.browser.currentText().lower()
 
         if not Process_Browser(window, selected_Browser):
+            print("❌ Navigateur non traité :", selected_Browser)
             return
+
+        print("🌐 Navigateur traité avec succès :", selected_Browser)
 
         if self.INTERFACE:
             for i in range(self.INTERFACE.count()):
