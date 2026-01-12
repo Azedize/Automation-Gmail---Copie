@@ -825,51 +825,19 @@ class CloseBrowserThread(QThread):
 
             print(f"✅ [SESSION] Email={email} | PID={pid} | Status={status}")
 
-            if selected_Browser.lower() == "chrome":
-                data_file = os.path.join(Settings.CHROME_PROFILES, email, "data.txt")
-            else:
-                base_path = self._get_profile_base_path(selected_Browser)
-                data_file = os.path.join(base_path, email, "data.txt")
+            base_path = self._get_profile_base_path(selected_Browser)
+            data_file = os.path.join(base_path, email, "data.txt")
 
             print(f"🔍 [DATA] Lecture: {data_file}")
 
-            print(f"🔍 [DATA] Chemin data.txt: {data_file}")
-
-            inserted_id = None
-
-            if not os.path.exists(data_file):
-                print(f"⚠️ [DATA] data.txt introuvable pour {email}, création...")
-                os.makedirs(os.path.dirname(data_file), exist_ok=True)
-                with open(data_file, "w", encoding="utf-8") as f:
-                    f.write("")  # fichier vide pour créer
-            else:
-                try:
-                    with open(data_file, "r", encoding="utf-8") as f:
-                        line = f.readline().strip()
-                        if line:
-                            if selected_Browser.lower() == "chrome":
-                                inserted_id = line
-                            else:
-                                parts = line.split(":")
-                                if len(parts) >= 4:
-                                    inserted_id = parts[3]
-                        else:
-                            print(f"⚠️ [DATA] data.txt vide pour {email}")
-                except Exception as e_data:
-                    print(f"❌ [DATA] Erreur lecture data.txt pour {email}: {e_data}")
+            with open(data_file, "r", encoding="utf-8") as f:
+                parts = f.readline().split(":")
+                inserted_id = parts[3] if len(parts) >= 4 else None
 
             print(f"🆔 [DATA] inserted_id={inserted_id}")
 
-
-            # ======================================
-            # Écriture résultat
-            # ======================================
-            try:
-                with open(Settings.RESULT_FILE, "a", encoding="utf-8") as rf:
-                    rf.write(f"{session_id}:{pid}:{email}:{status}\n")
-                print(f"📝 [RESULT] Enregistré dans {Settings.RESULT_FILE}")
-            except Exception as e_rf:
-                print(f"❌ [RESULT] Impossible d'écrire dans {Settings.RESULT_FILE}: {e_rf}")
+            with open(Settings.RESULT_FILE, "a", encoding="utf-8") as rf:
+                rf.write(f"{session_id}:{pid}:{email}:{status}\n")
 
             print("📤 [API] Envoi status")
             Send_Status({
