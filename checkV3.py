@@ -203,7 +203,7 @@ class UpdateManager:
 
     @staticmethod
     def check_and_update() -> bool:
-        print("Vérification mise à jour")
+        # print("Vérification mise à jour")
         try:
             from api.base_client import APIManager
             response = APIManager.make_request("__CHECK_URL_PROGRAMM__", method="GET", timeout=10)
@@ -219,7 +219,7 @@ class UpdateManager:
             local_ext = UpdateManager._read_local_version(Settings.VERSION_LOCAL_EXT)
 
             if not local_program or local_program != server_program:
-                print("MISE À JOUR PROGRAMME REQUISE")
+                # print("MISE À JOUR PROGRAMME REQUISE")
                 UpdateManager._download_and_extract(
                     Settings.API_ENDPOINTS["__SERVER_ZIP_URL_PROGRAM__"],
                     ROOT_DIR,
@@ -229,7 +229,7 @@ class UpdateManager:
                 return True
 
             if not local_ext or local_ext != server_ext:
-                print("MISE À JOUR EXTENSIONS REQUISE")
+                # print("MISE À JOUR EXTENSIONS REQUISE")
                 tools_dir = Settings.TOOLS_DIR
                 if not os.path.exists(tools_dir):
                     os.makedirs(tools_dir)
@@ -241,11 +241,11 @@ class UpdateManager:
                 )
                 return True
 
-            print("APPLICATION À JOUR – AUCUNE ACTION")
+            # print("APPLICATION À JOUR – AUCUNE ACTION")
             return False
 
         except Exception:
-            print("Erreur critique update")
+            # print("Erreur critique update")
             return True
 
 
