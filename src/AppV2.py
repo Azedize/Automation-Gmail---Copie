@@ -1032,7 +1032,7 @@ class ExtractionThread(QThread):
 
 
 
-
+# LE PROGRAMME IS RUNNG DANS UNE INTERFACE LOGIQUE ET CAPABLE MES SENTIMENTS 
 
 
 def Process_Browser(window, selected_Browser) -> bool:
