@@ -171,8 +171,8 @@ class Settings:
 
 
 
-    TEMPLATE_DIRECTORY_FIREFOX  = os.path.join( TOOLS_DIR , 'extensions' ,'ExtensionTemplateFirefox')
-    TEMPLATE_DIRECTORY_FAMILY_CHROME = os.path.join( TOOLS_DIR , 'extensions' , 'Extention_Family_Chrome')
+    TEMPLATE_DIRECTORY_FIREFOX  = os.path.join( TOOLS_DIR , 'extensions Templete' ,'ExtensionTemplateFirefox')
+    TEMPLATE_DIRECTORY_FAMILY_CHROME = os.path.join( TOOLS_DIR , 'extensions Templete' , 'Extention_Family_Chrome')
 
 
     LOGS_DIRECTORY = os.path.join(TOOLS_DIR, 'logs')
