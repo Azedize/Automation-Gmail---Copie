@@ -2,7 +2,7 @@ import sys
 import json
 import shutil
 from pathlib import Path
-from typing import Dict, Any, List
+import os
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
