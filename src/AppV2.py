@@ -1032,7 +1032,6 @@ class ExtractionThread(QThread):
 
 
 
-# LE PROGRAMME IS RUNNG DANS UNE INTERFACE LOGIQUE ET CAPABLE MES SENTIMENTS 
 
 
 def Process_Browser(window, selected_Browser) -> bool:
@@ -1084,41 +1083,41 @@ def Process_Browser(window, selected_Browser) -> bool:
     # 5️⃣ Vérification et mise à jour de l'extension
     ext_path = Settings.EXTENTION_EX3
     if not ValidationUtils.path_exists(ext_path):
-        print("📥 Extension manquante, téléchargement...")
+        # print("📥 Extension manquante, téléchargement...")
         valid_ext_dir, ext_dir_msg = ValidationUtils.validate_directory_path(ext_path, must_exist=False)
         if not valid_ext_dir:
-            print(f"❌ Chemin extension invalide : {ext_dir_msg}")
+            # print(f"❌ Chemin extension invalide : {ext_dir_msg}")
             return False
         if UpdateManager.update_extension_from_server():
             print("✅ Extension installée avec succès")
         else:
-            print("❌ Échec installation extension")
+            # print("❌ Échec installation extension")
             return False
     else:
-        print(f"📂 Extension trouvée : {ext_path}")
+        # print(f"📂 Extension trouvée : {ext_path}")
         manifest_file = os.path.join(ext_path, "manifest.json")
         if not os.path.exists(manifest_file):
-            print("❌ manifest.json manquant")
+            # print("❌ manifest.json manquant")
             return False
         
         remote_version = UpdateManager.check_version_extension(window)
         if isinstance(remote_version, str):
-            print(f"🔄 Mise à jour disponible : {remote_version}")
+            # print(f"🔄 Mise à jour disponible : {remote_version}")
             if UpdateManager.update_extension_from_server(remote_version):
                 print("✅ Extension mise à jour avec succès")
             else:
-                print("❌ Échec mise à jour extension")
+                # print("❌ Échec mise à jour extension")
                 return False
         elif remote_version is True:
             print("✅ Extension déjà à jour")
         else:
-            print("❌ Impossible de vérifier la version de l'extension")
+            # print("❌ Impossible de vérifier la version de l'extension")
             return False
 
 
 
     # ✅ Tout est OK
-    print("🎉 Traitement terminé avec succès pour le navigateur Chrome")
+    # print("🎉 Traitement terminé avec succès pour le navigateur Chrome")
     return True
 
 
