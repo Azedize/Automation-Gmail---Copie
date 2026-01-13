@@ -918,8 +918,8 @@ class ExtractionThread(QThread):
                         command = [
                             eb_ext_path,
                             "run",
-                            "--source-dir", os.path.join(Settings.EXTENSIONS_DIRECTORY, profile_email),
-                            "--firefox-profile", os.path.join(SCRIPT_DIR, '..', 'Tools', 'Profiles', 'firefox', profile_email),
+                            "--source-dir", os.path.join(Settings.FOLDER_EXTENTIONS_FIREFOX, profile_email),
+                            "--firefox-profile", os.path.join(Settings.FIREFOX_PROFILES, profile_email),
                             "--keep-profile-changes",  
                             "--no-reload"
                         ]
@@ -948,8 +948,8 @@ class ExtractionThread(QThread):
                         command = [
                             self.Browser_path,
                             f"--user-data-dir={os.path.join(Settings.FAMILY_CHROME_DIR_PROFILES, profile_email)}",
-                            f"--disable-extensions-except={os.path.join(Settings.EXTENSIONS_DIR_FAMILY_CHROME, profile_email)}",
-                            f"--load-extension={os.path.join(Settings.EXTENSIONS_DIR_FAMILY_CHROME, profile_email)}",
+                            f"--disable-extensions-except={os.path.join(Settings.FOLDER_EXTENTIONS_FAMILY_CHROME, profile_email)}",
+                            f"--load-extension={os.path.join(Settings.FOLDER_EXTENTIONS_FAMILY_CHROME, profile_email)}",
                             "--no-first-run",
                             "--no-default-browser-check",
                             "--disable-sync"
@@ -958,7 +958,7 @@ class ExtractionThread(QThread):
                         process = subprocess.Popen(command) 
                         PROCESS_PIDS.append(process.pid) 
 
-                        add_pid_to_text_file(process.pid , Settings.EXTENSIONS_DIR_FAMILY_CHROME, profile_email  ,self.session_id , self.selected_Browser.lower())
+                        add_pid_to_text_file(process.pid , Settings.FOLDER_EXTENTIONS_FAMILY_CHROME, profile_email  ,self.session_id , self.selected_Browser.lower())
                     
                     else:
                         print("🔹 Chrome-based browser selected.")
