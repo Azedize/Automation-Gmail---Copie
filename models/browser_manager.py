@@ -236,28 +236,28 @@ class BrowserManager:
         قراءة ملف Secure Preferences للملف الشخصي المحدد والبحث عن المفاتيح المطلوبة مع debug مفصل
         """
         path_file = os.path.join(Settings.CONFIG_PROFILE, profile_name, "Secure Preferences")
-        print(f"🔍 Vérification du fichier Secure Preferences : {path_file}")
+        # print(f"🔍 Vérification du fichier Secure Preferences : {path_file}")
 
         if not ValidationUtils.path_exists(path_file):
-            print(f"❌ Fichier introuvable pour le profil {profile_name}")
+            # print(f"❌ Fichier introuvable pour le profil {profile_name}")
             return None
 
         try:
-            print(f"📖 Lecture du fichier JSON en cours pour le profil {profile_name}...")
+            # print(f"📖 Lecture du fichier JSON en cours pour le profil {profile_name}...")
             with open(path_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            print("✅ Lecture réussie du fichier JSON.")
+            # print("✅ Lecture réussie du fichier JSON.")
 
             results.clear()
-            print(f"🔎 Début de la recherche des clés : {search_keys}")
+            # print(f"🔎 Début de la recherche des clés : {search_keys}")
             BrowserManager.Search_Keys(data, search_keys, results)
 
-            if results:
-                print(f"📌 Résultats trouvés pour {profile_name}:")
-                for idx, item in enumerate(results, start=1):
-                    print(f"   {idx}. {item}")
-            else:
-                print("⚠️ Aucun résultat trouvé pour les clés spécifiées.")
+            # if results:
+            #     print(f"📌 Résultats trouvés pour {profile_name}:")
+            #     for idx, item in enumerate(results, start=1):
+            #         print(f"   {idx}. {item}")
+            # else:
+            #     print("⚠️ Aucun résultat trouvé pour les clés spécifiées.")
 
             return results
 
@@ -278,7 +278,7 @@ class BrowserManager:
     @staticmethod
     def Updated_Secure_Preferences(profile_name, RESULTATS_EX):
         try:
-            print("\n🔐 ===== DÉMARRAGE : Mise à jour Secure Preferences =====")
+            # print("\n🔐 ===== DÉMARRAGE : Mise à jour Secure Preferences =====")
 
             # 📂 Construction du chemin (flexible & sécurisé)
             secure_preferences_path = os.path.abspath(
@@ -290,21 +290,21 @@ class BrowserManager:
                 )
             )
 
-            print("📁 Chemin détecté :")
-            print(f"   ➜ {secure_preferences_path}")
+            # print("📁 Chemin détecté :")
+            # print(f"   ➜ {secure_preferences_path}")
 
             # ❌ Vérification existence
             if not os.path.exists(secure_preferences_path):
-                print(f"❌ Fichier introuvable pour le profil : {profile_name}")
+                # print(f"❌ Fichier introuvable pour le profil : {profile_name}")
                 return None
 
-            print("✅ Fichier trouvé. Lecture du contenu JSON...")
+            # print("✅ Fichier trouvé. Lecture du contenu JSON...")
 
             # 📖 Lecture JSON
             with open(secure_preferences_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
 
-            print("🧩 Vérification & préparation de la structure JSON...")
+            # print("🧩 Vérification & préparation de la structure JSON...")
 
             # 🔧 Initialisation sécurisée de la structure
             data.setdefault("extensions", {})
@@ -317,15 +317,14 @@ class BrowserManager:
             data["protection"]["macs"]["extensions"].setdefault("settings", {})
             data["protection"]["macs"]["extensions"].setdefault("ui", {})
 
-            #print("✅ Structure JSON prête.")
-
+            # print("✅ Structure JSON prête.")
             # 🔄 Traitement des résultats
-            print("🔄 Application des RESULTATS_EX...")
+            # print("🔄 Application des RESULTATS_EX...")
             for idx, item in enumerate(RESULTATS_EX, start=1):
-                print(f"\n➡️ Élément {idx} : {item}")
+                # print(f"\n➡️ Élément {idx} : {item}")
 
                 if not isinstance(item, dict):
-                    print("⚠️ Ignoré : élément non dict.")
+                    # print("⚠️ Ignoré : élément non dict.")
                     continue
 
                 for k, v in item.items():
@@ -354,12 +353,12 @@ class BrowserManager:
                         print(f"   ⚠️ Clé ignorée : {k}")
 
             # 💾 Sauvegarde finale
-            print("\n💾 Écriture du fichier Secure Preferences...")
+            # print("\n💾 Écriture du fichier Secure Preferences...")
             with open(secure_preferences_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, separators=(',', ':'), ensure_ascii=False)
 
-            print("✅ Mise à jour terminée avec succès.")
-            print("🔐 ===== FIN : Secure Preferences =====\n")
+            # print("✅ Mise à jour terminée avec succès.")
+            # print("🔐 ===== FIN : Secure Preferences =====\n")
 
             return data
 

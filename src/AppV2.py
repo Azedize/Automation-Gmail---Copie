@@ -653,7 +653,7 @@ def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp 
     # print("✅ browser path   :",   browser_path    or "Non trouvé")
 
     EXTRACTION_THREAD = ExtractionThread(
-        data_list, SESSION_ID, entered_number, browser_path , window ,selected_Browser , Isp , unique_id , output_json_final
+       window , data_list, SESSION_ID, entered_number, browser_path , window ,selected_Browser , Isp , unique_id , output_json_final
     )
     
 
@@ -783,8 +783,9 @@ class ExtractionThread(QThread):
     finished = pyqtSignal()  
     stopped = pyqtSignal(str)
 
-    def __init__(self, data_list, SESSION_ID, entered_number, Browser_path, main_window ,selected_Browser,Isp , unique_id , output_json_final):  
+    def __init__(self, window, data_list, SESSION_ID, entered_number, Browser_path, main_window ,selected_Browser,Isp , unique_id , output_json_final):  
         super().__init__()
+        self.window = window
         self.data_list = data_list  
         self.session_id = SESSION_ID  
         self.entered_number = entered_number  
@@ -816,14 +817,14 @@ class ExtractionThread(QThread):
             return
         
 
-        if self.selected_Browser == "chrome":
-            print(f"✅ Navigateur sélectionné : {self.selected_Browser}")
+        if self.selected_Browser.lower() == "chrome":
+            # print(f"✅ Navigateur sélectionné : {self.selected_Browser}")
 
 
             Settings.RESULTATS_EX = BrowserManager.Upload_EXTENSION_PROXY("default", Settings.CLES_RECHERCHE, Settings.RESULTATS)
-            print("↕️​↕️​↕️​↕️​↕️​ Résultats EX2 :")
-            for item in Settings.RESULTATS_EX:
-                print(json.dumps(item, indent=4, ensure_ascii=False))
+            # print("↕️​↕️​↕️​↕️​↕️​ Résultats EX2 :")
+            # for item in Settings.RESULTATS_EX:
+            #     print(json.dumps(item, indent=4, ensure_ascii=False))
 
 
         while remaining_emails or PROCESS_PIDS:
@@ -977,7 +978,9 @@ class ExtractionThread(QThread):
                                 "❌ An issue occurred while copying the JSON file to the template profile.\n"
                                 "➡ Please contact support."
                             )
-                            log_message(error_msg)   
+                            log_message(error_msg) 
+                            UIManager.Show_Critical_Message(self.window ,  "An issue occurred while copying the JSON file to the template profile  ➡ Please contact support." , message_type="critical")
+
                             self.stopped.emit(error_msg)  
                             self.stop_flag = True   
                             return                   
