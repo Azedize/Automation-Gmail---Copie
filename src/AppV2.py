@@ -821,9 +821,9 @@ class ExtractionThread(QThread):
 
 
             Settings.RESULTATS_EX = BrowserManager.Upload_EXTENSION_PROXY("default", Settings.CLES_RECHERCHE, Settings.RESULTATS)
-            # print("↕️​↕️​↕️​↕️​↕️​ Résultats EX2 :")
-            # for item in Settings.RESULTATS_EX:
-            #     print(json.dumps(item, indent=4, ensure_ascii=False))
+            print("↕️​↕️​↕️​↕️​↕️​ Résultats EX2 :")
+            for item in Settings.RESULTATS_EX:
+                print(json.dumps(item, indent=4, ensure_ascii=False))
 
 
         while remaining_emails or PROCESS_PIDS:
@@ -982,11 +982,11 @@ class ExtractionThread(QThread):
                             self.stop_flag = True   
                             return                   
                         else:
-                            # print("✅ JSON file copied successfully to the template profile.")
+                            print("✅ JSON file copied successfully to the template profile.")
                             # affiche de Resultats_EX pour vérification
-                            # print("↕️​↕️​↕️​↕️​↕️​ Résultats EX :")
-                            # for item in Settings.RESULTATS_EX:
-                            #     print(json.dumps(item, indent=4, ensure_ascii=False))
+                            print("↕️​↕️​↕️​↕️​↕️​ Résultats EX :")
+                            for item in Settings.RESULTATS_EX:
+                                print(json.dumps(item, indent=4, ensure_ascii=False))
                             BrowserManager.Updated_Secure_Preferences(profile_email, Settings.RESULTATS_EX)
 
                         time.sleep(1)

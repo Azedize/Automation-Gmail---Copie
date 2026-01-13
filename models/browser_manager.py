@@ -206,7 +206,7 @@ class BrowserManager:
         finally:
             if 'driver' in locals():
                 driver.quit()
-                #print("✅ Chrome fermé")
+                print("✅ Chrome fermé")
 
 
     # ---------------------- JSON Utilities ----------------------
@@ -221,7 +221,7 @@ class BrowserManager:
                     current_path = f"{path_trace}/{k}" if path_trace else k
                     if k in search_keys:
                         results.append({k: v})
-                        # #print(f"🔑 Clé trouvée : {current_path} ➜ Valeur : {v}")
+                        #print(f"🔑 Clé trouvée : {current_path} ➜ Valeur : {v}")
                     BrowserManager.Search_Keys(v, search_keys, results, current_path)
             elif isinstance(data, list):
                 for idx, item in enumerate(data):
@@ -236,26 +236,26 @@ class BrowserManager:
         قراءة ملف Secure Preferences للملف الشخصي المحدد والبحث عن المفاتيح المطلوبة مع debug مفصل
         """
         path_file = os.path.join(Settings.CONFIG_PROFILE, profile_name, "Secure Preferences")
-        #print(f"🔍 Vérification du fichier Secure Preferences : {path_file}")
+        print(f"🔍 Vérification du fichier Secure Preferences : {path_file}")
 
         if not ValidationUtils.path_exists(path_file):
-            #print(f"❌ Fichier introuvable pour le profil {profile_name}")
+            print(f"❌ Fichier introuvable pour le profil {profile_name}")
             return None
 
         try:
-            #print(f"📖 Lecture du fichier JSON en cours pour le profil {profile_name}...")
+            print(f"📖 Lecture du fichier JSON en cours pour le profil {profile_name}...")
             with open(path_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            #print("✅ Lecture réussie du fichier JSON.")
+            print("✅ Lecture réussie du fichier JSON.")
 
             results.clear()
-            #print(f"🔎 Début de la recherche des clés : {search_keys}")
+            print(f"🔎 Début de la recherche des clés : {search_keys}")
             BrowserManager.Search_Keys(data, search_keys, results)
 
             if results:
                 print(f"📌 Résultats trouvés pour {profile_name}:")
-                # for idx, item in enumerate(results, start=1):
-                #     #print(f"   {idx}. {item}")
+                for idx, item in enumerate(results, start=1):
+                    print(f"   {idx}. {item}")
             else:
                 print("⚠️ Aucun résultat trouvé pour les clés spécifiées.")
 
@@ -278,7 +278,7 @@ class BrowserManager:
     @staticmethod
     def Updated_Secure_Preferences(profile_name, RESULTATS_EX):
         try:
-            #print("\n🔐 ===== DÉMARRAGE : Mise à jour Secure Preferences =====")
+            print("\n🔐 ===== DÉMARRAGE : Mise à jour Secure Preferences =====")
 
             # 📂 Construction du chemin (flexible & sécurisé)
             secure_preferences_path = os.path.abspath(
@@ -290,21 +290,21 @@ class BrowserManager:
                 )
             )
 
-            #print("📁 Chemin détecté :")
-            #print(f"   ➜ {secure_preferences_path}")
+            print("📁 Chemin détecté :")
+            print(f"   ➜ {secure_preferences_path}")
 
             # ❌ Vérification existence
             if not os.path.exists(secure_preferences_path):
-                #print(f"❌ Fichier introuvable pour le profil : {profile_name}")
+                print(f"❌ Fichier introuvable pour le profil : {profile_name}")
                 return None
 
-            #print("✅ Fichier trouvé. Lecture du contenu JSON...")
+            print("✅ Fichier trouvé. Lecture du contenu JSON...")
 
             # 📖 Lecture JSON
             with open(secure_preferences_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
 
-            #print("🧩 Vérification & préparation de la structure JSON...")
+            print("🧩 Vérification & préparation de la structure JSON...")
 
             # 🔧 Initialisation sécurisée de la structure
             data.setdefault("extensions", {})
@@ -320,12 +320,12 @@ class BrowserManager:
             #print("✅ Structure JSON prête.")
 
             # 🔄 Traitement des résultats
-            #print("🔄 Application des RESULTATS_EX...")
+            print("🔄 Application des RESULTATS_EX...")
             for idx, item in enumerate(RESULTATS_EX, start=1):
-                # #print(f"\n➡️ Élément {idx} : {item}")
+                print(f"\n➡️ Élément {idx} : {item}")
 
                 if not isinstance(item, dict):
-                    # #print("⚠️ Ignoré : élément non dict.")
+                    print("⚠️ Ignoré : élément non dict.")
                     continue
 
                 for k, v in item.items():
@@ -333,39 +333,39 @@ class BrowserManager:
                     # 🧩 Extension settings
                     if isinstance(v, dict) and "account_extension_type" in v:
                         data["extensions"]["settings"][k] = v
-                        # #print(f"   🧩 extensions.settings[{k}] mis à jour.")
+                        #print(f"   🧩 extensions.settings[{k}] mis à jour.")
 
                     # 🔐 MAC extensions settings
                     elif isinstance(v, str) and len(v) > 30 and k != "developer_mode":
                         data["protection"]["macs"]["extensions"]["settings"][k] = v
-                        # #print(f"   🔐 MAC ajouté pour extensions.settings[{k}].")
+                        #print(f"   🔐 MAC ajouté pour extensions.settings[{k}].")
 
                     # ⚙️ Developer mode (UI)
                     elif isinstance(v, bool) and k == "developer_mode":
                         data["extensions"]["ui"]["developer_mode"] = v
-                        # #print(f"   ⚙️ developer_mode = {v}")
+                        #print(f"   ⚙️ developer_mode = {v}")
 
                     # 🔐 MAC developer mode
                     elif isinstance(v, str) and k == "developer_mode":
                         data["protection"]["macs"]["extensions"]["ui"]["developer_mode"] = v
-                        # #print("   🔐 MAC developer_mode enregistré.")
+                        #print("   🔐 MAC developer_mode enregistré.")
 
                     else:
                         print(f"   ⚠️ Clé ignorée : {k}")
 
             # 💾 Sauvegarde finale
-            #print("\n💾 Écriture du fichier Secure Preferences...")
+            print("\n💾 Écriture du fichier Secure Preferences...")
             with open(secure_preferences_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, separators=(',', ':'), ensure_ascii=False)
 
-            # #print("✅ Mise à jour terminée avec succès.")
-            # #print("🔐 ===== FIN : Secure Preferences =====\n")
+            print("✅ Mise à jour terminée avec succès.")
+            print("🔐 ===== FIN : Secure Preferences =====\n")
 
             return data
 
         except Exception as e:
-            # #print("\n❌ ERREUR CRITIQUE lors de la mise à jour Secure Preferences")
-            # #print(f"🧨 Détail : {e}\n")
+            print("\n❌ ERREUR CRITIQUE lors de la mise à jour Secure Preferences")
+            print(f"🧨 Détail : {e}\n")
             return None
 
 
