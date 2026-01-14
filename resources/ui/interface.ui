@@ -121,7 +121,7 @@ QGroupBox::title {
    <property name="font">
     <font>
      <family>Times</family>
-     <pointsize>-1</pointsize>
+     <pointsize>1</pointsize>
     </font>
    </property>
    <property name="cursor">
@@ -415,7 +415,7 @@ QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
         </size>
        </property>
        <property name="toolTipDuration">
-        <number>-1</number>
+        <number>1</number>
        </property>
        <property name="styleSheet">
         <string notr="true">QGroupBox {
@@ -657,7 +657,7 @@ QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
         <property name="geometry">
          <rect>
           <x>0</x>
-          <y>-1</y>
+          <y>1</y>
           <width>817</width>
           <height>1701</height>
          </rect>
@@ -675,7 +675,7 @@ QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
          </size>
         </property>
         <property name="toolTipDuration">
-         <number>-1</number>
+         <number>1</number>
         </property>
         <property name="styleSheet">
          <string notr="true">QGroupBox {
@@ -831,7 +831,7 @@ QPushButton::menu-indicator {
       <property name="font">
        <font>
         <family>Times</family>
-        <pointsize>-1</pointsize>
+        <pointsize>1</pointsize>
         <bold>true</bold>
        </font>
       </property>
@@ -968,7 +968,7 @@ QLineEdit::placeholder, QTextEdit::placeholder {
       <property name="font">
        <font>
         <family>Times</family>
-        <pointsize>-1</pointsize>
+        <pointsize>1</pointsize>
         <bold>true</bold>
        </font>
       </property>
@@ -1094,7 +1094,7 @@ QLineEdit::placeholder, QTextEdit::placeholder {
       <property name="font">
        <font>
         <family>Times</family>
-        <pointsize>-1</pointsize>
+        <pointsize>1</pointsize>
         <bold>true</bold>
        </font>
       </property>
@@ -1296,7 +1296,7 @@ QLineEdit::placeholder, QTextEdit::placeholder {
       <property name="font">
        <font>
         <family>Times</family>
-        <pointsize>-1</pointsize>
+        <pointsize>1</pointsize>
         <bold>true</bold>
        </font>
       </property>
@@ -2994,7 +2994,7 @@ margin:0px;
      <property name="font">
       <font>
        <family>Times</family>
-       <pointsize>-1</pointsize>
+       <pointsize>1</pointsize>
        <stylestrategy>PreferDefault</stylestrategy>
       </font>
      </property>
