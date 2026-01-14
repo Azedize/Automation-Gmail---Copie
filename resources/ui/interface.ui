@@ -58,7 +58,6 @@ QLineEdit {
     border: 1px solid #CCC; 
     border-radius: 4px; 
     font-size: 14px;
-
     padding: 5px; 
     background-color: #FFF;
     color: #333; 
@@ -3349,7 +3348,6 @@ QPushButton::menu-indicator {
       <property name="styleSheet">
        <string notr="true">
        QTabBar::tab {
-            transform: rotate(90deg); 
             min-width: 100px; 
             min-height: 30px; 
             padding: 5px;
