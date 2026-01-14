@@ -28,6 +28,8 @@ except ImportError as e:
 
 class BrowserManager:
 
+    
+    
     @staticmethod
     def get_browser_path(browser_name_or_exe: str) -> Optional[str]:
         """Récupère le chemin d'un navigateur via le registre Windows"""
@@ -84,6 +86,9 @@ class BrowserManager:
                     profiles[name] = os.path.normpath(full_path)
         return profiles
 
+   
+    
+    
     @staticmethod
     def create_firefox_profile(profile_name: str) -> Optional[str]:
         firefox_path = BrowserManager.get_browser_path("firefox.exe")
@@ -119,6 +124,12 @@ class BrowserManager:
         #print("❌ Le dossier du profil n'a pas été trouvé après création.")
         return None
 
+    
+    
+    
+    
+    
+    
     @staticmethod
     def Get_Firefox_Profiles_In_Use() -> List[Dict[str, str]]:
         profiles = []
@@ -132,6 +143,14 @@ class BrowserManager:
                 profiles.append({'name': folder, 'path': path})
         return profiles
 
+    
+    
+    
+    
+    
+    
+    
+    
     @staticmethod
     def Get_Profile_By_Pid(pid: int, active_profiles: List[Dict[str, str]]) -> Optional[Dict[str, str]]:
         try:
@@ -146,6 +165,12 @@ class BrowserManager:
             return None
         return None
 
+    
+    
+    
+    
+    
+    
     @staticmethod
     def Get_Firefox_Windows() -> List[Dict[str, Any]]:
         active_profiles = BrowserManager.Get_Firefox_Profiles_In_Use()
@@ -170,6 +195,17 @@ class BrowserManager:
         win32gui.EnumWindows(callback, None)
         return windows
 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     @staticmethod
     def Close_Windows_By_Profiles(profiles_list: List[Dict[str, str]]):
         target_profiles = {p["profile"] for p in profiles_list}
@@ -183,6 +219,16 @@ class BrowserManager:
                     print(f"❌ Erreur fermeture {window['profile']}: {e}")
 
     # ---------------------- Chrome ----------------------
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     @staticmethod
     def Run_Browser_Create_Profile(profile_name: str):
         profile_path = os.path.join(Settings.CHROME_PROFILES, profile_name)
@@ -210,11 +256,23 @@ class BrowserManager:
 
 
     # ---------------------- JSON Utilities ----------------------
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     @staticmethod
     def Search_Keys(data: Any, search_keys: List[str], results: List[Dict[str, Any]], path_trace: str = ""):
-        """
-        بحث تكراري عن المفاتيح في JSON (dict / list) مع تتبع المسار داخل JSON للdebug.
-        """
         try:
             if isinstance(data, dict):
                 for k, v in data.items():
@@ -230,11 +288,20 @@ class BrowserManager:
         except Exception as e:
             print(f"💥 Erreur lors de la recherche des clés à {path_trace}: {e}")
             
+
+
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
     @staticmethod
     def Upload_EXTENSION_PROXY(profile_name: str, search_keys: List[str], results: List[Dict[str, Any]]):
-        """
-        قراءة ملف Secure Preferences للملف الشخصي المحدد والبحث عن المفاتيح المطلوبة مع debug مفصل
-        """
         path_file = os.path.join(Settings.CONFIG_PROFILE, profile_name, "Secure Preferences")
         # print(f"🔍 Vérification du fichier Secure Preferences : {path_file}")
 
@@ -271,6 +338,13 @@ class BrowserManager:
             print(f"💥 Erreur inattendue lors du traitement de {path_file} : {e}")
 
         return None
+
+
+
+
+
+
+
 
 
 
@@ -370,6 +444,13 @@ class BrowserManager:
 
 
 
+    
+    
+    
+    
+    
+    
+    
     @staticmethod
     def close_chrome_profile(profile_name: str, user_data_dir: str):
         closed_any = False
@@ -391,4 +472,10 @@ class BrowserManager:
                 continue
 
         return closed_any
+    
+
+
+
+
+    
 BrowserManager = BrowserManager()

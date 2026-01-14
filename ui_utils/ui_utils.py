@@ -406,7 +406,6 @@ class UIManager:
 
     @staticmethod
     def Show_Critical_Message(window, title, message, message_type="critical"):
-        """Affiche un QMessageBox stylé selon le type (critical, warning, info, success)."""
         dialog = QMessageBox(window)
 
         # Définition des styles pour chaque type
@@ -1154,6 +1153,15 @@ class UIManager:
 
 
 
+    
+    
+    
+    
+    
+    
+    
+    
+    
     @staticmethod
     def Remove_Initaile( scenario_layout,reset_options_layout):
 
@@ -1186,6 +1194,11 @@ class UIManager:
                     reset_options_layout.removeWidget(widget)
 
 
+    
+    
+    
+    
+    
     @staticmethod
     def read_file_content(file_path):
         if not ValidationUtils.path_exists(file_path):
@@ -1205,12 +1218,28 @@ class UIManager:
 
 
 
+    
+    
+    
+    
+    
     @staticmethod
     def _find_widget(window, name, widget_type=None):
         """Find child widget with optional type"""
         return window.findChild(widget_type, name) if widget_type else window.findChild(QWidget, name)
 
 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     @staticmethod
     def _setup_containers(window):
         """Setup container widgets and layouts"""
@@ -1228,6 +1257,17 @@ class UIManager:
 
 
 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     @staticmethod
     def _setup_template_widgets(window):
         templates = {
@@ -1249,6 +1289,15 @@ class UIManager:
 
 
 
+    
+    
+    
+    
+    
+    
+    
+    
+    
     @staticmethod
     def _setup_icon_button(window, button_name, icon_file, callback, icon_size=None, button_size=None):
         """Helper to setup icon button with consistent styling"""
@@ -1285,6 +1334,16 @@ class UIManager:
         return button
 
 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     @staticmethod
     def _setup_button(window, widget_name, callback):
         """Setup simple button with connection"""
@@ -1451,13 +1510,6 @@ class UIManager:
     
     @staticmethod
     def _setup_logout_button(window, callback):
-        """
-        Setup the logout button with an icon and a custom callback.
-        
-        :param window: Parent window
-        :param callback: Function to be called on button click
-        :return: QPushButton or None
-        """
         button = UIManager._find_widget(window, "LogOut", QPushButton)
         if not button:
             #print("⚠️ [DEBUG] Logout button not found")
@@ -1563,7 +1615,6 @@ class UIManager:
     
     @staticmethod
     def _convert_to_vertical_tabs(window):
-        """Convert tabWidgetResult to VerticalTabWidget"""
         if not hasattr(window, "tabWidgetResult") or window.tabWidgetResult is None:
             return
 
@@ -1592,6 +1643,8 @@ class UIManager:
 
 
 
+    
+    
     @staticmethod
     def _setup_interface_tab_widget(window):
         """Setup main interface tab widget"""

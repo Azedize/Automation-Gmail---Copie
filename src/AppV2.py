@@ -711,7 +711,7 @@ class LogsDisplayThread(QThread):
 
 
 
-def add_pid_to_text_file( pid: str, Path_DiR: str, email: str, SESSION_ID: str, browser: str ,inserted_number=None):
+def add_pid_to_text_file( pid: str, Path_DiR: str, email: str, SESSION_ID: str, browser: str ):
     try:
         
         # print("🚦 [START] Démarrage de add_pid_to_text_file")
@@ -745,7 +745,7 @@ def add_pid_to_text_file( pid: str, Path_DiR: str, email: str, SESSION_ID: str, 
             f.write(entry + "\n")
 
         # print("🎉 [SUCCESS] Écriture terminée avec succès")
-        print("🏁 [END] Fonction exécutée sans erreur")
+        # print("🏁 [END] Fonction exécutée sans erreur")
 
     except Exception as e:
         # print("🔥 [ERROR] Une erreur est survenue !")

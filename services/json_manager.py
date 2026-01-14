@@ -43,13 +43,35 @@ class JsonManager:
         except Exception:
             return 0
 
+    
+    
+    
+    
     @staticmethod
     def get_children(widget, cls):
         return [c for c in widget.children() if isinstance(c, cls)]
 
+
+
+
+
+
+
+
     # ==============================
     # MAIN PIPELINE
     # ==============================
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     @staticmethod
     def generate(scenario_layout, selected_browser: str):
 
@@ -215,6 +237,12 @@ class JsonManager:
 
         return output_json
 
+    
+    
+    
+    
+    
+    
     # ==============================
     # SPLIT JSON
     # ==============================
@@ -252,6 +280,20 @@ class JsonManager:
         flush()
         return output
 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     # ==============================
     # HANDLE LAST ELEMENT
     # ==============================
@@ -282,6 +324,19 @@ class JsonManager:
 
         return output
 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     # ==============================
     # MODIFY JSON
     # ==============================
@@ -299,6 +354,20 @@ class JsonManager:
 
         return output
 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     # ==============================
     # SAVE FILE
     # ==============================
@@ -328,6 +397,20 @@ class JsonManager:
             #print("❌ Error while saving JSON file")
             #print(f"❌ Exception: {e}")
             return "ERROR"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Singleton pour une utilisation globale
 json_manager = JsonManager()
