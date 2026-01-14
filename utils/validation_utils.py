@@ -623,6 +623,12 @@ class ValidationUtils:
         except Exception as e:
             return False, f"Erreur de validation: {str(e)}"
     
+
+
+
+
+
+
     @staticmethod
     def parse_random_range(text: str, default: int = 0) -> int:
         try:
@@ -632,6 +638,9 @@ class ValidationUtils:
             return int(text)
         except (ValueError, TypeError):
             return default
+
+
+
 
     @staticmethod
     def validate_and_correct_qlineedit(qlineedit: QLineEdit, default_value: str = "50,50") -> None:
@@ -665,6 +674,12 @@ class ValidationUtils:
                 qlineedit.setToolTip("Veuillez entrer une valeur sous la forme 'Min,Max' ou un seul nombre.")
             QTimer.singleShot(0, apply_error)
     
+
+
+
+
+
+
     @staticmethod
     def validate_qlineedit_with_range(
         qlineedit: QLineEdit, 
@@ -690,6 +705,13 @@ class ValidationUtils:
 
     # === Méthodes pour la gestion des styles CSS ===
     
+
+
+
+
+
+
+
     @staticmethod
     def inject_border_into_style(old_style: str, border_line: str = "border: 2px solid #cc4c4c;") -> str:
         pattern = r"(QLineEdit\s*{[^}]*?)\s*}"
@@ -710,6 +732,10 @@ class ValidationUtils:
             }}"""
             return appended
     
+
+
+
+
     @staticmethod
     def remove_border_from_style(style: str) -> str:
         cleaned_style = re.sub(r'border\s*:\s*[^;]+;', '', style, flags=re.IGNORECASE)
@@ -725,6 +751,13 @@ class ValidationUtils:
             raise ValueError("La longueur doit être un entier positif")
         return str(uuid.uuid4()).replace("-", "")[:length]
     
+
+
+
+
+
+
+
     @staticmethod
     def generate_secure_password(length: int = 12) -> str:
         if length < 12:
@@ -749,12 +782,22 @@ class ValidationUtils:
         
         return ''.join(password)
     
+
+
+
+
+
+
     @staticmethod
     def generate_random_number(min_val: int, max_val: int) -> int:
         if min_val > max_val:
             min_val, max_val = max_val, min_val
         return random.randint(min_val, max_val)
     
+
+
+
+
     @staticmethod
     def generate_timestamp_filename(prefix: str = "", extension: str = "txt") -> str:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
