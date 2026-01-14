@@ -816,6 +816,9 @@ class ValidationUtils:
         return possible_keys[0] if possible_keys else ""
     
 
+    
+    
+    
     @staticmethod
     def get_email_from_log_file(file_name):
         file_name = os.path.basename(file_name)
