@@ -110,8 +110,8 @@ class SessionManager:
                 # print("[INFO] Session supprimée")
             except Exception as e:
                 print(f"[ERROR] Suppression session échouée : {e}")
-        else:
-            print("[INFO] Aucun fichier de session à supprimer")
+        # else:
+        #     print("[INFO] Aucun fichier de session à supprimer")
 
     # ================== Validation via API ==================
     def validate_session_with_api(self, username: str, p_entity: str) -> Dict:

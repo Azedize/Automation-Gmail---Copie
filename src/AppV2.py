@@ -79,13 +79,13 @@ SELECTED_BROWSER_GLOBAL=None
 # Si ce n'est pas le cas, il tente de l'installer via Chocolatey (et installe aussi npm).
 def ensure_node_installed():
     if shutil.which("node") is not None:
-        print("✅ Node.js est déjà installé.")
+        # print("✅ Node.js est déjà installé.")
         return True
 
-    print("❌ Node.js n'est pas installé. Tentative d'installation via Chocolatey...")
+    # print("❌ Node.js n'est pas installé. Tentative d'installation via Chocolatey...")
 
     if shutil.which("choco") is None:
-        print("🔍 Chocolatey non trouvé. Installation...")
+        # print("🔍 Chocolatey non trouvé. Installation...")
         try:
             subprocess.run(
                 [
@@ -127,11 +127,11 @@ def get_web_ext_path():
 # 🔍📦 Vérifie si 'web-ext' est installé, sinon l'installe globalement via npm
 def ensure_web_ext_installed():
     if not ensure_node_installed():
-        print("⚠️ Impossible de continuer sans Node.js.")
+        # print("⚠️ Impossible de continuer sans Node.js.")
         return
     
     if shutil.which('npm') is None:
-        print("❌ npm n'est pas installé.")
+        # print("❌ npm n'est pas installé.")
         return
     
     if shutil.which('web-ext') is not None:
@@ -165,26 +165,26 @@ SESSION_ID = ValidationUtils.generate_session_id()
 def Stop_All_Processes(window):
     global EXTRACTION_THREAD, CLOSE_BROWSER_THREAD, PROCESS_PIDS, LOGS_RUNNING, SELECTED_BROWSER_GLOBAL
 
-    print("Stopping all processes...")
+    # print("Stopping all processes...")
     LOGS_RUNNING = False
 
     if EXTRACTION_THREAD:
-        print("Stopping extraction thread...")
+        # print("Stopping extraction thread...")
         EXTRACTION_THREAD.stop_flag = True
         EXTRACTION_THREAD.wait()
         EXTRACTION_THREAD = None
-        print("Extraction thread stopped.")
+        # print("Extraction thread stopped.")
 
 
     if CLOSE_BROWSER_THREAD:
-        print("Stopping close Chrome thread...")
+        # print("Stopping close Chrome thread...")
         CLOSE_BROWSER_THREAD.stop_flag = True
         CLOSE_BROWSER_THREAD.wait()
         CLOSE_BROWSER_THREAD = None
-        print("Close Chrome thread stopped.")
+        # print("Close Chrome thread stopped.")
 
     if EXTRACTION_THREAD and EXTRACTION_THREAD.isRunning():
-        print("Waiting for extraction thread to finish before updating UI...")
+        # print("Waiting for extraction thread to finish before updating UI...")
         EXTRACTION_THREAD.finished.connect(
             lambda: QTimer.singleShot(100, 
             lambda: UIManager.Read_Result_Update_List(window))
@@ -193,11 +193,11 @@ def Stop_All_Processes(window):
     if SELECTED_BROWSER_GLOBAL.lower() != "firefox":
         for pid in PROCESS_PIDS[:]:
             try:
-                print(f"Attempting to terminate process with PID {pid}...")
+                # print(f"Attempting to terminate process with PID {pid}...")
                 process = psutil.Process(pid)
                 process.terminate()
                 process.wait(timeout=5)
-                print(f"Process {pid} terminated successfully.")
+                # print(f"Process {pid} terminated successfully.")
             except psutil.NoSuchProcess:
                 print(f"The process with PID {pid} no longer exists.")
             except psutil.AccessDenied:
@@ -207,7 +207,7 @@ def Stop_All_Processes(window):
             finally:
                 if pid in PROCESS_PIDS:
                     PROCESS_PIDS.remove(pid)
-                    print(f"PID {pid} removed from process list.")
+                    # print(f"PID {pid} removed from process list.")
     else:
             try:
                 BrowserManager.Close_Windows_By_Profiles(FIREFOX_LAUNCH)
@@ -217,12 +217,7 @@ def Stop_All_Processes(window):
             finally:
                 for pid in PROCESS_PIDS[:]:
                     PROCESS_PIDS.remove(pid)
-                    print(f"PID {pid} removed from process list.")
-
-
-
-
-
+                    # print(f"PID {pid} removed from process list.")
 
 
 
@@ -247,19 +242,19 @@ class CloseBrowserThread(QThread):
 
     
     def run(self):
-        print("🚀 [THREAD] CloseBrowserThread démarré")
+        #print("🚀 [THREAD] CloseBrowserThread démarré")
         time.sleep(15)
         # time.sleep(10)
         # time.sleep(10)
         # time.sleep(10)
-        print(f" Stop flag initial : {self.stop_flag} ")
+        #print(f" Stop flag initial : {self.stop_flag} ")
 
         while not self.stop_flag and PROCESS_PIDS:
-            print("🌀 [THREAD] Boucle principale en cours...")
+            #print("🌀 [THREAD] Boucle principale en cours...")
             # affiche self.stop_flag and PROCESS_PIDS
-            print(f"🤠[THREAD] Boucle active | stop_flag: {self.stop_flag}")
-            print(f"🤠[THREAD] Boucle active | PROCESS_PIDS: {PROCESS_PIDS}")
-            print(f"🤠[THREAD] Boucle active | PID restants: {len(PROCESS_PIDS)}")
+            #print(f"🤠[THREAD] Boucle active | stop_flag: {self.stop_flag}")
+            #print(f"🤠[THREAD] Boucle active | PROCESS_PIDS: {PROCESS_PIDS}")
+            #print(f"🤠[THREAD] Boucle active | PID restants: {len(PROCESS_PIDS)}")
 
             try:
                 # ملفات الجلسات و logs
@@ -273,7 +268,7 @@ class CloseBrowserThread(QThread):
                     if f.startswith("log_") and f.endswith(".txt")
                 ]
 
-                print(f"📄 [SCAN] Sessions={len(files)} | Logs={len(log_files)}")
+                #print(f"📄 [SCAN] Sessions={len(files)} | Logs={len(log_files)}")
 
                 # معالجة logs
                 with ThreadPoolExecutor(max_workers=4) as executor:
@@ -296,13 +291,13 @@ class CloseBrowserThread(QThread):
 
             time.sleep(2)
 
-        print("🛑 [THREAD] CloseBrowserThread terminé")
+        #print("🛑 [THREAD] CloseBrowserThread terminé")
 
     # ======================================================
     # 📄 TRAITEMENT DES LOGS
     # ======================================================
     def process_log_file(self, log_file, downloads_folder):
-        print(f"📄 [LOG] Traitement: {log_file}")
+        #print(f"📄 [LOG] Traitement: {log_file}")
 
         try:
             email = ValidationUtils.get_email_from_log_file(
@@ -310,10 +305,10 @@ class CloseBrowserThread(QThread):
             )
 
             if not email:
-                print(f"⚠️ [LOG] Email introuvable: {log_file}")
+                #print(f"⚠️ [LOG] Email introuvable: {log_file}")
                 return
 
-            print(f"📧 [LOG] Email détecté: {email}")
+            #print(f"📧 [LOG] Email détecté: {email}")
 
             session_folder = f"{CURRENT_DATE}_{CURRENT_HOUR}"
             target_folder = Path(Settings.LOGS_DIRECTORY) / session_folder
@@ -328,7 +323,7 @@ class CloseBrowserThread(QThread):
                 tf.write(content + "\n")
 
             os.remove(os.path.join(downloads_folder, log_file))
-            print(f"🗑️ [LOG] Supprimé: {log_file}")
+            #print(f"🗑️ [LOG] Supprimé: {log_file}")
 
         except Exception as e:
             print(f"❌ [LOG] Erreur {log_file}: {e}")
@@ -337,22 +332,22 @@ class CloseBrowserThread(QThread):
     # 📄 TRAITEMENT DES SESSIONS
     # ======================================================
     def process_session_file(self, file_name, downloads_folder, selected_Browser):
-        print(f"📄 [SESSION] Analyse: {file_name}")
+        #print(f"📄 [SESSION] Analyse: {file_name}")
 
         try:
             session_path = os.path.join(downloads_folder, file_name)
             if not os.path.exists(session_path):
-                print(f"⚠️ [SESSION] Fichier session introuvable: {session_path}")
+                #print(f"⚠️ [SESSION] Fichier session introuvable: {session_path}")
                 return
 
             with open(session_path, "r", encoding="utf-8") as f:
                 content = f.read().strip()
 
             if not content:
-                print(f"⚠️ [SESSION] Fichier session vide: {session_path}")
+                #print(f"⚠️ [SESSION] Fichier session vide: {session_path}")
                 return
 
-            print(f"🧠 [SESSION] Contenu: {content}")
+            #print(f"🧠 [SESSION] Contenu: {content}")
 
             match = re.search(
                 r"session_id:(\w+)_PID:(\d+)_Email:([\w.@]+)_Status:(\w+)",
@@ -360,13 +355,13 @@ class CloseBrowserThread(QThread):
             )
 
             if not match:
-                print(f"❌ [SESSION] Format invalide → suppression")
+                #print(f"❌ [SESSION] Format invalide → suppression")
                 os.remove(session_path)
                 return
 
             session_id, pid, email, status = match.groups()
             pid = int(pid)
-            print(f"✅ [SESSION] Email={email} | PID={pid} | Status={status}")
+            #print(f"✅ [SESSION] Email={email} | PID={pid} | Status={status}")
 
             # تحديد مسار data.txt حسب المتصفح
             if selected_Browser.lower() == "chrome":
@@ -375,11 +370,11 @@ class CloseBrowserThread(QThread):
                 base_path = self._get_profile_base_path(selected_Browser)
                 data_file = os.path.join(base_path, email, "data.txt")
 
-            print(f"🔍 [DATA] Lecture: {data_file}")
+            #print(f"🔍 [DATA] Lecture: {data_file}")
 
             inserted_id = None
             if not os.path.exists(data_file):
-                print(f"⚠️ [DATA] data.txt introuvable pour {email}, création...")
+                #print(f"⚠️ [DATA] data.txt introuvable pour {email}, création...")
                 os.makedirs(os.path.dirname(data_file), exist_ok=True)
                 with open(data_file, "w", encoding="utf-8") as f:
                     f.write("")
@@ -393,7 +388,7 @@ class CloseBrowserThread(QThread):
                         if len(parts) >= 4:
                             inserted_id = parts[3]
 
-            print(f"🆔 [DATA] inserted_id={inserted_id}")
+            #print(f"🆔 [DATA] inserted_id={inserted_id}")
 
            
             try:
@@ -403,7 +398,7 @@ class CloseBrowserThread(QThread):
                 with open(Settings.RESULT_FILE_PATH, "a", encoding="utf-8") as rf:
                     rf.write(f"{session_id}:{pid}:{email}:{status}\n")
 
-                print(f"📝 [RESULT] Enregistré dans {Settings.RESULT_FILE_PATH}")
+                #print(f"📝 [RESULT] Enregistré dans {Settings.RESULT_FILE_PATH}")
 
             except PermissionError:
                 print(f"❌ [RESULT] Permission denied: impossible d'écrire dans {Settings.RESULT_FILE_PATH}")
@@ -412,14 +407,14 @@ class CloseBrowserThread(QThread):
 
             
             try:
-                print(f"📤 [API] Envoi status pour {email}")
+                #print(f"📤 [API] Envoi status pour {email}")
                 Send_Status({
                     "id": inserted_id,
                     "login": self.username,
                     "status": "OK" if status == "completed" else "NotOK",
                     "error": "" if status == "completed" else status
                 })
-                print(f"✅ [API] Status envoyé pour {email}")
+                #print(f"✅ [API] Status envoyé pour {email}")
             except Exception as e_api:
                 print(f"❌ [API] Erreur envoi status pour {email}: {e_api}")
 
@@ -428,18 +423,18 @@ class CloseBrowserThread(QThread):
 
             try:
                 os.remove(session_path)
-                print(f"🗑️ [CLEAN] Session supprimée: {session_path}")
+                #print(f"🗑️ [CLEAN] Session supprimée: {session_path}")
             except Exception as e_rm_sess:
                 print(f"⚠️ [CLEAN] Impossible de supprimer session: {e_rm_sess}")
 
             try:
                 if os.path.exists(data_file):
                     os.remove(data_file)
-                    print(f"🗑️ [CLEAN] data.txt supprimé: {data_file}")
+                    #print(f"🗑️ [CLEAN] data.txt supprimé: {data_file}")
             except Exception as e_rm_data:
                 print(f"⚠️ [CLEAN] Impossible de supprimer data.txt: {e_rm_data}")
 
-            print(f"✅ [SESSION] Traitement terminé pour {email}\n")
+            #print(f"✅ [SESSION] Traitement terminé pour {email}\n")
 
         except Exception as e:
             print(f"❌ [SESSION] Erreur inattendue pour {file_name}: {e}")
@@ -457,15 +452,15 @@ class CloseBrowserThread(QThread):
 
     def _close_browser_process(self, pid, email, browser):
         if pid not in PROCESS_PIDS:
-            print(f"⚠️ [PROC] PID déjà fermé: {pid}")
+            #print(f"⚠️ [PROC] PID déjà fermé: {pid}")
             return
 
-        print(f"🧨 [PROC] Fermeture {browser} | PID={pid} | {email}")
+        #print(f"🧨 [PROC] Fermeture {browser} | PID={pid} | {email}")
 
         try:
             b = browser.lower()
             if b == "firefox":
-                print("🪟 [FIREFOX] Recherche fenêtre")
+                #print("🪟 [FIREFOX] Recherche fenêtre")
                 self.find_firefox_window(email)
                 self.wait_then_close(email)
             elif b in ["edge", "icedragon", "comodo"]:
@@ -477,7 +472,7 @@ class CloseBrowserThread(QThread):
                 )
 
             PROCESS_PIDS.remove(pid)
-            print(f"✅ [PROC] Process fermé: {pid}")
+            #print(f"✅ [PROC] Process fermé: {pid}")
 
         except Exception as e:
             print(f"❌ [PROC] Erreur fermeture {email}: {e}")
@@ -486,7 +481,7 @@ class CloseBrowserThread(QThread):
     # 🪟 FIREFOX WINDOW MANAGEMENT
     # ======================================================
     def find_firefox_window(self, profile_email, timeout=30):
-        print(f"🪟 [FIREFOX] Recherche fenêtre pour {profile_email}")
+        #print(f"🪟 [FIREFOX] Recherche fenêtre pour {profile_email}")
 
         entry = next((e for e in FIREFOX_LAUNCH if e["profile"] == profile_email), None)
         if not entry:
@@ -503,7 +498,7 @@ class CloseBrowserThread(QThread):
                         if win32gui.GetClassName(hwnd) == "MozillaWindowClass":
                             if target_title in win32gui.GetWindowText(hwnd):
                                 entry["hwnd"] = hwnd
-                                print("✅ [FIREFOX] Fenêtre trouvée")
+                                #print("✅ [FIREFOX] Fenêtre trouvée")
                                 return False
                     except Exception:
                         pass
@@ -521,7 +516,7 @@ class CloseBrowserThread(QThread):
     def wait_then_close(self, profile_email):
         entry = next((e for e in FIREFOX_LAUNCH if e["profile"] == profile_email), None)
         if not entry or not entry.get("hwnd"):
-            print("⚠️ [FIREFOX] Aucune fenêtre à fermer")
+            #print("⚠️ [FIREFOX] Aucune fenêtre à fermer")
             return
         self.close_window_by_hwnd(entry["hwnd"], entry["proc"])
 
@@ -530,19 +525,19 @@ class CloseBrowserThread(QThread):
             if win32gui.IsWindowVisible(hwnd):
                 _, p = win32process.GetWindowThreadProcessId(hwnd)
                 if p == pid and win32gui.GetClassName(hwnd) == "#32770":
-                    print("⚠️ [DIALOG] Fermeture confirmation")
+                    #print("⚠️ [DIALOG] Fermeture confirmation")
                     win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
             return True
 
         win32gui.EnumWindows(enum_proc, None)
 
     def close_window_by_hwnd(self, hwnd, proc, wait_grace=2, wait_force=3):
-        print("🪟 [WINDOW] Fermeture fenêtre principale")
+        #print("🪟 [WINDOW] Fermeture fenêtre principale")
         win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
         time.sleep(wait_grace)
 
         if not win32gui.IsWindow(hwnd):
-            print("✅ [WINDOW] Fermeture propre")
+            #print("✅ [WINDOW] Fermeture propre")
             return
 
         self.close_confirmation_dialogs(proc.pid)
@@ -551,7 +546,7 @@ class CloseBrowserThread(QThread):
         try:
             proc.terminate()
             proc.wait(timeout=wait_force)
-            print("🧨 [WINDOW] Process terminé de force")
+            #print("🧨 [WINDOW] Process terminé de force")
         except Exception:
             pass
 
@@ -582,7 +577,7 @@ def Generate_User_Input_Data(window):
 
     # En cas d’erreur → affichage UI
     if not validation_result["success"]:
-        print(f"❌ Validation échouée: {validation_result['error_title']} - {validation_result['error_message']}")
+        #print(f"❌ Validation échouée: {validation_result['error_title']} - {validation_result['error_message']}")
         UIManager.Show_Critical_Message(
             window,
             validation_result["error_title"],
@@ -664,7 +659,7 @@ def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp 
     EXTRACTION_THREAD.start()
 
     time.sleep(10)
-    print("Launching CloseBrowserThread...")
+    #print("Launching CloseBrowserThread...")
     CLOSE_BROWSER_THREAD = CloseBrowserThread( selected_Browser ,username)
     CLOSE_BROWSER_THREAD.progress.connect(lambda msg: print(msg))
     CLOSE_BROWSER_THREAD.start()
@@ -885,9 +880,9 @@ class ExtractionThread(QThread):
                         pass
 
                     # 🔹 Vérification finale pour diagnostiquer le problème si nécessaire
-                    if not session_directory.exists():
-                        # print(f"❌ Le dossier n'a pas été créé : {session_directory}")
-                        print(f"📂 Dossiers parents existants : {', '.join(str(p) for p in session_directory.parents if p.exists())}")
+                    # if not session_directory.exists():
+                    #     print(f"❌ Le dossier n'a pas été créé : {session_directory}")
+                    #     print(f"📂 Dossiers parents existants : {', '.join(str(p) for p in session_directory.parents if p.exists())}")
 
 
                     logs_subdirs = [os.path.join(Settings.LOGS_DIRECTORY, d) for d in os.listdir(Settings.LOGS_DIRECTORY) if os.path.isdir(os.path.join(Settings.LOGS_DIRECTORY, d))]
@@ -899,7 +894,7 @@ class ExtractionThread(QThread):
                             try:
                                 shutil.rmtree(dir_to_delete)
                             except Exception as e:
-                                log_message(f"[INFO]  Erreur lors de la suppression de {dir_to_delete} : {e}")
+                                log_message(f"[INFO]  Error while deleting {dir_to_delete} : {e}")
 
                   
                     if self.selected_Browser.lower() == "firefox":
@@ -962,7 +957,7 @@ class ExtractionThread(QThread):
                         add_pid_to_text_file(process.pid , Settings.FOLDER_EXTENTIONS_FAMILY_CHROME, profile_email  ,self.session_id , self.selected_Browser.lower())
                     
                     else:
-                        print("🔹 Chrome-based browser selected.")
+                        #print("🔹 Chrome-based browser selected.")
 
                         ValidationUtils.ensure_path_exists(Settings.CHROME_PROFILES, is_file=False)
 
@@ -974,22 +969,16 @@ class ExtractionThread(QThread):
 
 
                         if not  Settings.RESULTATS_EX:
-                            error_msg = (
-                                "❌ An issue occurred while copying the JSON file to the template profile.\n"
-                                "➡ Please contact support."
-                            )
-                            log_message(error_msg) 
                             UIManager.Show_Critical_Message(self.window ,  "An issue occurred while copying the JSON file to the template profile  ➡ Please contact support." , message_type="critical")
-
-                            self.stopped.emit(error_msg)  
+                            self.stopped.emit("An issue occurred while copying the JSON file to the template profile  ➡ Please contact support.")  
                             self.stop_flag = True   
                             return                   
                         else:
-                            print("✅ JSON file copied successfully to the template profile.")
+                            #print("✅ JSON file copied successfully to the template profile.")
                             # affiche de Resultats_EX pour vérification
-                            print("↕️​↕️​↕️​↕️​↕️​ Résultats EX :")
-                            for item in Settings.RESULTATS_EX:
-                                print(json.dumps(item, indent=4, ensure_ascii=False))
+                            #print("↕️​↕️​↕️​↕️​↕️​ Résultats EX :")
+                            # for item in Settings.RESULTATS_EX:
+                            #     print(json.dumps(item, indent=4, ensure_ascii=False))
                             BrowserManager.Updated_Secure_Preferences(profile_email, Settings.RESULTATS_EX)
 
                         time.sleep(1)
@@ -1013,18 +1002,18 @@ class ExtractionThread(QThread):
 
                         process = subprocess.Popen(command) 
                         PROCESS_PIDS.append(process.pid)  
-                        print('➡️➡️➡️➡️➡️➡️ PROCESS_PIDS : ' ,PROCESS_PIDS)
+                        # print('➡️➡️➡️➡️➡️➡️ PROCESS_PIDS : ' ,PROCESS_PIDS)
                         add_pid_to_text_file(process.pid , Settings.CHROME_PROFILES , profile_email  , self.session_id , self.selected_Browser.lower())
                         Update_Data_File_Profile( os.path.join(Settings.CHROME_PROFILES, profile_email), inserted_id )
                     self.emails_processed += 1  
 
                 except Exception as e:
-                    print(f"[ERROR] Erreur emojie  : {e}")
+                    # print(f"[ERROR] Erreur emojie  : {e}")
                     print(f"[INFO] Erreur : {e}")
             self.msleep(1000) 
 
         log_message("[INFO] Processing finished for all emails.") 
-        print("[INFO] Processing finished for all emails.")
+        # print("[INFO] Processing finished for all emails.")
         time.sleep(3)
         LOGS_RUNNING=False
         self.finished.emit()
@@ -1074,11 +1063,11 @@ def Process_Browser(window, selected_Browser) -> bool:
     missing_keys = [key for key in required_keys if key not in found_keys]
 
     if missing_keys:
-        print("❌ Clés manquantes :")
-        for idx, key in enumerate(missing_keys, start=1):
-            print(f"   {idx}. {key}")
+        # print("❌ Clés manquantes :")
+        # for idx, key in enumerate(missing_keys, start=1):
+        #     print(f"   {idx}. {key}")
         return False
-    print(f"✅ Toutes les clés JSON requises sont présentes ({len(found_keys)}/{len(required_keys)})")
+    # print(f"✅ Toutes les clés JSON requises sont présentes ({len(found_keys)}/{len(required_keys)})")
 
     # 5️⃣ Vérification et mise à jour de l'extension
     ext_path = Settings.EXTENTION_EX3
@@ -1319,8 +1308,8 @@ class MainWindow(QMainWindow):
         if encrypted_key == "":
             UIManager.Show_Critical_Message(self, "Invalid Session", "[❌] Your session file is invalid. Please restart the application.", message_type="critical")
             return
-        else :
-            print("Encrypted key read successfully.")
+        # else :
+        #     print("Encrypted key read successfully.")
 
 
         payload = {
@@ -1330,7 +1319,7 @@ class MainWindow(QMainWindow):
             "state_stack": self.STATE_STACK
         }
 
-        print(f"Payload: {payload}")
+        # print(f"Payload: {payload}")
 
         try:
             result = APIManager.handle_save_scenario(payload)
@@ -1363,10 +1352,10 @@ class MainWindow(QMainWindow):
 
     def Load_Scenarios_Into_Combobox(self):
         if self.saveSanario is None:
-            print("self.saveSanario is None")
+            # print("self.saveSanario is None")
             return
-        else:
-            print("self.saveSanario is not None")
+        # else:
+        #     print("self.saveSanario is not None")
     
         if not ValidationUtils.path_exists(Settings.SESSION_PATH):
             return
@@ -1376,7 +1365,7 @@ class MainWindow(QMainWindow):
         if not encrypted_key:
             return
 
-        payload = {"encrypted": encrypted_key}
+        # payload = {"encrypted": encrypted_key}
         try:
 
             result = APIManager.load_scenarios(encrypted_key)
@@ -1509,8 +1498,7 @@ class MainWindow(QMainWindow):
                         for lw in list_widgets:
                             lw.clear()  
         except Exception as e:
-            log_message(f"[BADGES ERROR] Erreur lors de la suppression des badges : {e}")
-
+            print(f"[BADGES ERROR] Error during badge deletion: {e}")
 
 
 
@@ -1522,17 +1510,17 @@ class MainWindow(QMainWindow):
         except SystemExit:
             return
         except Exception as e:
-            log_message(f"[UPDATE ERROR] {e}")
+            print(f"[UPDATE ERROR] {e}")
 
 
         selected_Browser = self.browser.currentText()
 
         if  selected_Browser and selected_Browser.lower() == "chrome":
             if not Process_Browser(window, selected_Browser):
-                print("❌ Navigateur non traité :", selected_Browser)
+                # print("❌ Navigateur non traité :", selected_Browser)
                 return
 
-        print("🌐 Navigateur traité avec succès :", selected_Browser)
+        # print("🌐 Navigateur traité avec succès :", selected_Browser)
 
         if self.INTERFACE:
             for i in range(self.INTERFACE.count()):
@@ -1691,8 +1679,8 @@ class MainWindow(QMainWindow):
 
         if ValidationUtils.path_exists(icon_path):
             button.setIcon(QIcon(icon_path))
-        else:
-            print(f"[Warning] Icon not found at: {icon_path}")
+        # else:
+        #     print(f"[Warning] Icon not found at: {icon_path}")
 
         self.reset_options_layout.addWidget(button)
 
@@ -1931,7 +1919,7 @@ class MainWindow(QMainWindow):
 
             # print("\n🎉 Scénario chargé avec succès.\n")
 
-            # إزالة الحالات المكررة
+            
             try:
                 unique_states = []
                 seen = set()
@@ -2187,7 +2175,7 @@ def main():
 
 
     if ValidationUtils.path_exists(Path(Settings.APP_ICON)):
-        app.setWindowIcon(QIcon(str(Path(Settings.APP_ICON))))  # تحويل Path إلى str لـ QIcon
+        app.setWindowIcon(QIcon(str(Path(Settings.APP_ICON))))  
 
     if session_valid:
         try:

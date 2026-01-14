@@ -1438,9 +1438,9 @@ class UIManager:
         """Setup scenario selection combobox"""
         window.saveSanario = UIManager._find_widget(window , "saveSanario", QComboBox)
         if  window.saveSanario is  None:
-            print("🔧 [DEBUG] Le save scenario not found")
+            # print("🔧 [DEBUG] Le save scenario not found")
             return
-        print("🔧 [DEBUG] Le save scenario  found ")
+        # print("🔧 [DEBUG] Le save scenario  found ")
         
         UIManager._apply_combobox_style(window ,window.saveSanario)
         window.saveSanario.currentTextChanged.connect(window.Scenario_Changed)

@@ -46,10 +46,10 @@ class DependencyManager:
         python_exe = sys.executable
         spec = importlib.util.find_spec("win32api")
         if spec:
-            print("pywin32 déjà installé")
+            # print("pywin32 déjà installé")
             return True
 
-        print("Installation de pywin32...")
+        # print("Installation de pywin32...")
         site_packages = Path(python_exe).parent / "Lib" / "site-packages"
         folders_to_remove = ["win32", "pywin32_system32"]
 
@@ -58,7 +58,7 @@ class DependencyManager:
             if folder_path.exists():
                 try:
                     shutil.rmtree(folder_path)
-                    print(f"Suppression de {folder}")
+                    # print(f"Suppression de {folder}")
                 except PermissionError:
                     print(f"Impossible de supprimer {folder} (fermez IDE/console)")
 
@@ -69,9 +69,9 @@ class DependencyManager:
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL
             )
-            print("pywin32 installé avec succès")
+            # print("pywin32 installé avec succès")
         except subprocess.CalledProcessError:
-            print("Échec installation pywin32")
+            # print("Échec installation pywin32")
             return False
 
         postinstall_script = Path(python_exe).parent / "Scripts" / "pywin32_postinstall.py"
@@ -83,12 +83,12 @@ class DependencyManager:
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL
                 )
-                print("Post-installation terminée")
+                # print("Post-installation terminée")
             except subprocess.CalledProcessError:
-                print("Échec post-installation pywin32")
+                # print("Échec post-installation pywin32")
                 return False
 
-        print("Redémarrage script dans 10s...")
+        # print("Redémarrage script dans 10s...")
         time.sleep(10)
         subprocess.run([python_exe, sys.argv[0]])
         sys.exit(0)
@@ -106,28 +106,28 @@ class DependencyManager:
             return module
         except (ModuleNotFoundError, ImportError):
             Settings.ALL_PACKAGES_INSTALLED = False
-            print(f"Installation de {package}...")
+            # print(f"Installation de {package}...")
 
             if not Settings.UPDATED_PIP_23_3:
                 try:
-                    print("Mise à jour pip...")
+                    # print("Mise à jour pip...")
                     subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "pip==23.3"])
                     Settings.UPDATED_PIP_23_3 = True
                 except subprocess.CalledProcessError:
-                    print("Erreur mise à jour pip")
+                    # print("Erreur mise à jour pip")
                     sys.exit()
 
             try:
                 subprocess.check_call([sys.executable, "-m", "pip", "install", install_spec])
-                print(f"{package} installé")
+                # print(f"{package} installé")
             except subprocess.CalledProcessError:
-                print(f"Erreur installation {package}")
+                # print(f"Erreur installation {package}")
                 sys.exit()
 
             try:
                 return importlib.import_module(module_to_import)
             except ImportError as e:
-                print(f"Erreur import {module_to_import}")
+                # print(f"Erreur import {module_to_import}")
                 sys.exit()
 
 
@@ -139,19 +139,19 @@ class UpdateManager:
     @staticmethod
     def _read_local_version(path):
         if not path or not os.path.exists(path):
-            print("Version locale introuvable")
+            # print("Version locale introuvable")
             return None
         try:
             with open(path, "r", encoding="utf-8") as f:
                 return f.read().strip()
         except Exception:
-            print("Erreur lecture version locale")
+            # print("Erreur lecture version locale")
             return None
 
     @staticmethod
     def _download_and_extract(zip_url, target_dir, clean_target=False, extract_subdir=None):
         try:
-            print("Téléchargement mise à jour depuis serveur")
+            # print("Téléchargement mise à jour depuis serveur")
             with tempfile.TemporaryDirectory() as tmpdir:
                 zip_path = os.path.join(tmpdir, "update.zip")
                 import requests
@@ -161,15 +161,15 @@ class UpdateManager:
                     for chunk in r.iter_content(8192):
                         if chunk:
                             f.write(chunk)
-                print("ZIP téléchargé avec succès")
+                # print("ZIP téléchargé avec succès")
 
                 if clean_target and os.path.exists(target_dir):
                     shutil.rmtree(target_dir)
-                    print("Ancien dossier cible supprimé")
+                    # print("Ancien dossier cible supprimé")
 
                 with zipfile.ZipFile(zip_path, "r") as z:
                     z.extractall(tmpdir)
-                print("Extraction ZIP temporaire terminée")
+                # print("Extraction ZIP temporaire terminée")
 
                 extracted_root = next(
                     os.path.join(tmpdir, d)
@@ -182,7 +182,7 @@ class UpdateManager:
                     candidate = os.path.join(extracted_root, extract_subdir)
                     if os.path.exists(candidate):
                         extracted_dir = candidate
-                        print(f"Sous-dossier extrait : {extract_subdir}")
+                        # print(f"Sous-dossier extrait : {extract_subdir}")
 
                 if not os.path.exists(target_dir):
                     os.makedirs(target_dir)
@@ -197,10 +197,10 @@ class UpdateManager:
                     else:
                         shutil.move(s, d)
 
-                print(f"Extraction terminée dans : {target_dir}")
+                # print(f"Extraction terminée dans : {target_dir}")
 
         except Exception:
-            print("Erreur téléchargement/extraction update")
+            # print("Erreur téléchargement/extraction update")
             raise
 
     @staticmethod
@@ -255,7 +255,7 @@ class UpdateManager:
 # 🔹 INITIALISATION DÉPENDANCES
 # ==========================================================
 def initialize_dependencies():
-    print("Initialisation des dépendances")
+    # print("Initialisation des dépendances")
     DependencyManager.install_and_verify_pywin32()
 
     global requests, urllib3, PyQt6, cryptography_module, psutil, pytz, tqdm, platformdirs, selenium
@@ -279,7 +279,7 @@ def initialize_dependencies():
 def main():
     try:
         # DevLogger.init_logger(log_file="Log/LogDev/my_project.log")
-        print("Démarrage application principale")
+        # print("Démarrage application principale")
 
         initialize_dependencies()
 
@@ -289,13 +289,13 @@ def main():
             sys.exit(1)
 
         updated = UpdateManager.check_and_update()
-        if updated:
-            print("UPDATE EFFECTUÉ")
-        else:
-            print("APPLICATION À JOUR")
+        # if updated:
+        #     print("UPDATE EFFECTUÉ")
+        # else:
+        #     print("APPLICATION À JOUR")
 
         if len(sys.argv) == 1:
-            print("Lancement de l'application principale")
+            # print("Lancement de l'application principale")
             encrypted_key, secret_key = EncryptionService.generate_encrypted_key()
             # ❌ Ne jamais logger ces clés
 
@@ -303,11 +303,11 @@ def main():
             if script_path.is_file():
                 subprocess.run([sys.executable, str(script_path), encrypted_key, secret_key])
             else:
-                print("Script principal introuvable")
+                # print("Script principal introuvable")
                 sys.exit(1)
 
     except Exception:
-        print("Erreur fatale application")
+        # print("Erreur fatale application")
         sys.exit(1)
 
 

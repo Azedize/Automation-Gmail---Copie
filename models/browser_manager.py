@@ -363,8 +363,8 @@ class BrowserManager:
             return data
 
         except Exception as e:
-            print("\n❌ ERREUR CRITIQUE lors de la mise à jour Secure Preferences")
-            print(f"🧨 Détail : {e}\n")
+            # print("\n❌ ERREUR CRITIQUE lors de la mise à jour Secure Preferences")
+            # print(f"🧨 Détail : {e}\n")
             return None
 
 

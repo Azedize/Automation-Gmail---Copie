@@ -61,7 +61,7 @@ class UpdateManager:
     @staticmethod
     def _download_file(url: str, dest_path: str) -> bool:
         try:
-            print(f"⬇️ Téléchargement depuis : {url}")
+            # print(f"⬇️ Téléchargement depuis : {url}")
             response = requests.get(url, stream=True, verify=False, timeout=60)
             response.raise_for_status()
             total_size = int(response.headers.get("content-length", 0))
@@ -74,11 +74,11 @@ class UpdateManager:
                         downloaded += len(chunk)
                         if total_size:
                             percent = (downloaded / total_size) * 100
-                            print(f"   → Progression : {percent:.2f}%", end="\r")
-            print(f"\n✅ Téléchargement terminé : {dest_path}")
+                            # print(f"   → Progression : {percent:.2f}%", end="\r")
+            # print(f"\n✅ Téléchargement terminé : {dest_path}")
             return True
         except Exception as e:
-            print(f"❌ Erreur lors du téléchargement : {e}")
+            # print(f"❌ Erreur lors du téléchargement : {e}")
             return False
 
     @staticmethod
@@ -92,7 +92,7 @@ class UpdateManager:
     @staticmethod
     def _download_and_extract(zip_url: str, target_dir: str, clean_target: bool = False, extract_subdir: Optional[str] = None) -> bool:
         try:
-            print(f"\n⬇️ Téléchargement : {zip_url}")
+            # print(f"\n⬇️ Téléchargement : {zip_url}")
 
             with tempfile.TemporaryDirectory() as tmpdir:
                 zip_path = os.path.join(tmpdir, "update.zip")
@@ -101,7 +101,7 @@ class UpdateManager:
                 if not UpdateManager._download_file(zip_url, zip_path):
                     return False
 
-                print("📦 ZIP téléchargé")
+                # print("📦 ZIP téléchargé")
 
                 # Nettoyage du répertoire cible si demandé
                 if clean_target and os.path.exists(target_dir):
@@ -120,7 +120,7 @@ class UpdateManager:
                         break
 
                 if extracted_root is None:
-                    print("❌ Aucun dossier trouvé dans l'archive")
+                    # print("❌ Aucun dossier trouvé dans l'archive")
                     return False
 
                 # Gestion du sous-répertoire
@@ -146,11 +146,11 @@ class UpdateManager:
                             os.remove(dst)
                         shutil.move(src, dst)
 
-                print(f"✅ Extraction terminée → {target_dir}")
+                # print(f"✅ Extraction terminée → {target_dir}")
                 return True
 
         except Exception as e:
-            print("❌ Erreur lors de l'extraction")
+            # print("❌ Erreur lors de l'extraction")
             traceback.print_exc()
             return False
 
@@ -187,7 +187,7 @@ class UpdateManager:
             )
 
             if not isinstance(response, dict) or response.get("status_code") != 200:
-                print("⚠️ Serveur indisponible → Continuer")
+                # print("⚠️ Serveur indisponible → Continuer")
                 return
 
             data = response.get("data", {})
@@ -201,35 +201,35 @@ class UpdateManager:
                 Settings.VERSION_LOCAL_EXT
             )
 
-            print(f"Programme serveur : {server_program}")
-            print(f"Programme local   : {local_program}")
-            print(f"Tools serveur     : {server_tools}")
-            print(f"Tools local       : {local_tools}")
+            # print(f"Programme serveur : {server_program}")
+            # print(f"Programme local   : {local_program}")
+            # print(f"Tools serveur     : {server_tools}")
+            # print(f"Tools local       : {local_tools}")
 
             # ==================================================
             # 🔴 UPDATE PROGRAMME (STRICT)
             # ==================================================
             if not local_program or local_program != server_program:
-                print("\n🔴 UPDATE PROGRAMME")
+                # print("\n🔴 UPDATE PROGRAMME")
                 
                 # Fermeture de la fenêtre
                 if window and hasattr(window, 'close'):
-                    print("[DEBUG] Fermeture de la fenêtre")
+                    # print("[DEBUG] Fermeture de la fenêtre")
                     window.close()
-                else:
-                    print("[DEBUG] Aucune fenêtre à fermer")
+                # else:
+                #     print("[DEBUG] Aucune fenêtre à fermer")
 
                 # Lancement de la nouvelle instance
                 UpdateManager.launch_new_window()
 
-                print("⛔ Quitter instance actuelle")
+                # print("⛔ Quitter instance actuelle")
                 sys.exit(0)
 
             # ==================================================
             # 🟡 UPDATE TOOLS
             # ==================================================
             if not local_tools or local_tools != server_tools:
-                print("\n🟡 UPDATE TOOLS")
+                # print("\n🟡 UPDATE TOOLS")
 
                 os.makedirs(Settings.TOOLS_DIR, exist_ok=True)
 
@@ -240,17 +240,17 @@ class UpdateManager:
                     extract_subdir="tools",
                 )
 
-                if success:
-                    print("✅ Tools mis à jour")
-                else:
-                    print("❌ Échec de la mise à jour des tools")
+                # if success:
+                #     print("✅ Tools mis à jour")
+                # else:
+                #     print("❌ Échec de la mise à jour des tools")
 
-            print("\n🟢 Application à jour")
+            # print("\n🟢 Application à jour")
 
         except ImportError:
             print("⚠️ APIManager non disponible → Continuer")
         except Exception:
-            print("🔥 ERREUR CRITIQUE → Continuer")
+            # print("🔥 ERREUR CRITIQUE → Continuer")
             traceback.print_exc()
 
     # ==========================================================
@@ -260,10 +260,10 @@ class UpdateManager:
     def launch_new_window() -> bool:
         """Lance une nouvelle instance de l'application"""
         script_path = os.path.join(Settings.BASE_DIR, "checkV3.py")
-        print(f"[DEBUG] Chemin du script à lancer : {script_path}")
+        # print(f"[DEBUG] Chemin du script à lancer : {script_path}")
 
         if not os.path.isfile(script_path):
-            print(f"[LAUNCH] Script introuvable : {script_path}")
+            # print(f"[LAUNCH] Script introuvable : {script_path}")
             return False
 
         try:
@@ -290,11 +290,11 @@ class UpdateManager:
                 creationflags=creation_flags
             )
 
-            print("[DEBUG] Nouvelle instance lancée avec succès")
+            # print("[DEBUG] Nouvelle instance lancée avec succès")
             return True
 
         except Exception as e:
-            print(f"[LAUNCH] Échec du lancement : {e}")
+            # print(f"[LAUNCH] Échec du lancement : {e}")
             traceback.print_exc()
             return False
 
@@ -314,17 +314,17 @@ class UpdateManager:
         SESSION_INFO = SessionManager.check_session()
 
         if not SESSION_INFO["valid"]:
-            print("[SESSION] ❌ Session invalide. Impossible de continuer l’extraction.")
+            # print("[SESSION] ❌ Session invalide. Impossible de continuer l’extraction.")
             sys.exit()
             return False
         
-        print(f"➤ Username : {SESSION_INFO['username']}\n➤ Password : {SESSION_INFO['password']}\n")
+        # print(f"➤ Username : {SESSION_INFO['username']}\n➤ Password : {SESSION_INFO['password']}\n")
 
         ENCRYPTED = EncryptionService.encrypt_message(json.dumps({  "login":SESSION_INFO ["username"],  "password": SESSION_INFO["password"]}), Settings.KEY)
         CHECK_URL_EX3 = f"http://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Ext3&k={ENCRYPTED}"
 
         try:
-            print("\n🔎 Vérification des versions d'extension...")
+            # print("\n🔎 Vérification des versions d'extension...")
 
             # Récupération version distante
             try:

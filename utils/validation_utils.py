@@ -16,10 +16,10 @@ ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
-try:
-    from Log import DevLogger
-except ImportError as e:
-    print(f"Error importing modules: {e}")
+# try:
+#     from Log import DevLogger
+# except ImportError as e:
+#     print(f"Error importing modules: {e}")
 
 class ValidationUtils:
     """Classe de validation unifiée pour toutes les validations et générations"""
@@ -207,7 +207,7 @@ class ValidationUtils:
             })
             return result
 
-        print("📝 Vérification du numéro saisi...")
+        # print("📝 Vérification du numéro saisi...")
         if not entered_number_text or not entered_number_text.strip():
             # print("⚠️ Numéro manquant!")
             result.update({
@@ -569,7 +569,7 @@ class ValidationUtils:
             return True
 
         except Exception as e:
-            print(f"Error ensuring path exists: {e}")
+            #print(f"Error ensuring path exists: {e}")
             return False
     
     @staticmethod
@@ -831,11 +831,11 @@ class ValidationUtils:
         file_name = os.path.basename(file_name)
         match = re.search(r"log_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z_([\w.+-]+@[\w.-]+\.[a-zA-Z]{2,6})\.txt", file_name)
         if match:
-            print(f"   - Email extrait : {match.group(1)}")
+            #print(f"   - Email extrait : {match.group(1)}")
             email = match.group(1)
             return email
         else:
-            print(f"[Email Extraction] Aucun email trouvé dans {file_name}")
+            #print(f"[Email Extraction] Aucun email trouvé dans {file_name}")
             return None
 
 
