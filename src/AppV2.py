@@ -242,7 +242,7 @@ class CloseBrowserThread(QThread):
 
     
     def run(self):
-        #print("🚀 [THREAD] CloseBrowserThread démarré")
+        print("🚀 [THREAD] CloseBrowserThread démarré")
         time.sleep(15)
         # time.sleep(10)
         # time.sleep(10)
@@ -250,11 +250,11 @@ class CloseBrowserThread(QThread):
         #print(f" Stop flag initial : {self.stop_flag} ")
 
         while not self.stop_flag and PROCESS_PIDS:
-            #print("🌀 [THREAD] Boucle principale en cours...")
+            print("🌀 [THREAD] Boucle principale en cours...")
             # affiche self.stop_flag and PROCESS_PIDS
-            #print(f"🤠[THREAD] Boucle active | stop_flag: {self.stop_flag}")
-            #print(f"🤠[THREAD] Boucle active | PROCESS_PIDS: {PROCESS_PIDS}")
-            #print(f"🤠[THREAD] Boucle active | PID restants: {len(PROCESS_PIDS)}")
+            print(f"🤠[THREAD] Boucle active | stop_flag: {self.stop_flag}")
+            print(f"🤠[THREAD] Boucle active | PROCESS_PIDS: {PROCESS_PIDS}")
+            print(f"🤠[THREAD] Boucle active | PID restants: {len(PROCESS_PIDS)}")
 
             try:
                 # ملفات الجلسات و logs
