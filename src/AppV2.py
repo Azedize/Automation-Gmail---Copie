@@ -630,10 +630,7 @@ def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp 
         return
     # print("Selected entries:", entered_number)
     # print("✅ Selected entries:", entered_number)
-
-
-    # print("Determining browser path...")
-
+  
     browser_path = (
         BrowserManager.get_browser_path("chrome.exe") if selected_Browser.lower() == "chrome"
         else BrowserManager.get_browser_path("firefox") if selected_Browser.lower() == "firefox"
@@ -641,6 +638,12 @@ def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp 
         else BrowserManager.get_browser_path("dragon.exe")  
     )
   
+    # 	tanger 90053 TANGER MA
+    
+
+    # le programme is run dans une interface logique et capable 
+
+           
     if selected_Browser.lower() == "firefox":
         ensure_web_ext_installed()
 
@@ -658,7 +661,7 @@ def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp 
     EXTRACTION_THREAD.stopped.connect(lambda msg: QMessageBox.warning(window, "Arrêté", msg))
     EXTRACTION_THREAD.start()
 
-    time.sleep(10)
+    # time.sleep(10)
     #print("Launching CloseBrowserThread...")
     CLOSE_BROWSER_THREAD = CloseBrowserThread( selected_Browser ,username)
     CLOSE_BROWSER_THREAD.progress.connect(lambda msg: print(msg))
