@@ -583,7 +583,7 @@ class ValidationUtils:
         }
     
     # ==================== VALIDATION D'INTERFACE UTILISATEUR ====================
-    
+
     @staticmethod
     def validate_qlineedit_text(input_data: Union[QLineEdit, str],   validator_type: str = "any",  min_length: int = 0, max_length: int = 1000) -> Tuple[bool, str]:
 
@@ -640,7 +640,7 @@ class ValidationUtils:
             return default
 
 
-
+# le programme is runing dans une interface log
 
     @staticmethod
     def validate_and_correct_qlineedit(qlineedit: QLineEdit, default_value: str = "50,50") -> None:
