@@ -640,7 +640,7 @@ class ValidationUtils:
             return default
 
 
-# le programme is runing dans une interface log
+
 
     @staticmethod
     def validate_and_correct_qlineedit(qlineedit: QLineEdit, default_value: str = "50,50") -> None:
@@ -681,13 +681,8 @@ class ValidationUtils:
 
 
     @staticmethod
-    def validate_qlineedit_with_range(
-        qlineedit: QLineEdit, 
-        default_value: str = "50,50",
-        callback: Optional[Callable] = None
-    ) -> Tuple[bool, Optional[Tuple[int, int]]]:
-        """Valide un QLineEdit contenant une plage numérique avec gestion d'erreurs (version compatible)"""
-        text = qlineedit.text().strip()
+    def validate_qlineedit_with_range(  qlineedit: QLineEdit,   default_value: str = "50,50",  callback: Optional[Callable] = None ) -> Tuple[bool, Optional[Tuple[int, int]]]:
+ 
         
         # Utilise la méthode validate_and_correct_qlineedit pour la validation
         ValidationUtils.validate_and_correct_qlineedit(qlineedit, default_value)
