@@ -16,37 +16,29 @@ ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
-# try:
-#     from Log import DevLogger
-# except ImportError as e:
-#     print(f"Error importing modules: {e}")
+
 
 class ValidationUtils:
-    """Classe de validation unifiée pour toutes les validations et générations"""
+
     
     # Patterns regex pré-compilés pour meilleure performance
     _PATTERN_EMAIL = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
     _PATTERN_IP = re.compile(r'^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$')
     _PATTERN_NUMERIC_RANGE = re.compile(r'^\s*(\d+)(?:\s*,\s*(\d+))?\s*$')
     
-    # Constantes pour les validations
-    VALID_BROWSERS = ["chrome", "firefox", "edge", "comodo", "icedragon"]
-    VALID_ISPS = ["Gmail", "Hotmail", "Yahoo", "Others"]
+
     
-    # ==================== VALIDATION DE DONNÉES ====================
     
     @staticmethod
     def validate_email(email: str) -> bool:
-        """Valide le format d'un email"""
         if not email or not isinstance(email, str):
             return False
         return ValidationUtils._PATTERN_EMAIL.match(email) is not None
     
     @staticmethod
     def validate_password(password: str, min_length: int = 8) -> Tuple[bool, str]:
-        """Valide un mot de passe selon des critères de sécurité"""
         if not password or len(password) < min_length:
-            return False, f"Le mot de passe doit contenir au moins {min_length} caractères"
+            return False
         
         has_upper = any(c.isupper() for c in password)
         has_lower = any(c.islower() for c in password)
@@ -54,9 +46,9 @@ class ValidationUtils:
         has_special = any(c in "!@#$%^&*()-_+=<>?/|" for c in password)
         
         if not (has_upper and has_lower and has_digit and has_special):
-            return False, "Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial"
+            return False
         
-        return True, "Mot de passe valide"
+        return True
     
     @staticmethod
     def validate_ip_address(ip: str) -> bool:
@@ -354,7 +346,6 @@ class ValidationUtils:
 
     @staticmethod
     def _validate_entries_detailed(data_list: List[Dict]) -> Dict[str, Any]:
-        """Validation détaillée de chaque entrée"""
         errors = []
         
         for i, entry in enumerate(data_list, start=2):
@@ -382,9 +373,9 @@ class ValidationUtils:
             password_keys = [k for k in keys if "password" in k.lower() and "email" in k.lower()]
             for pass_key in password_keys:
                 if pass_key in entry and entry[pass_key]:
-                    is_valid, pass_msg = ValidationUtils.validate_password(entry[pass_key], min_length=6)
+                    is_valid = ValidationUtils.validate_password(entry[pass_key], min_length=6)
                     if not is_valid:
-                        line_errors.append(f"Weak password: {pass_msg}")
+                        line_errors.append("Password is too short (minimum 6 characters)")
             
             if line_errors:
                 errors.append(f"Line {i}: {', '.join(line_errors)}")
@@ -409,7 +400,6 @@ class ValidationUtils:
     
     @staticmethod
     def get_input_statistics(data_list: List[Dict]) -> Dict[str, Any]:
-        """Génère des statistiques sur les données d'entrée"""
         if not data_list:
             return {"error": "No data available"}
         
@@ -451,9 +441,15 @@ class ValidationUtils:
         stats["unique_fields"] = list(stats["unique_fields"])
         return stats
     
+
+
+
+
+
+
+
     @staticmethod
     def format_input_for_display(data_list: List[Dict], max_entries: int = 3) -> str:
-        """Formate les données d'entrée pour l'affichage"""
         if not data_list:
             return "No data available"
         
@@ -487,7 +483,6 @@ class ValidationUtils:
     
     @staticmethod
     def _get_email_key(keys: List[str]) -> Optional[str]:
-        """Trouve la clé correspondant à l'email"""
         for key in keys:
             if key.lower() in ["email", "mail"]:
                 return key
@@ -511,20 +506,7 @@ class ValidationUtils:
     
     # ==================== VALIDATION DE FICHIERS ET CHEMINS ====================
     
-    @staticmethod
-    def validate_file_path(path: str, must_exist: bool = True) -> Tuple[bool, str]:
-        """Valide un chemin de fichier"""
-        if not path or not isinstance(path, str):
-            return False, "Chemin de fichier invalide"
-        
-        if must_exist and not os.path.exists(path):
-            return False, f"Le fichier n'existe pas: {path}"
-        
-        try:
-            os.path.normpath(path)
-            return True, "Chemin valide"
-        except Exception:
-            return False, "Chemin de fichier invalide"
+
     
     
     
@@ -533,19 +515,16 @@ class ValidationUtils:
     @staticmethod
     def validate_directory_path(path: str, must_exist: bool = True) -> Tuple[bool, str]:
         if not path or not isinstance(path, str):
-            return False, "Chemin de dossier invalide"
-        
+            return False
         if must_exist and not os.path.exists(path):
-            return False, f"Le dossier n'existe pas: {path}"
-        
+            return False
         try:
             if must_exist and not os.path.isdir(path):
-                return False, "Le chemin spécifié n'est pas un dossier"
-            
+                return False
             os.path.normpath(path)
-            return True, "Chemin de dossier valide"
+            return True
         except Exception:
-            return False, "Chemin de dossier invalide"
+            return False
     
     
     
@@ -553,7 +532,6 @@ class ValidationUtils:
     
     @staticmethod
     def ensure_path_exists(path: str, is_file: bool = True) -> bool:
-        """S'assure qu'un chemin existe, le crée si nécessaire"""
         try:
             if is_file:
                 directory = os.path.dirname(path)
@@ -574,27 +552,10 @@ class ValidationUtils:
     
     @staticmethod
     def path_exists(path: str) -> bool:
-        """Vérifie si un chemin existe"""
         return os.path.exists(path)
     
 
     # ==================== VALIDATION JSON ET STRUCTURES ====================
-    
-    @staticmethod
-    def validate_json_structure(json_data: Dict, required_keys: List[str]) -> Tuple[bool, str]:
-        
-        if not isinstance(json_data, dict):
-            return False, "Data must be a JSON dictionary"
-        
-        missing_keys = [key for key in required_keys if key not in json_data]
-        if missing_keys:
-            return False, f"Missing keys in JSON: {', '.join(missing_keys)}"
-        
-        return True, "Valid JSON structure"
-
-
-    
-    
     
     
     @staticmethod
@@ -624,11 +585,8 @@ class ValidationUtils:
     # ==================== VALIDATION D'INTERFACE UTILISATEUR ====================
     
     @staticmethod
-    def validate_qlineedit_text(input_data: Union[QLineEdit, str], 
-                                validator_type: str = "any",
-                                min_length: int = 0,
-                                max_length: int = 1000) -> Tuple[bool, str]:
-        """Valide le texte d'un QLineEdit"""
+    def validate_qlineedit_text(input_data: Union[QLineEdit, str],   validator_type: str = "any",  min_length: int = 0, max_length: int = 1000) -> Tuple[bool, str]:
+
         try:
             # Récupérer le texte
             if hasattr(input_data, "text"):
@@ -667,7 +625,6 @@ class ValidationUtils:
     
     @staticmethod
     def parse_random_range(text: str, default: int = 0) -> int:
-        """Parse une chaîne représentant un nombre ou une plage aléatoire"""
         try:
             if ',' in text:
                 min_val, max_val = map(int, text.split(','))
@@ -678,7 +635,6 @@ class ValidationUtils:
 
     @staticmethod
     def validate_and_correct_qlineedit(qlineedit: QLineEdit, default_value: str = "50,50") -> None:
-        """Valide et corrige automatiquement un QLineEdit (version compatible avec la logique spécifiée)"""
         text = qlineedit.text().strip()
         pattern = r"^\s*(\d+)(?:\s*,\s*(\d+))?\s*$"
         match = re.match(pattern, text)
@@ -736,7 +692,6 @@ class ValidationUtils:
     
     @staticmethod
     def inject_border_into_style(old_style: str, border_line: str = "border: 2px solid #cc4c4c;") -> str:
-        """Injecte une bordure dans le style CSS d'un QLineEdit (exactement comme la logique spécifiée)"""
         pattern = r"(QLineEdit\s*{[^}]*?)\s*}"
         match = re.search(pattern, old_style, re.DOTALL)
 
@@ -757,7 +712,6 @@ class ValidationUtils:
     
     @staticmethod
     def remove_border_from_style(style: str) -> str:
-        """Supprime toutes les déclarations de bordure d'un style CSS (exactement comme la logique spécifiée)"""
         cleaned_style = re.sub(r'border\s*:\s*[^;]+;', '', style, flags=re.IGNORECASE)
         return cleaned_style.strip()
     
@@ -797,14 +751,12 @@ class ValidationUtils:
     
     @staticmethod
     def generate_random_number(min_val: int, max_val: int) -> int:
-        """Génère un nombre aléatoire dans une plage donnée"""
         if min_val > max_val:
             min_val, max_val = max_val, min_val
         return random.randint(min_val, max_val)
     
     @staticmethod
     def generate_timestamp_filename(prefix: str = "", extension: str = "txt") -> str:
-        """Génère un nom de fichier avec timestamp"""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         if prefix:
             return f"{prefix}_{timestamp}.{extension}"

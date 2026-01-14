@@ -45,7 +45,6 @@ try:
     from ui_utils import UIManager
     from services import JsonManager
     from Update import UpdateManager
-    from Log import DevLogger
 except ImportError as e:
     print(f"[ERROR] Import modules failed: {e}")
 
@@ -250,11 +249,11 @@ class CloseBrowserThread(QThread):
         #print(f" Stop flag initial : {self.stop_flag} ")
 
         while not self.stop_flag and PROCESS_PIDS:
-            print("🌀 [THREAD] Boucle principale en cours...")
+            # print("🌀 [THREAD] Boucle principale en cours...")
             # affiche self.stop_flag and PROCESS_PIDS
-            print(f"🤠[THREAD] Boucle active | stop_flag: {self.stop_flag}")
-            print(f"🤠[THREAD] Boucle active | PROCESS_PIDS: {PROCESS_PIDS}")
-            print(f"🤠[THREAD] Boucle active | PID restants: {len(PROCESS_PIDS)}")
+            # print(f"🤠[THREAD] Boucle active | stop_flag: {self.stop_flag}")
+            # print(f"🤠[THREAD] Boucle active | PROCESS_PIDS: {PROCESS_PIDS}")
+            # print(f"🤠[THREAD] Boucle active | PID restants: {len(PROCESS_PIDS)}")
 
             try:
                 # ملفات الجلسات و logs
@@ -291,7 +290,7 @@ class CloseBrowserThread(QThread):
 
             time.sleep(2)
 
-        #print("🛑 [THREAD] CloseBrowserThread terminé")
+        print("🛑 [THREAD] CloseBrowserThread terminé")
 
     # ======================================================
     # 📄 TRAITEMENT DES LOGS
@@ -661,8 +660,8 @@ def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp 
     EXTRACTION_THREAD.stopped.connect(lambda msg: QMessageBox.warning(window, "Arrêté", msg))
     EXTRACTION_THREAD.start()
 
-    # time.sleep(10)
-    #print("Launching CloseBrowserThread...")
+    time.sleep(10)
+    # print("Launching CloseBrowserThread...")
     CLOSE_BROWSER_THREAD = CloseBrowserThread( selected_Browser ,username)
     CLOSE_BROWSER_THREAD.progress.connect(lambda msg: print(msg))
     CLOSE_BROWSER_THREAD.start()
@@ -692,7 +691,9 @@ class LogsDisplayThread(QThread):
         self.LOGS = LOGS
         self.stop_flag = False
 
-
+    # =====================================================
+    # 🔁 THREAD PRINCIPAL
+    # =====================================================
     def run(self):
         global LOGS_RUNNING 
         while LOGS_RUNNING: 
@@ -711,10 +712,10 @@ class LogsDisplayThread(QThread):
 
 
 
-def add_pid_to_text_file( pid: str, Path_DiR: str, email: str, SESSION_ID: str, browser: str ):
+def store_browser_session_info( pid: str, Path_DiR: str, email: str, SESSION_ID: str, browser: str ):
     try:
         
-        # print("🚦 [START] Démarrage de add_pid_to_text_file")
+        # print("🚦 [START] Démarrage de store_browser_session_info")
         # print(f"🧭 [INPUT] browser = {browser}")
         # print(f"🆔 [INPUT] pid = {pid}")
         # print(f"🔐 [INPUT] SESSION_ID = {SESSION_ID}")
@@ -933,7 +934,7 @@ class ExtractionThread(QThread):
                             'hwnd': None
                         })
 
-                        add_pid_to_text_file(process.pid , Settings.EXTENTIONS_DIR_FIREFOX , profile_email  , self.session_id , self.selected_Browser.lower())
+                        store_browser_session_info(process.pid , Settings.EXTENTIONS_DIR_FIREFOX , profile_email  , self.session_id , self.selected_Browser.lower())
 
                     elif self.selected_Browser in ["edge", "icedragon", "Comodo"]:
 
@@ -957,7 +958,7 @@ class ExtractionThread(QThread):
                         process = subprocess.Popen(command) 
                         PROCESS_PIDS.append(process.pid) 
 
-                        add_pid_to_text_file(process.pid , Settings.FOLDER_EXTENTIONS_FAMILY_CHROME, profile_email  ,self.session_id , self.selected_Browser.lower())
+                        store_browser_session_info(process.pid , Settings.FOLDER_EXTENTIONS_FAMILY_CHROME, profile_email  ,self.session_id , self.selected_Browser.lower())
                     
                     else:
                         #print("🔹 Chrome-based browser selected.")
@@ -1000,14 +1001,15 @@ class ExtractionThread(QThread):
                             '--lang=En-US',
                             '--no-first-run',
                         ]
-                        time.sleep(1)
 
+                        # time.sleep(1)
 
                         process = subprocess.Popen(command) 
                         PROCESS_PIDS.append(process.pid)  
                         # print('➡️➡️➡️➡️➡️➡️ PROCESS_PIDS : ' ,PROCESS_PIDS)
-                        add_pid_to_text_file(process.pid , Settings.CHROME_PROFILES , profile_email  , self.session_id , self.selected_Browser.lower())
+                        store_browser_session_info(process.pid , Settings.CHROME_PROFILES , profile_email  , self.session_id , self.selected_Browser.lower())
                         Update_Data_File_Profile( os.path.join(Settings.CHROME_PROFILES, profile_email), inserted_id )
+
                     self.emails_processed += 1  
 
                 except Exception as e:
@@ -1076,9 +1078,9 @@ def Process_Browser(window, selected_Browser) -> bool:
     ext_path = Settings.EXTENTION_EX3
     if not ValidationUtils.path_exists(ext_path):
         # print("📥 Extension manquante, téléchargement...")
-        valid_ext_dir, ext_dir_msg = ValidationUtils.validate_directory_path(ext_path, must_exist=False)
+        valid_ext_dir= ValidationUtils.validate_directory_path(ext_path, must_exist=False)
         if not valid_ext_dir:
-            # print(f"❌ Chemin extension invalide : {ext_dir_msg}")
+            # print(f"❌ Chemin extension invalide : ")
             return False
         if UpdateManager.update_extension_from_server():
             print("✅ Extension installée avec succès")
@@ -1126,18 +1128,12 @@ class MainWindow(QMainWindow):
         self._setup_ui_components()
         self._load_initial_state()
 
-
-
-
     def _init_ui(self):
         uic.loadUi(Settings.INTERFACE_UI, self)
     
-
-
     def _init_data(self, json_data):
         self.states = json_data
         self.STATE_STACK = []
-
 
     def _setup_ui_components(self):
         self._setup_containers()
@@ -1149,14 +1145,10 @@ class MainWindow(QMainWindow):
         self._setup_miscellaneous()
 
 
-
-
     def _find_widget(self, name, widget_type=None):
         widget = self.findChild(widget_type, name) if widget_type else self.findChild(QWidget, name)
         return widget
     
-
-
 
     def _setup_containers(self):
         UIManager._setup_containers(self)
@@ -1256,8 +1248,6 @@ class MainWindow(QMainWindow):
     
 
     def _setup_log_system(self):
-        """Setup log display system"""
-
         # Chercher le container des logs
         self.log_container = self._find_widget("log", QWidget)
         if self.log_container is not None:

@@ -32,7 +32,6 @@ if ROOT_DIR not in sys.path:
 # ==========================================================
 from config import Settings
 from core import EncryptionService
-# from Log import DevLogger
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 
