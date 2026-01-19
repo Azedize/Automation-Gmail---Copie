@@ -186,7 +186,7 @@ def Stop_All_Processes(window):
         # print("Waiting for extraction thread to finish before updating UI...")
         EXTRACTION_THREAD.finished.connect(
             lambda: QTimer.singleShot(100, 
-            lambda: UIManager.Read_Result_Update_List(window))
+            lambda: UIManager.Read_Result_Update_List(window,NOTIFICATION_BADGES))
         )
 
     if SELECTED_BROWSER_GLOBAL.lower() != "firefox":
@@ -1517,7 +1517,7 @@ class MainWindow(QMainWindow):
         self.LOGS_THREAD.stop()  
         self.LOGS_THREAD.wait()  
         print("🎶​🎶​🎶​🎶​🎶​🎶​🎶​🎶​🎶​🎶​🎶​🎶​🎶​🎶​📗​📗​📗​📗​📗​📗​📗​📗​📗​📗​📗​📗​📗​Extraction Finished ​")
-        QTimer.singleShot(100, lambda: UIManager.Read_Result_Update_List(window))
+        QTimer.singleShot(100, lambda: UIManager.Read_Result_Update_List(window,NOTIFICATION_BADGES))
 
 
 
