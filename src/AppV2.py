@@ -356,7 +356,8 @@ class CloseBrowserThread(QThread):
             # -----------------------------
             if selected_Browser.lower() == "chrome":
                 print("🌐 [NAV] Chrome détecté → extraction SESSION_ID")
-                match = re.search(r"session_id:(\w+)_Email:([\w.@+-]+)", content)
+                match = re.search(r"session_id:(\w+)_email:([\w.@+-]+)", content, re.IGNORECASE)
+
             else:
                 print(f"🌐 [NAV] {selected_Browser} détecté → Regex standard avec PID")
                 match = re.search(
