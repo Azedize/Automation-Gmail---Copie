@@ -376,6 +376,11 @@ class CloseBrowserThread(QThread):
                 session_id = match.group(1)
                 email = match.group(2)
                 pid = None
+                inserted_id = None
+                status = "unknown"  # Chrome session.txt ne contient pas status
+
+                # 🔹 Affichage des valeurs extraites directement depuis match
+                print(f"🔹 [MATCH] Valeurs extraites depuis regex → SESSION_ID={session_id}, Email={email}")
 
                 # Lecture des informations depuis data.txt du profile Chrome
                 profile_data_file = os.path.join(Settings.CHROME_PROFILES, email, "data.txt")  # ou email/profile
@@ -398,13 +403,11 @@ class CloseBrowserThread(QThread):
                     inserted_id = None
                     print(f"⚠️ [DATA] data.txt introuvable dans le profile Chrome")
 
-                status = "unknown"  # Chrome session.txt ne contient pas status
-
             else:
                 session_id, pid, email, status = match.groups()
                 pid = int(pid)
-                print(f"🟢 [SESSION] Extractions → SESSION_ID={session_id}, PID={pid}, Email={email}, Status={status}")
                 inserted_id = None
+                print(f"🟢 [SESSION] Extractions → SESSION_ID={session_id}, PID={pid}, Email={email}, Status={status}")
 
             # -----------------------------
             # 🔹 Enregistrement résultat
