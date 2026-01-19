@@ -260,9 +260,12 @@ class UIManager:
     # Read email results and update the UI
     # -----------------------------
     @staticmethod
-    def Read_Result_Update_List( window):
-        # Vérifier si le fichier existe
+    def Read_Result_Update_List(window):
+        print("📌 [START] Lecture et mise à jour des résultats")
+
+        # 🔹 Vérifier si le fichier existe
         if not ValidationUtils.path_exists(Settings.RESULT_FILE_PATH):
+            print(f"⚠️ [FILE] {Settings.RESULT_FILE_PATH} introuvable")
             UIManager.Show_Critical_Message(
                 window,
                 "Information",
@@ -275,73 +278,94 @@ class UIManager:
         all_emails = []
 
         try:
-            # Lire toutes les lignes non vides
-            with open(Settings.RESULT_FILE_PATH , 'r', encoding='utf-8') as f:
+            # 🔹 Lire toutes les lignes non vides
+            with open(Settings.RESULT_FILE_PATH, 'r', encoding='utf-8') as f:
                 lines = [line.strip() for line in f if line.strip()]
 
-            # Vérification si le fichier est vide
+            print(f"📄 [FILE] {Settings.RESULT_FILE_PATH} lu avec {len(lines)} lignes")
+
+            # 🔹 Vérification si le fichier est vide
             if not lines:
+                print("⚠️ [FILE] Fichier vide, aucun résultat à afficher")
                 UIManager.Show_Critical_Message(window, "Warning", "No results available.", message_type="warning")
                 return
 
             completed_count = 0
             no_completed_count = 0
 
-            # Parcourir chaque ligne et classer les emails par statut
-            for line in lines:
+            # 🔹 Parcourir chaque ligne et classer les emails par statut
+            for idx, line in enumerate(lines, start=1):
+                print(f"🔎 [LINE {idx}] Analyse: {line}")
                 parts = line.split(":")
                 if len(parts) != 4:
+                    print(f"⚠️ [LINE {idx}] Format invalide, ignoré")
                     continue
                 _, _, email, status = [p.strip() for p in parts]
                 all_emails.append(email)
                 errors_dict[status].append(email)
+
                 if status == "completed":
                     completed_count += 1
                 else:
                     no_completed_count += 1
 
             errors_dict["all"] = all_emails
+            print(f"🟢 [SUMMARY] Total emails={len(all_emails)} | completed={completed_count} | non-completed={no_completed_count}")
 
-            # Mise à jour du tab principal
+            # 🔹 Mise à jour du tab principal
             interface_tab_widget = window.findChild(QTabWidget, "interface_2")
             if interface_tab_widget:
+                print(f"📌 [UI] Mise à jour du tab principal")
                 for i in range(interface_tab_widget.count()):
-                    if interface_tab_widget.tabText(i).startswith("Result"):
+                    tab_name = interface_tab_widget.tabText(i)
+                    print(f"   - Vérification tab {i}: {tab_name}")
+                    if tab_name.startswith("Result"):
                         UIManager.Set_Custom_Colored_Tab(interface_tab_widget, i, completed_count, no_completed_count)
+                        print(f"✅ [UI] Tab principal mis à jour avec completed={completed_count}, non-completed={no_completed_count}")
                         break
 
-            # Mise à jour des tabs secondaires
+            # 🔹 Mise à jour des tabs secondaires
             result_tab_widget = window.findChild(QTabWidget, "tabWidgetResult")
             if not result_tab_widget:
+                print("⚠️ [UI] TabWidgetResult introuvable, arrêt")
                 return
 
             for status in Settings.STATUS_LIST:
                 tab_widget = result_tab_widget.findChild(QWidget, status)
                 if not tab_widget:
+                    print(f"⚠️ [UI] Tab pour le statut '{status}' introuvable, ignoré")
                     continue
 
                 list_widgets = tab_widget.findChildren(QListWidget)
                 if not list_widgets:
+                    print(f"⚠️ [UI] QListWidget introuvable dans le tab '{status}', ignoré")
                     continue
 
                 list_widget = list_widgets[0]
                 list_widget.clear()
                 emails = errors_dict.get(status, [])
+
                 if emails:
                     list_widget.addItems(emails)
                     list_widget.scrollToBottom()
-                    # Ajouter un badge de notification
                     UIManager.Add_Notification_Badge(result_tab_widget, result_tab_widget.indexOf(tab_widget), len(emails))
+                    print(f"🟢 [UI] {len(emails)} emails ajoutés au tab '{status}'")
                     # Supprimer le message "no data" si présent
                     message_label = tab_widget.findChild(QLabel, "no_data_message")
                     if message_label:
                         message_label.deleteLater()
+                        print(f"🗑️ [UI] Message 'no data' supprimé dans le tab '{status}'")
                 else:
                     list_widget.addItem("⚠ No email data available for this category currently.")
                     list_widget.show()
+                    print(f"⚠️ [UI] Aucun email pour le tab '{status}', message affiché")
+
+            print("🎉 [END] Mise à jour des résultats terminée")
 
         except Exception as e:
+            print(f"❌ [ERROR] Une erreur est survenue: {type(e).__name__} : {e}")
             UIManager.Show_Critical_Message(window, "Error", f"An error occurred while displaying results: {e}")
+
 
 
 

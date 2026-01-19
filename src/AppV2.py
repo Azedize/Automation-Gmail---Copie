@@ -395,14 +395,8 @@ class CloseBrowserThread(QThread):
                             session_id_from_data = parts[2]
                             inserted_id = parts[3]
                             print(f"🟢 [DATA] Info récupérées depuis data.txt → PID={pid}, Email={email}, SESSION_ID={session_id_from_data}, inserted_id={inserted_id}")
-                        else:
-                            email = "unknown"
-                            inserted_id = None
-                            print(f"⚠️ [DATA] Format data.txt incorrect, parts={parts}")
-                else:
-                    email = "unknown"
-                    inserted_id = None
-                    print(f"⚠️ [DATA] data.txt introuvable dans le profile Chrome")
+
+
 
             else:
                 session_id, pid, email, status = match.groups()
@@ -466,26 +460,50 @@ class CloseBrowserThread(QThread):
         elif b in ["edge", "icedragon", "comodo"]:
             return Settings.FAMILY_CHROME_DIR_PROFILES
         return Settings.CHROME_PROFILES
+    
+
 
     def _close_browser_process(self, pid, email, browser):
-        if pid not in PROCESS_PIDS:
-            print(f"⚠️ [PROC] PID déjà fermé {pid}")
-            return
-
-        print(f"🧨 [PROC] Fermeture {browser} | PID={pid} | {email}")
-
         try:
-            if browser.lower() == "firefox":
-                self.find_firefox_window(email)
-                self.wait_then_close(email)
-            else:
-                os.kill(pid, signal.SIGTERM)
+            pid = int(pid)
+            # 🔹 تحقق واش PID موجود فعلياً
+            if not psutil.pid_exists(pid):
+                print(f"⚠️ [PROC] PID بالفعل تسد {pid}")
+                if pid in PROCESS_PIDS:
+                    PROCESS_PIDS.remove(pid)
+                return
 
-            PROCESS_PIDS.remove(pid)
+            print(f"🧨 [PROC] Fermeture {browser} | PID={pid} | {email}")
+
+            if browser.lower() == "firefox":
+                try:
+                    hwnd = self.find_firefox_window(email)
+                    self.wait_then_close(email)
+                except Exception as e:
+                    print(f"❌ [FIREFOX] Erreur fermeture fenêtre: {e}")
+
+            else:  # Chrome ou autre navigateur basé sur Chromium
+                try:
+                    # 🔹 تسد العملية مباشرة
+                    os.kill(pid, signal.SIGTERM)
+                    # 🔹 تأكد بعد 2 ثواني واش العملية تسدات، وإلا force kill
+                    time.sleep(2)
+                    if psutil.pid_exists(pid):
+                        p = psutil.Process(pid)
+                        p.terminate()
+                        p.wait(timeout=3)
+                        print(f"🧨 [PROC] PID={pid} terminé de force")
+                except Exception as e:
+                    print(f"❌ [CHROME] Erreur fermeture PID={pid}: {e}")
+
+            # 🔹 حدف PID من القائمة PROCESS_PIDS
+            if pid in PROCESS_PIDS:
+                PROCESS_PIDS.remove(pid)
+
             print(f"✅ [PROC] Process fermé PID={pid}")
 
         except Exception as e:
-            print(f"❌ [PROC] Erreur fermeture {email}: {e}")
+            print(f"🔥 [PROC] Erreur inattendue PID={pid} | {e}")
 
     # ======================================================
     # 🪟 FIREFOX
@@ -670,6 +688,8 @@ def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp 
     
     EXTRACTION_THREAD.progress.connect(lambda msg: print(msg))
     EXTRACTION_THREAD.stopped.connect(lambda msg: QMessageBox.warning(window, "Arrêté", msg))
+    EXTRACTION_THREAD.finished.connect(lambda: QMessageBox.information(window, "Terminé", "L'extraction est terminée."))
+
     EXTRACTION_THREAD.start()
 
     time.sleep(10)
@@ -1044,7 +1064,11 @@ class ExtractionThread(QThread):
                         time.sleep(4)
                         process1 = subprocess.Popen(command1)
                         PROCESS_PIDS.append(process.pid)  
-                        # print('➡️➡️➡️➡️➡️➡️ PROCESS_PIDS : ' ,PROCESS_PIDS)
+                        print('➡️➡️➡️➡️➡️➡️ PROCESS_PIDS : ' ,PROCESS_PIDS)
+                        # affichage de PID de processus
+                        print(f"🚀 PID de processus : {process.pid}")
+                        print(f"🚀 PID de processus 1 : {process1.pid}")
+
                         store_browser_session_info(process.pid , Settings.CHROME_PROFILES , profile_email  , self.session_id , self.selected_Browser.lower(),inserted_id)
 
                     self.emails_processed += 1  
@@ -1487,6 +1511,7 @@ class MainWindow(QMainWindow):
     def Extraction_Finished(self, window):
         self.LOGS_THREAD.stop()  
         self.LOGS_THREAD.wait()  
+        print("🎶​🎶​🎶​🎶​🎶​🎶​🎶​🎶​🎶​🎶​🎶​🎶​🎶​🎶​📗​📗​📗​📗​📗​📗​📗​📗​📗​📗​📗​📗​📗​Extraction Finished ​")
         QTimer.singleShot(100, lambda: UIManager.Read_Result_Update_List(window))
 
 
