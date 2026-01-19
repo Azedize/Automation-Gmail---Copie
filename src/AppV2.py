@@ -1555,20 +1555,34 @@ class MainWindow(QMainWindow):
 
         # Nettoyage des badges de notification
         try:
+            print("🔄 [BADGES] Début suppression des badges existants")
             if self.result_tab_widget:
+                print(f"📌 [BADGES] Nombre de tabs dans result_tab_widget = {self.result_tab_widget.count()}")
+                
+                # Supprimer badges existants
                 for tab_index, badge in NOTIFICATION_BADGES.items():
                     if badge:
+                        print(f"🗑️ [BADGES] Suppression badge tab_index={tab_index}")
                         badge.deleteLater()
                 NOTIFICATION_BADGES.clear()
+                print("✅ [BADGES] Tous les badges existants supprimés et dictionnaire vidé")
 
+                # Vider tous les QListWidget dans les tabs
                 for i in range(self.result_tab_widget.count()):
                     tab = self.result_tab_widget.widget(i)
                     if tab:
                         list_widgets = tab.findChildren(QListWidget)
-                        for lw in list_widgets:
-                            lw.clear()  
+                        print(f"📂 [TAB {i}] Nombre de QListWidget = {len(list_widgets)}")
+                        for lw_index, lw in enumerate(list_widgets):
+                            lw.clear()
+                            print(f"🧹 [TAB {i}][LIST {lw_index}] Liste vidée")
+
+            else:
+                print("⚠️ [BADGES] result_tab_widget est None")
+
         except Exception as e:
-            print(f"[BADGES ERROR] Error during badge deletion: {e}")
+            print(f"❌ [BADGES ERROR] Erreur pendant la suppression des badges: {type(e).__name__} : {e}")
+
 
 
 

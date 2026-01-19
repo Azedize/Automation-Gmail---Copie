@@ -278,7 +278,6 @@ class Settings:
     
 
 
-    RESULT_FILE_PATH = os.path.join(TOOLS_DIR, "result.txt")
     @classmethod
     def ensure_directories(cls):
         """Créer les dossiers nécessaires s’ils n’existent pas"""
