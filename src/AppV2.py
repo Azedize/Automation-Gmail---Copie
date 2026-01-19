@@ -225,12 +225,7 @@ def Stop_All_Processes(window):
 
 class CloseBrowserThread(QThread):
 
-
-
     progress = pyqtSignal(str)
-
-
-
 
     def __init__(self, selected_Browser, username):
         super().__init__()
@@ -240,28 +235,24 @@ class CloseBrowserThread(QThread):
         self.stop_flag = False
         self.downloads_folder = user_downloads_dir()
 
+        print(f"🧩 [INIT] Thread créé | Browser={selected_Browser} | User={username}")
+
     # ======================================================
     # 🔁 THREAD PRINCIPAL
     # ======================================================
-
-    
     def run(self):
         print("🚀 [THREAD] CloseBrowserThread démarré")
         time.sleep(15)
-        # time.sleep(10)
-        # time.sleep(10)
-        # time.sleep(10)
-        print(f" Stop flag initial : {self.stop_flag} ")
+
+        print(f"🧪 [THREAD] stop_flag initial = {self.stop_flag}")
 
         while not self.stop_flag and PROCESS_PIDS:
-            print("🌀 [THREAD] Boucle principale en cours...")
-            # affiche self.stop_flag and PROCESS_PIDS
-            print(f"🤠[THREAD] Boucle active | stop_flag: {self.stop_flag}")
-            print(f"🤠[THREAD] Boucle active | PROCESS_PIDS: {PROCESS_PIDS}")
-            print(f"🤠[THREAD] Boucle active | PID restants: {len(PROCESS_PIDS)}")
+            print("🌀 [LOOP] Boucle principale en cours")
+            print(f"🛑 [STATE] stop_flag = {self.stop_flag}")
+            print(f"📌 [STATE] PROCESS_PIDS = {PROCESS_PIDS}")
+            print(f"🔢 [STATE] PID restants = {len(PROCESS_PIDS)}")
 
             try:
-                # ملفات الجلسات و logs
                 files = [
                     f for f in os.listdir(self.downloads_folder)
                     if f.startswith(self.session_id) and f.endswith(".txt")
@@ -274,14 +265,12 @@ class CloseBrowserThread(QThread):
 
                 print(f"📄 [SCAN] Sessions={len(files)} | Logs={len(log_files)}")
 
-                # معالجة logs
                 with ThreadPoolExecutor(max_workers=4) as executor:
                     executor.map(
                         lambda f: self.process_log_file(f, self.downloads_folder),
                         log_files
                     )
 
-                # معالجة الجلسات
                 with ThreadPoolExecutor(max_workers=4) as executor:
                     executor.map(
                         lambda f: self.process_session_file(
@@ -297,14 +286,11 @@ class CloseBrowserThread(QThread):
 
         print("🛑 [THREAD] CloseBrowserThread terminé")
 
-    
-    
-    
     # ======================================================
     # 📄 TRAITEMENT DES LOGS
     # ======================================================
     def process_log_file(self, log_file, downloads_folder):
-        print(f"📄 [LOG] Traitement: {log_file}")
+        print(f"📄 [LOG] Traitement du fichier {log_file}")
 
         try:
             email = ValidationUtils.get_email_from_log_file(
@@ -312,7 +298,7 @@ class CloseBrowserThread(QThread):
             )
 
             if not email:
-                print(f"⚠️ [LOG] Email introuvable: {log_file}")
+                print(f"⚠️ [LOG] Email introuvable dans {log_file}")
                 return
 
             print(f"📧 [LOG] Email détecté: {email}")
@@ -322,6 +308,7 @@ class CloseBrowserThread(QThread):
             os.makedirs(target_folder, exist_ok=True)
 
             target_file = os.path.join(target_folder, f"{email}_{CURRENT_HOUR}.txt")
+            print(f"📂 [LOG] Écriture dans {target_file}")
 
             with open(os.path.join(downloads_folder, log_file), "r", encoding="utf-8") as f:
                 content = f.read()
@@ -330,133 +317,145 @@ class CloseBrowserThread(QThread):
                 tf.write(content + "\n")
 
             os.remove(os.path.join(downloads_folder, log_file))
-            print(f"🗑️ [LOG] Supprimé: {log_file}")
+            print(f"🗑️ [LOG] Fichier supprimé {log_file}")
 
         except Exception as e:
             print(f"❌ [LOG] Erreur {log_file}: {e}")
 
-    
-    
-    
     # ======================================================
     # 📄 TRAITEMENT DES SESSIONS
     # ======================================================
     def process_session_file(self, file_name, downloads_folder, selected_Browser):
-        print(f"📄 [SESSION] Analyse: {file_name}")
+        print(f"📄 [SESSION] Début analyse du fichier: {file_name}")
 
         try:
+            # -----------------------------
+            # 🔹 Chemin complet du fichier
+            # -----------------------------
             session_path = os.path.join(downloads_folder, file_name)
+            print(f"📂 [PATH] Chemin complet du fichier: {session_path}")
+
             if not os.path.exists(session_path):
-                print(f"⚠️ [SESSION] Fichier session introuvable: {session_path}")
+                print(f"⚠️ [SESSION] Fichier introuvable, arrêt traitement")
                 return
 
+            # -----------------------------
+            # 🔹 Lecture du contenu
+            # -----------------------------
             with open(session_path, "r", encoding="utf-8") as f:
                 content = f.read().strip()
 
             if not content:
-                print(f"⚠️ [SESSION] Fichier session vide: {session_path}")
+                print(f"⚠️ [SESSION] Fichier vide, rien à traiter")
                 return
 
-            print(f"🧠 [SESSION] Contenu: {content}")
+            print(f"🧠 [SESSION] Contenu lu: {content}")
 
-            match = re.search(
-                r"session_id:(\w+)_PID:(\d+)_Email:([\w.@]+)_Status:(\w+)",
-                content
-            )
+            # -----------------------------
+            # 🔹 Regex selon navigateur
+            # -----------------------------
+            if selected_Browser.lower() == "chrome":
+                print("🌐 [NAV] Chrome détecté → extraction SESSION_ID")
+                match = re.search(r"session_id:(\w+)_Email:([\w.@+-]+)", content)
+            else:
+                print(f"🌐 [NAV] {selected_Browser} détecté → Regex standard avec PID")
+                match = re.search(
+                    r"session_id:(\w+)_PID:(\d+)_Email:([\w.@]+)_Status:(\w+)",
+                    content
+                )
 
             if not match:
-                print(f"❌ [SESSION] Format invalide → suppression")
-                os.remove(session_path)
+                print("❌ [SESSION] Format invalide → suppression fichier")
+                # os.remove(session_path)  # optional
                 return
 
-            session_id, pid, email, status = match.groups()
-            pid = int(pid)
-            print(f"✅ [SESSION] Email={email} | PID={pid} | Status={status}")
-
-            # تحديد مسار data.txt حسب المتصفح
+            # -----------------------------
+            # 🔹 Extraction des valeurs
+            # -----------------------------
             if selected_Browser.lower() == "chrome":
-                data_file = os.path.join(Settings.CHROME_PROFILES, email, "data.txt")
-            else:
-                base_path = self._get_profile_base_path(selected_Browser)
-                data_file = os.path.join(base_path, email, "data.txt")
+                session_id = match.group(1)
+                email = match.group(2)
+                pid = None
 
-            print(f"🔍 [DATA] Lecture: {data_file}")
-
-            inserted_id = None
-            if not os.path.exists(data_file):
-                print(f"⚠️ [DATA] data.txt introuvable pour {email}, création...")
-                os.makedirs(os.path.dirname(data_file), exist_ok=True)
-                with open(data_file, "w", encoding="utf-8") as f:
-                    f.write("")
-            else:
-                with open(data_file, "r", encoding="utf-8") as f:
-                    line = f.readline().strip()
-                    if selected_Browser.lower() == "chrome":
-                        inserted_id = line
-                    else:
+                # Lecture des informations depuis data.txt du profile Chrome
+                profile_data_file = os.path.join(Settings.CHROME_PROFILES, email, "data.txt")  # ou email/profile
+                if os.path.exists(profile_data_file):
+                    with open(profile_data_file, "r", encoding="utf-8") as f:
+                        line = f.readline().strip()
                         parts = line.split(":")
                         if len(parts) >= 4:
+                            pid = parts[0]
+                            email = parts[1]
+                            session_id_from_data = parts[2]
                             inserted_id = parts[3]
+                            print(f"🟢 [DATA] Info récupérées depuis data.txt → PID={pid}, Email={email}, SESSION_ID={session_id_from_data}, inserted_id={inserted_id}")
+                        else:
+                            email = "unknown"
+                            inserted_id = None
+                            print(f"⚠️ [DATA] Format data.txt incorrect, parts={parts}")
+                else:
+                    email = "unknown"
+                    inserted_id = None
+                    print(f"⚠️ [DATA] data.txt introuvable dans le profile Chrome")
 
-            print(f"🆔 [DATA] inserted_id={inserted_id}")
+                status = "unknown"  # Chrome session.txt ne contient pas status
 
-           
-            try:
-                result_dir = os.path.dirname(Settings.RESULT_FILE_PATH)
-                os.makedirs(result_dir, exist_ok=True)
+            else:
+                session_id, pid, email, status = match.groups()
+                pid = int(pid)
+                print(f"🟢 [SESSION] Extractions → SESSION_ID={session_id}, PID={pid}, Email={email}, Status={status}")
+                inserted_id = None
 
-                with open(Settings.RESULT_FILE_PATH, "a", encoding="utf-8") as rf:
-                    rf.write(f"{session_id}:{pid}:{email}:{status}\n")
+            # -----------------------------
+            # 🔹 Enregistrement résultat
+            # -----------------------------
+            with open(Settings.RESULT_FILE_PATH, "a", encoding="utf-8") as rf:
+                rf.write(f"{session_id}:{pid}:{email}:{status}\n")
+            print(f"📝 [RESULT] Résultat enregistré dans {Settings.RESULT_FILE_PATH}")
 
-                print(f"📝 [RESULT] Enregistré dans {Settings.RESULT_FILE_PATH}")
+            # -----------------------------
+            # 🔹 Envoi status à l'API
+            # -----------------------------
+            print(f"📤 [API] Envoi status pour {email}...")
+            Send_Status({
+                "id": inserted_id,
+                "login": self.username,
+                "status": "OK" if status == "completed" else "NotOK",
+                "error": "" if status == "completed" else status
+            })
+            print(f"✅ [API] Status envoyé avec succès pour {email}")
 
-            except PermissionError:
-                print(f"❌ [RESULT] Permission denied: impossible d'écrire dans {Settings.RESULT_FILE_PATH}")
-            except Exception as e:
-                print(f"❌ [RESULT] Erreur inattendue lors de l'écriture: {e}")
+            # -----------------------------
+            # 🔹 Fermeture navigateur Chrome
+            # -----------------------------
+            if pid:
+                print(f"🧨 [PROC] Fermeture du navigateur PID={pid}")
+                self._close_browser_process(pid, email, selected_Browser)
+            elif selected_Browser.lower() == "chrome":
+                print("🖥️ [PROC] Chrome détecté → gestion fermeture spécifique si nécessaire")
 
-            
-            try:
-                #print(f"📤 [API] Envoi status pour {email}")
-                Send_Status({
-                    "id": inserted_id,
-                    "login": self.username,
-                    "status": "OK" if status == "completed" else "NotOK",
-                    "error": "" if status == "completed" else status
-                })
-                #print(f"✅ [API] Status envoyé pour {email}")
-            except Exception as e_api:
-                print(f"❌ [API] Erreur envoi status pour {email}: {e_api}")
+            # -----------------------------
+            # 🔹 Nettoyage fichiers
+            # -----------------------------
+            os.remove(session_path)
+            print(f"🗑️ [CLEAN] Session supprimée: {session_path}")
 
-             
-            self._close_browser_process(pid, email, selected_Browser)
+            if os.path.exists(profile_data_file):
+                os.remove(profile_data_file)
+                print(f"🗑️ [CLEAN] data.txt du profile supprimé: {profile_data_file}")
 
-            try:
-                os.remove(session_path)
-                print(f"🗑️ [CLEAN] Session supprimée: {session_path}")
-            except Exception as e_rm_sess:
-                print(f"⚠️ [CLEAN] Impossible de supprimer session: {e_rm_sess}")
-
-            try:
-                if os.path.exists(data_file):
-                    os.remove(data_file)
-                    print(f"🗑️ [CLEAN] data.txt supprimé: {data_file}")
-            except Exception as e_rm_data:
-                print(f"⚠️ [CLEAN] Impossible de supprimer data.txt: {e_rm_data}")
-
-            print(f"✅ [SESSION] Traitement terminé pour {email}\n")
+            print(f"🎉 [SESSION] Traitement terminé avec succès pour {email}\n")
 
         except Exception as e:
-            print(f"❌ [SESSION] Erreur inattendue pour {file_name}: {e}")
+            print(f"❌ [SESSION] Erreur inattendue pour {file_name}: {type(e).__name__} : {e}")
 
-    
-    
-    
-    
+
+
     # ======================================================
-    # 🌐 GESTION NAVIGATEURS
+    # 🌐 NAVIGATEURS
     # ======================================================
     def _get_profile_base_path(self, browser):
+        print(f"🌐 [BROWSER] Résolution chemin pour {browser}")
         b = browser.lower()
         if b == "firefox":
             return Settings.FIREFOX_PROFILES
@@ -464,121 +463,99 @@ class CloseBrowserThread(QThread):
             return Settings.FAMILY_CHROME_DIR_PROFILES
         return Settings.CHROME_PROFILES
 
-    
-    
-    
-    
     def _close_browser_process(self, pid, email, browser):
         if pid not in PROCESS_PIDS:
-            print(f"⚠️ [PROC] PID déjà fermé: {pid}")
+            print(f"⚠️ [PROC] PID déjà fermé {pid}")
             return
 
         print(f"🧨 [PROC] Fermeture {browser} | PID={pid} | {email}")
 
         try:
-            b = browser.lower()
-            if b == "firefox":
-                print("🪟 [FIREFOX] Recherche fenêtre")
+            if browser.lower() == "firefox":
                 self.find_firefox_window(email)
                 self.wait_then_close(email)
-            else: 
+            else:
                 os.kill(pid, signal.SIGTERM)
-            # else:
-            #     BrowserManager.close_chrome_profile(
-            #         email,
-            #         os.path.join(Settings.CHROME_PROFILES, email)
-            #     )
 
             PROCESS_PIDS.remove(pid)
-            print(f"✅ [PROC] Process fermé: {pid}")
+            print(f"✅ [PROC] Process fermé PID={pid}")
 
         except Exception as e:
             print(f"❌ [PROC] Erreur fermeture {email}: {e}")
 
-    
-    
-    
     # ======================================================
-    # 🪟 FIREFOX WINDOW MANAGEMENT
+    # 🪟 FIREFOX
     # ======================================================
     def find_firefox_window(self, profile_email, timeout=30):
-        #print(f"🪟 [FIREFOX] Recherche fenêtre pour {profile_email}")
-
+        print(f"🪟 [FIREFOX] Recherche fenêtre pour {profile_email}")
         entry = next((e for e in FIREFOX_LAUNCH if e["profile"] == profile_email), None)
         if not entry:
-            raise ValueError(f"Profil introuvable: {profile_email}")
+            raise ValueError("Profil Firefox introuvable")
 
         target_title = f"EXT:{profile_email}"
         start = time.time()
 
         while time.time() - start < timeout:
-
             def enum_proc(hwnd, _):
                 if win32gui.IsWindowVisible(hwnd):
                     try:
                         if win32gui.GetClassName(hwnd) == "MozillaWindowClass":
                             if target_title in win32gui.GetWindowText(hwnd):
                                 entry["hwnd"] = hwnd
-                                #print("✅ [FIREFOX] Fenêtre trouvée")
+                                print("🎯 [FIREFOX] Fenêtre trouvée")
                                 return False
-                    except Exception:
+                    except:
                         pass
                 return True
 
             win32gui.EnumWindows(enum_proc, None)
-
             if entry.get("hwnd"):
                 return entry["hwnd"]
 
             time.sleep(2)
 
-        raise TimeoutError(f"❌ Fenêtre Firefox introuvable: {profile_email}")
+        raise TimeoutError("⏱️ Fenêtre Firefox introuvable")
 
-    
-    
-    
+
+
+
     def wait_then_close(self, profile_email):
+        print(f"❌ [FIREFOX] Fermeture fenêtre {profile_email}")
         entry = next((e for e in FIREFOX_LAUNCH if e["profile"] == profile_email), None)
-        if not entry or not entry.get("hwnd"):
-            #print("⚠️ [FIREFOX] Aucune fenêtre à fermer")
-            return
-        self.close_window_by_hwnd(entry["hwnd"], entry["proc"])
+        if entry and entry.get("hwnd"):
+            self.close_window_by_hwnd(entry["hwnd"], entry["proc"])
 
-    
-    
+
+
+
+
     def close_confirmation_dialogs(self, pid):
+        print("⚠️ [DIALOG] Recherche confirmation Firefox")
         def enum_proc(hwnd, _):
             if win32gui.IsWindowVisible(hwnd):
                 _, p = win32process.GetWindowThreadProcessId(hwnd)
                 if p == pid and win32gui.GetClassName(hwnd) == "#32770":
-                    #print("⚠️ [DIALOG] Fermeture confirmation")
                     win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
             return True
 
         win32gui.EnumWindows(enum_proc, None)
 
-    
-    
-    
-    
+
+
+
     def close_window_by_hwnd(self, hwnd, proc, wait_grace=2, wait_force=3):
-        #print("🪟 [WINDOW] Fermeture fenêtre principale")
+        print("🪟 [WINDOW] Fermeture fenêtre principale")
         win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
         time.sleep(wait_grace)
 
-        if not win32gui.IsWindow(hwnd):
-            #print("✅ [WINDOW] Fermeture propre")
-            return
-
-        self.close_confirmation_dialogs(proc.pid)
-        time.sleep(0.5)
-
-        try:
-            proc.terminate()
-            proc.wait(timeout=wait_force)
-            #print("🧨 [WINDOW] Process terminé de force")
-        except Exception:
-            pass
+        if win32gui.IsWindow(hwnd):
+            self.close_confirmation_dialogs(proc.pid)
+            try:
+                proc.terminate()
+                proc.wait(timeout=wait_force)
+                print("🧨 [WINDOW] Process terminé de force")
+            except:
+                pass
 
     
 
@@ -747,49 +724,70 @@ class LogsDisplayThread(QThread):
 
 
 
-
-
-
-def store_browser_session_info( pid: str, Path_DiR: str, email: str, SESSION_ID: str, browser: str ):
+def store_browser_session_info(pid: str, Path_DiR: str, email: str, SESSION_ID: str, browser: str, inserted_id):
     try:
-        
-        # print("🚦 [START] Démarrage de store_browser_session_info")
-        # print(f"🧭 [INPUT] browser = {browser}")
-        # print(f"🆔 [INPUT] pid = {pid}")
-        # print(f"🔐 [INPUT] SESSION_ID = {SESSION_ID}")
-        # print(f"📧 [INPUT] email = {email}")
+        print(f"📌 [START] store_browser_session_info pour {email} sur {browser}")
+        print(f"🧭 [INPUT] PID={pid} | SESSION_ID={SESSION_ID} | inserted_id={inserted_id}")
+        print(f"📁 [INPUT] Path_DiR={Path_DiR}")
 
-        # ------------------ Sélection du chemin ------------------
+        # ================================
+        # 🟢 CASE : CHROME
+        # ================================
         if browser.lower() == "chrome":
-            # print("🌐 [MODE] Navigateur Chrome détecté")
-            text_file = Path(Settings.EXTENTION_EX3) / "data.txt"
-            entry = f"{pid}:{SESSION_ID}"
+            print("🌐 [CHROME] Navigateur Chrome détecté")
+
+            # 1️⃣ Écriture SESSION_ID dans EXTENTION_EX3/data.txt
+            chrome_file = Path(Settings.EXTENTION_EX3) / "data.txt"
+            print(f"🧹 [CHROME] Nettoyage du fichier: {chrome_file}")
+            chrome_file.write_text("", encoding="utf-8")  # vider contenu ancien
+
+            print(f"✍️ [CHROME] Écriture SESSION_ID={SESSION_ID} dans {chrome_file}")
+            chrome_file.write_text(f"{SESSION_ID}\n", encoding="utf-8")
+
+            # Vérification contenu écrit
+            with open(chrome_file, "r", encoding="utf-8") as f:
+                content = f.read().strip()
+            print(f"📄 [CHROME] Contenu actuel de {chrome_file}:\n{content}")
+
+            # 2️⃣ Écriture pid:email:SESSION_ID:inserted_id dans un autre fichier
+            second_file = Path(Path_DiR) / email / "data.txt"
+            second_file.parent.mkdir(parents=True, exist_ok=True)
+            entry = f"{pid}:{email}:{SESSION_ID}:{inserted_id}"
+            print(f"✍️ [CHROME] Écriture secondaire → {second_file}")
+            print(f"📄 [CHROME] Contenu à écrire: {entry}")
+
+            with open(second_file, "w", encoding="utf-8") as f:
+                f.write(entry + "\n")
+
+            # Vérification contenu écrit
+            with open(second_file, "r", encoding="utf-8") as f:
+                content2 = f.read().strip()
+            print(f"📄 [CHROME] Contenu actuel de {second_file}:\n{content2}")
+
+        # ================================
+        # 🔵 CASE : AUTRES NAVIGATEURS
+        # ================================
         else:
-            # print("🗂️ [MODE] Navigateur non-Chrome détecté")
+            print(f"🗂️ [OTHER] Navigateur non-Chrome détecté: {browser}")
+
             text_file = Path(Path_DiR) / email / "data.txt"
-            # print(f"📁 [PATH] Création du dossier : {text_file.parent}")
             text_file.parent.mkdir(parents=True, exist_ok=True)
-            entry = f"{pid}:{email}:{SESSION_ID}"
+            entry = f"{pid}:{email}:{SESSION_ID}:{inserted_id}"
+            print(f"✍️ [OTHER] Écriture → {text_file}")
+            print(f"📄 [OTHER] Contenu à écrire: {entry}")
 
-        # print(f"📄 [FILE] Chemin du fichier : {text_file}")
-        # print(f"✏️ [WRITE] Contenu à écrire : {entry}")
+            with open(text_file, "w", encoding="utf-8") as f:
+                f.write(entry + "\n")
 
-        # ------------------ Nettoyage du fichier ------------------
-        # print("🧹 [CLEAN] Vidage du contenu du fichier")
-        text_file.write_text("", encoding="utf-8")
+            # Vérification contenu écrit
+            with open(text_file, "r", encoding="utf-8") as f:
+                content_other = f.read().strip()
+            print(f"📄 [OTHER] Contenu actuel de {text_file}:\n{content_other}")
 
-        # ------------------ Écriture finale ------------------
-        # print("🖊️ [SAVE] Écriture des données dans le fichier")
-        with open(text_file, "a", encoding="utf-8") as f:
-            f.write(entry + "\n")
-
-        # print("🎉 [SUCCESS] Écriture terminée avec succès")
-        # print("🏁 [END] Fonction exécutée sans erreur")
+        print("🎉 [SUCCESS] Données session enregistrées avec succès\n")
 
     except Exception as e:
-        # print("🔥 [ERROR] Une erreur est survenue !")
-        print(f"❗ [DETAILS] {type(e).__name__} : {e}")
-
+        print(f"❌ [ERROR] {type(e).__name__} : {e}")
 
 
 
@@ -797,18 +795,6 @@ def store_browser_session_info( pid: str, Path_DiR: str, email: str, SESSION_ID:
 
 
 
-def Update_Data_File_Profile(profile_path: str, inserted_value: str) -> str:
-
-    if not os.path.isdir(profile_path):
-        raise FileNotFoundError(f"Profile path not found: {profile_path}")
-
-    data_file = os.path.join(profile_path, "data.txt")
-
-
-    with open(data_file, "w", encoding="utf-8") as f:
-        f.write(str(inserted_value).strip())
-
-    return data_file
 
 
 
@@ -974,7 +960,7 @@ class ExtractionThread(QThread):
                             'hwnd': None
                         })
 
-                        store_browser_session_info(process.pid , Settings.EXTENTIONS_DIR_FIREFOX , profile_email  , self.session_id , self.selected_Browser.lower())
+                        store_browser_session_info(process.pid , Settings.EXTENTIONS_DIR_FIREFOX , profile_email  , self.session_id , self.selected_Browser.lower() , inserted_id)
 
                     elif self.selected_Browser in ["edge", "icedragon", "Comodo"]:
 
@@ -998,7 +984,7 @@ class ExtractionThread(QThread):
                         process = subprocess.Popen(command) 
                         PROCESS_PIDS.append(process.pid) 
 
-                        store_browser_session_info(process.pid , Settings.FOLDER_EXTENTIONS_FAMILY_CHROME, profile_email  ,self.session_id , self.selected_Browser.lower())
+                        store_browser_session_info(process.pid , Settings.FOLDER_EXTENTIONS_FAMILY_CHROME, profile_email  ,self.session_id , self.selected_Browser.lower() , inserted_id)
                     
                     else:
                         #print("🔹 Chrome-based browser selected.")
@@ -1055,8 +1041,7 @@ class ExtractionThread(QThread):
                         process1 = subprocess.Popen(command1)
                         PROCESS_PIDS.append(process.pid)  
                         # print('➡️➡️➡️➡️➡️➡️ PROCESS_PIDS : ' ,PROCESS_PIDS)
-                        store_browser_session_info(process.pid , Settings.CHROME_PROFILES , profile_email  , self.session_id , self.selected_Browser.lower())
-                        Update_Data_File_Profile( os.path.join(Settings.CHROME_PROFILES, profile_email), inserted_id )
+                        store_browser_session_info(process.pid , Settings.CHROME_PROFILES , profile_email  , self.session_id , self.selected_Browser.lower(),inserted_id)
 
                     self.emails_processed += 1  
 
