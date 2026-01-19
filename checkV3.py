@@ -281,6 +281,7 @@ def main():
         # print("Démarrage application principale")
 
         initialize_dependencies()
+    
 
         pythonw_path = Settings.find_pythonw()
         if not pythonw_path:

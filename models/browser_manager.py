@@ -475,7 +475,7 @@ class BrowserManager:
     
 
 
-
+# le programme is runing dans une interface logique et graphique et va lancer des script capable de reduire des interfcaes intermedaires 
 
     
 BrowserManager = BrowserManager()
