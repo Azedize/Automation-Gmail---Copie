@@ -260,7 +260,7 @@ class UIManager:
     # Read email results and update the UI
     # -----------------------------
     @staticmethod
-    def Read_Result_Update_List(window):
+    def Read_Result_Update_List(window ,NOTIFICATION_BADGES):
         print("📌 [START] Lecture et mise à jour des résultats")
 
         # 🔹 Vérifier si le fichier existe
@@ -348,7 +348,7 @@ class UIManager:
                 if emails:
                     list_widget.addItems(emails)
                     list_widget.scrollToBottom()
-                    UIManager.Add_Notification_Badge(result_tab_widget, result_tab_widget.indexOf(tab_widget), len(emails))
+                    UIManager.Add_Notification_Badge(result_tab_widget, result_tab_widget.indexOf(tab_widget), len(emails), NOTIFICATION_BADGES)
                     print(f"🟢 [UI] {len(emails)} emails ajoutés au tab '{status}'")
                     # Supprimer le message "no data" si présent
                     message_label = tab_widget.findChild(QLabel, "no_data_message")

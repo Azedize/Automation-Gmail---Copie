@@ -684,7 +684,7 @@ def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp 
     )
     
 
-    EXTRACTION_THREAD.finished.connect(lambda: window.Extraction_Finished(window))
+    # EXTRACTION_THREAD.finished.connect(lambda: window.Extraction_Finished(window))
     
     EXTRACTION_THREAD.progress.connect(lambda msg: print(msg))
     EXTRACTION_THREAD.stopped.connect(lambda msg: QMessageBox.warning(window, "Arrêté", msg))
@@ -1076,6 +1076,11 @@ class ExtractionThread(QThread):
                 except Exception as e:
                     # print(f"[ERROR] Erreur emojie  : {e}")
                     print(f"[INFO] Erreur : {e}")
+                # finally:
+                #     print("🟢 [EXTRACTION] إرسال إشارة الانتهاء")
+                #     # time.sleep(3)
+                #     LOGS_RUNNING = False
+                #     self.finished.emit()  # ✅ 
             self.msleep(1000) 
 
         log_message("[INFO] Processing finished for all emails.") 
@@ -1705,6 +1710,7 @@ class MainWindow(QMainWindow):
         with ThreadPoolExecutor(max_workers=2) as executor:
             executor.submit(Start_Extraction, window, data_list , entered_number, selected_Browser, self.Isp.currentText() , unique_id , result_json, session_info["username"])
             executor.submit(self.LOGS_THREAD.start)
+        EXTRACTION_THREAD.finished.connect(lambda: self.Extraction_Finished(window))
 
 
 
