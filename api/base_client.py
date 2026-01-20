@@ -18,7 +18,7 @@ if ROOT_DIR not in sys.path:
 try:
     from config import Settings
     from core import EncryptionService
-    from Log import DevLogger
+
 except ImportError as e:
     raise ImportError(f"❌ Erreur d'importation: {e}")
 
@@ -48,6 +48,7 @@ class APIManager:
         for attempt in range(1, 4):
             try:
                 #print(f"🌐 Tentative {attempt} - {method} {url}")
+                Settings.WRITE_LOG_DEV_FILE(f"Tentative {attempt} - {method} {url}", level="INFO")
 
                 response = self.session.request(
                     method=method.upper(),
@@ -59,6 +60,7 @@ class APIManager:
                 )
 
                 #print(f"📥 HTTP {response.status_code}")
+                Settings.WRITE_LOG_DEV_FILE(f"HTTP {response.status_code}", level="INFO")
 
                 if response.status_code == 200:
                     try:
@@ -78,6 +80,7 @@ class APIManager:
             except requests.RequestException as e:
                 last_exception = str(e)
                 #print(f"⚠️ Erreur tentative {attempt}: {last_exception}")
+                Settings.WRITE_LOG_DEV_FILE(f"Erreur tentative {attempt}: {last_exception}", level="ERROR")
 
             if attempt < 3:
                 time.sleep(2)
@@ -89,16 +92,12 @@ class APIManager:
         }
 
     # --------------------- Gestion de réponse ---------------------
-    def _handle_response(
-        self,
-        result: Dict[str, Any],
-        success_default: Any = None,
-        failure_default: Any = None
-    ) -> Any:
+    def _handle_response( self,  result: Dict[str, Any],  success_default: Any = None, failure_default: Any = None):
         if result.get("status") == "success":
             return result.get("data", success_default)
         else:
             #print(f"❌ API Error: {result.get('error')}")
+            Settings.WRITE_LOG_DEV_FILE(f"API Error: {result.get('error')}", level="ERROR")
             return failure_default
 
     # --------------------- Méthodes API ---------------------
@@ -134,13 +133,6 @@ class APIManager:
         return self._handle_response(result, {"success": True},
                                      {"success": False, "error": "Format de réponse invalide"})
 
-    def check_extension_update(self) -> Dict[str, Any]:
-        # ❌ Ne jamais logger login/password
-        DATA = {"login": "rep.test", "password": "zsGEnntKD5q2Brp68yxT"}
-        encrypted = EncryptionService.encrypt_message(json.dumps(DATA), Settings.KEY)
-        url = f"http://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Ext3&k={encrypted}"
-        result = self.make_request(url, "GET")
-        return self._handle_response(result, {})
 
 
 # ==========================================================

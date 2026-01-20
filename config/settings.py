@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 import sys
 import json
-
+import datetime
 
 
 
@@ -276,6 +276,49 @@ class Settings:
     STATUS_LIST = ["all", "bad_proxy", "completed", "account_closed", "password_changed", "code_de_validation",
                     "recoverychanged", "Activite_suspecte", "validation_capcha", "restore_account", "others"]
     
+
+
+
+    LOG_DEV_FILE = os.path.abspath(os.path.join(BASE_DIR, "Log/LogDev/my_project.log"))
+
+    @classmethod
+    def WRITE_LOG_DEV_FILE(cls, message: str, level: str = "INFO"):
+        try:
+            # Génération de la date et heure actuelle pour le timestamp
+            timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            log_line = f"[{timestamp}] [{level}] {message}\n"
+
+            # Vérifie que le dossier contenant le fichier de log existe, sinon le crée
+            log_path = Path(cls.LOG_DEV_FILE)
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # Ouvre le fichier en mode "append" pour ajouter la ligne de log à la fin
+            with open(cls.LOG_DEV_FILE, "a", encoding="utf-8") as f:
+                f.write(log_line)
+
+        except Exception as e:
+            print(f"❌ [LOG] Erreur lors de l'écriture du log: {e}")
+
+
+    @classmethod
+    def clear_log(cls):
+        """
+        Vide complètement le contenu du fichier de log.
+        """
+        try:
+            log_path = Path(cls.LOG_DEV_FILE)
+            if log_path.exists():
+                # Ouvre le fichier en mode "write" pour effacer tout son contenu
+                open(log_path, "w", encoding="utf-8").close()
+                print(f"✅ [LOG] Fichier log vidé: {cls.LOG_DEV_FILE}")
+            else:
+                print(f"⚠️ [LOG] Fichier log inexistant: {cls.LOG_DEV_FILE}")
+
+        except Exception as e:
+            print(f"❌ [LOG] Erreur lors de la suppression du fichier log: {e}")
+
+
+
 
 
     @classmethod

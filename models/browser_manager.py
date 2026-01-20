@@ -55,9 +55,11 @@ class BrowserManager:
                         #print(f"✅ Navigateur trouvé : {path}")
                         return path
             except FileNotFoundError:
+                Settings.WRITE_LOG_DEV_FILE(f"Navigateur introuvable ({hive})", "INFO")
                 continue
             except Exception as e:
-                print(f"⚠️ Erreur registre ({hive}): {e}")
+                Settings.WRITE_LOG_DEV_FILE(f"Erreur registre ({hive}): {e}", "ERROR")
+                # print(f"⚠️ Erreur registre ({hive}): {e}")
 
         #print(f"❌ Navigateur {exe_name} introuvable")
         return None
@@ -94,6 +96,7 @@ class BrowserManager:
         firefox_path = BrowserManager.get_browser_path("firefox.exe")
         if not firefox_path:
             #print("❌ Firefox introuvable.")
+            Settings.WRITE_LOG_DEV_FILE("Firefox introuvable.", "ERROR")
             return None
 
         existing_profiles = BrowserManager._get_firefox_profiles()
@@ -104,6 +107,7 @@ class BrowserManager:
 
         if ValidationUtils.path_exists(profile_dir):
             #print(f"✅ Profil '{profile_name}' déjà existant : {profile_dir}")
+            Settings.WRITE_LOG_DEV_FILE(f"Profil '{profile_name}' deja existant : {profile_dir}", "INFO")
             return profile_dir
 
         cmd = f"{profile_name} {profile_dir}"
@@ -115,10 +119,12 @@ class BrowserManager:
         if result.returncode != 0:
             #print(f"❌ Échec création (code {result.returncode})")
             #print(result.stderr.strip())
+            Settings.WRITE_LOG_DEV_FILE(f"Echec creation (code {result.returncode})", "ERROR")
             return None
 
         if ValidationUtils.path_exists(profile_dir):
             #print(f"✅ Profil créé : {profile_dir}")
+            Settings.WRITE_LOG_DEV_FILE(f"Profil cree : {profile_dir}", "INFO")
             return profile_dir
 
         #print("❌ Le dossier du profil n'a pas été trouvé après création.")
@@ -162,6 +168,7 @@ class BrowserManager:
                     if profile['name'] in f.path:
                         return profile
         except Exception:
+            Settings.WRITE_LOG_DEV_FILE("Profil introuvable.", "ERROR")
             return None
         return None
 
@@ -189,6 +196,7 @@ class BrowserManager:
                             'profile': profile['name']
                         })
                 except Exception:
+                    Settings.WRITE_LOG_DEV_FILE("Profil introuvable.", "ERROR")
                     pass
             return True
 
@@ -216,6 +224,7 @@ class BrowserManager:
                     win32gui.PostMessage(window["hwnd"], win32con.WM_CLOSE, 0, 0)
                     #print(f"✅ Fermeture : {window['profile']} - {window['title']}")
                 except Exception as e:
+                    Settings.WRITE_LOG_DEV_FILE(f"Erreur fermeture {window['profile']} : {e}", "ERROR")
                     print(f"❌ Erreur fermeture {window['profile']}: {e}")
 
     # ---------------------- Chrome ----------------------
@@ -248,6 +257,7 @@ class BrowserManager:
             #print("✅ Chrome lancé")
             time.sleep(2)
         except Exception as e:
+            Settings.WRITE_LOG_DEV_FILE(f"Erreur lancement Chrome : {e}", "ERROR")
             print(f"❌ Erreur lancement Chrome : {e}")
         finally:
             if 'driver' in locals():
@@ -286,7 +296,8 @@ class BrowserManager:
                     current_path = f"{path_trace}[{idx}]"
                     BrowserManager.Search_Keys(item, search_keys, results, current_path)
         except Exception as e:
-            print(f"💥 Erreur lors de la recherche des clés à {path_trace}: {e}")
+            # print(f"💥 Erreur lors de la recherche des clés à {path_trace}: {e}")
+            Settings.WRITE_LOG_DEV_FILE(f"Erreur lors de la recherche des clés à {path_trace} : {e}", "ERROR")
             
 
 
@@ -307,6 +318,7 @@ class BrowserManager:
 
         if not ValidationUtils.path_exists(path_file):
             # print(f"❌ Fichier introuvable pour le profil {profile_name}")
+            Settings.WRITE_LOG_DEV_FILE(f"Fichier introuvable pour le profil {profile_name}", "ERROR")
             return None
 
         try:
@@ -329,13 +341,17 @@ class BrowserManager:
             return results
 
         except json.JSONDecodeError as e:
-            print(f"💥 Erreur JSON : impossible de décoder le fichier {path_file} : {e}")
+            # print(f"💥 Erreur JSON : impossible de décoder le fichier {path_file} : {e}")
+            Settings.WRITE_LOG_DEV_FILE(f"Erreur JSON : impossible de décoder le fichier {path_file} : {e}", "ERROR")
         except PermissionError:
-            print(f"💥 Permission refusée pour lire le fichier {path_file}")
+            # print(f"💥 Permission refusée pour lire le fichier {path_file}")
+            Settings.WRITE_LOG_DEV_FILE(f"Permission refusée pour lire le fichier {path_file}", "ERROR")
         except FileNotFoundError:
-            print(f"💥 Fichier non trouvé (malgré la vérification précédente) : {path_file}")
+            # print(f"💥 Fichier non trouvé (malgré la vérification précédente) : {path_file}")
+            Settings.WRITE_LOG_DEV_FILE(f"Fichier non trouvé (malgré la vérification précedente) : {path_file}", "ERROR")
         except Exception as e:
-            print(f"💥 Erreur inattendue lors du traitement de {path_file} : {e}")
+            # print(f"💥 Erreur inattendue lors du traitement de {path_file} : {e}")
+            Settings.WRITE_LOG_DEV_FILE(f"Erreur inattendue lors du traitement de {path_file} : {e}", "ERROR")
 
         return None
 
@@ -439,6 +455,7 @@ class BrowserManager:
         except Exception as e:
             # print("\n❌ ERREUR CRITIQUE lors de la mise à jour Secure Preferences")
             # print(f"🧨 Détail : {e}\n")
+            Settings.WRITE_LOG_DEV_FILE(f"ERREUR CRITIQUE lors de la mise à jour Secure Preferences : {e}", "ERROR")
             return None
 
 
@@ -469,6 +486,7 @@ class BrowserManager:
                     closed_any = True
 
             except (psutil.NoSuchProcess, psutil.AccessDenied):
+                Settings.WRITE_LOG_DEV_FILE(f"ERREUR CRITIQUE lors de la fermeture du profil {profile_name}", "ERROR")
                 continue
 
         return closed_any

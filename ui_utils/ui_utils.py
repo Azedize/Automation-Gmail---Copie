@@ -99,6 +99,7 @@ class VerticalTabBar(QtWidgets.QTabBar):
             )
             painter.drawText(text_rect, QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignLeft, text)
             painter.restore()
+        painter.end()   
 
 
 
@@ -364,7 +365,9 @@ class UIManager:
 
         except Exception as e:
             print(f"❌ [ERROR] Une erreur est survenue: {type(e).__name__} : {e}")
-            UIManager.Show_Critical_Message(window, "Error", f"An error occurred while displaying results: {e}")
+            # Settings.WRITE_LOG_DEV_FILE(f"Une erreur est survenue: {type(e).__name__} : {e}", "ERROR")
+            # UIManager.Show_Critical_Message(window, "Error", f"An error occurred while displaying results: {e}")
+            Settings.WRITE_LOG_DEV_FILE(f"Une erreur est survenue: {type(e).__name__} : {e}", "ERROR")
 
 
 
@@ -535,9 +538,11 @@ class UIManager:
             text_to_copy = "\n".join(items)
             clipboard = QApplication.clipboard()
             clipboard.setText(text_to_copy)
-            #print(f"[DEBUG] 📋 {len(items)} éléments copiés dans le presse-papiers.")
-        # else:
-            #print("[DEBUG] ⚠️ Aucun QListWidget trouvé dans cet onglet.")
+            # print(f"[DEBUG] 📋 {len(items)} éléments copiés dans le presse-papiers.")
+            Settings.WRITE_LOG_DEV_FILE(f"[DEBUG] 📋 {len(items)} éléments copiés dans le presse-papiers.", "INFO")
+        else:
+            # print("[DEBUG] ⚠️ Aucun QListWidget trouvé dans cet onglet.")
+            Settings.WRITE_LOG_DEV_FILE("[DEBUG] ⚠️ Aucun QListWidget rencontré dans cet onglet.", "INFO")
 
 
 
@@ -546,12 +551,14 @@ class UIManager:
             log_box = self.findChild(QGroupBox, "log")
             if not log_box:
                 #print("[DEBUG] ❌ QGroupBox 'log' introuvable.")
+                Settings.WRITE_LOG_DEV_FILE("[DEBUG] ❌ QGroupBox 'log' introuvable.", "INFO")
                 return
 
             labels = log_box.findChildren(QLabel)
 
             if not labels:
                 #print("[DEBUG] ⚠️ Aucun QLabel trouvé dans 'log'.")
+                Settings.WRITE_LOG_DEV_FILE("[DEBUG] ⚠️ Aucun QLabel rencontré dans 'log'.", "INFO")
                 return
 
             log_lines = [label.text() for label in labels]
@@ -1064,6 +1071,7 @@ class UIManager:
     def Validate_Checkbox_Linked_Qlineedit( qlineedit: QLineEdit):
         if qlineedit is None:
             #print("[❌ ERREUR] Le QLineEdit est None. Validation ignorée.")
+            Settings.WRITE_LOG_DEV_FILE("Le QLineEdit est None. Validation ignorée.", "ERROR")
             return
 
         parent_widget = qlineedit.parent()
@@ -1124,7 +1132,6 @@ class UIManager:
                 qlineedit.setToolTip("")
                 #print("[🔔 INFO] Bordure retirée et tooltip supprimé.")
             QTimer.singleShot(0, apply_ok)
-
 
 
 

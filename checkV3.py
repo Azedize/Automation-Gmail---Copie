@@ -1,7 +1,7 @@
 # ==========================================================
 # main.py
-# Version complète avec DevLogger et sécurité
 # ==========================================================
+
 
 import os
 import sys
@@ -13,6 +13,7 @@ import time
 from pathlib import Path
 import tempfile
 import io
+import datetime
 
 # ==========================================================
 # 🔹 FIX UTF-8 POUR WINDOWS CONSOLE
@@ -46,9 +47,11 @@ class DependencyManager:
         spec = importlib.util.find_spec("win32api")
         if spec:
             # print("pywin32 déjà installé")
+            Settings.WRITE_LOG_DEV_FILE("pywin32 already installed", "INFO")
             return True
 
         # print("Installation de pywin32...")
+        Settings.WRITE_LOG_DEV_FILE("Installing pywin32...", "INFO")
         site_packages = Path(python_exe).parent / "Lib" / "site-packages"
         folders_to_remove = ["win32", "pywin32_system32"]
 
@@ -58,6 +61,7 @@ class DependencyManager:
                 try:
                     shutil.rmtree(folder_path)
                     # print(f"Suppression de {folder}")
+                    Settings.WRITE_LOG_DEV_FILE(f"Removed {folder}", "INFO")
                 except PermissionError:
                     print(f"Impossible de supprimer {folder} (fermez IDE/console)")
 
@@ -69,8 +73,10 @@ class DependencyManager:
                 stderr=subprocess.DEVNULL
             )
             # print("pywin32 installé avec succès")
+            Settings.WRITE_LOG_DEV_FILE("pywin32 installed successfully", "INFO")
         except subprocess.CalledProcessError:
             # print("Échec installation pywin32")
+            Settings.WRITE_LOG_DEV_FILE("Failed to install pywin32", "ERROR")
             return False
 
         postinstall_script = Path(python_exe).parent / "Scripts" / "pywin32_postinstall.py"
@@ -83,11 +89,14 @@ class DependencyManager:
                     stderr=subprocess.DEVNULL
                 )
                 # print("Post-installation terminée")
+                Settings.WRITE_LOG_DEV_FILE("Post-installation completed", "INFO")
             except subprocess.CalledProcessError:
                 # print("Échec post-installation pywin32")
+                Settings.WRITE_LOG_DEV_FILE("Failed post-installation pywin32", "ERROR")
                 return False
 
         # print("Redémarrage script dans 10s...")
+        Settings.WRITE_LOG_DEV_FILE("Restarting script in 10s...", "INFO")
         time.sleep(10)
         subprocess.run([python_exe, sys.argv[0]])
         sys.exit(0)
@@ -106,27 +115,33 @@ class DependencyManager:
         except (ModuleNotFoundError, ImportError):
             Settings.ALL_PACKAGES_INSTALLED = False
             # print(f"Installation de {package}...")
+            Settings.WRITE_LOG_DEV_FILE(f"Installing {package}...", "INFO")
 
             if not Settings.UPDATED_PIP_23_3:
                 try:
                     # print("Mise à jour pip...")
+                    Settings.WRITE_LOG_DEV_FILE("Updating pip...", "INFO")
                     subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "pip==23.3"])
                     Settings.UPDATED_PIP_23_3 = True
                 except subprocess.CalledProcessError:
                     # print("Erreur mise à jour pip")
+                    Settings.WRITE_LOG_DEV_FILE("Error updating pip", "ERROR")
                     sys.exit()
 
             try:
                 subprocess.check_call([sys.executable, "-m", "pip", "install", install_spec])
                 # print(f"{package} installé")
+                Settings.WRITE_LOG_DEV_FILE(f"{package} installed", "INFO")
             except subprocess.CalledProcessError:
                 # print(f"Erreur installation {package}")
+                Settings.WRITE_LOG_DEV_FILE(f"Error installing {package}", "ERROR")
                 sys.exit()
 
             try:
                 return importlib.import_module(module_to_import)
             except ImportError as e:
                 # print(f"Erreur import {module_to_import}")
+                Settings.WRITE_LOG_DEV_FILE(f"Error importing {module_to_import}", "ERROR")
                 sys.exit()
 
 
@@ -139,11 +154,13 @@ class UpdateManager:
     def _read_local_version(path):
         if not path or not os.path.exists(path):
             # print("Version locale introuvable")
+            Settings.WRITE_LOG_DEV_FILE("Local version not found", "ERROR")
             return None
         try:
             with open(path, "r", encoding="utf-8") as f:
                 return f.read().strip()
         except Exception:
+            Settings.WRITE_LOG_DEV_FILE("Error reading local version", "ERROR")
             # print("Erreur lecture version locale")
             return None
 
@@ -151,6 +168,7 @@ class UpdateManager:
     def _download_and_extract(zip_url, target_dir, clean_target=False, extract_subdir=None):
         try:
             # print("Téléchargement mise à jour depuis serveur")
+            Settings.WRITE_LOG_DEV_FILE("Downloading update from server", "INFO")
             with tempfile.TemporaryDirectory() as tmpdir:
                 zip_path = os.path.join(tmpdir, "update.zip")
                 import requests
@@ -161,14 +179,17 @@ class UpdateManager:
                         if chunk:
                             f.write(chunk)
                 # print("ZIP téléchargé avec succès")
+                Settings.WRITE_LOG_DEV_FILE("ZIP downloaded successfully", "INFO")
 
                 if clean_target and os.path.exists(target_dir):
                     shutil.rmtree(target_dir)
                     # print("Ancien dossier cible supprimé")
+                    Settings.WRITE_LOG_DEV_FILE("Old target directory removed", "INFO")
 
                 with zipfile.ZipFile(zip_path, "r") as z:
                     z.extractall(tmpdir)
                 # print("Extraction ZIP temporaire terminée")
+                Settings.WRITE_LOG_DEV_FILE("Temporary ZIP extraction completed", "INFO")
 
                 extracted_root = next(
                     os.path.join(tmpdir, d)
@@ -182,6 +203,7 @@ class UpdateManager:
                     if os.path.exists(candidate):
                         extracted_dir = candidate
                         # print(f"Sous-dossier extrait : {extract_subdir}")
+                        Settings.WRITE_LOG_DEV_FILE(f"Subdirectory extracted: {extract_subdir}", "INFO")
 
                 if not os.path.exists(target_dir):
                     os.makedirs(target_dir)
@@ -197,14 +219,18 @@ class UpdateManager:
                         shutil.move(s, d)
 
                 # print(f"Extraction terminée dans : {target_dir}")
+                Settings.WRITE_LOG_DEV_FILE(f"Extraction completed in: {target_dir}", "INFO")
+                return True
 
         except Exception:
             # print("Erreur téléchargement/extraction update")
+            Settings.WRITE_LOG_DEV_FILE("Error downloading/extracting update", "ERROR")
             raise
 
     @staticmethod
     def check_and_update() -> bool:
         # print("Vérification mise à jour")
+        Settings.WRITE_LOG_DEV_FILE("Checking for updates", "INFO")
         try:
             from api.base_client import APIManager
             response = APIManager.make_request("__CHECK_URL_PROGRAMM__", method="GET", timeout=10)
@@ -221,6 +247,7 @@ class UpdateManager:
 
             if not local_program or local_program != server_program:
                 # print("MISE À JOUR PROGRAMME REQUISE")
+                Settings.WRITE_LOG_DEV_FILE("Required program update", "INFO")
                 UpdateManager._download_and_extract(
                     Settings.API_ENDPOINTS["__SERVER_ZIP_URL_PROGRAM__"],
                     ROOT_DIR,
@@ -231,6 +258,7 @@ class UpdateManager:
 
             if not local_ext or local_ext != server_ext:
                 # print("MISE À JOUR EXTENSIONS REQUISE")
+                Settings.WRITE_LOG_DEV_FILE("Required extensions update", "INFO")
                 tools_dir = Settings.TOOLS_DIR
                 if not os.path.exists(tools_dir):
                     os.makedirs(tools_dir)
@@ -243,10 +271,12 @@ class UpdateManager:
                 return True
 
             # print("APPLICATION À JOUR – AUCUNE ACTION")
+            Settings.WRITE_LOG_DEV_FILE("Application up-to-date", "INFO")
             return False
 
         except Exception:
             # print("Erreur critique update")
+            Settings.WRITE_LOG_DEV_FILE("Critical update error", "ERROR")
             return True
 
 
@@ -255,6 +285,9 @@ class UpdateManager:
 # ==========================================================
 def initialize_dependencies():
     # print("Initialisation des dépendances")
+
+    Settings.WRITE_LOG_DEV_FILE("Initialisation des dépendances" , level="INFO")
+
     DependencyManager.install_and_verify_pywin32()
 
     global requests, urllib3, PyQt6, cryptography_module, psutil, pytz, tqdm, platformdirs, selenium
@@ -276,9 +309,10 @@ def initialize_dependencies():
 # 🔹 MAIN
 # ==========================================================
 def main():
+    
+
     try:
-        # DevLogger.init_logger(log_file="Log/LogDev/my_project.log")
-        # print("Démarrage application principale")
+        Settings.WRITE_LOG_DEV_FILE("Démarrage application principale", level="INFO")
 
         initialize_dependencies()
     
@@ -286,16 +320,20 @@ def main():
         pythonw_path = Settings.find_pythonw()
         if not pythonw_path:
             # DevLogger.critical("pythonw.exe introuvable")
+            Settings.WRITE_LOG_DEV_FILE("pythonw.exe not found", "ERROR")
             sys.exit(1)
 
         updated = UpdateManager.check_and_update()
         # if updated:
         #     print("UPDATE EFFECTUÉ")
+        #     Settings.WRITE_LOG_DEV_FILE("Update completed", "INFO")
         # else:
         #     print("APPLICATION À JOUR")
+        #     Settings.WRITE_LOG_DEV_FILE("Application up-to-date", "INFO")
 
         if len(sys.argv) == 1:
             # print("Lancement de l'application principale")
+            Settings.WRITE_LOG_DEV_FILE("Launching main application", "INFO")
             encrypted_key, secret_key = EncryptionService.generate_encrypted_key()
             # ❌ Ne jamais logger ces clés
 
@@ -304,10 +342,12 @@ def main():
                 subprocess.run([sys.executable, str(script_path), encrypted_key, secret_key])
             else:
                 # print("Script principal introuvable")
+                Settings.WRITE_LOG_DEV_FILE("Main script not found", "ERROR")
                 sys.exit(1)
 
     except Exception:
         # print("Erreur fatale application")
+        Settings.WRITE_LOG_DEV_FILE("Fatal application error", "ERROR")
         sys.exit(1)
 
 

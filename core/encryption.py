@@ -36,6 +36,7 @@ class EncryptionService:
             return kdf.derive(password.encode("utf-8"))
 
         except Exception as e:
+            settings.WRITE_LOG_DEV_FILE(f"Key derivation failed: {e}", level="ERROR")
             raise EncryptionError(f"Key derivation failed: {e}")
 
     # =========================
@@ -45,6 +46,7 @@ class EncryptionService:
     def encrypt_message(plaintext: str, key_bytes: bytes) -> str:
         try:
             if len(key_bytes) != settings.AES_KEY_LENGTH:
+                settings.WRITE_LOG_DEV_FILE("Invalid AES key length", level="ERROR")
                 raise EncryptionError("Invalid AES key length")
 
             padder = padding.PKCS7(settings.AES_BLOCK_SIZE).padder()
@@ -62,6 +64,7 @@ class EncryptionService:
             return base64.b64encode(iv + ciphertext).decode("utf-8")
 
         except Exception as e:
+            settings.WRITE_LOG_DEV_FILE(f"AES-CBC encryption failed: {e}", level="ERROR")
             raise EncryptionError(f"AES-CBC encryption failed: {e}")
 
     # =========================
@@ -71,6 +74,7 @@ class EncryptionService:
     def decrypt_message(base64_data: str, key_bytes: bytes) -> str:
         try:
             if len(key_bytes) != settings.AES_KEY_LENGTH:
+                settings.WRITE_LOG_DEV_FILE("Invalid AES key length", level="ERROR")
                 raise EncryptionError("Invalid AES key length")
 
             raw = base64.b64decode(base64_data)
@@ -91,6 +95,7 @@ class EncryptionService:
             return plaintext.decode("utf-8")
 
         except Exception as e:
+            settings.WRITE_LOG_DEV_FILE(f"AES-CBC decryption failed: {e}", level="ERROR")
             raise EncryptionError(f"AES-CBC decryption failed: {e}")
 
     # =========================
@@ -115,6 +120,7 @@ class EncryptionService:
             return payload.hex()
 
         except Exception as e:
+            settings.WRITE_LOG_DEV_FILE(f"AES-GCM encryption failed: {e}", level="ERROR")
             raise EncryptionError(f"AES-GCM encryption failed: {e}")
 
 
@@ -128,6 +134,7 @@ class EncryptionService:
             else:
                 return False
         except Exception as e:
+            settings.WRITE_LOG_DEV_FILE(f"Key derivation failed: {e}", level="ERROR")
             return False
 
 

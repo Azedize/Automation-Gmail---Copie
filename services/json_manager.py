@@ -41,6 +41,7 @@ class JsonManager:
                 return random.randint(a, b)
             return int(text)
         except Exception:
+            Settings.WRITE_LOG_DEV_FILE(f"Error parsing random range: {text}", level="ERROR")
             return 0
 
     
@@ -396,6 +397,7 @@ class JsonManager:
         except Exception as e:
             #print("❌ Error while saving JSON file")
             #print(f"❌ Exception: {e}")
+            Settings.WRITE_LOG_DEV_FILE(f"Error while saving JSON file: {e}", "ERROR")
             return "ERROR"
 
 

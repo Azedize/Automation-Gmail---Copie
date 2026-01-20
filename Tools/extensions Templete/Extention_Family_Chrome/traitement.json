@@ -5,7 +5,7 @@
     },
     {
         "process": "open_inbox",
-        "sleep": 1
+        "sleep": 3
     },
     {
         "process": "loop",

@@ -40,6 +40,7 @@ class SessionManager:
 
         if not ValidationUtils.path_exists(self.session_path):
             # print("[WARNING] ❌ Le fichier session.txt n'existe pas")
+            settings.WRITE_LOG_DEV_FILE("Le fichier session n'existe pas", "WARNING")
             session_info["error"] = "FileNotFound"
             return session_info
 
@@ -49,6 +50,7 @@ class SessionManager:
 
             if not encrypted:
                 # print("[WARNING] ❌ Fichier session.txt vide")
+                settings.WRITE_LOG_DEV_FILE("Le fichier session est vide", "WARNING")
                 session_info["error"] = "EmptyFile"
                 return session_info
 
@@ -56,6 +58,7 @@ class SessionManager:
 
             is_valid, data = ValidationUtils.validate_session_format(decrypted)
             if not is_valid:
+                settings.WRITE_LOG_DEV_FILE("Format de session invalide", "WARNING")
                 # print("[ERROR] Format session invalide")
                 session_info["error"] = "InvalidFormat"
                 return session_info
@@ -71,12 +74,14 @@ class SessionManager:
             if (now - last_session) < datetime.timedelta(days=2):
                 session_info.update({"valid": True, "username": username , "password": password, "date": last_session, "p_entity": p_entity})
             else:
+                settings.WRITE_LOG_DEV_FILE("Session expirée", "WARNING")
                 # print("[INFO] Session expirée")
                 session_info["error"] = "Expired"
 
         except Exception as e:
             # print(f"[ERROR] Lecture fichier session : {e}")
             session_info["error"] = f"FileReadError: {e}"
+            settings.WRITE_LOG_DEV_FILE(f"Erreur lors de la lecture du fichier session : {e}", "ERROR")
 
         return session_info
 
@@ -96,8 +101,10 @@ class SessionManager:
                 f.write(encrypted)
 
             # print(f"[INFO] Session créée pour '{username}'")
+            settings.WRITE_LOG_DEV_FILE(f"Session crée pour '{username}'", "INFO")
             return True
         except Exception as e:
+            settings.WRITE_LOG_DEV_FILE(f"Erreur lors de la création de la session : {e}", "ERROR")
             # print(f"[ERROR] Création session échouée : {e}")
             return False
 
@@ -106,11 +113,13 @@ class SessionManager:
         if ValidationUtils.path_exists(self.session_path):
             try:
                 os.remove(self.session_path)
+                settings.WRITE_LOG_DEV_FILE("Session supprimée", "INFO")
                 # print("[INFO] Session supprimée")
             except Exception as e:
                 print(f"[ERROR] Suppression session échouée : {e}")
-        # else:
-        #     print("[INFO] Aucun fichier de session à supprimer")
+        else:
+            print("[INFO] Aucun fichier de session à supprimer")
+            settings.WRITE_LOG_DEV_FILE("Aucun fichier de session à supprimer", "INFO")
 
     # ================== Validation via API ==================
     def validate_session_with_api(self, username: str, p_entity: str) -> Dict:
@@ -128,6 +137,7 @@ class SessionManager:
 
         except Exception as e:
             # print(f"[ERROR] Validation API échouée : {e}")
+            settings.WRITE_LOG_DEV_FILE(f"Erreur lors de la validation de la session via l'API : {e}", "ERROR")
             return {"valid": False, "error": str(e)}
 
     # ================== Vérification complète ==================
@@ -135,25 +145,29 @@ class SessionManager:
         session_info = self.check_session()
         if not session_info["valid"]:
             # print("[SESSION] ❌ Session locale invalide")
+            settings.WRITE_LOG_DEV_FILE(f"Session locale invalide: {session_info['error']}", "WARNING")
             return session_info
 
         # print("[SESSION] ✅ Session locale valide, vérification API...")
+        settings.WRITE_LOG_DEV_FILE("Session locale valide, étape API", "INFO")
         api_result = self.validate_session_with_api(session_info["username"], session_info["p_entity"])
 
         if not api_result.get("valid"):
             # print("[SESSION] ❌ Session refusée par l’API")
+            settings.WRITE_LOG_DEV_FILE(f"Session refusée par l'API: {api_result['error']}", "WARNING")
             session_info["valid"] = False
             session_info["error"] = api_result.get("error", "ApiValidationFailed")
             return session_info
 
         # print("[SESSION] ✅ Session validée (LOCAL + API)")
+        settings.WRITE_LOG_DEV_FILE("Session validée (LOCAL + API)", "INFO")
         return session_info
 
     # ================== Vérification credentials API ==================
     def check_api_credentials(self, username: str, password: str) -> Union[tuple, int]:
         try:
             # print(f"🔹 [DEBUG] Validation inputs: username='{username}', password='{'*' * len(password)}'")
-
+            # settings.WRITE_LOG_DEV_FILE(f"Validation inputs: username='{username}', password='{'*' * len(password)}'", "DEBUG")
             valid_user, msg_user = ValidationUtils.validate_qlineedit_text(username, validator_type="text", min_length=5)
             valid_pass, msg_pass = ValidationUtils.validate_qlineedit_text(password, min_length=6)
 
@@ -169,14 +183,17 @@ class SessionManager:
 
             resp = None
             for attempt in range(1, 6):
+                settings.WRITE_LOG_DEV_FILE(f"Attempt {attempt}/5", "DEBUG")
                 # print(f"🔁 API attempt {attempt}/5")
                 result = APIManager.make_request("_APIACCESS_API", method="POST", data=payload, timeout=10)
                 resp = APIManager._handle_response(result, failure_default=None)
                 if resp is not None:
+                    settings.WRITE_LOG_DEV_FILE(f"API response received", "DEBUG")
                     # print(f"✅ API response received")
                     break
                 time.sleep(2)
             else:
+                settings.WRITE_LOG_DEV_FILE("Connection failed after 5 attempts", "ERROR")
                 # print("❌ Connection failed after 5 attempts")
                 return -3
 
@@ -189,11 +206,13 @@ class SessionManager:
                     return -4
                 return (entity, resp)
             except Exception as e:
+                settings.WRITE_LOG_DEV_FILE(f"Exception during decryption: {e}", "ERROR")
                 # print(f"❌ Exception during decryption: {e}")
                 traceback.print_exc()
                 return -5
 
         except Exception as e:
+            settings.WRITE_LOG_DEV_FILE(f"Unexpected exception in check_api_credentials: {e}", "ERROR")
             # print(f"❌ Unexpected exception in check_api_credentials: {e}")
             traceback.print_exc()
             return -5
