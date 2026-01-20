@@ -22,6 +22,9 @@ TOOLS_DIR = Path("Tools")
 EXTENSIONS_DIR_TEMPLETE = TOOLS_DIR / "extensions Templete"
 
 
+
+
+# 
 LOG_DEV_FILE = os.path.abspath(os.path.join( "Log/LogDev/my_project.log"))
 
 # ==========================================================
@@ -313,7 +316,7 @@ class UpdateManager:
                 if response.status_code != 200:
                     WRITE_LOG_DEV_FILE(f"Attempt {attempt}: Failed to fetch version.json (status {response.status_code})", "ERROR")
                     if attempt < max_attempts:
-                        time.sleep(2)  # تأخير قبل إعادة المحاولة
+                        time.sleep(2)  
                         continue
                     return True
 
@@ -353,7 +356,7 @@ class UpdateManager:
             except Exception as e:
                 WRITE_LOG_DEV_FILE(f"Attempt {attempt}: Critical update error: {e}", "ERROR")
                 if attempt < max_attempts:
-                    time.sleep(2)  # تأخير قبل إعادة المحاولة
+                    time.sleep(2)  #    المحاولة
                     continue
                 return True
 
