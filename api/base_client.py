@@ -17,8 +17,6 @@ if ROOT_DIR not in sys.path:
 
 try:
     from config import Settings
-    from core import EncryptionService
-
 except ImportError as e:
     raise ImportError(f"❌ Erreur d'importation: {e}")
 
@@ -48,7 +46,7 @@ class APIManager:
         for attempt in range(1, 4):
             try:
                 #print(f"🌐 Tentative {attempt} - {method} {url}")
-                Settings.WRITE_LOG_DEV_FILE(f"Tentative {attempt} - {method} {url}", level="INFO")
+                # Settings.WRITE_LOG_DEV_FILE(f"Tentative {attempt} - {method} {url}", level="INFO")
 
                 response = self.session.request(
                     method=method.upper(),
@@ -60,7 +58,7 @@ class APIManager:
                 )
 
                 #print(f"📥 HTTP {response.status_code}")
-                Settings.WRITE_LOG_DEV_FILE(f"HTTP {response.status_code}", level="INFO")
+                # Settings.WRITE_LOG_DEV_FILE(f"HTTP {response.status_code}", level="INFO")
 
                 if response.status_code == 200:
                     try:
