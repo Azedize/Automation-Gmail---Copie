@@ -2397,6 +2397,8 @@ def main():
 
     if ValidationUtils.path_exists(Path(Settings.APP_ICON)):
         app.setWindowIcon(QIcon(str(Path(Settings.APP_ICON))))  
+    else:
+        print("⚠️ [LOG] Fichier d'icone introuvable")
 
     if session_valid:
         try:
