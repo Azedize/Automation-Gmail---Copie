@@ -26,11 +26,7 @@ class APIManager:
         self.session = requests.Session()
         self.session.verify = False  # Désactive vérif SSL (warning mais volontaire)
 
-        retries = Retry(
-            total=3,
-            backoff_factor=0.5,
-            status_forcelist=[500, 502, 503, 504]
-        )
+        retries = Retry( total=3 , backoff_factor=0.5 , status_forcelist=[500, 502, 503, 504])
         self.session.mount("https://", HTTPAdapter(max_retries=retries))
         self.session.mount("http://", HTTPAdapter(max_retries=retries))
 
@@ -48,14 +44,7 @@ class APIManager:
                 #print(f"🌐 Tentative {attempt} - {method} {url}")
                 # Settings.WRITE_LOG_DEV_FILE(f"Tentative {attempt} - {method} {url}", level="INFO")
 
-                response = self.session.request(
-                    method=method.upper(),
-                    url=url,
-                    data=data,
-                    json=json_data,
-                    params=params,
-                    timeout=timeout
-                )
+                response = self.session.request( method=method.upper(), url=url, data=data, json=json_data, params=params,  timeout=timeout )
 
                 #print(f"📥 HTTP {response.status_code}")
                 # Settings.WRITE_LOG_DEV_FILE(f"HTTP {response.status_code}", level="INFO")
@@ -74,6 +63,7 @@ class APIManager:
                 else:
                     last_exception = f"HTTP {response.status_code}"
                     #print(f"⚠️ HTTP {response.status_code} - réponse tronquée: {response.text[:100]}")
+                    Settings.WRITE_LOG_DEV_FILE(f"HTTP {response.status_code} - réponse tronquée: {response.text[:100]}", level="ERROR")
 
             except requests.RequestException as e:
                 last_exception = str(e)
@@ -100,7 +90,6 @@ class APIManager:
 
     # --------------------- Méthodes API ---------------------
     def save_email(self, params: Dict[str, Any]) -> str:
-        # ❌ Ne jamais logger params contenant emails
         result = self.make_request("_SAVE_EMAIL_API", "POST", data=params)
         return str(self._handle_response(result, ""))
 
@@ -137,3 +126,5 @@ class APIManager:
 # Instance globale
 # ==========================================================
 APIManager = APIManager()
+
+
