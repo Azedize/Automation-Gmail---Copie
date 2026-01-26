@@ -917,6 +917,7 @@ def store_browser_session_info(pid: str, Path_DiR: str, email: str, SESSION_ID: 
 # Thread responsable du traitement de l'extraction des emails.
 # Gère l'exécution des navigateurs avec les extensions, l'enregistrement des LOGS,
 # et la gestion des processus.
+
 class ExtractionThread(QThread):
 
     progress = pyqtSignal(str)  
@@ -1088,6 +1089,8 @@ class ExtractionThread(QThread):
                         
                         ValidationUtils.ensure_path_exists(Settings.CHROME_PROFILES, is_file=False)
 
+                        
+
                         if not ValidationUtils.path_exists(os.path.join(Settings.CHROME_PROFILES,profile_email)):
 
                             BrowserManager.Run_Browser_Create_Profile(profile_email)
@@ -1105,7 +1108,7 @@ class ExtractionThread(QThread):
                             
                             b64 = EncryptionService.encrypt_aes_gcm("A9!fP3z$wQ8@rX7kM2#dN6^bH1&yL4t*", combined)
                             url =f"https://example.com/?rep={b64}"
-
+                        
                             command = [
                                 BrowserManager.get_browser_path("chrome.exe"),
                                 f"--user-data-dir={os.path.join(Settings.CHROME_PROFILES, profile_email)}",
