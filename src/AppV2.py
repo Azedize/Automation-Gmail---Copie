@@ -2287,110 +2287,104 @@ class LoginWindow(QMainWindow):
 
 
     def Handle_Login(self):
-        print("🔹 Début de Handle_Login")
+        print("🔹 Starting Handle_Login")
 
-        # 1️⃣ Récupération des inputs
+        # 1️⃣ Get input from UI
         username = self.login_input.text().strip() if hasattr(self.login_input, "text") else str(self.login_input).strip()
         password = self.password_input.text().strip() if hasattr(self.password_input, "text") else str(self.password_input).strip()
-        print(f"📝 Inputs reçus: username='{username}', password='{'*' * len(password)}'")
+        print(f"📝 Inputs received: username='{username}', password='{'*' * len(password)}'")
 
-        # 2️⃣ Vérification longueur username/password
+        # 2️⃣ Validate username and password length
         if len(username) <= 4:
-            msg = "Nom d'utilisateur doit contenir plus de 4 caractères."
+            msg = "Username must contain more than 4 characters."
             print(f"❌ {msg}")
             self.erreur_label.setText(msg)
             self.erreur_label.show()
             return
 
         if len(password) <= 4:
-            msg = "Mot de passe doit contenir plus de 4 caractères."
+            msg = "Password must contain more than 4 characters."
             print(f"❌ {msg}")
             self.erreur_label.setText(msg)
             self.erreur_label.show()
             return
 
-        # 3️⃣ Appel à l'API
-        print("📡 Appel à check_api_credentials...")
+        # 3️⃣ Call check_api_credentials
+        print("📡 Calling check_api_credentials...")
         auth_result = SessionManager.check_api_credentials(username, password)
-        print(f"🔍 Résultat de l'API: {auth_result}")
+        print(f"🔍 API result: {auth_result}")
 
-        # 4️⃣ Gestion des erreurs renvoyées
+        # 4️⃣ Handle API error codes
         if isinstance(auth_result, int):
             messages = {
-                -1: "Identifiants invalides. Réessayez.",
-                -2: "Cet appareil n'est pas autorisé. Contactez le support.",
-                -3: "Impossible de se connecter au serveur. Réessayez plus tard.",
-                -4: "Accès à cette application refusé.",
-                -5: "Erreur inconnue pendant l'authentification."
+                -1: "Invalid credentials. Please try again.",
+                -2: "This device is not authorized. Please contact support.",
+                -3: "Unable to connect to the server. Please try again later.",
+                -4: "Access to this application has been denied.",
+                -5: "Unknown error occurred during authentication."
             }
-            msg = messages.get(auth_result, "Erreur inconnue.")
-            print(f"❌ Code erreur: {auth_result} → {msg}")
+            msg = messages.get(auth_result, "Unknown error occurred.")
+            print(f"❌ Error code: {auth_result} → {msg}")
             self.erreur_label.setText(msg)
             self.erreur_label.show()
             return
 
-        # 5️⃣ Décryptage
+        # 5️⃣ Entity is already decrypted
         id_user, entity = auth_result
-        print(f"🔑 Tentative de décryptage de entity: {entity}")
-        try:
-            decrypted_entity = EncryptionService.decrypt_message(entity, Settings.KEY)
-            print(f"🔓 Décrypté avec succès: {decrypted_entity}")
-        except Exception as e:
-            msg = f"Erreur de décryptage de session: {str(e)}"
-            print(f"❌ {msg}")
-            self.erreur_label.setText(msg)
-            self.erreur_label.show()
-            return
+        print(f"✅ Authentication successful: idUser={id_user}, entity={entity}")
 
-        # 6️⃣ Création de la session
-        print("🛠️ Création de la session utilisateur...")
+        # 6️⃣ Create user session
+        print("🛠️ Creating user session...")
         try:
-            valid_session = SessionManager.create_session(username, password, decrypted_entity)
+            valid_session = SessionManager.create_session(username, password, entity)
             if not valid_session:
-                msg = "Échec de création de session utilisateur."
+                msg = "Failed to create user session."
                 print(f"❌ {msg}")
                 self.erreur_label.setText(msg)
                 self.erreur_label.show()
                 return
-            print("✅ Session créée avec succès")
+            print("✅ Session created successfully")
         except Exception as e:
-            msg = f"Exception lors de création de session: {str(e)}"
+            msg = f"Exception during session creation: {str(e)}"
             print(f"❌ {msg}")
             self.erreur_label.setText(msg)
             self.erreur_label.show()
             return
 
-        # 7️⃣ Lecture fichier JSON
-        print(f"📂 Lecture du fichier de configuration: {Settings.FILE_ACTIONS_JSON}")
+        # 7️⃣ Read JSON configuration file
+        print(f"📂 Reading configuration file: {Settings.FILE_ACTIONS_JSON}")
         try:
             with open(Settings.FILE_ACTIONS_JSON, "r", encoding="utf-8") as file:
                 json_data = json.load(file)
             if not json_data:
-                raise ValueError("Le fichier de configuration est vide.")
-            print("✅ Fichier JSON chargé avec succès")
+                raise ValueError("Configuration file is empty.")
+            print("✅ JSON file loaded successfully")
         except Exception as e:
-            msg = f"Erreur de configuration: {str(e)}"
+            msg = f"Configuration error: {str(e)}"
             print(f"❌ {msg}")
             self.erreur_label.setText(msg)
             self.erreur_label.show()
             return
 
-        # 8️⃣ Initialisation et affichage de MainWindow
-        print("🖥️ Initialisation de la fenêtre principale...")
+        # 8️⃣ Initialize and show MainWindow
+        print("🖥️ Initializing main window...")
         self.main_window = MainWindow(json_data)
         self.main_window.setFixedSize(Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT)
         self.main_window.setWindowTitle("AutoMailPro")
         self.main_window.stopButton.clicked.connect(lambda: Stop_All_Processes(self.main_window))
 
+        # Center the window
         screen = QGuiApplication.primaryScreen()
         screen_geometry = screen.availableGeometry()
         x = (screen_geometry.width() - self.main_window.width()) // 2
         y = (screen_geometry.height() - self.main_window.height()) // 2
         self.main_window.move(x, y)
 
+        # Show main window and close login
         self.main_window.show()
         self.close()
-        print("✅ Fenêtre principale affichée, login terminé avec succès")
+        print("✅ Main window displayed, login completed successfully")
+
 
 
 
