@@ -51,7 +51,7 @@ class APIManager:
         for attempt in range(1, 4):
             try:
                 # print(f"🌐 [TRY {attempt}] {method.upper()} {url}")
-                Settings.WRITE_LOG_DEV_FILE(f"[TRY {attempt}] {method.upper()} {url}", level="INFO")
+                # Settings.WRITE_LOG_DEV_FILE(f"[TRY {attempt}] {method.upper()} {url}", level="INFO")
 
                 response = self.session.request(  method=method.upper(), url=url,   data=data,  json=json_data,  params=params,    timeout=timeout  )
 
@@ -66,17 +66,17 @@ class APIManager:
                     try:
                         parsed = response.json()
                         # print(f"✅ [SUCCESS] JSON parsed: {parsed}")
-                        Settings.WRITE_LOG_DEV_FILE(f"[SUCCESS] JSON parsed: {parsed}", level="INFO")
+                        # Settings.WRITE_LOG_DEV_FILE(f"[SUCCESS] JSON parsed: {parsed}", level="INFO")
                         return {"status": "success", "data": parsed, "status_code": 200}
                     except json.JSONDecodeError:
                         # print(f"⚠️ [WARN] JSON decode failed, returning raw text")
-                        Settings.WRITE_LOG_DEV_FILE("[WARN] JSON decode failed, returning raw text", level="WARNING")
+                        # Settings.WRITE_LOG_DEV_FILE("[WARN] JSON decode failed, returning raw text", level="WARNING")
                         return {"status": "success", "data": response.text, "status_code": 200}
 
                 elif response.status_code in (401, 403):
                     msg = f"HTTP {response.status_code}: Access denied / session expired"
                     # print(f"⛔ [AUTH] {msg}")
-                    Settings.WRITE_LOG_DEV_FILE(f"[AUTH] {msg}", level="ERROR")
+                    # Settings.WRITE_LOG_DEV_FILE(f"[AUTH] {msg}", level="ERROR")
                     return {"status": "error", "error": msg, "status_code": response.status_code}
 
                 else:
@@ -107,7 +107,7 @@ class APIManager:
     def _handle_response(self, result: Dict[str, Any], success_default: Any = None, failure_default: Any = None):
         try:
             # 🔍 Log complet du résultat brut
-            Settings.WRITE_LOG_DEV_FILE(f"[DEBUG] Raw API result: {result}", level="DEBUG")
+            # Settings.WRITE_LOG_DEV_FILE(f"[DEBUG] Raw API result: {result}", level="DEBUG")
             # print(f"🟦 [DEBUG] Raw API result => {result}")
 
             status = result.get("status")
@@ -117,7 +117,7 @@ class APIManager:
                 data = result.get("data", success_default)
 
                 # ✅ Succès – log détaillé
-                Settings.WRITE_LOG_DEV_FILE(f"[SUCCESS] API returned data: {data}", level="INFO")
+                # Settings.WRITE_LOG_DEV_FILE(f"[SUCCESS] API returned data: {data}", level="INFO")
                 # print(f"🟩 [SUCCESS] Data => {data}")
 
                 return data

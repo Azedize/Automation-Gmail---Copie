@@ -17,7 +17,7 @@ import datetime
 
 
 from pathlib import Path
-
+import traceback
 TOOLS_DIR = Path("Tools")
 EXTENSIONS_DIR_TEMPLETE = TOOLS_DIR / "extensions Templete"
 
@@ -48,7 +48,6 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 
 
 def generate_encrypted_key():
-    """Génère une clé chiffrée pour l'authentification"""
     from cryptography.fernet import Fernet
     
     secret_key = Fernet.generate_key()
@@ -81,9 +80,6 @@ def WRITE_LOG_DEV_FILE( message: str, level: str = "INFO"):
 
 
 def clear_log():
-    """
-    Vide complètement le contenu du fichier de log.
-    """
     try:
         log_path = Path(LOG_DEV_FILE)
         if log_path.exists():
@@ -189,7 +185,7 @@ class DependencyManager:
     def install_and_import(package, module_name=None, required_import=None, version=None):
         module_to_import = module_name or package
         install_spec = f"{package}=={version}" if version else package
-
+        UPDATED_PIP_23_3 = False
         try:
             module = importlib.import_module(module_to_import)
             if required_import:
@@ -277,11 +273,7 @@ class UpdateManager:
                 # print("Extraction ZIP temporaire terminée")
                 WRITE_LOG_DEV_FILE("Temporary ZIP extraction completed", "INFO")
 
-                extracted_root = next(
-                    os.path.join(tmpdir, d)
-                    for d in os.listdir(tmpdir)
-                    if os.path.isdir(os.path.join(tmpdir, d))
-                )
+                extracted_root = next( os.path.join(tmpdir, d)  for d in os.listdir(tmpdir) if os.path.isdir(os.path.join(tmpdir, d)) )
 
                 extracted_dir = extracted_root
                 if extract_subdir:
@@ -343,12 +335,7 @@ class UpdateManager:
 
                 if not local_program or local_program != server_program:
                     WRITE_LOG_DEV_FILE("Required program update", "INFO")
-                    UpdateManager._download_and_extract(
-                        "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/master.zip",
-                        ROOT_DIR,
-                        clean_target=False,
-                        extract_subdir=None
-                    )
+                    UpdateManager._download_and_extract("https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/master.zip", ROOT_DIR, clean_target=False , extract_subdir=None)
                     return True
 
                 if not local_ext or local_ext != server_ext:
@@ -356,12 +343,7 @@ class UpdateManager:
                     tools_dir = TOOLS_DIR
                     if not os.path.exists(tools_dir):
                         os.makedirs(tools_dir)
-                    UpdateManager._download_and_extract(
-                        "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/master.zip",
-                        tools_dir,
-                        clean_target=True,
-                        extract_subdir="tools"
-                    )
+                    UpdateManager._download_and_extract( "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/master.zip", tools_dir, clean_target=True,  extract_subdir="tools" )
                     return True
 
                 WRITE_LOG_DEV_FILE("Application up-to-date", "INFO")
@@ -441,11 +423,22 @@ def main():
                 WRITE_LOG_DEV_FILE("Main script not found", "ERROR")
                 sys.exit(1)
 
-    except Exception:
-        # print("Erreur fatale application")
-        WRITE_LOG_DEV_FILE("Fatal application error", "ERROR")
-        sys.exit(1)
-
+    
+    except Exception as e:
+        print(f"Erreur fatale application: {e}")
+        
+        # Pour afficher plus de détails sur l'erreur
+        print("Détails de l'erreur:")
+        traceback.print_exc()  # Affiche la stack trace complète
+        
+        # Écriture dans le log
+        WRITE_LOG_DEV_FILE(f"Fatal application error: {e}", "ERROR")
+        
+        # Pour conserver aussi la trace dans les logs
+        error_details = traceback.format_exc()
+        WRITE_LOG_DEV_FILE(f"Error details:\n{error_details}", "ERROR")
+        
+        sys.exit(1)  # Quitte l'application avec code d'erreur
 
 if __name__ == "__main__":
     main()

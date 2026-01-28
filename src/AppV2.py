@@ -1371,7 +1371,7 @@ class MainWindow(QMainWindow):
             # print("📡 [API] Sending request to load scenarios...")
             result = APIManager.load_scenarios(Api_Url)  # ممكن ترجع list أو dict
             # print(f"📥 [API] Raw result: {result}")
-            Settings.WRITE_LOG_DEV_FILE(f"[API RESULT] {result}", "DEBUG")
+            # Settings.WRITE_LOG_DEV_FILE(f"[API RESULT] {result}", "DEBUG")
 
             # 🔹 إذا كانت dict و فيها status=False → خطأ
             if isinstance(result, dict) and result.get("status") is False:
