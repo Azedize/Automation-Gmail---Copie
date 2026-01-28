@@ -565,10 +565,10 @@ class ValidationUtils:
             return False, None
         
         parts = session_data.split("::")
-        if len(parts) != 4:
+        if len(parts) != 5:
             return False, None
         
-        username, password ,date_str , entity = parts
+        username, password ,date_str , entity ,Id_User= parts
         
         try:
             datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
@@ -579,7 +579,8 @@ class ValidationUtils:
             "username": username.strip(),
             "password": password.strip(),
             "date": date_str.strip(),
-            "entity": entity.strip()
+            "entity": entity.strip(),
+            "Id_User":Id_User.strip()
         }
     
     # ==================== VALIDATION D'INTERFACE UTILISATEUR ====================

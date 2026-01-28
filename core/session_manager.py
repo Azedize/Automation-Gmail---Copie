@@ -36,10 +36,10 @@ class SessionManager:
     def check_session(self) -> Dict:
         session_info = {"valid": False, "username": None , "password": None, "date": None, "p_entity": None, "error": None}
 
-        # print(f"[INFO] Chemin du fichier session : {self.session_path}")
+        print(f"[INFO] Chemin du fichier session : {self.session_path}")
 
         if not ValidationUtils.path_exists(self.session_path):
-            # print("[WARNING] ❌ Le fichier session.txt n'existe pas")
+            print("[WARNING] ❌ Le fichier session.txt n'existe pas")
             settings.WRITE_LOG_DEV_FILE("Le fichier session n'existe pas", "WARNING")
             session_info["error"] = "FileNotFound"
             return session_info
@@ -49,37 +49,39 @@ class SessionManager:
                 encrypted = f.read().strip()
 
             if not encrypted:
-                # print("[WARNING] ❌ Fichier session.txt vide")
+                print("[WARNING] ❌ Fichier session.txt vide")
                 settings.WRITE_LOG_DEV_FILE("Le fichier session est vide", "WARNING")
                 session_info["error"] = "EmptyFile"
                 return session_info
 
             decrypted = EncryptionService.decrypt_message(encrypted, self.key)
+            print("decrypted" , decrypted)
 
             is_valid, data = ValidationUtils.validate_session_format(decrypted)
+            print("data session :" , data)
             if not is_valid:
                 settings.WRITE_LOG_DEV_FILE("Format de session invalide", "WARNING")
-                # print("[ERROR] Format session invalide")
+                print("[ERROR] Format session invalide")
                 session_info["error"] = "InvalidFormat"
                 return session_info
 
-            username,password, date_str, p_entity = data["username"],data["password"], data["date"], data["entity"]
+            username,password, date_str, p_entity , Id_User = data["username"],data["password"], data["date"], data["entity"] , data["Id_User"]
 
-            # print("🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​username:", username,"password : ", password , "date_str:", date_str, "p_entity:", p_entity)
+            print("🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​username:", username,"password : ", password , "date_str:", date_str, "p_entity:", p_entity ,"Id_User", Id_User ) 
 
             last_session = datetime.datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
             last_session = self.timezone.localize(last_session)
             now = datetime.datetime.now(self.timezone)
 
             if (now - last_session) < datetime.timedelta(days=2):
-                session_info.update({"valid": True, "username": username , "password": password, "date": last_session, "p_entity": p_entity})
+                session_info.update({"valid": True, "username": username , "password": password, "date": last_session, "p_entity": p_entity , "Id_User": Id_User})
             else:
                 settings.WRITE_LOG_DEV_FILE("Session expirée", "WARNING")
-                # print("[INFO] Session expirée")
+                print("[INFO] Session expirée")
                 session_info["error"] = "Expired"
 
         except Exception as e:
-            # print(f"[ERROR] Lecture fichier session : {e}")
+            print(f"[ERROR] Lecture fichier session : {e}")
             session_info["error"] = f"FileReadError: {e}"
             settings.WRITE_LOG_DEV_FILE(f"Erreur lors de la lecture du fichier session : {e}", "ERROR")
 
@@ -89,10 +91,10 @@ class SessionManager:
     
     
     # ================== Création de session ==================
-    def create_session(self, username: str,password: str, p_entity: str) -> bool:
+    def create_session(self, username: str,password: str, p_entity: str , Id_USER) -> bool:
         try:
             now = datetime.datetime.now(self.timezone)
-            session_data = f"{username}::{password}::{now.strftime('%Y-%m-%d %H:%M:%S')}::{p_entity}"
+            session_data = f"{username}::{password}::{now.strftime('%Y-%m-%d %H:%M:%S')}::{p_entity}::{Id_USER}"
 
             encrypted = EncryptionService.encrypt_message(session_data, self.key)
 
@@ -139,6 +141,8 @@ class SessionManager:
             # print(f"[ERROR] Validation API échouée : {e}")
             settings.WRITE_LOG_DEV_FILE(f"Erreur lors de la validation de la session via l'API : {e}", "ERROR")
             return {"valid": False, "error": str(e)}
+
+
 
     # ================== Vérification complète ==================
     def check_session_full(self) -> Dict:
