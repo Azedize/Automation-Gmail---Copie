@@ -1275,14 +1275,19 @@ class MainWindow(QMainWindow):
         
 
         payload = {
-            "user_id":session_info["Id_User"],
+            "user_id": session_info["Id_User"],
             "encrypted": encrypted_String,
-            "name":"actionTest4",
-            "state": self.STATE_STACK[-1],
-            "state_stack": self.STATE_STACK
+            "name": "action3",
+            "state":json.dumps(self.STATE_STACK[-1]) ,
+            "state_stack": json.dumps(self.STATE_STACK)
         }
 
-        # print(f"Payload: {payload}")
+        print("🔹 Payload details:")
+        for key, value in payload.items():
+            print(f"• {key}: {value} (type: {type(value).__name__})")
+
+
+        print(f"😃😃😃😃😃😃😃😃Payload: {payload}")
         Api_Url= f"https://reporting.nrb-apps.com/pub/ReportingV4/senario.php?rv4=1&entity=IT&action=add&l={encrypted_String}"
 
         try:
@@ -1814,184 +1819,136 @@ class MainWindow(QMainWindow):
 
 
 
-
-
-
-
-
     def Scenario_Changed(self, name_selected):
-        # print("\n" + "="*80)
-        # print(f"🔹 Scenario_Changed called with name_selected={name_selected}")
-        # print("="*80 + "\n")
+        print("\n" + "="*80)
+        print(f"🔹 Scenario_Changed called with name_selected={name_selected}")
+        print("="*80 + "\n")
 
-        # قراءة session
-        encrypted_key = UIManager.read_file_content(Settings.SESSION_PATH)
-        if not encrypted_key:
-            # print("⚠️ Session vide ou fichier introuvable:", Settings.SESSION_PATH)
-            Settings.WRITE_LOG_DEV_FILE(f"⚠️ Session vide ou fichier introuvable", "WARNING")
-            return
-        # print(f"🔑 Encrypted key loaded: {len(encrypted_key)} chars")
+        # 🔐 Check session
+        session_info = SessionManager.check_session()
+        print(f"🔐 [SESSION] Raw session info: {session_info}")
 
-        payload = {"encrypted": encrypted_key, "name": name_selected}
-        # print(f"📤 Payload prepared: {payload}")
+        if not session_info.get("valid"):
+            print("⛔ [SESSION] Invalid session. Redirecting to login.")
+            Settings.WRITE_LOG_DEV_FILE("Session invalid. Redirecting to login.", "ERROR")
+            sys.exit()
+            return False
 
-        # إرسال الطلب
+        # 🔑 Encrypt session string
+        encrypted_string = EncryptionService.encrypt_message(f"{session_info['Id_User']}::{session_info['username']}::{session_info['date']}::IT", Settings.KEY)
+        print(f"🔐 [ENCRYPT] Encrypted string: {encrypted_string}")
+
+        # 🔗 Build API URL
+        api_url = f"https://reporting.nrb-apps.com/pub/ReportingV4/senario.php?rv4=1&action=get&entity=IT&l={encrypted_string}"
+        print(f"🌐 [API] URL: {api_url}")
+
+        payload = {"name": name_selected}
+
+        # 🟢 Call API
         try:
-            t0_req = time.time()
-            response = requests.post(Settings.API_ENDPOINTS['_ON_SCENARIO_CHANGED_API'], json=payload, timeout=10)
-            t1_req = time.time()
-            # print(f"✅ Request sent successfully in {t1_req - t0_req:.3f}s. HTTP Status: {response.status_code}")
-        except requests.exceptions.RequestException as e:
-            # print(f"❌ RequestException while calling API: {e}")
-            return
-
-        # التحقق من حالة HTTP
-        if response.status_code != 200:
-            try:
-                print(f"❌ HTTP {response.status_code}:\n{response.text[:1000]}")
-            except Exception:
-                print(f"❌ HTTP {response.status_code} and failed to read response.text")
-            return
-
-        # قراءة JSON
-        try:
-            result = response.json()
-            # print(f"🔍 Response JSON keys: {list(result.keys())}")
-        except ValueError:
-            # print(f"❌ Failed to parse JSON from response. Response text (first 2000 chars):\n{response.text[:2000]}")
-            return
-
-        # التحقق من session
-        try:
-            session_ok = result.get("session", True)
-            if session_ok is False:
-                # print("🔒 Session expirée. Redirection vers login.")
-                Settings.WRITE_LOG_DEV_FILE(f"🔒 Session expirée. Redirection vers login.", "WARNING")
-                try:
-                    self.login_window = LoginWindow()
-                    self.login_window.setFixedSize(Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT)
-                    screen = QGuiApplication.primaryScreen()
-                    screen_geometry = screen.availableGeometry()
-                    x = (screen_geometry.width() - self.login_window.width()) // 2
-                    y = (screen_geometry.height() - self.login_window.height()) // 2
-                    self.login_window.move(x, y)
-                    self.login_window.show()
-                    self.close()
-                except Exception as e:
-                    print("❌ Erreur pendant l'affichage de la fenêtre de login:", e)
-                return
-            else:
-                Settings.WRITE_LOG_DEV_FILE(f"🔑 Session OK", "INFO")
+            raw_result = APIManager.handle_save_scenario(payload, api_url)
+            print(f"🟦 [RAW RESULT] {raw_result}")
         except Exception as e:
-            # print("⚠️ Erreur en vérifiant la clé 'session' du résultat:", e)
-            Settings.WRITE_LOG_DEV_FILE(f"⚠️ Erreur en vérifiant la clé 'session' du 결과", "WARNING")
+            print(f"❌ API call failed: {e}")
+            Settings.WRITE_LOG_DEV_FILE(f"API call failed: {e}", "ERROR")
             return
 
-        # حذف كل widgets القديمة
-        # print("\n🧹 Nettoyage de la layout avant chargement du scénario...")
+        # 🔹 Case 3: API returns error dict
+        if isinstance(raw_result, dict) and raw_result.get("status") is False:
+            error_msg = raw_result.get("error", "Unknown API error")
+            print(f"❌ API returned error: {error_msg}")
+            Settings.WRITE_LOG_DEV_FILE(f"API returned error: {error_msg}", "ERROR")
+            return
+
+        # 🔹 Case 1 & 2: API returns list (data) or empty list
+        if isinstance(raw_result, list):
+            if not raw_result:  # empty list -> case 2
+                print("⚠️ No scenario returned from API.")
+                Settings.WRITE_LOG_DEV_FILE("No scenario returned from API.", "WARNING")
+                self.STATE_STACK = []  # clear state stack
+                return
+            else:  # list with data -> case 1
+                scenario = raw_result[0]  # take first scenario
+        elif isinstance(raw_result, dict) and "data" in raw_result:
+            data_list = raw_result["data"]
+            if not data_list:
+                print("⚠️ No scenario returned in 'data'.")
+                Settings.WRITE_LOG_DEV_FILE("No scenario returned in 'data'.", "WARNING")
+                self.STATE_STACK = []
+                return
+            scenario = data_list[0]
+        else:
+            print(f"❌ Unexpected API result format: {type(raw_result)}")
+            Settings.WRITE_LOG_DEV_FILE(f"Unexpected API result format: {type(raw_result)}", "ERROR")
+            return
+
+        # 🧹 Clear previous widgets
         for i in reversed(range(self.scenario_layout.count())):
             item = self.scenario_layout.itemAt(i)
             if item:
                 widget = item.widget()
                 if widget:
                     widget_name = widget.objectName() if widget.objectName() else widget.__class__.__name__
-                    # print(f"🗑️ Suppression du widget: {widget_name}")
-                    Settings.WRITE_LOG_DEV_FILE(f"🗑️ Suppression du widget: {widget_name}", "INFO")
+                    Settings.WRITE_LOG_DEV_FILE(f"🗑️ Removing widget: {widget_name}", "INFO")
                     widget.deleteLater()
-                else:
-                    # print(f"📦 Élément non-widget trouvé à l'index {i}")
-                    Settings.WRITE_LOG_DEV_FILE(f"📦 Élément non-widget trouvé à l'index {i}", "INFO")
 
-        # معالجة السيناريو
-        try:
-            if not result.get("success"):
-                # print(f"❌ API returned success=false; error: {result.get('error')}")
-                Settings.WRITE_LOG_DEV_FILE(f"❌ API returned success=false; error: {result.get('error')}", "WARNING")
-                return
-
-            scenario = result.get("scenario")
-            if scenario is None:
-                Settings.WRITE_LOG_DEV_FILE(f"❌ Le champ 'scenario' est manquant dans la réponse.", "WARNING")
-                # print("❌ Le champ 'scenario' est manquant dans la réponse.")
-                return
-
-            state_stack = scenario.get("state_stack")
-            if not isinstance(state_stack, list):
-                # print(f"⚠️ state_stack n'est pas une liste (type={type(state_stack)}). Tentative de conversion...")
-                Settings.WRITE_LOG_DEV_FILE(f"⚠️ state_stack n'est pas une liste (type={type(state_stack)}). Tentative de conversion...", "WARNING")
-                if isinstance(state_stack, str):
-                    try:
-                        state_stack = json.loads(state_stack)
-                        Settings.WRITE_LOG_DEV_FILE(f"✅ state_stack loaded from string; length={len(state_stack)}", "INFO")
-                        # print(f"✅ state_stack loaded from string; length={len(state_stack)}")
-                    except Exception as e:
-                        Settings.WRITE_LOG_DEV_FILE(f"❌ Impossible de parser state_stack string: {str(e)}", "WARNING")
-                        # print("❌ Impossible de parser state_stack string:", e)
-                        return
-                else:
-                    Settings.WRITE_LOG_DEV_FILE(f"❌ state_stack a un format inattendu: {repr(state_stack)}", "WARNING")
-                    # print("❌ state_stack a un format inattendu:", repr(state_stack))
-                    return
-
-            self.STATE_STACK = state_stack
-            # print(f"📥 Scénario récupéré avec {len(self.STATE_STACK)} états.\n")
-            Settings.WRITE_LOG_DEV_FILE(f"📥 Scénario récupéré avec {len(self.STATE_STACK)} états.", "INFO")
-            # نسخ آمن للمعالجة
-            state_stack_copy = copy.deepcopy(self.STATE_STACK)
-
-            # تحميل كل حالة
-            for index, state in enumerate(state_stack_copy, start=1):
-                print(f"\n[🧩] Processing state #{index}")
-                try:
-                    pretty = json.dumps(state, indent=2, ensure_ascii=False, default=str)
-                    # print(f"Preview state #{index} (first 500 chars):\n{pretty[:500]}...")
-                except Exception:
-                    print(f"⚠️ Cannot JSON-dump state #{index}; fallback to repr")
-                    Settings.WRITE_LOG_DEV_FILE(f"⚠️ Cannot JSON-dump state #{index}; fallback to repr", "WARNING")
-                    # print(repr(state)[:500], "...")
-
-                try:
-                    t0 = time.time()
-                    self.Load_State(state)
-                    t1 = time.time()
-                    # print(f"✅ Load_State for #{index} succeeded in {t1 - t0:.3f}s")
-                    Settings.WRITE_LOG_DEV_FILE(f"✅ Load_State for #{index} succeeded in {t1 - t0:.3f}s", "INFO")
-
-                    try:
-                        self.Update_Actions_Color_Handle_Last_Button()
-                        # print("✅ Update_Actions_Color_Handle_Last_Button succeeded")
-                    except Exception as e:
-                        Settings.WRITE_LOG_DEV_FILE(f"⚠️ Update_Actions_Color_Handle_Last_Button failed after state #{index}: {e}", "WARNING")
-                        print(f"⚠️ Update_Actions_Color_Handle_Last_Button failed after state #{index}: {e}")
-                except Exception as e:
-                    Settings.WRITE_LOG_DEV_FILE(f"❌ Erreur pendant Load_State() pour l'état #{index}: {e}", "WARNING")
-                    print(f"❌ Erreur pendant Load_State() pour l'état #{index}: {e}")
-                    continue
-
-            # print("\n🎉 Scénario chargé avec succès.\n")
-
-            
+        # 🔄 Process scenario's state_stack
+        state_stack = scenario.get("state_stack", [])
+        if isinstance(state_stack, str):
             try:
-                unique_states = []
-                seen = set()
-                for state in self.STATE_STACK:
-                    try:
-                        state_key = json.dumps(state, sort_keys=True, ensure_ascii=False, default=str)
-                    except Exception:
-                        state_key = repr(state)
-                    if state_key not in seen:
-                        seen.add(state_key)
-                        unique_states.append(state)
-                self.STATE_STACK = unique_states
-                # print(f"🧹 self.STATE_STACK dédupliqué, nouveau length={len(self.STATE_STACK)}")
+                state_stack = json.loads(state_stack)
+                print(f"✅ state_stack loaded from string; length={len(state_stack)}")
             except Exception as e:
-                print("⚠️ Échec de suppression des doublons:", e)
+                print(f"❌ Failed to parse state_stack: {e}")
+                Settings.WRITE_LOG_DEV_FILE(f"Failed to parse state_stack: {e}", "WARNING")
+                return
 
+        self.STATE_STACK = state_stack
+        Settings.WRITE_LOG_DEV_FILE(f"📥 Scenario loaded with {len(self.STATE_STACK)} states.", "INFO")
+
+        # Deep copy to safely iterate
+        state_stack_copy = copy.deepcopy(self.STATE_STACK)
+
+        for index, state in enumerate(state_stack_copy, start=1):
+            print(f"\n[🧩] Processing state #{index}")
+            try:
+                pretty = json.dumps(state, indent=2, ensure_ascii=False, default=str)
+                print(f"Preview state #{index} (first 200 chars): {pretty[:200]}...")
+            except Exception:
+                pretty = repr(state)
+
+            try:
+                t0 = time.time()
+                self.Load_State(state)
+                t1 = time.time()
+                Settings.WRITE_LOG_DEV_FILE(f"✅ Load_State for #{index} succeeded in {t1 - t0:.3f}s", "INFO")
+                try:
+                    self.Update_Actions_Color_Handle_Last_Button()
+                except Exception as e:
+                    print(f"⚠️ Update_Actions_Color_Handle_Last_Button failed after state #{index}: {e}")
+                    Settings.WRITE_LOG_DEV_FILE(f"⚠️ Update_Actions_Color_Handle_Last_Button failed after state #{index}: {e}", "WARNING")
+            except Exception as e:
+                print(f"❌ Error during Load_State() for state #{index}: {e}")
+                Settings.WRITE_LOG_DEV_FILE(f"❌ Error during Load_State() for state #{index}: {e}", "WARNING")
+                continue
+
+        # Remove duplicates
+        try:
+            unique_states = []
+            seen = set()
+            for state in self.STATE_STACK:
+                try:
+                    state_key = json.dumps(state, sort_keys=True, ensure_ascii=False, default=str)
+                except Exception:
+                    state_key = repr(state)
+                if state_key not in seen:
+                    seen.add(state_key)
+                    unique_states.append(state)
+            self.STATE_STACK = unique_states
         except Exception as e:
-            print("❌ Erreur pendant le traitement du résultat JSON:", e)
+            print(f"⚠️ Failed to deduplicate STATE_STACK: {e}")
 
-        # print("\n" + "="*80 + "\n")
-
+        print("\n🎉 Scenario loaded successfully.\n")
 
 
 

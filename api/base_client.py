@@ -161,28 +161,28 @@ class APIManager:
         return -1
 
     def load_scenarios(self, Url_Api) -> Dict[str, Any]:
-        print("🔹 Starting load_scenarios")
+        # print("🔹 Starting load_scenarios")
 
         # 1️⃣ Show API URL
-        print(f"🌐 API URL: {Url_Api}")
+        # print(f"🌐 API URL: {Url_Api}")
 
         # 2️⃣ Send GET request
         try:
-            print("📡 Sending GET request to API...")
+            # print("📡 Sending GET request to API...")
             result = self.make_request(Url_Api, "GET")
-            print(f"📥 Raw API response: {result}")
+            # print(f"📥 Raw API response: {result}")
         except Exception as e:
-            print(f"❌ Exception during API request: {e}")
+            # print(f"❌ Exception during API request: {e}")
             return {"session": False, "scenarios": []}
 
         # 3️⃣ Handle response
         try:
-            print("🔄 Handling API response...")
+            # print("🔄 Handling API response...")
             response = self._handle_response( result,  {"session": False, "scenarios": []}, {"session": False, "scenarios": []} )
-            print(f"🔍 Final handled response: {response}")
+            # print(f"🔍 Final handled response: {response}")
             return response
         except Exception as e:
-            print(f"❌ Exception while handling response: {e}")
+            # print(f"❌ Exception while handling response: {e}")
             return {"session": False, "scenarios": []}
 
 
@@ -190,10 +190,9 @@ class APIManager:
         result = self.make_request(Url_Api, "POST", data=payload)
         return self._handle_response(result, {"success": True} , {"success": False, "error": "Format de réponse invalide"})
 
-    def on_scenario_changed(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        result = self.make_request("_ON_SCENARIO_CHANGED_API", "POST", json_data=payload)
-        return self._handle_response(result, {"success": True},
-                                     {"success": False, "error": "Format de réponse invalide"})
+    def on_scenario_changed(self,  payload: Dict[str, Any], Url_Api) -> Dict[str, Any]:
+        result = self.make_request(Url_Api, "POST", data=payload)
+        return self._handle_response(result, {"success": True},{"success": False, "error": "Format de réponse invalide"})
 
 
 
