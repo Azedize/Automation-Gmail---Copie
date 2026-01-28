@@ -181,6 +181,10 @@ class DependencyManager:
         sys.exit(0)
         return True
 
+    
+    
+    
+    
     @staticmethod
     def install_and_import(package, module_name=None, required_import=None, version=None):
         module_to_import = module_name or package
@@ -242,6 +246,9 @@ class UpdateManager:
             WRITE_LOG_DEV_FILE("Error reading local version", "ERROR")
             # print("Erreur lecture version locale")
             return None
+        
+
+
 
     @staticmethod
     def _download_and_extract(zip_url, target_dir, clean_target=False, extract_subdir=None):
@@ -306,8 +313,11 @@ class UpdateManager:
             WRITE_LOG_DEV_FILE("Error downloading/extracting update", "ERROR")
             raise
 
+    
+    
+    
     @staticmethod
-    def check_and_update() -> bool:
+    def check_and_update():
         WRITE_LOG_DEV_FILE("Checking for updates", "INFO")
         import requests
 
@@ -439,3 +449,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
