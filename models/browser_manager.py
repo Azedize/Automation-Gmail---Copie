@@ -112,10 +112,7 @@ class BrowserManager:
             return profile_dir
 
         cmd = f"{profile_name} {profile_dir}"
-        result = subprocess.run([firefox_path, '--CreateProfile', cmd],
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE,
-                                text=True)
+        result = subprocess.run([firefox_path, '--CreateProfile', cmd], stdout=subprocess.PIPE,  stderr=subprocess.PIPE, text=True)
 
         if result.returncode != 0:
             #print(f"❌ Échec création (code {result.returncode})")
@@ -135,8 +132,6 @@ class BrowserManager:
     
     
     
-    
-    
     @staticmethod
     def Get_Firefox_Profiles_In_Use() -> List[Dict[str, str]]:
         profiles = []
@@ -150,9 +145,6 @@ class BrowserManager:
                 profiles.append({'name': folder, 'path': path})
         return profiles
 
-    
-    
-    
     
     
     
@@ -207,11 +199,7 @@ class BrowserManager:
     
     
     
-    
-    
-    
-    
-    
+
     
     
     
@@ -232,10 +220,7 @@ class BrowserManager:
     
     
     
-    
-    
-    
-    
+
     
     
     
@@ -272,16 +257,6 @@ class BrowserManager:
     
     
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     @staticmethod
     def Search_Keys(data: Any, search_keys: List[str], results: List[Dict[str, Any]], path_trace: str = ""):
         try:
@@ -303,14 +278,7 @@ class BrowserManager:
 
 
 
-    
-    
-    
-    
-    
-    
-    
-    
+
     
     @staticmethod
     def Upload_EXTENSION_PROXY(profile_name: str, search_keys: List[str], results: List[Dict[str, Any]]):
@@ -355,11 +323,6 @@ class BrowserManager:
             Settings.WRITE_LOG_DEV_FILE(f"Erreur inattendue lors du traitement de {path_file} : {e}", "ERROR")
 
         return None
-
-
-
-
-
 
 
 
@@ -462,11 +425,6 @@ class BrowserManager:
 
 
 
-    
-    
-    
-    
-    
     
     
     @staticmethod

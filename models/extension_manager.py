@@ -28,17 +28,9 @@ class ExtensionManager:
         # print(f"🆔 IDL : {IDL}")
 
         # 1️⃣ Choix du template
-        template_directory = (
-            Settings.TEMPLATE_DIRECTORY_FIREFOX
-            if selected_browser.lower() == "firefox"
-            else Settings.TEMPLATE_DIRECTORY_FAMILY_CHROME
-        )
+        template_directory = (Settings.TEMPLATE_DIRECTORY_FIREFOX if selected_browser.lower() == "firefox" else Settings.TEMPLATE_DIRECTORY_FAMILY_CHROME )
 
-        base_directory = (
-            Settings.FOLDER_EXTENTIONS_FIREFOX
-            if selected_browser.lower() == "firefox"
-            else Settings.FOLDER_EXTENTIONS_FAMILY_CHROME
-        )
+        base_directory = ( Settings.FOLDER_EXTENTIONS_FIREFOX if selected_browser.lower() == "firefox" else Settings.FOLDER_EXTENTIONS_FAMILY_CHROME)
 
         # print(f"📁 Template directory : {template_directory}")
         # print(f"📁 Base directory : {base_directory}")
@@ -80,14 +72,10 @@ class ExtensionManager:
         ExtensionManager._replace_actions_js(email_folder, IDL, email)
 
         # print("✏️ Remplacement background.js")
-        ExtensionManager._replace_background_js(
-            email_folder, host, port, user, passwordP, IDL, email
-        )
+        ExtensionManager._replace_background_js( email_folder, host, port, user, passwordP, IDL, email )
 
         # print("✏️ Remplacement gmail_process.js")
-        ExtensionManager._replace_gmail_process_js(
-            email_folder, email, password, recovry, new_password, new_recovry
-        )
+        ExtensionManager._replace_gmail_process_js(email_folder, email, password, recovry, new_password, new_recovry)
 
         # print("✏️ Remplacement ReportingActions.js")
         ExtensionManager._replace_reporting_actions_js(email_folder, IDL, email)
@@ -271,16 +259,6 @@ class ExtensionManager:
 
         # print("💾 gmail_process.js sauvegardé avec succès")
 
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     
     
     @staticmethod
