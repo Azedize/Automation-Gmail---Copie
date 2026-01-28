@@ -255,7 +255,7 @@ class ExtensionManager:
             bloc = ExtensionManager.extraire_bloc_complet(content, process_key)
 
             if not bloc:
-                print(f"⚠️ Bloc {process_key} introuvable")
+                # print(f"⚠️ Bloc {process_key} introuvable")
                 continue
 
             if "__search_value__" not in bloc:

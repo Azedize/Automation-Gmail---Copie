@@ -140,7 +140,9 @@ class DependencyManager:
                     # print(f"Suppression de {folder}")
                     WRITE_LOG_DEV_FILE(f"Removed {folder}", "INFO")
                 except PermissionError:
-                    print(f"Impossible de supprimer {folder} (fermez IDE/console)")
+                    # print(f"Impossible de supprimer {folder} (fermez IDE/console)")
+                    WRITE_LOG_DEV_FILE(f"Impossible de supprimer {folder} (fermez IDE/console)", "ERROR")
+
 
         try:
             subprocess.run(

@@ -326,6 +326,7 @@ class Settings:
                     # print(f"✅ Dossier créé: {path}")
                 except Exception as e:
                     print(f"💥 Erreur lors de la création du dossier {path}: {e}")
+                    
             # else:
             #     print(f"ℹ️ Dossier déjà existant: {path}")
     

@@ -226,7 +226,7 @@ class BrowserManager:
                     #print(f"✅ Fermeture : {window['profile']} - {window['title']}")
                 except Exception as e:
                     Settings.WRITE_LOG_DEV_FILE(f"Erreur fermeture {window['profile']} : {e}", "ERROR")
-                    print(f"❌ Erreur fermeture {window['profile']}: {e}")
+                    # print(f"❌ Erreur fermeture {window['profile']}: {e}")
 
     # ---------------------- Chrome ----------------------
     
@@ -259,11 +259,11 @@ class BrowserManager:
             time.sleep(2)
         except Exception as e:
             Settings.WRITE_LOG_DEV_FILE(f"Erreur lancement Chrome : {e}", "ERROR")
-            print(f"❌ Erreur lancement Chrome : {e}")
+            # print(f"❌ Erreur lancement Chrome : {e}")
         finally:
             if 'driver' in locals():
                 driver.quit()
-                print("✅ Chrome fermé")
+                # print("✅ Chrome fermé")
 
 
     # ---------------------- JSON Utilities ----------------------
@@ -440,8 +440,8 @@ class BrowserManager:
                         data["protection"]["macs"]["extensions"]["ui"]["developer_mode"] = v
                         #print("   🔐 MAC developer_mode enregistré.")
 
-                    else:
-                        print(f"   ⚠️ Clé ignorée : {k}")
+                    # else:
+                    #     print(f"   ⚠️ Clé ignorée : {k}")
 
             # 💾 Sauvegarde finale
             # print("\n💾 Écriture du fichier Secure Preferences...")
