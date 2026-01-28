@@ -22,7 +22,8 @@ try:
     from utils.validation_utils import ValidationUtils
     from api.base_client import APIManager
 except ImportError as e:
-    print(f"[ERROR] Import modules failed: {e}")
+    # print(f"[ERROR] Import modules failed: {e}")
+    pass
 
 
 class SessionManager:
@@ -36,10 +37,10 @@ class SessionManager:
     def check_session(self) -> Dict:
         session_info = {"valid": False, "username": None , "password": None, "date": None, "p_entity": None, "error": None}
 
-        print(f"[INFO] Chemin du fichier session : {self.session_path}")
+        # print(f"[INFO] Chemin du fichier session : {self.session_path}")
 
         if not ValidationUtils.path_exists(self.session_path):
-            print("[WARNING] ❌ Le fichier session.txt n'existe pas")
+            # print("[WARNING] ❌ Le fichier session.txt n'existe pas")
             settings.WRITE_LOG_DEV_FILE("Le fichier session n'existe pas", "WARNING")
             session_info["error"] = "FileNotFound"
             return session_info
@@ -49,25 +50,25 @@ class SessionManager:
                 encrypted = f.read().strip()
 
             if not encrypted:
-                print("[WARNING] ❌ Fichier session.txt vide")
+                # print("[WARNING] ❌ Fichier session.txt vide")
                 settings.WRITE_LOG_DEV_FILE("Le fichier session est vide", "WARNING")
                 session_info["error"] = "EmptyFile"
                 return session_info
 
             decrypted = EncryptionService.decrypt_message(encrypted, self.key)
-            print("decrypted" , decrypted)
+            # print("decrypted" , decrypted)
 
             is_valid, data = ValidationUtils.validate_session_format(decrypted)
-            print("data session :" , data)
+            # print("data session :" , data)
             if not is_valid:
                 settings.WRITE_LOG_DEV_FILE("Format de session invalide", "WARNING")
-                print("[ERROR] Format session invalide")
+                # print("[ERROR] Format session invalide")
                 session_info["error"] = "InvalidFormat"
                 return session_info
 
             username,password, date_str, p_entity , Id_User = data["username"],data["password"], data["date"], data["entity"] , data["Id_User"]
 
-            print("🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​username:", username,"password : ", password , "date_str:", date_str, "p_entity:", p_entity ,"Id_User", Id_User ) 
+            # print("🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​username:", username,"password : ", password , "date_str:", date_str, "p_entity:", p_entity ,"Id_User", Id_User ) 
 
             last_session = datetime.datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
             last_session = self.timezone.localize(last_session)
@@ -77,11 +78,11 @@ class SessionManager:
                 session_info.update({"valid": True, "username": username , "password": password, "date": last_session, "p_entity": p_entity , "Id_User": Id_User})
             else:
                 settings.WRITE_LOG_DEV_FILE("Session expirée", "WARNING")
-                print("[INFO] Session expirée")
+                # print("[INFO] Session expirée")
                 session_info["error"] = "Expired"
 
         except Exception as e:
-            print(f"[ERROR] Lecture fichier session : {e}")
+            # print(f"[ERROR] Lecture fichier session : {e}")
             session_info["error"] = f"FileReadError: {e}"
             settings.WRITE_LOG_DEV_FILE(f"Erreur lors de la lecture du fichier session : {e}", "ERROR")
 
@@ -117,10 +118,12 @@ class SessionManager:
                 os.remove(self.session_path)
                 settings.WRITE_LOG_DEV_FILE("Session supprimée", "INFO")
                 # print("[INFO] Session supprimée")
+                
             except Exception as e:
-                print(f"[ERROR] Suppression session échouée : {e}")
+                # print(f"[ERROR] Suppression session échouée : {e}")
+                settings.WRITE_LOG_DEV_FILE(f"[ERROR] Suppression session échouée : {e}", "ERROR")
         else:
-            print("[INFO] Aucun fichier de session à supprimer")
+            # print("[INFO] Aucun fichier de session à supprimer")
             settings.WRITE_LOG_DEV_FILE("Aucun fichier de session à supprimer", "INFO")
 
     # ================== Validation via API ==================
@@ -170,24 +173,24 @@ class SessionManager:
     # ================== Vérification credentials API ==================
     def check_api_credentials(self, username: str, password: str) -> Union[tuple, int]:
         try:
-            print(f"🔹 [DEBUG] Début de la validation des inputs...")
+            # print(f"🔹 [DEBUG] Début de la validation des inputs...")
             settings.WRITE_LOG_DEV_FILE(f"Début de la validation des inputs: username='{username}', password='{'*' * len(password)}'", "DEBUG")
 
             # Validation username
             valid_user, msg_user = ValidationUtils.validate_qlineedit_text(username, validator_type="text", min_length=5)
-            print(f"📝 Validation username: valid={valid_user}, message='{msg_user}'")
+            # print(f"📝 Validation username: valid={valid_user}, message='{msg_user}'")
             if not valid_user:
                 settings.WRITE_LOG_DEV_FILE(f"❌ Username invalide: {msg_user}", "ERROR")
                 return -1
 
             # Validation password
             valid_pass, msg_pass = ValidationUtils.validate_qlineedit_text(password, min_length=6)
-            print(f"📝 Validation password: valid={valid_pass}, message='{msg_pass}'")
+            # print(f"📝 Validation password: valid={valid_pass}, message='{msg_pass}'")
             if not valid_pass:
                 settings.WRITE_LOG_DEV_FILE(f"❌ Password invalide: {msg_pass}", "ERROR")
                 return -1
 
-            print("✅ Validation des inputs réussie")
+            # print("✅ Validation des inputs réussie")
             settings.WRITE_LOG_DEV_FILE("Validation des inputs réussie", "DEBUG")
 
             # Préparation payload API
@@ -198,58 +201,58 @@ class SessionManager:
                 "k": "mP5QXYrK9E67Y",
                 "l": "1"
             }
-            print(f"📦 Payload API: {payload}")
+            # print(f"📦 Payload API: {payload}")
 
             resp = None
             for attempt in range(1, 6):
-                print(f"🔁 Tentative API {attempt}/5...")
+                # print(f"🔁 Tentative API {attempt}/5...")
                 settings.WRITE_LOG_DEV_FILE(f"Tentative {attempt}/5", "DEBUG")
                 try:
                     result = APIManager.make_request("_APIACCESS_API", method="POST", data=payload, timeout=10)
-                    print(f"📡 Réponse brute API: {result}")
+                    # print(f"📡 Réponse brute API: {result}")
                     resp = APIManager._handle_response(result, failure_default=None)
-                    print(f"🔍 Réponse traitée API: {resp}")
+                    # print(f"🔍 Réponse traitée API: {resp}")
                     if resp is not None:
                         settings.WRITE_LOG_DEV_FILE("Réponse API reçue", "DEBUG")
-                        print("✅ Réponse API reçue")
+                        # print("✅ Réponse API reçue")
                         break
                 except Exception as e:
-                    print(f"❌ Exception lors de la requête API: {e}")
+                    # print(f"❌ Exception lors de la requête API: {e}")
                     settings.WRITE_LOG_DEV_FILE(f"Exception lors de la requête API: {e}", "ERROR")
                 time.sleep(2)
             else:
                 settings.WRITE_LOG_DEV_FILE("Connexion échouée après 5 tentatives", "ERROR")
-                print("❌ Connexion échouée après 5 tentatives")
+                # print("❌ Connexion échouée après 5 tentatives")
                 return -3
 
             # Vérification des codes d'erreur renvoyés par l'API
             if isinstance(resp, int) or str(resp) in ("-1", "-2", "-3", "-4", "-5"):
-                print(f"⚠️ Code d'erreur API reçu: {resp}")
+                # print(f"⚠️ Code d'erreur API reçu: {resp}")
                 return int(resp)
 
             # Décryptage et séparation idUser / entity
             try:
-                print("🔑 Tentative de décryptage de la réponse API...")
+                # print("🔑 Tentative de décryptage de la réponse API...")
                 decrypted = EncryptionService.decrypt_message(resp, self.key)
-                print(f"🔓 Décrypté: {decrypted}")
+                # print(f"🔓 Décrypté: {decrypted}")
 
                 if not decrypted or ";" not in decrypted:
-                    print("❌ Décryptage invalide ou format inattendu")
+                    # print("❌ Décryptage invalide ou format inattendu")
                     return -4
 
                 id_user, entity = decrypted.split(";", 1)  # split une seule fois
-                print(f"✅ Décryptage réussi: idUser={id_user}, entity={entity}")
+                # print(f"✅ Décryptage réussi: idUser={id_user}, entity={entity}")
                 return (id_user, entity)
 
             except Exception as e:
                 settings.WRITE_LOG_DEV_FILE(f"Exception lors du décryptage: {e}", "ERROR")
-                print(f"❌ Exception lors du décryptage: {e}")
+                # print(f"❌ Exception lors du décryptage: {e}")
                 traceback.print_exc()
                 return -5
 
         except Exception as e:
             settings.WRITE_LOG_DEV_FILE(f"Exception inattendue dans check_api_credentials: {e}", "ERROR")
-            print(f"❌ Exception inattendue dans check_api_credentials: {e}")
+            # print(f"❌ Exception inattendue dans check_api_credentials: {e}")
             traceback.print_exc()
             return -5
 

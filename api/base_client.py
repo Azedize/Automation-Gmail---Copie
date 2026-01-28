@@ -38,69 +38,63 @@ class APIManager:
         url = Settings.API_ENDPOINTS.get(endpoint, endpoint) if endpoint.startswith('_') else endpoint
         last_exception = None
 
-        print(f"\n🔗 [INIT] Endpoint: {endpoint}")
-        print(f"🔗 [INIT] URL Résolue: {url}")
-        print(f"🔗 [INIT] Méthode: {method}")
-        print(f"🔗 [INIT] Data: {data}")
-        print(f"🔗 [INIT] JSON: {json_data}")
-        print(f"🔗 [INIT] Params: {params}")
-        print(f"⏱️ [INIT] Timeout: {timeout}s\n")
+        # print(f"\n🔗 [INIT] Endpoint: {endpoint}")
+        # print(f"🔗 [INIT] URL Résolue: {url}")
+        # print(f"🔗 [INIT] Méthode: {method}")
+        # print(f"🔗 [INIT] Data: {data}")
+        # print(f"🔗 [INIT] JSON: {json_data}")
+        # print(f"🔗 [INIT] Params: {params}")
+        # print(f"⏱️ [INIT] Timeout: {timeout}s\n")
 
-        Settings.WRITE_LOG_DEV_FILE(
-            f"[INIT] {method} {url} | data={data} json={json_data} params={params} timeout={timeout}",
-            level="DEBUG"
-        )
+        # Settings.WRITE_LOG_DEV_FILE(  f"[INIT] {method} {url} | data={data} json={json_data} params={params} timeout={timeout}",level="DEBUG")
 
         for attempt in range(1, 4):
             try:
-                print(f"🌐 [TRY {attempt}] {method.upper()} {url}")
+                # print(f"🌐 [TRY {attempt}] {method.upper()} {url}")
                 Settings.WRITE_LOG_DEV_FILE(f"[TRY {attempt}] {method.upper()} {url}", level="INFO")
 
                 response = self.session.request(  method=method.upper(), url=url,   data=data,  json=json_data,  params=params,    timeout=timeout  )
 
-                print("➡️​➡️​➡️​➡️​", response)
-                print(f"📥 [RESP] HTTP {response.status_code}")
-                print(f"📄 [RESP] Headers: {dict(response.headers)}")
-                print(f"📄 [RESP] Text (100 chars): {response.text[:100]}")
+                # print("➡️​➡️​➡️​➡️​", response)
+                # print(f"📥 [RESP] HTTP {response.status_code}")
+                # print(f"📄 [RESP] Headers: {dict(response.headers)}")
+                # print(f"📄 [RESP] Text (100 chars): {response.text[:100]}")
 
-                Settings.WRITE_LOG_DEV_FILE(f"[RESP] HTTP {response.status_code} | Headers={dict(response.headers)} | Body(100)={response.text[:100]}",   level="DEBUG")
+                # Settings.WRITE_LOG_DEV_FILE(f"[RESP] HTTP {response.status_code} | Headers={dict(response.headers)} | Body(100)={response.text[:100]}",   level="DEBUG")
 
                 if response.status_code == 200:
                     try:
                         parsed = response.json()
-                        print(f"✅ [SUCCESS] JSON parsed: {parsed}")
+                        # print(f"✅ [SUCCESS] JSON parsed: {parsed}")
                         Settings.WRITE_LOG_DEV_FILE(f"[SUCCESS] JSON parsed: {parsed}", level="INFO")
                         return {"status": "success", "data": parsed, "status_code": 200}
                     except json.JSONDecodeError:
-                        print(f"⚠️ [WARN] JSON decode failed, returning raw text")
+                        # print(f"⚠️ [WARN] JSON decode failed, returning raw text")
                         Settings.WRITE_LOG_DEV_FILE("[WARN] JSON decode failed, returning raw text", level="WARNING")
                         return {"status": "success", "data": response.text, "status_code": 200}
 
                 elif response.status_code in (401, 403):
                     msg = f"HTTP {response.status_code}: Access denied / session expired"
-                    print(f"⛔ [AUTH] {msg}")
+                    # print(f"⛔ [AUTH] {msg}")
                     Settings.WRITE_LOG_DEV_FILE(f"[AUTH] {msg}", level="ERROR")
                     return {"status": "error", "error": msg, "status_code": response.status_code}
 
                 else:
                     last_exception = f"HTTP {response.status_code}"
-                    print(f"⚠️ [FAIL] HTTP {response.status_code} - Body(100): {response.text[:100]}")
-                    Settings.WRITE_LOG_DEV_FILE(
-                        f"[FAIL] HTTP {response.status_code} | Body(100)={response.text[:100]}",
-                        level="ERROR"
-                    )
+                    # print(f"⚠️ [FAIL] HTTP {response.status_code} - Body(100): {response.text[:100]}")
+                    Settings.WRITE_LOG_DEV_FILE( f"[FAIL] HTTP {response.status_code} | Body(100)={response.text[:100]}", level="ERROR")
 
             except requests.RequestException as e:
                 last_exception = str(e)
-                print(f"🔥 [EXCEPTION] Try {attempt}: {last_exception}")
+                # print(f"🔥 [EXCEPTION] Try {attempt}: {last_exception}")
                 Settings.WRITE_LOG_DEV_FILE(f"[EXCEPTION] Try {attempt}: {last_exception}", level="CRITICAL")
 
             if attempt < 3:
-                print("⏳ [RETRY] Waiting 2 seconds before next attempt...\n")
+                # print("⏳ [RETRY] Waiting 2 seconds before next attempt...\n")
                 time.sleep(2)
 
-        print(f"❌ [FINAL] Failed after 3 attempts: {last_exception}")
-        Settings.WRITE_LOG_DEV_FILE(f"[FINAL] Failed after 3 attempts: {last_exception}", level="CRITICAL")
+        # print(f"❌ [FINAL] Failed after 3 attempts: {last_exception}")
+        # Settings.WRITE_LOG_DEV_FILE(f"[FINAL] Failed after 3 attempts: {last_exception}", level="CRITICAL")
 
         return {
             "status": "error",
@@ -114,17 +108,17 @@ class APIManager:
         try:
             # 🔍 Log complet du résultat brut
             Settings.WRITE_LOG_DEV_FILE(f"[DEBUG] Raw API result: {result}", level="DEBUG")
-            print(f"🟦 [DEBUG] Raw API result => {result}")
+            # print(f"🟦 [DEBUG] Raw API result => {result}")
 
             status = result.get("status")
-            print(f"🟨 [DEBUG] Status = {status}")
+            # print(f"🟨 [DEBUG] Status = {status}")
 
             if status == "success":
                 data = result.get("data", success_default)
 
                 # ✅ Succès – log détaillé
                 Settings.WRITE_LOG_DEV_FILE(f"[SUCCESS] API returned data: {data}", level="INFO")
-                print(f"🟩 [SUCCESS] Data => {data}")
+                # print(f"🟩 [SUCCESS] Data => {data}")
 
                 return data
 
@@ -133,14 +127,14 @@ class APIManager:
 
                 # ❌ Erreur – log détaillé
                 Settings.WRITE_LOG_DEV_FILE(f"[ERROR] API Error: {error_msg}", level="ERROR")
-                print(f"🟥 [ERROR] API Error => {error_msg}")
+                # print(f"🟥 [ERROR] API Error => {error_msg}")
 
                 return failure_default
 
         except Exception as e:
             # 💥 Exception inattendue
             Settings.WRITE_LOG_DEV_FILE(f"[EXCEPTION] _handle_response crashed: {str(e)}", level="CRITICAL")
-            print(f"🔥 [EXCEPTION] _handle_response crashed => {e}")
+            # print(f"🔥 [EXCEPTION] _handle_response crashed => {e}")
 
             return failure_default
 

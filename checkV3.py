@@ -76,7 +76,8 @@ def WRITE_LOG_DEV_FILE( message: str, level: str = "INFO"):
             f.write(log_line)
 
     except Exception as e:
-        print(f"❌ [LOG] Erreur lors de l'écriture du log: {e}")
+        # print(f"❌ [LOG] Erreur lors de l'écriture du log: {e}")
+        pass
 
 
 def clear_log():
@@ -88,12 +89,13 @@ def clear_log():
         if log_path.exists():
             # Ouvre le fichier en mode "write" pour effacer tout son contenu
             open(log_path, "w", encoding="utf-8").close()
-            print(f"✅ [LOG] Fichier log vidé: {LOG_DEV_FILE}")
-        else:
-            print(f"⚠️ [LOG] Fichier log inexistant: {LOG_DEV_FILE}")
+            # print(f"✅ [LOG] Fichier log vidé: {LOG_DEV_FILE}")
+        # else:
+        #     print(f"⚠️ [LOG] Fichier log inexistant: {LOG_DEV_FILE}")
 
     except Exception as e:
-        print(f"❌ [LOG] Erreur lors de la suppression du fichier log: {e}")
+        # print(f"❌ [LOG] Erreur lors de la suppression du fichier log: {e}")
+        pass
 
 
 

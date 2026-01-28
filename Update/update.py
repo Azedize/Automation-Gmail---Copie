@@ -30,7 +30,8 @@ try:
     from core import EncryptionService
     from core import SessionManager
 except ImportError as e:
-    print(f"[ERROR] Import modules failed: {e}")
+    # print(f"[ERROR] Import modules failed: {e}")
+    pass
 
 
 
@@ -158,21 +159,6 @@ class UpdateManager:
     # ==========================================================
     @staticmethod
     def check_and_update(window=None) -> None:
-        """
-        Vérifie et applique les mises à jour
-        
-        🔴 PROGRAMME changé :
-            - Lance nouvelle instance
-            - Quitte immédiatement
-            - ❌ Ne touche PAS aux tools
-
-        🟡 TOOLS changés :
-            - Met à jour tools
-            - Continue
-
-        🟢 Rien changé :
-            - Continue
-        """
         try:
             from api.base_client import APIManager
 
@@ -247,7 +233,9 @@ class UpdateManager:
             # print("\n🟢 Application à jour")
 
         except ImportError:
-            print("⚠️ APIManager non disponible → Continuer")
+            # print("⚠️ APIManager non disponible → Continuer")
+            Settings.WRITE_LOG_DEV_FILE("⚠️ APIManager non disponible → Continuer", "INFO")
+
         except Exception:
             # print("🔥 ERREUR CRITIQUE → Continuer")
             traceback.print_exc()
@@ -302,14 +290,6 @@ class UpdateManager:
     # ==========================================================
     @staticmethod
     def check_version_extension(window=None):
-        """
-        Vérifie et met à jour l'extension Chrome si nécessaire
-        
-        Returns:
-            str  -> version distante si mise à jour requise
-            True -> extension à jour
-            False -> échec
-        """
         SESSION_INFO = SessionManager.check_session()
 
         if not SESSION_INFO["valid"]:
@@ -460,7 +440,8 @@ class UpdateManager:
                 return True
 
         except Exception as e:
-            print(f"❌ Erreur lors de la mise à jour : {e}")
+            Settings.WRITE_LOG_DEV_FILE(f"❌ Erreur lors de la mise à jour : {e}", "ERROR")
+            # print(f"❌ Erreur lors de la mise à jour : {e}")
             traceback.print_exc()
             return False
 

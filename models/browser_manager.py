@@ -23,7 +23,8 @@ try:
     from config import Settings
     from utils.validation_utils import ValidationUtils
 except ImportError as e:
-    print(f"Error importing modules: {e}")
+    # print(f"Error importing modules: {e}")
+    pass
 
 
 class BrowserManager:

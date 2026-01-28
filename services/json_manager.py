@@ -11,7 +11,8 @@ if ROOT_DIR not in sys.path:
 try:
     from config import Settings
 except ImportError as e:
-    print(f"Error importing modules: {e}")
+    # print(f"Error importing modules: {e}")
+    pass
 
 
 class JsonManager:

@@ -50,18 +50,9 @@ class Settings:
     # 🌐 Paramètres de l’environnement
     # ═══════════════════════════════════════════════════════════
 
-    # Chemin de l’executable de Python
-    PYTHON_PATH = None
 
 
-    # ═══════════════════════════════════════════════════════════
-    # 🌐 Paramètres de l’API
-    # ═══════════════════════════════════════════════════════════
 
-    API_BASE_URL = "https://reporting.nrb-apps.com"
-    API_TIMEOUT = 15  # en secondes
-    API_RETRY_COUNT = 3
-    API_RETRY_DELAY = 5  # en secondes
     
     # ═══════════════════════════════════════════════════════════
     # 🌐 Header
@@ -81,9 +72,6 @@ class Settings:
         '_MAIN_API': "https://apps1.nrb-apps.com/pub/chk_usr1.php",
         '_DOWNLOAD_EXTRACTT_API'    :  "https://github.com/Azedize/Programme/archive/refs/heads/main.zip",
         '_CHECK_VERSION_API'        :  "https://www.dropbox.com/scl/fi/78a38bc4papwzlw80hxti/version.json?rlkey=n7dx5mb8tcctvprn0wq4ojw7m&st=z6vzw0ox&dl=1",
-        '_HANDLE_SAVE_API'          :  "http://localhost/auth-api/add_scenario.php",
-        '_LOAD_SCENARIOS_API'       :  "http://localhost/auth-api/get_scenarios.php",
-        '_ON_SCENARIO_CHANGED_API'  :  "http://localhost/auth-api/get_scenario_by_name.php",
         '__CHECK_URL_PROGRAMM__': "https://www.dropbox.com/scl/fi/78a38bc4papwzlw80hxti/version.json?rlkey=n7dx5mb8tcctvprn0wq4ojw7m&st=z6vzw0ox&dl=1",
         '__SERVER_ZIP_URL_PROGRAM__': "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/master.zip"
     }
@@ -91,15 +79,8 @@ class Settings:
 
 
 
-    # =========================================
-    # 🌐 URL UPDATE PROGRAMM
-    # =========================================
 
 
-    # les clés pour générer la clé finale
-    CLE1 = "pr"
-    CLE2 = "rep"
-    COMBINED_KEYS = f"&{CLE1}&{CLE2}"
 
 
 
@@ -296,25 +277,24 @@ class Settings:
                 f.write(log_line)
 
         except Exception as e:
-            print(f"❌ [LOG] Erreur lors de l'écriture du log: {e}")
+            # print(f"❌ [LOG] Erreur lors de l'écriture du log: {e}")
+            pass
 
 
     @classmethod
     def clear_log(cls):
-        """
-        Vide complètement le contenu du fichier de log.
-        """
         try:
             log_path = Path(cls.LOG_DEV_FILE)
             if log_path.exists():
                 # Ouvre le fichier en mode "write" pour effacer tout son contenu
                 open(log_path, "w", encoding="utf-8").close()
-                print(f"✅ [LOG] Fichier log vidé: {cls.LOG_DEV_FILE}")
-            else:
-                print(f"⚠️ [LOG] Fichier log inexistant: {cls.LOG_DEV_FILE}")
+                # print(f"✅ [LOG] Fichier log vidé: {cls.LOG_DEV_FILE}")
+            # else:
+            #     print(f"⚠️ [LOG] Fichier log inexistant: {cls.LOG_DEV_FILE}")
 
         except Exception as e:
-            print(f"❌ [LOG] Erreur lors de la suppression du fichier log: {e}")
+            # print(f"❌ [LOG] Erreur lors de la suppression du fichier log: {e}")
+            pass
 
 
 
@@ -376,3 +356,5 @@ settings = Settings()
 
 # Vérification et création des dossiers de base
 settings.ensure_directories()
+
+

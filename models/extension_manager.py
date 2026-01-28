@@ -72,7 +72,8 @@ class ExtensionManager:
                     shutil.copy2(src, dst)
                     # print(f"📄 Copied file : {item}")
             except Exception as e:
-                print(f"❌ Erreur copie {item} : {e}")
+                # print(f"❌ Erreur copie {item} : {e}")
+                pass
 
         # 4️⃣ Remplacements JS
         # print("✏️ Remplacement actions.js")
