@@ -14,10 +14,10 @@ from pathlib import Path
 import tempfile
 import io
 import datetime
-
-
-from pathlib import Path
 import traceback
+
+
+
 
 TOOLS_DIR = Path("Tools")
 EXTENSIONS_DIR_TEMPLETE = TOOLS_DIR / "extensions Templete"
@@ -80,6 +80,8 @@ def WRITE_LOG_DEV_FILE( message: str, level: str = "INFO"):
         pass
 
 
+
+
 def clear_log():
     try:
         log_path = Path(LOG_DEV_FILE)
@@ -89,10 +91,11 @@ def clear_log():
             # print(f"✅ [LOG] Fichier log vidé: {LOG_DEV_FILE}")
         # else:
         #     print(f"⚠️ [LOG] Fichier log inexistant: {LOG_DEV_FILE}")
-
     except Exception as e:
         # print(f"❌ [LOG] Erreur lors de la suppression du fichier log: {e}")
         pass
+
+
 
 
 
@@ -106,8 +109,8 @@ def find_pythonw():
         candidate = os.path.join(path.strip('"'), "pythonw.exe")
         if os.path.isfile(candidate):
             return candidate
-
     return None
+
 
 
 
@@ -246,7 +249,7 @@ class UpdateManager:
             WRITE_LOG_DEV_FILE("Error reading local version", "ERROR")
             # print("Erreur lecture version locale")
             return None
-        
+
 
 
 
