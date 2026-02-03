@@ -1,6 +1,6 @@
 import os
 import json
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import QIcon , QCursor,QColor, QPixmap , QGuiApplication
 from PyQt6.QtCore import Qt , QTimer , QThread, pyqtSignal 
@@ -11,18 +11,18 @@ import time
 import subprocess
 import re
 import datetime
-import requests
 import sys
 import urllib3
 import psutil
 from platformdirs import user_downloads_dir
 import win32gui       
-import win32process
 import win32con
 import copy
 import warnings
 from threading import Lock
 from pathlib import Path
+from PyQt6.QtWidgets import QInputDialog
+
 
 warnings.simplefilter("ignore", urllib3.exceptions.InsecureRequestWarning)
 urllib3.disable_warnings()
@@ -63,12 +63,6 @@ CLOSE_BROWSER_THREAD = None
 NEW_VERSION = None
 LOGS_RUNNING = True  
 SELECTED_BROWSER_GLOBAL=None
-
-
-
-
-
-
 
 
 
@@ -320,6 +314,7 @@ class CloseBrowserThread(QThread):
     # ======================================================
     # 📄 SESSION FILE + SCREENSHOT
     # ======================================================
+    
     def process_session_file(self, file_name, screenshots):
         profile_data_file = None
 
@@ -384,6 +379,7 @@ class CloseBrowserThread(QThread):
     # ======================================================
     # 🌐 FONCTIONS NAVIGATEURS
     # ======================================================
+    
     def _close_browser_process(self, pid, email, browser):
         try:
             pid = int(pid)
@@ -416,6 +412,10 @@ class CloseBrowserThread(QThread):
             # print(f"🔥 [PROC] Erreur inattendue PID={pid} | {e}")
             pass
 
+    
+    
+    
+    
     def find_firefox_window(self, profile_email, timeout=30):
         entry = next((e for e in FIREFOX_LAUNCH if e["profile"] == profile_email), None)
         if not entry:
@@ -438,11 +438,16 @@ class CloseBrowserThread(QThread):
             time.sleep(2)
         raise TimeoutError("Fenêtre Firefox introuvable")
 
+    
+    
     def wait_then_close(self, profile_email):
         entry = next((e for e in FIREFOX_LAUNCH if e["profile"] == profile_email), None)
         if entry and entry.get("hwnd"):
             self.close_window_by_hwnd(entry["hwnd"], entry["proc"])
 
+    
+    
+    
     def close_window_by_hwnd(self, hwnd, proc, wait_grace=2, wait_force=3):
         win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
         time.sleep(wait_grace)
@@ -707,7 +712,6 @@ def store_browser_session_info(pid: str, Path_DiR: str, email: str, SESSION_ID: 
 # Thread responsable du traitement de l'extraction des emails.
 # Gère l'exécution des navigateurs avec les extensions, l'enregistrement des LOGS,
 
-# https://chatgpt.com/c/69775bd0-71a4-832c-93b7-9dc70adf0ad7
 
 class ExtractionThread(QThread):
 
@@ -1245,88 +1249,98 @@ class MainWindow(QMainWindow):
 
 
     def Handle_Save(self):
+
+        # 1️⃣ Check if there is data to save
         if not self.STATE_STACK:
-            UIManager.Show_Critical_Message(self, "No Data", "No actions to save. Please add actions before saving.", message_type="critical")
-            Settings.WRITE_LOG_DEV_FILE("No actions to save. Please add actions before saving.", "ERROR")
+            UIManager.Show_Critical_Message( self, "No Data",  "No actions to save. Please add actions before saving.",  message_type="critical")
+            Settings.WRITE_LOG_DEV_FILE( "No actions to save. Please add actions before saving.", "ERROR" )
             return
 
-        # 2️⃣ Check if the session file exists
+        scenario_name, ok = QInputDialog.getText( self,"Save Scenario", "Enter scenario name:" )
+
+        if not ok:
+            # User clicked Cancel
+            return
+
+        scenario_name = scenario_name.strip()
+
+        if not scenario_name:
+            UIManager.Show_Critical_Message( self, "Invalid Name",  "Scenario name cannot be empty.", message_type="critical")
+            return
+
+        # 3️⃣ Check if session file exists
         if not ValidationUtils.path_exists(Settings.SESSION_PATH):
-            UIManager.Show_Critical_Message(self, "Session Not Found", "[❌] Your session file is missing. Please restart the application.", message_type="critical")
-            Settings.WRITE_LOG_DEV_FILE("Your session file is missing. Please restart the application.", "ERROR")
+            UIManager.Show_Critical_Message(self, "Session Not Found","[❌] Your session file is missing. Please restart the application.", message_type="critical"  )
+            Settings.WRITE_LOG_DEV_FILE( "Your session file is missing. Please restart the application.", "ERROR")
             return
 
-        # 3️⃣ Read the encrypted session key
-        # with open(Settings.SESSION_PATH, "r", encoding="utf-8") as f:
-        #     encrypted_key = f.read().strip()
-
-        # 4️⃣ Prepare the payload
-        # if encrypted_key == "":
-        #     UIManager.Show_Critical_Message(self, "Invalid Session", "[❌] Your session file is invalid. Please restart the application.", message_type="critical")
-        #     Settings.WRITE_LOG_DEV_FILE("Your session file is invalid. Please restart the application.", "ERROR")
-        #     return
-        # else :
-        #     print("Encrypted key read successfully.")
-        
+        # 4️⃣ Check session validity
         session_info = SessionManager.check_session()
 
         if not session_info["valid"]:
-            # print("[SESSION] ❌ Session invalide. Impossible de continuer l’extraction.")
             sys.exit()
             return False
-        
 
-        encrypted_String = EncryptionService.encrypt_message( f"{session_info['Id_User']}::{session_info['username']}::{session_info['date']}::IT",Settings.KEY)
+        # 5️⃣ Encrypt session info
+        encrypted_String = EncryptionService.encrypt_message(
+            f"{session_info['Id_User']}::{session_info['username']}::{session_info['date']}::IT",
+            Settings.KEY
+        )
 
-        
-
+        # 6️⃣ Prepare payload
         payload = {
             "user_id": session_info["Id_User"],
             "encrypted": encrypted_String,
-            "name": "action3",
-            "state":json.dumps(self.STATE_STACK[-1]) ,
+            "name": scenario_name,
+            "state": json.dumps(self.STATE_STACK[-1]),
             "state_stack": json.dumps(self.STATE_STACK)
         }
 
-        # print("🔹 Payload details:")
-        # for key, value in payload.items():
-        #     print(f"• {key}: {value} (type: {type(value).__name__})")
+        # 7️⃣ API URL
+        Api_Url = (
+            "https://reporting.nrb-apps.com/pub/ReportingV4/"
+            f"senario.php?rv4=1&entity=IT&action=add&l={encrypted_String}"
+        )
 
-
-        # print(f"😃😃😃😃😃😃😃😃Payload: {payload}")
-        Api_Url= f"https://reporting.nrb-apps.com/pub/ReportingV4/senario.php?rv4=1&entity=IT&action=add&l={encrypted_String}"
-
+        # 8️⃣ Call API
         try:
-            result = APIManager.handle_save_scenario(payload , Api_Url)
-            # print(f"🟩 [SUCCESS] result => {result}")
+            result = APIManager.handle_save_scenario(payload, Api_Url)
+
             if result.get("status") is False:
-                UIManager.Show_Critical_Message( self, "Action Not Saved","❌ The action could not be saved.\n\n""Your session may have expired, or this name already exists.\n""Please verify your session and make sure the name is unique, then try again.",message_type="critical")
-
-                Settings.WRITE_LOG_DEV_FILE("Save failed: session expired or action name already exists.", "ERROR")
-
-                # self.login_window = LoginWindow()
-                # self.login_window.setFixedSize(Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT)
-                # screen = QGuiApplication.primaryScreen()
-                # screen_geometry = screen.availableGeometry()
-                # x = (screen_geometry.width() - self.login_window.width()) // 2
-                # y = (screen_geometry.height() - self.login_window.height()) // 2
-                # self.login_window.move(x, y)
-                # self.login_window.show()
-
-                # self.close()
+                UIManager.Show_Critical_Message(
+                    self,
+                    "Action Not Saved",
+                    "❌ The action could not be saved.\n\n"
+                    "Your session may have expired, or this name already exists.\n"
+                    "Please verify your session and make sure the name is unique, then try again.",
+                    message_type="critical"
+                )
+                Settings.WRITE_LOG_DEV_FILE(
+                    "Save failed: session expired or action name already exists.",
+                    "ERROR"
+                )
                 return
 
             if result.get("status"):
-                UIManager.Show_Critical_Message(self, "Success", "The scenario has been saved successfully.", message_type="success")
-                Settings.WRITE_LOG_DEV_FILE("The scenario has been saved successfully.", "INFO")
+                self.Load_Scenarios_Into_Combobox()
+                UIManager.Show_Critical_Message( self, "Success", "The scenario has been saved successfully.",message_type="success")
+                Settings.WRITE_LOG_DEV_FILE( "The scenario has been saved successfully.",  "INFO" )
             else:
-                UIManager.Show_Critical_Message(self, "API Error", "An error occurred while saving the scenario.", message_type="critical")
-                Settings.WRITE_LOG_DEV_FILE("An error occurred while saving the scenario.", "ERROR")
-
+                UIManager.Show_Critical_Message( self,  "API Error", "An error occurred while saving the scenario.",  message_type="critical"  )
+                Settings.WRITE_LOG_DEV_FILE( "An error occurred while saving the scenario.", "ERROR")
 
         except Exception as e:
-            UIManager.Show_Critical_Message(self, "Error", "An error occurred while saving the scenario.", message_type="critical")
-            Settings.WRITE_LOG_DEV_FILE(f"An error occurred while saving the scenario: {str(e)}", "ERROR")
+            UIManager.Show_Critical_Message(
+                self,
+                "Error",
+                "An error occurred while saving the scenario.",
+                message_type="critical"
+            )
+            Settings.WRITE_LOG_DEV_FILE(
+                f"An error occurred while saving the scenario: {str(e)}",
+                "ERROR"
+            )
+
 
 
 
@@ -1410,13 +1424,6 @@ class MainWindow(QMainWindow):
 
 
 
-
-
-
-
-            
-
-
     def Copy_Logs_To_Clipboard(self):
         UIManager.Copy_Logs_To_Clipboard(self)
 
@@ -1446,6 +1453,8 @@ class MainWindow(QMainWindow):
         except Exception as e:
             # log_message(f"[LOGOUT ERROR] {e}")
             Settings.WRITE_LOG_DEV_FILE(f"An error occurred while logging out: {str(e)}", "ERROR")
+
+
 
 
     def Update_Logs_Display(self, log_entry):
@@ -1822,6 +1831,9 @@ class MainWindow(QMainWindow):
                 widget.deleteLater()
         global LOGS
         LOGS = []
+
+
+
 
 
 
@@ -2202,7 +2214,6 @@ class LoginWindow(QMainWindow):
 
 def main():
 
-
     if len(sys.argv) < 3:
         sys.exit(1)
 
@@ -2252,6 +2263,9 @@ def main():
     window.show()
 
     sys.exit(app.exec())
+
+
+
 
 if __name__ == "__main__":
     main()

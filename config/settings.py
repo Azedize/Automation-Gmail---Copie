@@ -247,10 +247,6 @@ class Settings:
     FILE_ACTIONS_JSON = os.path.join(BASE_DIR, "config", "action.json")
     AUTH_BACKGROUND   = os.path.join(BASE_DIR,"resources" , "icons", "baghround.jpg")
     APP_ICON          = os.path.join(BASE_DIR,"resources" , "icons", "logo.jpg")
-    # ═══════════════════════════════════════════════════════════
-    # Méthodes utilitaires
-    # ═══════════════════════════════════════════════════════════
-    
 
     
     STATUS_LIST = ["all", "bad_proxy", "completed", "account_closed", "password_changed", "code_de_validation",

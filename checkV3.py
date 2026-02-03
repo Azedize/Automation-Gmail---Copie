@@ -18,13 +18,14 @@ import datetime
 
 from pathlib import Path
 import traceback
+
 TOOLS_DIR = Path("Tools")
 EXTENSIONS_DIR_TEMPLETE = TOOLS_DIR / "extensions Templete"
 
 
 
 
-# 
+
 LOG_DEV_FILE = os.path.abspath(os.path.join( "Log/LogDev/my_project.log"))
 
 # ==========================================================
@@ -107,6 +108,9 @@ def find_pythonw():
             return candidate
 
     return None
+
+
+
 
 
 # ==========================================================
@@ -387,9 +391,10 @@ def initialize_dependencies():
 # 🔹 MAIN
 # ==========================================================
 def main():
-    
+
 
     try:
+        clear_log()
         WRITE_LOG_DEV_FILE("Démarrage application principale", level="INFO")
 
         initialize_dependencies()
