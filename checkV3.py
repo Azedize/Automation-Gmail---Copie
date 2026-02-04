@@ -18,19 +18,19 @@ import traceback
 
 
 
-
 TOOLS_DIR = Path("Tools")
 EXTENSIONS_DIR_TEMPLETE = TOOLS_DIR / "extensions Templete"
 
 
-
-
-
 LOG_DEV_FILE = os.path.abspath(os.path.join( "Log/LogDev/my_project.log"))
+
+
 
 # ==========================================================
 # 🔹 FIX UTF-8 POUR WINDOWS CONSOLE
 # ==========================================================
+
+
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
@@ -312,9 +312,7 @@ class UpdateManager:
             WRITE_LOG_DEV_FILE("Error downloading/extracting update", "ERROR")
             raise
 
-    
-    
-    
+
     @staticmethod
     def check_and_update():
         WRITE_LOG_DEV_FILE("Checking for updates", "INFO")
@@ -447,9 +445,10 @@ def main():
         WRITE_LOG_DEV_FILE(f"Error details:\n{error_details}", "ERROR")
         
         sys.exit(1)  # Quitte l'application avec code d'erreur
+        
 
 if __name__ == "__main__":
     main()
 
 
-
+# va ignborer les installions des dependises qui ne sont pas necessaire

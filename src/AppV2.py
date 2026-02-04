@@ -1237,15 +1237,23 @@ class MainWindow(QMainWindow):
     
 
     
+
+
     def _load_initial_state(self):
         self.Load_Scenarios_Into_Combobox()
         self.Load_Initial_Options()
 
 
 
+
+
+
     def Save_Process(self, params):
         return APIManager.save_process(params)
         
+
+
+
 
 
     def Handle_Save(self):
@@ -1315,10 +1323,7 @@ class MainWindow(QMainWindow):
                     "Please verify your session and make sure the name is unique, then try again.",
                     message_type="critical"
                 )
-                Settings.WRITE_LOG_DEV_FILE(
-                    "Save failed: session expired or action name already exists.",
-                    "ERROR"
-                )
+                Settings.WRITE_LOG_DEV_FILE( "Save failed: session expired or action name already exists.", "ERROR")
                 return
 
             if result.get("status"):
@@ -1330,16 +1335,8 @@ class MainWindow(QMainWindow):
                 Settings.WRITE_LOG_DEV_FILE( "An error occurred while saving the scenario.", "ERROR")
 
         except Exception as e:
-            UIManager.Show_Critical_Message(
-                self,
-                "Error",
-                "An error occurred while saving the scenario.",
-                message_type="critical"
-            )
-            Settings.WRITE_LOG_DEV_FILE(
-                f"An error occurred while saving the scenario: {str(e)}",
-                "ERROR"
-            )
+            UIManager.Show_Critical_Message(  self, "Error", "An error occurred while saving the scenario.",  message_type="critical" )
+            Settings.WRITE_LOG_DEV_FILE(  f"An error occurred while saving the scenario: {str(e)}", "ERROR")
 
 
 
@@ -1712,6 +1709,7 @@ class MainWindow(QMainWindow):
 
 
 
+
     def Create_Option_Button(self, state):
         default_icon_path = os.path.join(Settings.ICONS_DIR, "icon.png")
         default_icon_path_Templete2 = os.path.join(Settings.ICONS_DIR, "next.png")
@@ -1742,6 +1740,8 @@ class MainWindow(QMainWindow):
 
 
 
+
+
     def Load_State(self, state):
         UIManager.Display_State_Stack_As_Table(self)
         is_multi = state.get("isMultiSelect", False)
@@ -1765,8 +1765,12 @@ class MainWindow(QMainWindow):
 
 
 
+
+
     def Update_Actions_Color_Handle_Last_Button(self):
         UIManager.Update_Actions_Color_Handle_Last_Button( self.scenario_layout, self.Go_To_Previous_State)
+
+
 
 
 
@@ -1787,6 +1791,9 @@ class MainWindow(QMainWindow):
             if state:
                 label = state.get('label', action_key)
                 self.Create_Option_Button(state)
+
+
+
 
 
 
@@ -1831,8 +1838,6 @@ class MainWindow(QMainWindow):
                 widget.deleteLater()
         global LOGS
         LOGS = []
-
-
 
 
 
@@ -1969,10 +1974,6 @@ class MainWindow(QMainWindow):
 
 
         # print("\n🎉 Scenario loaded successfully.\n")
-
-
-
-
 
 
 
@@ -2269,3 +2270,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
