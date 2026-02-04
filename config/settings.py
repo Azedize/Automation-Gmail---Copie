@@ -71,7 +71,6 @@ class Settings:
         '_SAVE_PROCESS_API': 'https://reporting.nrb-apps.com/pub/SaveProcess.php?k=mP5QXYrK9E67Y&rID=1&rv4=1',
         '_MAIN_API': "https://apps1.nrb-apps.com/pub/chk_usr1.php",
         '_DOWNLOAD_EXTRACTT_API'    :  "https://github.com/Azedize/Programme/archive/refs/heads/main.zip",
-        '_CHECK_VERSION_API'        :  "https://www.dropbox.com/scl/fi/78a38bc4papwzlw80hxti/version.json?rlkey=n7dx5mb8tcctvprn0wq4ojw7m&st=z6vzw0ox&dl=1",
         '__CHECK_URL_PROGRAMM__': "https://www.dropbox.com/scl/fi/78a38bc4papwzlw80hxti/version.json?rlkey=n7dx5mb8tcctvprn0wq4ojw7m&st=z6vzw0ox&dl=1",
         '__SERVER_ZIP_URL_PROGRAM__': "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/master.zip"
     }
@@ -220,20 +219,6 @@ class Settings:
  
     MAX_CONCURRENT_BROWSERS = 10
     THREAD_POOL_SIZE = 4
-    
-    # ═══════════════════════════════════════════════════════════
-    # 🔍 Paramètres de mise à jour
-    # ═══════════════════════════════════════════════════════════
-    
-    UPDATE_CHECK_URL = (
-        "https://www.dropbox.com/scl/fi/78a38bc4papwzlw80hxti/"
-        "version.json?rlkey=n7dx5mb8tcctvprn0wq4ojw7m&st=z6vzw0ox&dl=1"
-    )
-    UPDATE_DOWNLOAD_URL = (
-        "https://github.com/Azedize/Programme/archive/refs/heads/main.zip"
-    )
-    
-
     
 
     

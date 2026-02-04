@@ -262,3 +262,7 @@ class SessionManager:
 # Instance globale
 # ==========================================================
 SessionManager = SessionManager()
+
+
+# le programme is runing dans une interface logique et capable de renitailiser l'interface
+# si on est dans un script il faut utiliser la function suivante :

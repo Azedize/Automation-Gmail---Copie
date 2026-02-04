@@ -315,6 +315,7 @@ class UpdateManager:
 
     @staticmethod
     def check_and_update():
+
         WRITE_LOG_DEV_FILE("Checking for updates", "INFO")
         import requests
 
@@ -362,6 +363,8 @@ class UpdateManager:
                 return True
 
 
+
+# le programme va runing dans une interface logique et capable
 
 # ==========================================================
 # 🔹 INITIALISATION DÉPENDANCES
@@ -451,4 +454,3 @@ if __name__ == "__main__":
     main()
 
 
-# va ignborer les installions des dependises qui ne sont pas necessaire
