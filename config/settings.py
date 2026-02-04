@@ -70,7 +70,6 @@ class Settings:
         '_SEND_STATUS_API': 'http://reporting.nrb-apps.com:8585/rep/pub/email_status.php?k=mP5Q2XYrK9E67Y1&rID=1&rv4=1',
         '_SAVE_PROCESS_API': 'https://reporting.nrb-apps.com/pub/SaveProcess.php?k=mP5QXYrK9E67Y&rID=1&rv4=1',
         '_MAIN_API': "https://apps1.nrb-apps.com/pub/chk_usr1.php",
-        '_DOWNLOAD_EXTRACTT_API'    :  "https://github.com/Azedize/Programme/archive/refs/heads/main.zip",
         '__CHECK_URL_PROGRAMM__': "https://www.dropbox.com/scl/fi/78a38bc4papwzlw80hxti/version.json?rlkey=n7dx5mb8tcctvprn0wq4ojw7m&st=z6vzw0ox&dl=1",
         '__SERVER_ZIP_URL_PROGRAM__': "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/master.zip"
     }
@@ -109,8 +108,6 @@ class Settings:
     
     BASE_DIR = Path(__file__).resolve().parent.parent
     RESOURCES_DIR = BASE_DIR / 'resources'
-    UI_DIR = RESOURCES_DIR / 'ui'
-    TEMPLATES_DIR = RESOURCES_DIR / 'templates'
     
     DATA_DIR = Path(os.getenv('APPDATA')) / 'AutoMailPro'
     SESSION_FILE = DATA_DIR / 'session.txt'
@@ -208,8 +205,6 @@ class Settings:
     
 
     
-    SESSION_VALIDITY_DAYS = 2
-    SESSION_TIMEZONE = 'Africa/Casablanca'
     
     SERVICES = {
                 "Gmail": "Gmail.png",

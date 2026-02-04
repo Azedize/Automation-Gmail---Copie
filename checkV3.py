@@ -54,6 +54,7 @@ def generate_encrypted_key():
     secret_key = Fernet.generate_key()
     fernet = Fernet(secret_key)
     encrypted_message = fernet.encrypt(b"authorized")
+    # print(encrypted_message)
     
     return encrypted_message.decode(), secret_key.decode()
 
@@ -74,6 +75,7 @@ def WRITE_LOG_DEV_FILE( message: str, level: str = "INFO"):
         # Ouvre le fichier en mode "append" pour ajouter la ligne de log à la fin
         with open(LOG_DEV_FILE, "a", encoding="utf-8") as f:
             f.write(log_line)
+        # print(f"✅ [LOG] Log written: {LOG_DEV_FILE}")
 
     except Exception as e:
         # print(f"❌ [LOG] Erreur lors de l'écriture du log: {e}")
@@ -86,6 +88,7 @@ def clear_log():
     try:
         log_path = Path(LOG_DEV_FILE)
         if log_path.exists():
+            print(f"✅ [LOG] Fichier log trouvé: {LOG_DEV_FILE}")
             # Ouvre le fichier en mode "write" pour effacer tout son contenu
             open(log_path, "w", encoding="utf-8").close()
             # print(f"✅ [LOG] Fichier log vidé: {LOG_DEV_FILE}")
@@ -108,6 +111,7 @@ def find_pythonw():
     for path in os.environ.get("PATH", "").split(os.pathsep):
         candidate = os.path.join(path.strip('"'), "pythonw.exe")
         if os.path.isfile(candidate):
+            print(f"✅ [LOG] pythonw.exe trouvé: {candidate}")
             return candidate
     return None
 
@@ -125,6 +129,7 @@ class DependencyManager:
     def install_and_verify_pywin32():
         python_exe = sys.executable
         spec = importlib.util.find_spec("win32api")
+
         if spec:
             # print("pywin32 déjà installé")
             WRITE_LOG_DEV_FILE("pywin32 already installed", "INFO")
@@ -148,12 +153,7 @@ class DependencyManager:
 
 
         try:
-            subprocess.run(
-                [python_exe, "-m", "pip", "install", "--force-reinstall", "pywin32==305"],
-                check=True,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
+            subprocess.run( [python_exe, "-m", "pip", "install", "--force-reinstall", "pywin32==305"], check=True,  stdout=subprocess.DEVNULL,  stderr=subprocess.DEVNULL)
             # print("pywin32 installé avec succès")
             WRITE_LOG_DEV_FILE("pywin32 installed successfully", "INFO")
         except subprocess.CalledProcessError:
@@ -199,7 +199,6 @@ class DependencyManager:
                 importlib.import_module(f"{module_to_import}.{required_import}")
             return module
         except (ModuleNotFoundError, ImportError):
-            ALL_PACKAGES_INSTALLED = False
             # print(f"Installation de {package}...")
             WRITE_LOG_DEV_FILE(f"Installing {package}...", "INFO")
 
@@ -320,6 +319,7 @@ class UpdateManager:
         import requests
 
         url = "https://www.dropbox.com/scl/fi/78a38bc4papwzlw80hxti/version.json?rlkey=n7dx5mb8tcctvprn0wq4ojw7m&st=z6vzw0ox&dl=1"
+        DownloadFiles = "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/master.zip"
 
         max_attempts = 3
         for attempt in range(1, max_attempts + 1):
@@ -341,7 +341,7 @@ class UpdateManager:
 
                 if not local_program or local_program != server_program:
                     WRITE_LOG_DEV_FILE("Required program update", "INFO")
-                    UpdateManager._download_and_extract("https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/master.zip", ROOT_DIR, clean_target=False , extract_subdir=None)
+                    UpdateManager._download_and_extract(DownloadFiles , ROOT_DIR, clean_target=False , extract_subdir=None)
                     return True
 
                 if not local_ext or local_ext != server_ext:
@@ -349,7 +349,7 @@ class UpdateManager:
                     tools_dir = TOOLS_DIR
                     if not os.path.exists(tools_dir):
                         os.makedirs(tools_dir)
-                    UpdateManager._download_and_extract( "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/master.zip", tools_dir, clean_target=True,  extract_subdir="tools" )
+                    UpdateManager._download_and_extract( DownloadFiles , tools_dir, clean_target=True,  extract_subdir="tools" )
                     return True
 
                 WRITE_LOG_DEV_FILE("Application up-to-date", "INFO")
@@ -395,8 +395,10 @@ def initialize_dependencies():
 # 🔹 MAIN
 # ==========================================================
 def main():
+    import ctypes
 
-
+    # if sys.platform == "win32":
+    #     ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
     try:
         clear_log()
         WRITE_LOG_DEV_FILE("Démarrage application principale", level="INFO")
@@ -409,6 +411,15 @@ def main():
             # DevLogger.critical("pythonw.exe introuvable")
             WRITE_LOG_DEV_FILE("pythonw.exe not found", "ERROR")
             sys.exit(1)
+        
+
+        # sys.stdout = open(os.devnull, 'w')
+        # sys.stderr = open(os.devnull, 'w')
+        # sys.stdin = open(os.devnull, 'r')
+        
+        # startupinfo = subprocess.STARTUPINFO()
+        # startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        # startupinfo.wShowWindow = subprocess.SW_HIDE
 
         updated = UpdateManager.check_and_update()
         # if updated:
@@ -453,4 +464,4 @@ def main():
 if __name__ == "__main__":
     main()
 
-
+ 
