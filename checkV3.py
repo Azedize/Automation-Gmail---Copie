@@ -355,8 +355,8 @@ class UpdateManager:
                 print("🗂 Parsed JSON data:")
                 print(data)
 
-                server_program = data.get("version_Programme")
-                server_ext = data.get("version_extension")
+                server_program = data.get("version")
+                server_ext = data.get("version_Extention")
 
                 local_program = UpdateManager._read_local_version(os.path.join("config", "version.txt"))
                 local_ext = UpdateManager._read_local_version(os.path.join(EXTENSIONS_DIR_TEMPLETE, "version.txt"))
