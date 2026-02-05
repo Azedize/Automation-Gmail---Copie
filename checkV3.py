@@ -2,7 +2,6 @@
 # main.py
 # ==========================================================
 
-
 import os
 import sys
 import shutil
@@ -20,8 +19,6 @@ import traceback
 
 TOOLS_DIR = Path("Tools")
 EXTENSIONS_DIR_TEMPLETE = TOOLS_DIR / "extensions Templete"
-
-
 LOG_DEV_FILE = os.path.abspath(os.path.join( "Log/LogDev/my_project.log"))
 
 
@@ -46,6 +43,9 @@ if ROOT_DIR not in sys.path:
 # ==========================================================
 
 SCRIPT_DIR = Path(__file__).resolve().parent
+
+
+
 
 
 def generate_encrypted_key():
@@ -111,7 +111,7 @@ def find_pythonw():
     for path in os.environ.get("PATH", "").split(os.pathsep):
         candidate = os.path.join(path.strip('"'), "pythonw.exe")
         if os.path.isfile(candidate):
-            print(f"✅ [LOG] pythonw.exe trouvé: {candidate}")
+            # print(f"✅ [LOG] pythonw.exe trouvé: {candidate}")
             return candidate
     return None
 

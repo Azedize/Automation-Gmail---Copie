@@ -300,8 +300,8 @@ class UpdateManager:
         # print(f"➤ Username : {SESSION_INFO['username']}\n➤ Password : {SESSION_INFO['password']}\n")
 
         ENCRYPTED = EncryptionService.encrypt_message(json.dumps({  "login":SESSION_INFO ["username"],  "password": SESSION_INFO["password"]}), Settings.KEY)
-        CHECK_URL_EX3 = f"http://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Ext3&k={ENCRYPTED}"
-
+        CHECK_URL_EX3 = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Ext3&k={ENCRYPTED}"
+                          
         try:
             # print("\n🔎 Vérification des versions d'extension...")
 
