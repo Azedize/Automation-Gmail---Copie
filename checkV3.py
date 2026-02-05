@@ -332,11 +332,17 @@ class UpdateManager:
         max_attempts = 3
         for attempt in range(1, max_attempts + 1):
             try:
-                print(f"🌐 Attempt {attempt}/{max_attempts} → Connecting to update server...")
+                print(f"🌐 Attempt {attempt}/{max_attempts} → Sending request...")
                 response = requests.get(url, timeout=10)
 
+                # 🔎 Affichage de la réponse
+                print("📡 Response received!")
+                print(f"➡️ Status Code: {response.status_code}")
+                print("📄 Raw Response Text:")
+                print(response.text)
+
                 if response.status_code != 200:
-                    print(f"❌ Attempt {attempt}: Server error (status {response.status_code})")
+                    print(f"❌ Server returned error status {response.status_code}")
                     WRITE_LOG_DEV_FILE(f"Attempt {attempt}: Failed to fetch version.json (status {response.status_code})", "ERROR")
                     if attempt < max_attempts:
                         print("⏳ Retrying in 2 seconds...")
@@ -344,8 +350,10 @@ class UpdateManager:
                         continue
                     return True
 
-                print("📄 Version file received successfully ✔️")
+                print("🧠 Parsing JSON...")
                 data = response.json()
+                print("🗂 Parsed JSON data:")
+                print(data)
 
                 server_program = data.get("version_Programme")
                 server_ext = data.get("version_extension")
@@ -391,6 +399,7 @@ class UpdateManager:
                     continue
                 print("🚫 Update failed after multiple attempts.")
                 return True
+
 
 
 
