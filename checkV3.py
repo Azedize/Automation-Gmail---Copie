@@ -21,10 +21,7 @@ TOOLS_DIR = Path("Tools")
 EXTENSIONS_DIR_TEMPLETE = TOOLS_DIR / "extensions Templete"
 LOG_DEV_FILE = os.path.abspath(os.path.join( "Log/LogDev/my_project.log"))
 
-# anwa3 casting 3 unicast aw multicast aw broadcast
-# unicast is the only way to send a message to a specific device on a network
-# multicast is a way to send a message to multiple devices on a network
-# broadcast is a way to send a message to all devices on a network
+
 
 
 
@@ -34,8 +31,8 @@ LOG_DEV_FILE = os.path.abspath(os.path.join( "Log/LogDev/my_project.log"))
 # ==========================================================
 
 
-# sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-# sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 
 
@@ -93,7 +90,7 @@ def clear_log():
     try:
         log_path = Path(LOG_DEV_FILE)
         if log_path.exists():
-            print(f"✅ [LOG] Fichier log trouvé: {LOG_DEV_FILE}")
+            # print(f"✅ [LOG] Fichier log trouvé: {LOG_DEV_FILE}")
             # Ouvre le fichier en mode "write" pour effacer tout son contenu
             open(log_path, "w", encoding="utf-8").close()
             # print(f"✅ [LOG] Fichier log vidé: {LOG_DEV_FILE}")
@@ -322,13 +319,14 @@ class UpdateManager:
     def check_and_update():
 
         
-        print("🔍 Checking for updates...")
+        # print("🔍 Checking for updates...")
         WRITE_LOG_DEV_FILE("Checking for updates", "INFO")
 
         import requests
 
         url = "https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Script&k=e21c5f27e3e2561ad0d929f7373a4116ce961f52474183e5fd9e3863018d5d7e"
-        DownloadFiles = "https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Script&k=e21c5f27e3e2561ad0d929f7373a4116ce961f52474183e5fd9e3863018d5d7e"
+        DownloadFiles = "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip"
+        
 
         max_attempts = 3
         for attempt in range(1, max_attempts + 1):
@@ -337,13 +335,13 @@ class UpdateManager:
                 response = requests.get(url, timeout=10)
 
                 # 🔎 Affichage de la réponse
-                print("📡 Response received!")
-                print(f"➡️ Status Code: {response.status_code}")
-                print("📄 Raw Response Text:")
+                # print("📡 Response received!")
+                # print(f"➡️ Status Code: {response.status_code}")
+                # print("📄 Raw Response Text:")
                 print(response.text)
 
                 if response.status_code != 200:
-                    print(f"❌ Server returned error status {response.status_code}")
+                    # print(f"❌ Server returned error status {response.status_code}")
                     WRITE_LOG_DEV_FILE(f"Attempt {attempt}: Failed to fetch version.json (status {response.status_code})", "ERROR")
                     if attempt < max_attempts:
                         print("⏳ Retrying in 2 seconds...")
@@ -351,10 +349,10 @@ class UpdateManager:
                         continue
                     return True
 
-                print("🧠 Parsing JSON...")
+                # print("🧠 Parsing JSON...")
                 data = response.json()
-                print("🗂 Parsed JSON data:")
-                print(data)
+                # print("🗂 Parsed JSON data:")
+                # print(data)
 
                 server_program = data.get("version")
                 server_ext = data.get("version_Extention")
@@ -362,43 +360,43 @@ class UpdateManager:
                 local_program = UpdateManager._read_local_version(os.path.join("config", "version.txt"))
                 local_ext = UpdateManager._read_local_version(os.path.join(EXTENSIONS_DIR_TEMPLETE, "version.txt"))
 
-                print(f"📦 Local program version: {local_program}")
-                print(f"☁️ Server program version: {server_program}")
+                # print(f"📦 Local program version: {local_program}")
+                # print(f"☁️ Server program version: {server_program}")
 
                 if not local_program or local_program != server_program:
-                    print("⬇️ New program version detected! Downloading update...")
+                    # print("⬇️ New program version detected! Downloading update...")
                     WRITE_LOG_DEV_FILE("Required program update", "INFO")
                     UpdateManager._download_and_extract(DownloadFiles, ROOT_DIR, clean_target=False, extract_subdir=None)
-                    print("✅ Program updated successfully!")
+                    # print("✅ Program updated successfully!")
                     return True
 
-                print(f"🔌 Local extension version: {local_ext}")
-                print(f"☁️ Server extension version: {server_ext}")
+                # print(f"🔌 Local extension version: {local_ext}")
+                # print(f"☁️ Server extension version: {server_ext}")
 
                 if not local_ext or local_ext != server_ext:
-                    print("⬇️ New extension version detected! Updating tools...")
+                    # print("⬇️ New extension version detected! Updating tools...")
                     WRITE_LOG_DEV_FILE("Required extensions update", "INFO")
                     tools_dir = TOOLS_DIR
                     if not os.path.exists(tools_dir):
                         os.makedirs(tools_dir)
-                        print("📁 Tools directory created")
+                        # print("📁 Tools directory created")
 
                     UpdateManager._download_and_extract(DownloadFiles, tools_dir, clean_target=True, extract_subdir="tools")
-                    print("✅ Extensions updated successfully!")
+                    # print("✅ Extensions updated successfully!")
                     return True
 
-                print("🎉 Application is up-to-date! No update needed.")
+                # print("🎉 Application is up-to-date! No update needed.")
                 WRITE_LOG_DEV_FILE("Application up-to-date", "INFO")
                 return False
 
             except Exception as e:
-                print(f"💥 Attempt {attempt}: Critical update error → {e}")
+                # print(f"💥 Attempt {attempt}: Critical update error → {e}")
                 WRITE_LOG_DEV_FILE(f"Attempt {attempt}: Critical update error: {e}", "ERROR")
                 if attempt < max_attempts:
-                    print("🔁 Retrying in 2 seconds...")
+                    # print("🔁 Retrying in 2 seconds...")
                     time.sleep(2)
                     continue
-                print("🚫 Update failed after multiple attempts.")
+                # print("🚫 Update failed after multiple attempts.")
                 return True
 
 
@@ -410,7 +408,7 @@ class UpdateManager:
 # 🔹 INITIALISATION DÉPENDANCES
 # ==========================================================
 def initialize_dependencies():
-    # print("Initialisation des dépendances")
+    print("Initialisation des dépendances")
 
     WRITE_LOG_DEV_FILE("Initialisation des dépendances" , level="INFO")
 
@@ -435,11 +433,13 @@ def initialize_dependencies():
 # 🔹 MAIN
 # ==========================================================
 def main():
-    print("Lancement de l'application principale")
-    # import ctypes
+    # print("Lancement de l'application principale")
+    if sys.platform == "win32":
+        import ctypes
+        ctypes.windll.user32.ShowWindow(
+            ctypes.windll.kernel32.GetConsoleWindow(), 0
+        )
 
-    # if sys.platform == "win32":
-    #     ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
     try:
         clear_log()
         WRITE_LOG_DEV_FILE("Démarrage application principale", level="INFO")
@@ -454,7 +454,7 @@ def main():
             WRITE_LOG_DEV_FILE("pythonw.exe not found", "ERROR")
             sys.exit(1)
         
-        pythonw_path=r"C:\Users\tec-d\.pyenv\pyenv-win\versions\3.8.0\python.exe"
+        # pythonw_path=r"C:\Users\tec-d\.pyenv\pyenv-win\versions\3.8.0\python.exe"
         
         print("pythonw_path:", pythonw_path)
         # sys.stdout = open(os.devnull, 'w')
@@ -466,6 +466,7 @@ def main():
         # startupinfo.wShowWindow = subprocess.SW_HIDE
 
         updated = UpdateManager.check_and_update()
+        print("updated:", updated)
         # if updated:
         #     print("UPDATE EFFECTUÉ")
         #     WRITE_LOG_DEV_FILE("Update completed", "INFO")
@@ -474,16 +475,22 @@ def main():
         #     WRITE_LOG_DEV_FILE("Application up-to-date", "INFO")
 
         if len(sys.argv) == 1:
-            # print("Lancement de l'application principale")
+            print("Lancement de l'application principale")
             WRITE_LOG_DEV_FILE("Launching main application", "INFO")
             encrypted_key, secret_key = generate_encrypted_key()
             # ❌ Ne jamais logger ces clés
 
-            script_path = SCRIPT_DIR / "src" / "AppV2.py"
+            script_path = SCRIPT_DIR / "src" / "AppV2.pyc"
             if script_path.is_file():
-                subprocess.run([sys.executable, str(script_path), encrypted_key, secret_key])
+                    subprocess.run(
+                        [sys.executable, str(script_path), encrypted_key, secret_key],
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                        stdin=subprocess.DEVNULL,
+                        creationflags=subprocess.CREATE_NO_WINDOW
+                    )
             else:
-                # print("Script principal introuvable")
+                print("Script principal introuvable")
                 WRITE_LOG_DEV_FILE("Main script not found", "ERROR")
                 sys.exit(1)
 
