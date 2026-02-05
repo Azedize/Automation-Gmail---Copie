@@ -14,7 +14,6 @@ import tempfile
 import io
 import datetime
 import traceback
-import datetime
 
 
 
@@ -52,21 +51,7 @@ if ROOT_DIR not in sys.path:
 SCRIPT_DIR = Path(__file__).resolve().parent
 
 
-AES_BLOCK_SIZE = 128    
-AES_KEY_LENGTH = 32         
-AES_IV_LENGTH = 16         
-AES_SALT_LENGTH = 16        
-PBKDF2_ITERATIONS = 100_000
-AES_IV_LENGTH_CBC = 16        
-AES_IV_LENGTH_GCM = 12        
 
-APPDATA       = os.getenv("APPDATA")
-APP_NAME      = "SecureDesk"
-APPDATA_DIR   = os.path.join(APPDATA, APP_NAME)
-SESSION_PATH  = os.path.join(APPDATA_DIR, "session.txt")
-
-KEY_HEX = "f564292a5740af4fc4819c6e22f64765232ad35f56079854a0ad3996c68ee7a2"
-KEY     = bytes.fromhex(KEY_HEX)
 
 
 def generate_encrypted_key():
@@ -119,8 +104,7 @@ def clear_log():
         pass
 
 
-class EncryptionError(Exception):
-    pass
+
 
 
 
@@ -139,99 +123,8 @@ def find_pythonw():
 
 
 
-    # =========================
-
-    
-    
-
-def encrypt_message(plaintext: str, key_bytes: bytes) -> str:
-    import base64
-    from cryptography.hazmat.primitives import padding
-    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-    try:
-        if len(key_bytes) != AES_KEY_LENGTH:
-            WRITE_LOG_DEV_FILE("Invalid AES key length", level="ERROR")
-            raise EncryptionError("Invalid AES key length")
-
-        padder = padding.PKCS7(AES_BLOCK_SIZE).padder()
-        padded = padder.update(plaintext.encode("utf-8")) + padder.finalize()
-
-        iv = os.urandom(AES_IV_LENGTH_CBC)
-
-        cipher = Cipher(
-            algorithms.AES(key_bytes),
-            modes.CBC(iv)
-        )
-        encryptor = cipher.encryptor()
-        ciphertext = encryptor.update(padded) + encryptor.finalize()
-
-        return base64.b64encode(iv + ciphertext).decode("utf-8")
-
-    except Exception as e:
-        WRITE_LOG_DEV_FILE(f"AES-CBC encryption failed: {e}", level="ERROR")
-        raise EncryptionError(f"AES-CBC encryption failed: {e}")
-
-# =========================
-# 🔓 AES-CBC Decrypt
-# =========================
-
-def decrypt_message(base64_data: str, key_bytes: bytes) -> str:
-    import base64
-    from cryptography.hazmat.primitives import padding
-    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-    try:
-        if len(key_bytes) != AES_KEY_LENGTH:
-            WRITE_LOG_DEV_FILE("Invalid AES key length", level="ERROR")
-            raise EncryptionError("Invalid AES key length")
-
-        raw = base64.b64decode(base64_data)
-
-        iv = raw[:AES_IV_LENGTH_CBC]
-        ciphertext = raw[AES_IV_LENGTH_CBC:]
-
-        cipher = Cipher(
-            algorithms.AES(key_bytes),
-            modes.CBC(iv)
-        )
-        decryptor = cipher.decryptor()
-        padded_plaintext = decryptor.update(ciphertext) + decryptor.finalize()
-
-        unpadder = padding.PKCS7(AES_BLOCK_SIZE).unpadder()
-        plaintext = unpadder.update(padded_plaintext) + unpadder.finalize()
-
-        return plaintext.decode("utf-8")
-
-    except Exception as e:
-        WRITE_LOG_DEV_FILE(f"AES-CBC decryption failed: {e}", level="ERROR")
-        raise EncryptionError(f"AES-CBC decryption failed: {e}")
 
 
-
-def validate_session_format(session_data: str) :
-    """Valide le format des données de session"""
-    if not session_data or "::" not in session_data:
-        return False, None
-    
-    parts = session_data.split("::")
-    if len(parts) != 5:
-        return False, None
-    
-    username, password ,date_str , entity ,Id_User= parts
-    
-    try:
-        datetime.datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
-
-    except ValueError:
-        return False, None
-    
-    return True, {
-        "username": username.strip(),
-        "password": password.strip(),
-        "date": date_str.strip(),
-        "entity": entity.strip(),
-        "Id_User":Id_User.strip()
-    }
-    
 # ==========================================================
 # 🔹 CLASSE GESTION DES DÉPENDANCES
 # ==========================================================
@@ -365,64 +258,6 @@ class UpdateManager:
 
 
 
-
-    @staticmethod
-    def check_session():
-            session_info = {"valid": False, "username": None , "password": None, "date": None, "p_entity": None, "error": None}
-
-            print(f"[INFO] Chemin du fichier session : {SESSION_PATH}")
-
-            if not os.path.exists(SESSION_PATH):
-                print("[WARNING] ❌ Le fichier session.txt n'existe pas")
-                WRITE_LOG_DEV_FILE("Le fichier session n'existe pas", "WARNING")
-                session_info["error"] = "FileNotFound"
-                return session_info
-
-            try:
-                with open(SESSION_PATH, "r", encoding="utf-8") as f:
-                    encrypted = f.read().strip()
-
-                if not encrypted:
-                    print("[WARNING] ❌ Fichier session.txt vide")
-                    WRITE_LOG_DEV_FILE("Le fichier session est vide", "WARNING")
-                    session_info["error"] = "EmptyFile"
-                    return session_info
-
-                decrypted = decrypt_message(encrypted, KEY)
-                print("decrypted" , decrypted)
-
-                is_valid, data = validate_session_format(decrypted)
-                print("data session :" , data)
-                if not is_valid:
-                    WRITE_LOG_DEV_FILE("Format de session invalide", "WARNING")
-                    print("[ERROR] Format session invalide")
-                    session_info["error"] = "InvalidFormat"
-                    return session_info
-
-                username,password, date_str, p_entity , Id_User = data["username"],data["password"], data["date"], data["entity"] , data["Id_User"]
-
-                print("🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​username:", username,"password : ", password , "date_str:", date_str, "p_entity:", p_entity ,"Id_User", Id_User ) 
-
-                last_session = datetime.datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
-                last_session =  pytz.timezone("Africa/Casablanca").localize(last_session)
-                now = datetime.datetime.now( pytz.timezone("Africa/Casablanca"))
-
-                if (now - last_session) < datetime.timedelta(days=2):
-                    session_info.update({"valid": True, "username": username , "password": password, "date": last_session, "p_entity": p_entity , "Id_User": Id_User})
-                else:
-                    WRITE_LOG_DEV_FILE("Session expirée", "WARNING")
-                    print("[INFO] Session expirée")
-                    session_info["error"] = "Expired"
-
-            except Exception as e:
-                print(f"[ERROR] Lecture fichier session : {e}")
-                session_info["error"] = f"FileReadError: {e}"
-                WRITE_LOG_DEV_FILE(f"Erreur lors de la lecture du fichier session : {e}", "ERROR")
-
-            return session_info
-
-
-
     @staticmethod
     def _download_and_extract(zip_url, target_dir, clean_target=False, extract_subdir=None):
         try:
@@ -485,24 +320,14 @@ class UpdateManager:
 
     @staticmethod
     def check_and_update():
-        import json
 
-        SESSION_INFO = UpdateManager.check_session()
-
-        if not SESSION_INFO["valid"]:
-            print("[SESSION] ❌ Session invalide. Impossible de continuer l’extraction.")
-            sys.exit()
-            return False
         
-        print(f"➤ Username : {SESSION_INFO['username']}\n➤ Password : {SESSION_INFO['password']}\n")
-
-        ENCRYPTED = encrypt_message(json.dumps({  "login":SESSION_INFO ["username"],  "password": SESSION_INFO["password"]}), KEY)
         print("🔍 Checking for updates...")
         WRITE_LOG_DEV_FILE("Checking for updates", "INFO")
 
         import requests
 
-        url = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Script&k={ENCRYPTED}"
+        url = "https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Script&k=e21c5f27e3e2561ad0d929f7373a4116ce961f52474183e5fd9e3863018d5d7e"
         DownloadFiles = "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/master.zip"
 
         max_attempts = 3
@@ -641,12 +466,12 @@ def main():
         # startupinfo.wShowWindow = subprocess.SW_HIDE
 
         updated = UpdateManager.check_and_update()
-        if updated:
-            print("UPDATE EFFECTUÉ")
-            WRITE_LOG_DEV_FILE("Update completed", "INFO")
-        else:
-            print("APPLICATION À JOUR")
-            WRITE_LOG_DEV_FILE("Application up-to-date", "INFO")
+        # if updated:
+        #     print("UPDATE EFFECTUÉ")
+        #     WRITE_LOG_DEV_FILE("Update completed", "INFO")
+        # else:
+        #     print("APPLICATION À JOUR")
+        #     WRITE_LOG_DEV_FILE("Application up-to-date", "INFO")
 
         if len(sys.argv) == 1:
             # print("Lancement de l'application principale")
