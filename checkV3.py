@@ -328,7 +328,7 @@ class UpdateManager:
         import requests
 
         url = "https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Script&k=e21c5f27e3e2561ad0d929f7373a4116ce961f52474183e5fd9e3863018d5d7e"
-        DownloadFiles = "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/master.zip"
+        DownloadFiles = "https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Script&k=e21c5f27e3e2561ad0d929f7373a4116ce961f52474183e5fd9e3863018d5d7e"
 
         max_attempts = 3
         for attempt in range(1, max_attempts + 1):
