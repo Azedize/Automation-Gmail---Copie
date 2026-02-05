@@ -420,6 +420,8 @@ def main():
             WRITE_LOG_DEV_FILE("pythonw.exe not found", "ERROR")
             sys.exit(1)
         
+        pythonw_path="C:\Users\tec-d\.pyenv\pyenv-win\versions\3.8.0\python.exe"
+        
         print("pythonw_path:", pythonw_path)
         # sys.stdout = open(os.devnull, 'w')
         # sys.stderr = open(os.devnull, 'w')
