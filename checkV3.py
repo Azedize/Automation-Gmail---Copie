@@ -416,10 +416,11 @@ def main():
         pythonw_path = find_pythonw()
         if not pythonw_path:
             # DevLogger.critical("pythonw.exe introuvable")
+            print("pythonw.exe introuvable")
             WRITE_LOG_DEV_FILE("pythonw.exe not found", "ERROR")
             sys.exit(1)
         
-
+        print("pythonw_path:", pythonw_path)
         # sys.stdout = open(os.devnull, 'w')
         # sys.stderr = open(os.devnull, 'w')
         # sys.stdin = open(os.devnull, 'r')
