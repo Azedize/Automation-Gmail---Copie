@@ -22,17 +22,9 @@ class EncryptionService:
     def Derive_Key(password: str, salt: bytes) -> bytes:
         try:
             if len(salt) != settings.AES_SALT_LENGTH:
-                raise EncryptionError(
-                    f"Invalid salt length: {len(salt)} "
-                    f"(expected {settings.AES_SALT_LENGTH})"
-                )
+                raise EncryptionError(  f"Invalid salt length: {len(salt)} "  f"(expected {settings.AES_SALT_LENGTH})"  )
 
-            kdf = PBKDF2HMAC(
-                algorithm=hashes.SHA256(),
-                length=settings.AES_KEY_LENGTH,
-                salt=salt,
-                iterations=settings.PBKDF2_ITERATIONS,
-            )
+            kdf = PBKDF2HMAC(  algorithm=hashes.SHA256(), length=settings.AES_KEY_LENGTH,  salt=salt,  iterations=settings.PBKDF2_ITERATIONS)
             return kdf.derive(password.encode("utf-8"))
 
         except Exception as e:
@@ -51,13 +43,8 @@ class EncryptionService:
 
             padder = padding.PKCS7(settings.AES_BLOCK_SIZE).padder()
             padded = padder.update(plaintext.encode("utf-8")) + padder.finalize()
-
             iv = os.urandom(settings.AES_IV_LENGTH_CBC)
-
-            cipher = Cipher(
-                algorithms.AES(key_bytes),
-                modes.CBC(iv)
-            )
+            cipher = Cipher( algorithms.AES(key_bytes),  modes.CBC(iv) )
             encryptor = cipher.encryptor()
             ciphertext = encryptor.update(padded) + encryptor.finalize()
 
@@ -82,10 +69,7 @@ class EncryptionService:
             iv = raw[:settings.AES_IV_LENGTH_CBC]
             ciphertext = raw[settings.AES_IV_LENGTH_CBC:]
 
-            cipher = Cipher(
-                algorithms.AES(key_bytes),
-                modes.CBC(iv)
-            )
+            cipher = Cipher(algorithms.AES(key_bytes), modes.CBC(iv) )
             decryptor = cipher.decryptor()
             padded_plaintext = decryptor.update(ciphertext) + decryptor.finalize()
 
@@ -100,22 +84,15 @@ class EncryptionService:
 
     # =========================
     # 🔐 AES-GCM Encrypt
-    # =========================
+    #  # =========================
     @staticmethod
     def encrypt_aes_gcm(password: str, plaintext: str) -> str:
         try:
             salt = os.urandom(settings.AES_SALT_LENGTH)
             key = EncryptionService.Derive_Key(password, salt)
-
             iv = os.urandom(settings.AES_IV_LENGTH_GCM)
             aesgcm = AESGCM(key)
-
-            ciphertext_and_tag = aesgcm.encrypt(
-                iv,
-                plaintext.encode("utf-8"),
-                None
-            )
-
+            ciphertext_and_tag = aesgcm.encrypt(iv,  plaintext.encode("utf-8"),  None)
             payload = salt + iv + ciphertext_and_tag
             return payload.hex()
 
@@ -140,7 +117,6 @@ class EncryptionService:
 
     @staticmethod
     def generate_encrypted_key():
-        """Génère une clé chiffrée pour l'authentification"""
         from cryptography.fernet import Fernet
         
         secret_key = Fernet.generate_key()
@@ -151,3 +127,7 @@ class EncryptionService:
 
 
 EncryptionService = EncryptionService()
+
+
+
+ 

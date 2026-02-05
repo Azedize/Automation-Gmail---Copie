@@ -338,7 +338,7 @@ class UpdateManager:
                 # print("📡 Response received!")
                 # print(f"➡️ Status Code: {response.status_code}")
                 # print("📄 Raw Response Text:")
-                print(response.text)
+                # print(response.text)
 
                 if response.status_code != 200:
                     # print(f"❌ Server returned error status {response.status_code}")
