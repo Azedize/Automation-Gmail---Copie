@@ -244,7 +244,7 @@ class UpdateManager:
     @staticmethod
     def _read_local_version(path):
         if not path or not os.path.exists(path):
-            # print("Version locale introuvable")
+            print("Version locale introuvable")
             WRITE_LOG_DEV_FILE("Local version not found", "ERROR")
             return None
         try:
@@ -252,7 +252,7 @@ class UpdateManager:
                 return f.read().strip()
         except Exception:
             WRITE_LOG_DEV_FILE("Error reading local version", "ERROR")
-            # print("Erreur lecture version locale")
+            print("Erreur lecture version locale")
             return None
 
 
@@ -261,7 +261,7 @@ class UpdateManager:
     @staticmethod
     def _download_and_extract(zip_url, target_dir, clean_target=False, extract_subdir=None):
         try:
-            # print("Téléchargement mise à jour depuis serveur")
+            print("Téléchargement mise à jour depuis serveur")
             WRITE_LOG_DEV_FILE("Downloading update from server", "INFO")
             with tempfile.TemporaryDirectory() as tmpdir:
                 zip_path = os.path.join(tmpdir, "update.zip")
@@ -272,17 +272,17 @@ class UpdateManager:
                     for chunk in r.iter_content(8192):
                         if chunk:
                             f.write(chunk)
-                # print("ZIP téléchargé avec succès")
+                print("ZIP téléchargé avec succès")
                 WRITE_LOG_DEV_FILE("ZIP downloaded successfully", "INFO")
 
                 if clean_target and os.path.exists(target_dir):
                     shutil.rmtree(target_dir)
-                    # print("Ancien dossier cible supprimé")
+                    print("Ancien dossier cible supprimé")
                     WRITE_LOG_DEV_FILE("Old target directory removed", "INFO")
 
                 with zipfile.ZipFile(zip_path, "r") as z:
                     z.extractall(tmpdir)
-                # print("Extraction ZIP temporaire terminée")
+                print("Extraction ZIP temporaire terminée")
                 WRITE_LOG_DEV_FILE("Temporary ZIP extraction completed", "INFO")
 
                 extracted_root = next( os.path.join(tmpdir, d)  for d in os.listdir(tmpdir) if os.path.isdir(os.path.join(tmpdir, d)) )
@@ -292,7 +292,7 @@ class UpdateManager:
                     candidate = os.path.join(extracted_root, extract_subdir)
                     if os.path.exists(candidate):
                         extracted_dir = candidate
-                        # print(f"Sous-dossier extrait : {extract_subdir}")
+                        print(f"Sous-dossier extrait : {extract_subdir}")
                         WRITE_LOG_DEV_FILE(f"Subdirectory extracted: {extract_subdir}", "INFO")
 
                 if not os.path.exists(target_dir):
@@ -308,12 +308,12 @@ class UpdateManager:
                     else:
                         shutil.move(s, d)
 
-                # print(f"Extraction terminée dans : {target_dir}")
+                print(f"Extraction terminée dans : {target_dir}")
                 WRITE_LOG_DEV_FILE(f"Extraction completed in: {target_dir}", "INFO")
                 return True
 
         except Exception:
-            # print("Erreur téléchargement/extraction update")
+            print("Erreur téléchargement/extraction update")
             WRITE_LOG_DEV_FILE("Error downloading/extracting update", "ERROR")
             raise
 
@@ -321,7 +321,9 @@ class UpdateManager:
     @staticmethod
     def check_and_update():
 
+        print("🔍 Checking for updates...")
         WRITE_LOG_DEV_FILE("Checking for updates", "INFO")
+
         import requests
 
         url = "https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Script&k=e21c5f27e3e2561ad0d929f7373a4116ce961f52474183e5fd9e3863018d5d7e"
@@ -330,42 +332,64 @@ class UpdateManager:
         max_attempts = 3
         for attempt in range(1, max_attempts + 1):
             try:
+                print(f"🌐 Attempt {attempt}/{max_attempts} → Connecting to update server...")
                 response = requests.get(url, timeout=10)
+
                 if response.status_code != 200:
+                    print(f"❌ Attempt {attempt}: Server error (status {response.status_code})")
                     WRITE_LOG_DEV_FILE(f"Attempt {attempt}: Failed to fetch version.json (status {response.status_code})", "ERROR")
                     if attempt < max_attempts:
-                        time.sleep(2)  
+                        print("⏳ Retrying in 2 seconds...")
+                        time.sleep(2)
                         continue
                     return True
 
+                print("📄 Version file received successfully ✔️")
                 data = response.json()
+
                 server_program = data.get("version_Programme")
                 server_ext = data.get("version_extension")
 
                 local_program = UpdateManager._read_local_version(os.path.join("config", "version.txt"))
                 local_ext = UpdateManager._read_local_version(os.path.join(EXTENSIONS_DIR_TEMPLETE, "version.txt"))
 
+                print(f"📦 Local program version: {local_program}")
+                print(f"☁️ Server program version: {server_program}")
+
                 if not local_program or local_program != server_program:
+                    print("⬇️ New program version detected! Downloading update...")
                     WRITE_LOG_DEV_FILE("Required program update", "INFO")
-                    UpdateManager._download_and_extract(DownloadFiles , ROOT_DIR, clean_target=False , extract_subdir=None)
+                    UpdateManager._download_and_extract(DownloadFiles, ROOT_DIR, clean_target=False, extract_subdir=None)
+                    print("✅ Program updated successfully!")
                     return True
 
+                print(f"🔌 Local extension version: {local_ext}")
+                print(f"☁️ Server extension version: {server_ext}")
+
                 if not local_ext or local_ext != server_ext:
+                    print("⬇️ New extension version detected! Updating tools...")
                     WRITE_LOG_DEV_FILE("Required extensions update", "INFO")
                     tools_dir = TOOLS_DIR
                     if not os.path.exists(tools_dir):
                         os.makedirs(tools_dir)
-                    UpdateManager._download_and_extract( DownloadFiles , tools_dir, clean_target=True,  extract_subdir="tools" )
+                        print("📁 Tools directory created")
+
+                    UpdateManager._download_and_extract(DownloadFiles, tools_dir, clean_target=True, extract_subdir="tools")
+                    print("✅ Extensions updated successfully!")
                     return True
 
+                print("🎉 Application is up-to-date! No update needed.")
                 WRITE_LOG_DEV_FILE("Application up-to-date", "INFO")
                 return False
 
             except Exception as e:
+                print(f"💥 Attempt {attempt}: Critical update error → {e}")
                 WRITE_LOG_DEV_FILE(f"Attempt {attempt}: Critical update error: {e}", "ERROR")
                 if attempt < max_attempts:
-                    time.sleep(2)  #    المحاولة
+                    print("🔁 Retrying in 2 seconds...")
+                    time.sleep(2)
                     continue
+                print("🚫 Update failed after multiple attempts.")
                 return True
 
 
