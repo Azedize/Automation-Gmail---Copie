@@ -479,7 +479,7 @@ def main():
             encrypted_key, secret_key = generate_encrypted_key()
             # ❌ Ne jamais logger ces clés
 
-            script_path = SCRIPT_DIR / "src" / "AppV2.pyc"
+            script_path = SCRIPT_DIR / "src" / "AppV2.py"
             if script_path.is_file():
                 subprocess.run([sys.executable, str(script_path), encrypted_key, secret_key])
             else:
