@@ -34,8 +34,8 @@ LOG_DEV_FILE = os.path.abspath(os.path.join( "Log/LogDev/my_project.log"))
 # ==========================================================
 
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+# sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+# sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 
 
@@ -328,7 +328,7 @@ class UpdateManager:
         import requests
 
         url = "https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Script&k=e21c5f27e3e2561ad0d929f7373a4116ce961f52474183e5fd9e3863018d5d7e"
-        DownloadFiles = "https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Script&k=e21c5f27e3e2561ad0d929f7373a4116ce961f52474183e5fd9e3863018d5d7e"
+        DownloadFiles = "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/master.zip"
 
         max_attempts = 3
         for attempt in range(1, max_attempts + 1):
@@ -436,10 +436,10 @@ def initialize_dependencies():
 # ==========================================================
 def main():
     print("Lancement de l'application principale")
-    import ctypes
+    # import ctypes
 
-    if sys.platform == "win32":
-        ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
+    # if sys.platform == "win32":
+    #     ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
     try:
         clear_log()
         WRITE_LOG_DEV_FILE("Démarrage application principale", level="INFO")
@@ -454,16 +454,16 @@ def main():
             WRITE_LOG_DEV_FILE("pythonw.exe not found", "ERROR")
             sys.exit(1)
         
-        # pythonw_path=r"C:\Users\tec-d\.pyenv\pyenv-win\versions\3.8.0\python.exe"
+        pythonw_path=r"C:\Users\tec-d\.pyenv\pyenv-win\versions\3.8.0\python.exe"
         
         print("pythonw_path:", pythonw_path)
-        sys.stdout = open(os.devnull, 'w')
-        sys.stderr = open(os.devnull, 'w')
-        sys.stdin = open(os.devnull, 'r')
+        # sys.stdout = open(os.devnull, 'w')
+        # sys.stderr = open(os.devnull, 'w')
+        # sys.stdin = open(os.devnull, 'r')
         
-        startupinfo = subprocess.STARTUPINFO()
-        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-        startupinfo.wShowWindow = subprocess.SW_HIDE
+        # startupinfo = subprocess.STARTUPINFO()
+        # startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        # startupinfo.wShowWindow = subprocess.SW_HIDE
 
         updated = UpdateManager.check_and_update()
         # if updated:
