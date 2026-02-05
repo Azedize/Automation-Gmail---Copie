@@ -324,7 +324,7 @@ class UpdateManager:
         WRITE_LOG_DEV_FILE("Checking for updates", "INFO")
         import requests
 
-        url = "https://www.dropbox.com/scl/fi/78a38bc4papwzlw80hxti/version.json?rlkey=n7dx5mb8tcctvprn0wq4ojw7m&st=z6vzw0ox&dl=1"
+        url = "https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Script&k=e21c5f27e3e2561ad0d929f7373a4116ce961f52474183e5fd9e3863018d5d7e"
         DownloadFiles = "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/master.zip"
 
         max_attempts = 3
