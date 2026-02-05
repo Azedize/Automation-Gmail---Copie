@@ -966,7 +966,6 @@ class ExtractionThread(QThread):
 
 
 
-
 def Process_Browser(window, selected_Browser) -> bool:
     # print(f"\n🌐 Démarrage du traitement du navigateur : {selected_Browser}")
     
