@@ -14,6 +14,7 @@ import tempfile
 import io
 import datetime
 import traceback
+import datetime
 
 
 
@@ -218,7 +219,8 @@ def validate_session_format(session_data: str) :
     username, password ,date_str , entity ,Id_User= parts
     
     try:
-        datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
+        datetime.datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
+
     except ValueError:
         return False, None
     
