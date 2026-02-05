@@ -368,10 +368,10 @@ class UpdateManager:
     def check_session():
             session_info = {"valid": False, "username": None , "password": None, "date": None, "p_entity": None, "error": None}
 
-            # print(f"[INFO] Chemin du fichier session : {self.session_path}")
+            print(f"[INFO] Chemin du fichier session : {SESSION_PATH}")
 
             if not os.path.exists(SESSION_PATH):
-                # print("[WARNING] ❌ Le fichier session.txt n'existe pas")
+                print("[WARNING] ❌ Le fichier session.txt n'existe pas")
                 WRITE_LOG_DEV_FILE("Le fichier session n'existe pas", "WARNING")
                 session_info["error"] = "FileNotFound"
                 return session_info
@@ -381,25 +381,25 @@ class UpdateManager:
                     encrypted = f.read().strip()
 
                 if not encrypted:
-                    # print("[WARNING] ❌ Fichier session.txt vide")
+                    print("[WARNING] ❌ Fichier session.txt vide")
                     WRITE_LOG_DEV_FILE("Le fichier session est vide", "WARNING")
                     session_info["error"] = "EmptyFile"
                     return session_info
 
                 decrypted = decrypt_message(encrypted, KEY)
-                # print("decrypted" , decrypted)
+                print("decrypted" , decrypted)
 
                 is_valid, data = validate_session_format(decrypted)
-                # print("data session :" , data)
+                print("data session :" , data)
                 if not is_valid:
                     WRITE_LOG_DEV_FILE("Format de session invalide", "WARNING")
-                    # print("[ERROR] Format session invalide")
+                    print("[ERROR] Format session invalide")
                     session_info["error"] = "InvalidFormat"
                     return session_info
 
                 username,password, date_str, p_entity , Id_User = data["username"],data["password"], data["date"], data["entity"] , data["Id_User"]
 
-                # print("🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​username:", username,"password : ", password , "date_str:", date_str, "p_entity:", p_entity ,"Id_User", Id_User ) 
+                print("🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​username:", username,"password : ", password , "date_str:", date_str, "p_entity:", p_entity ,"Id_User", Id_User ) 
 
                 last_session = datetime.datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
                 last_session =  pytz.timezone("Africa/Casablanca").localize(last_session)
@@ -409,11 +409,11 @@ class UpdateManager:
                     session_info.update({"valid": True, "username": username , "password": password, "date": last_session, "p_entity": p_entity , "Id_User": Id_User})
                 else:
                     WRITE_LOG_DEV_FILE("Session expirée", "WARNING")
-                    # print("[INFO] Session expirée")
+                    print("[INFO] Session expirée")
                     session_info["error"] = "Expired"
 
             except Exception as e:
-                # print(f"[ERROR] Lecture fichier session : {e}")
+                print(f"[ERROR] Lecture fichier session : {e}")
                 session_info["error"] = f"FileReadError: {e}"
                 WRITE_LOG_DEV_FILE(f"Erreur lors de la lecture du fichier session : {e}", "ERROR")
 
@@ -488,11 +488,11 @@ class UpdateManager:
         SESSION_INFO = UpdateManager.check_session()
 
         if not SESSION_INFO["valid"]:
-            # print("[SESSION] ❌ Session invalide. Impossible de continuer l’extraction.")
+            print("[SESSION] ❌ Session invalide. Impossible de continuer l’extraction.")
             sys.exit()
             return False
         
-        # print(f"➤ Username : {SESSION_INFO['username']}\n➤ Password : {SESSION_INFO['password']}\n")
+        print(f"➤ Username : {SESSION_INFO['username']}\n➤ Password : {SESSION_INFO['password']}\n")
 
         ENCRYPTED = encrypt_message(json.dumps({  "login":SESSION_INFO ["username"],  "password": SESSION_INFO["password"]}), KEY)
         print("🔍 Checking for updates...")
@@ -639,12 +639,12 @@ def main():
         # startupinfo.wShowWindow = subprocess.SW_HIDE
 
         updated = UpdateManager.check_and_update()
-        # if updated:
-        #     print("UPDATE EFFECTUÉ")
-        #     WRITE_LOG_DEV_FILE("Update completed", "INFO")
-        # else:
-        #     print("APPLICATION À JOUR")
-        #     WRITE_LOG_DEV_FILE("Application up-to-date", "INFO")
+        if updated:
+            print("UPDATE EFFECTUÉ")
+            WRITE_LOG_DEV_FILE("Update completed", "INFO")
+        else:
+            print("APPLICATION À JOUR")
+            WRITE_LOG_DEV_FILE("Application up-to-date", "INFO")
 
         if len(sys.argv) == 1:
             # print("Lancement de l'application principale")
