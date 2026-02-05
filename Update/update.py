@@ -159,6 +159,18 @@ class UpdateManager:
     # ==========================================================
     @staticmethod
     def check_and_update(window=None) -> None:
+        SESSION_INFO = SessionManager.check_session()
+
+        if not SESSION_INFO["valid"]:
+            # print("[SESSION] ❌ Session invalide. Impossible de continuer l’extraction.")
+            sys.exit()
+            return False
+        
+        # print(f"➤ Username : {SESSION_INFO['username']}\n➤ Password : {SESSION_INFO['password']}\n")
+
+        ENCRYPTED = EncryptionService.encrypt_message(json.dumps({  "login":SESSION_INFO ["username"],  "password": SESSION_INFO["password"]}), Settings.KEY)
+        CHECK_URL_PROGRAMM = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Script&k={ENCRYPTED}"
+        SERVER_ZIP_URL_PROGRAM = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Script&k={ENCRYPTED}"
         try:
             from api.base_client import APIManager
 
@@ -167,9 +179,7 @@ class UpdateManager:
             # print("=" * 80)
 
             # Vérification serveur
-            response = APIManager.make_request(
-                "__CHECK_URL_PROGRAMM__", method="GET", timeout=10
-            )
+            response = APIManager.make_request( CHECK_URL_PROGRAMM , method="GET", timeout=10 )
 
             if not isinstance(response, dict) or response.get("status_code") != 200:
                 # print("⚠️ Serveur indisponible → Continuer")
@@ -219,7 +229,7 @@ class UpdateManager:
                 os.makedirs(Settings.TOOLS_DIR, exist_ok=True)
 
                 success = UpdateManager._download_and_extract(
-                    Settings.API_ENDPOINTS.get("__SERVER_ZIP_URL_PROGRAM__", ""),
+                    Settings.API_ENDPOINTS.get(SERVER_ZIP_URL_PROGRAM , ""),
                     Settings.TOOLS_DIR,
                     clean_target=True,
                     extract_subdir="tools",
