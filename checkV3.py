@@ -21,15 +21,21 @@ TOOLS_DIR = Path("Tools")
 EXTENSIONS_DIR_TEMPLETE = TOOLS_DIR / "extensions Templete"
 LOG_DEV_FILE = os.path.abspath(os.path.join( "Log/LogDev/my_project.log"))
 
+# anwa3 casting 3 unicast aw multicast aw broadcast
+# unicast is the only way to send a message to a specific device on a network
+# multicast is a way to send a message to multiple devices on a network
+# broadcast is a way to send a message to all devices on a network
 
 
+
+# si casting contient 3 casting 
 # ==========================================================
 # 🔹 FIX UTF-8 POUR WINDOWS CONSOLE
 # ==========================================================
 
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+# sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+# sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 
 
@@ -55,9 +61,7 @@ def generate_encrypted_key():
     fernet = Fernet(secret_key)
     encrypted_message = fernet.encrypt(b"authorized")
     # print(encrypted_message)
-    
     return encrypted_message.decode(), secret_key.decode()
-
 
 
 
@@ -84,6 +88,7 @@ def WRITE_LOG_DEV_FILE( message: str, level: str = "INFO"):
 
 
 
+
 def clear_log():
     try:
         log_path = Path(LOG_DEV_FILE)
@@ -97,6 +102,7 @@ def clear_log():
     except Exception as e:
         # print(f"❌ [LOG] Erreur lors de la suppression du fichier log: {e}")
         pass
+
 
 
 
@@ -119,10 +125,10 @@ def find_pythonw():
 
 
 
-
 # ==========================================================
 # 🔹 CLASSE GESTION DES DÉPENDANCES
 # ==========================================================
+
 class DependencyManager:
 
     @staticmethod
@@ -395,7 +401,8 @@ def initialize_dependencies():
 # 🔹 MAIN
 # ==========================================================
 def main():
-    import ctypes
+    print("Lancement de l'application principale")
+    # import ctypes
 
     # if sys.platform == "win32":
     #     ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
@@ -461,7 +468,11 @@ def main():
         sys.exit(1)  # Quitte l'application avec code d'erreur
         
 
+
+
+
 if __name__ == "__main__":
     main()
 
  
+
