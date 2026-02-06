@@ -23,9 +23,6 @@ LOG_DEV_FILE = os.path.abspath(os.path.join( "Log/LogDev/my_project.log"))
 
 
 
-
-
-# si casting contient 3 casting 
 # ==========================================================
 # 🔹 FIX UTF-8 POUR WINDOWS CONSOLE
 # ==========================================================
@@ -45,7 +42,6 @@ if ROOT_DIR not in sys.path:
 # ==========================================================
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-
 
 
 
@@ -227,6 +223,8 @@ class DependencyManager:
 # 🔹 CLASSE GESTION DES UPDATES
 # ==========================================================
 
+
+
 class UpdateManager:
 
     @staticmethod
@@ -393,7 +391,6 @@ class UpdateManager:
 
 
 
-# le programme va runing dans une interface logique et capable
 
 # ==========================================================
 # 🔹 INITIALISATION DÉPENDANCES
@@ -421,18 +418,19 @@ def initialize_dependencies():
     selenium = DependencyManager.install_and_import("selenium", required_import="webdriver", version="4.27.1")
 
 
-# ==========================================================
-# 🔹 MAIN
-# # ==========================================================
+
+
+
 
 
 
 
 def main():
-    # print("Lancement de l'application principale")
+
     if sys.platform == "win32":
         import ctypes
         ctypes.windll.user32.ShowWindow( ctypes.windll.kernel32.GetConsoleWindow(), 0)
+
 
     try:
         clear_log()
