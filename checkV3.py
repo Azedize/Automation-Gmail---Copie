@@ -49,7 +49,6 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 
 
 
-
 def generate_encrypted_key():
     from cryptography.fernet import Fernet
     secret_key = Fernet.generate_key()
@@ -229,10 +228,11 @@ class DependencyManager:
 # ==========================================================
 
 class UpdateManager:
+
     @staticmethod
     def _read_local_version(path):
         if not path or not os.path.exists(path):
-            print("Version locale introuvable")
+            # print("Version locale introuvable")
             WRITE_LOG_DEV_FILE("Local version not found", "ERROR")
             return None
         try:
@@ -240,7 +240,7 @@ class UpdateManager:
                 return f.read().strip()
         except Exception:
             WRITE_LOG_DEV_FILE("Error reading local version", "ERROR")
-            print("Erreur lecture version locale")
+            # print("Erreur lecture version locale")
             return None
 
 
@@ -494,21 +494,21 @@ def main():
         # Pour afficher plus de détails sur l'erreur
         print("Détails de l'erreur:")
         traceback.print_exc()  
-        
         # Écriture dans le log
         WRITE_LOG_DEV_FILE(f"Fatal application error: {e}", "ERROR")
         
         # Pour conserver aussi la trace dans les logs
         error_details = traceback.format_exc()
         WRITE_LOG_DEV_FILE(f"Error details:\n{error_details}", "ERROR")
-        
-        sys.exit(1)  # Quitte l'application avec code d'erreur
+        sys.exit(1)  
         
 
 
 
 if __name__ == "__main__":
     main()
+
+
 
 
 # Nethwork Types Geographic :
@@ -632,10 +632,6 @@ if __name__ == "__main__":
 # Routers are used to transmit data between devices.
 # Routers are used to connect multiple devices together.
 # Routers are used to transmit data between devices.
-
-
-
-
 
 
 
