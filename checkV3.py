@@ -118,7 +118,7 @@ def find_pythonw():
 # ==========================================================
 
 class DependencyManager:
-    
+
     @staticmethod
     def install_and_verify_pywin32():
         python_exe = sys.executable
@@ -507,6 +507,5 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
 
