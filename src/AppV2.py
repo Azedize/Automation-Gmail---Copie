@@ -51,6 +51,10 @@ except ImportError as e:
 
 
 
+# ==========================================================
+# 🔹 VARIABLES GLOBALES
+# ==========================================================
+
 file_lock = Lock()
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -69,8 +73,10 @@ SELECTED_BROWSER_GLOBAL=None
 
 
 
+# ==========================================================
+# 🔹 FUNCTION INSTALLED NODE
+# ==========================================================
 
-# Si ce n'est pas le cas, il tente de l'installer via Chocolatey (et installe aussi npm).
 def ensure_node_installed():
     if shutil.which("node") is not None:
         # print("✅ Node.js est déjà installé.")
@@ -110,7 +116,10 @@ def ensure_node_installed():
 
 
 
-# Cette fonction retourne le chemin de l'exécutable web-ext s'il est trouvé
+# ==========================================================
+# 🔹 FUNCTION GET PATH WEB-EXT
+# ==========================================================
+
 def get_web_ext_path():
     path = shutil.which("web-ext")
     if path:
@@ -121,7 +130,10 @@ def get_web_ext_path():
 
 
 
-# 🔍📦 Vérifie si 'web-ext' est installé, sinon l'installe globalement via npm
+# ==========================================================
+# 🔹 FUNCTION INSTALLED WEB-EXT
+# ==========================================================
+
 def ensure_web_ext_installed():
     if not ensure_node_installed():
         # print("⚠️ Impossible de continuer sans Node.js.")
@@ -147,8 +159,10 @@ def ensure_web_ext_installed():
 
 
 
+# ==========================================================
+# 🔹 FUNCTION LOG MESSAGE
+# ==========================================================
 
-# 📝 Ajoute un message au journal global 'LOGS'
 def log_message(text):
     global LOGS
     LOGS.append(text)
@@ -162,6 +176,11 @@ def log_message(text):
 SESSION_ID = ValidationUtils.generate_session_id()
 
 
+
+
+# ==========================================================
+# 🔹 FUNCTION STOP ALL PROCESSES
+# ==========================================================
 
 def Stop_All_Processes(window):
     global EXTRACTION_THREAD, CLOSE_BROWSER_THREAD, PROCESS_PIDS, LOGS_RUNNING, SELECTED_BROWSER_GLOBAL
@@ -235,6 +254,11 @@ def Stop_All_Processes(window):
                     Settings.WRITE_LOG_DEV_FILE(f"PID {pid} removed from process list.", "INFO")
 
 
+
+
+# ==========================================================
+# 🔹 CLASS CLOSE BROWSER THREAD
+# ==========================================================
 
 class CloseBrowserThread(QThread):
 
@@ -461,10 +485,11 @@ class CloseBrowserThread(QThread):
 
 
 
+# ======================================================
+# 📝 FONCTIONS VALIDATION
+# ======================================================
 
-# -----------------------------
-# Génération complète de l'extension Chrome/Firefox
-# -----------------------------
+
 def Generate_User_Input_Data(window):
     # print("🟢 [START] Generate_User_Input_Data")
 
@@ -510,6 +535,11 @@ def Generate_User_Input_Data(window):
 
 
 
+
+
+# ======================================================
+# 🚀 FONCTIONS EXTRACTION
+# ======================================================
 
 def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp , unique_id , output_json_final , username):
     global EXTRACTION_THREAD , CLOSE_BROWSER_THREAD
@@ -587,7 +617,9 @@ def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp 
 
 
 
-
+# =====================================================
+# 🚀 FONCTION SAVE EMAIL
+# =====================================================
 def Save_Email(params):
     return str(APIManager.save_email(params))
 
@@ -595,6 +627,9 @@ def Save_Email(params):
 
 
 
+# =====================================================
+# 🚀 FONCTION SEND STATUS
+# ======================================================
 
 def Send_Status(params):
     return str(APIManager.send_status(params))
@@ -602,9 +637,10 @@ def Send_Status(params):
 
 
 
+# =====================================================
+# 🚀 FONCTION SEND STATUS
+# ======================================================
 
-
-# Émet un signal log_signal à chaque nouvelle entrée de log.
 class LogsDisplayThread(QThread):
 
     log_signal = pyqtSignal(str)
@@ -633,6 +669,9 @@ class LogsDisplayThread(QThread):
         self.wait()
 
 
+# =====================================================
+# 🚀 FONCTION STORE BROWSER SESSION INFO
+# =====================================================
 
 def store_browser_session_info(pid: str, Path_DiR: str, email: str, SESSION_ID: str, browser: str, inserted_id):
     try:
@@ -709,8 +748,9 @@ def store_browser_session_info(pid: str, Path_DiR: str, email: str, SESSION_ID: 
 
 
 
-# Thread responsable du traitement de l'extraction des emails.
-# Gère l'exécution des navigateurs avec les extensions, l'enregistrement des LOGS,
+# =====================================================
+# 🚀 FONCTION CHECK SESSION
+# =====================================================
 
 
 class ExtractionThread(QThread):

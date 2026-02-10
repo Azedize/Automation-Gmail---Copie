@@ -551,8 +551,14 @@ async function ReportingProcess(scenario, ispProcess) {
 
 
 
+
+
+
+
 let completedActions = {};
 let currentProcessCompleted = [];
+
+
 
 
 async function ReportingActions(actions, process) {

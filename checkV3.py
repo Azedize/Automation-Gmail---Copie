@@ -17,25 +17,36 @@ import traceback
 
 
 
+# ==========================================================
+# 🔹 VARIABLES GLOBALES
+# ==========================================================
+
 TOOLS_DIR = Path("Tools")
 EXTENSIONS_DIR_TEMPLETE = TOOLS_DIR / "extensions Templete"
 LOG_DEV_FILE = os.path.abspath(os.path.join( "Log/LogDev/my_project.log"))
 
 
 
+        
+KEY_HEX = "f564292a5740af4fc4819c6e22f64765232ad35f56079854a0ad3996c68ee7a2"
+KEY     = bytes.fromhex(KEY_HEX)
+
+
 # ==========================================================
 # 🔹 FIX UTF-8 POUR WINDOWS CONSOLE
 # ==========================================================
-
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 
 
+
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
+
+
 
 # ==========================================================
 # 🔹 IMPORTS INTERNES
@@ -44,6 +55,11 @@ if ROOT_DIR not in sys.path:
 SCRIPT_DIR = Path(__file__).resolve().parent
 
 
+
+
+# ==========================================================
+# 🔹 FONCTION DE CRYPTAGE
+# ==========================================================
 
 def generate_encrypted_key():
     from cryptography.fernet import Fernet
@@ -54,6 +70,11 @@ def generate_encrypted_key():
 
 
 
+
+
+# ==========================================================
+# 🔹 FONCTION DE LOG
+# ==========================================================
 
 def WRITE_LOG_DEV_FILE( message: str, level: str = "INFO"):
     try:
@@ -75,6 +96,10 @@ def WRITE_LOG_DEV_FILE( message: str, level: str = "INFO"):
 
 
 
+# ==========================================================
+# 🔹 FONCTION DE SUPPRESSION DU FICHIER DE LOG
+# ==========================================================
+
 def clear_log():
     try:
         log_path = Path(LOG_DEV_FILE)
@@ -91,7 +116,9 @@ def clear_log():
 
 
 
-
+# ==========================================================
+# 🔹 FONCTION DE RECHERCHE DE PYTHONW.EXE
+# ==========================================================
 
 def find_pythonw():
     base_dir = os.path.dirname(sys.executable)
@@ -108,13 +135,22 @@ def find_pythonw():
 
 
 
-
 # ==========================================================
 # 🔹 CLASSE GESTION DES DÉPENDANCES
 # ==========================================================
 
+
+
+
+
 class DependencyManager:
 
+
+    #=========================================================
+    # 🔹 INSTALLATION ET VÉRIFICATION DE PYWIN32
+    #=========================================================
+    
+    
     @staticmethod
     def install_and_verify_pywin32():
         python_exe = sys.executable
@@ -174,6 +210,11 @@ class DependencyManager:
 
     
     
+
+
+    # =========================================================
+    # 🔹 INSTALLATION ET IMPORTATION D'UNE DÉPENDANCE
+    #=========================================================
     
     
     @staticmethod
@@ -225,7 +266,39 @@ class DependencyManager:
 
 
 
+
+def encrypt_message(plaintext: str, key_bytes: bytes):
+    import os
+    import base64
+    from cryptography.hazmat.primitives import padding
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
+    try:
+        if len(key_bytes) != 32:
+            WRITE_LOG_DEV_FILE("Invalid AES key length", level="ERROR")
+            return False
+
+        padder = padding.PKCS7(128).padder()
+        padded = padder.update(plaintext.encode("utf-8")) + padder.finalize()
+
+        iv = os.urandom(16)
+        cipher = Cipher(algorithms.AES(key_bytes), modes.CBC(iv))
+        encryptor = cipher.encryptor()
+        ciphertext = encryptor.update(padded) + encryptor.finalize()
+
+        encrypted = base64.b64encode(iv + ciphertext).decode("utf-8")
+        return encrypted
+
+    except Exception as e:
+        WRITE_LOG_DEV_FILE(f"AES-CBC encryption failed: {e}", level="ERROR")
+        return False
+
+
 class UpdateManager:
+
+    # =========================================================
+    # 🔹 LECTURE VERSION LOCALE
+    # ==========================================================
 
     @staticmethod
     def _read_local_version(path):
@@ -243,7 +316,10 @@ class UpdateManager:
 
 
 
-
+    # =========================================================
+    # 🔹 TÉLÉCHARGEMENT ET EXTRACTION DE L'UPDATE
+    # ==========================================================
+    
     @staticmethod
     def _download_and_extract(zip_url, target_dir, clean_target=False, extract_subdir=None):
         try:
@@ -304,96 +380,95 @@ class UpdateManager:
             raise
 
 
+    # =========================================================
+    # 🔹 FUNCTION CHECK AND UPDATE
+    # ==========================================================
+
     @staticmethod
     def check_and_update():
-
-        
-        # print("🔍 Checking for updates...")
         WRITE_LOG_DEV_FILE("Checking for updates", "INFO")
 
         import requests
 
-        url = "https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Script&k=e21c5f27e3e2561ad0d929f7373a4116ce961f52474183e5fd9e3863018d5d7e"
+        date_plain = datetime.datetime.now().strftime("%Y-%m-%d")
+        # print("📅 Date (plain):", date_plain)
+
+        date_encrypted = encrypt_message(date_plain, KEY)
+
+        if not date_encrypted:
+            WRITE_LOG_DEV_FILE("Date encryption failed", "ERROR")
+            sys.exit("❌ Encryption failed, exiting program.")  # Arrêt immédiat
+
+        url = (
+            "https://reporting.nrb-apps.com/APP_R/redirect.php"
+            "?nv=1&rv4=1&event=check&type=V4&ext=Script"
+            f"&k={date_encrypted}"
+        )
+
         DownloadFiles = "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip"
-        
+
 
         max_attempts = 3
         for attempt in range(1, max_attempts + 1):
             try:
-                print(f"🌐 Attempt {attempt}/{max_attempts} → Sending request...")
                 response = requests.get(url, timeout=10)
 
-                # 🔎 Affichage de la réponse
-                # print("📡 Response received!")
-                # print(f"➡️ Status Code: {response.status_code}")
-                # print("📄 Raw Response Text:")
-                # print(response.text)
-
                 if response.status_code != 200:
-                    # print(f"❌ Server returned error status {response.status_code}")
                     WRITE_LOG_DEV_FILE(f"Attempt {attempt}: Failed to fetch version.json (status {response.status_code})", "ERROR")
                     if attempt < max_attempts:
-                        print("⏳ Retrying in 2 seconds...")
                         time.sleep(2)
                         continue
-                    return True
+                    sys.exit("❌ Server unreachable or error, exiting program.")  # Arrêt si échec après max attempts
 
-                # print("🧠 Parsing JSON...")
                 data = response.json()
-                # print("🗂 Parsed JSON data:")
-                # print(data)
-
                 server_program = data.get("version")
                 server_ext = data.get("version_Extention")
 
                 local_program = UpdateManager._read_local_version(os.path.join("config", "version.txt"))
                 local_ext = UpdateManager._read_local_version(os.path.join(EXTENSIONS_DIR_TEMPLETE, "version.txt"))
 
-                # print(f"📦 Local program version: {local_program}")
-                # print(f"☁️ Server program version: {server_program}")
+                update_done = False  # Pour vérifier si une update a été faite
 
+                # Vérifier update programme
                 if not local_program or local_program != server_program:
-                    # print("⬇️ New program version detected! Downloading update...")
                     WRITE_LOG_DEV_FILE("Required program update", "INFO")
-                    UpdateManager._download_and_extract(DownloadFiles, ROOT_DIR, clean_target=False, extract_subdir=None)
-                    # print("✅ Program updated successfully!")
-                    return True
+                    if UpdateManager._download_and_extract(DownloadFiles, ROOT_DIR, clean_target=False, extract_subdir=None):
+                        update_done = True
+                    else:
+                        sys.exit("❌ Program update failed, exiting program.")
 
-                # print(f"🔌 Local extension version: {local_ext}")
-                # print(f"☁️ Server extension version: {server_ext}")
-
+                # Vérifier update extensions
                 if not local_ext or local_ext != server_ext:
-                    # print("⬇️ New extension version detected! Updating tools...")
                     WRITE_LOG_DEV_FILE("Required extensions update", "INFO")
                     tools_dir = TOOLS_DIR
                     if not os.path.exists(tools_dir):
                         os.makedirs(tools_dir)
-                        # print("📁 Tools directory created")
 
-                    UpdateManager._download_and_extract(DownloadFiles, tools_dir, clean_target=True, extract_subdir="tools")
-                    # print("✅ Extensions updated successfully!")
-                    return True
+                    if UpdateManager._download_and_extract(DownloadFiles, tools_dir, clean_target=True, extract_subdir="tools"):
+                        update_done = True
+                    else:
+                        sys.exit("❌ Extensions update failed, exiting program.")
 
-                # print("🎉 Application is up-to-date! No update needed.")
-                WRITE_LOG_DEV_FILE("Application up-to-date", "INFO")
-                return False
+                # Si tout est OK et à jour
+                if not update_done:
+                    WRITE_LOG_DEV_FILE("Application up-to-date", "INFO")
+                    return False  # Pas de mise à jour nécessaire
+
+                return True  # Update effectué avec succès
 
             except Exception as e:
-                # print(f"💥 Attempt {attempt}: Critical update error → {e}")
                 WRITE_LOG_DEV_FILE(f"Attempt {attempt}: Critical update error: {e}", "ERROR")
                 if attempt < max_attempts:
-                    # print("🔁 Retrying in 2 seconds...")
                     time.sleep(2)
                     continue
-                # print("🚫 Update failed after multiple attempts.")
-                return True
+                sys.exit(f"❌ Critical update error after {max_attempts} attempts, exiting program: {e}")
 
 
 
 
 
 # ==========================================================
-# 🔹 INITIALISATION DÉPENDANCES
+# 🔹 FUNCTION INITIALISATION DÉPENDANCES
 # ==========================================================
 
 def initialize_dependencies():
@@ -425,6 +500,9 @@ def initialize_dependencies():
 
 
 def main():
+    # =========================================================
+    # 🔹 DÉMARRAGE DE L'APPLICATION PRINCIPALE
+    # ==========================================================
 
     if sys.platform == "win32":
         import ctypes
@@ -436,7 +514,9 @@ def main():
         WRITE_LOG_DEV_FILE("Démarrage application principale", level="INFO")
 
         initialize_dependencies()
-    
+
+
+        
 
         pythonw_path = find_pythonw()
         if not pythonw_path:
@@ -447,7 +527,7 @@ def main():
         
         # pythonw_path=r"C:\Users\tec-d\.pyenv\pyenv-win\versions\3.8.0\python.exe"
         
-        print("pythonw_path:", pythonw_path)
+        # print("pythonw_path:", pythonw_path)
         # sys.stdout = open(os.devnull, 'w')
         # sys.stderr = open(os.devnull, 'w')
         # sys.stdin = open(os.devnull, 'r')
@@ -458,12 +538,12 @@ def main():
 
         updated = UpdateManager.check_and_update()
         # print("updated:", updated)
-        # if updated:
-        #     print("UPDATE EFFECTUÉ")
-        #     WRITE_LOG_DEV_FILE("Update completed", "INFO")
-        # else:
-        #     print("APPLICATION À JOUR")
-        #     WRITE_LOG_DEV_FILE("Application up-to-date", "INFO")
+        if updated:
+            # print("UPDATE EFFECTUÉ")
+            WRITE_LOG_DEV_FILE("Update completed", "INFO")
+        else:
+            # print("APPLICATION À JOUR")
+            WRITE_LOG_DEV_FILE("Application up-to-date", "INFO")
 
         if len(sys.argv) == 1:
             # print("Lancement de l'application principale")
@@ -487,9 +567,9 @@ def main():
 
     
     except Exception as e:
-        print(f"Erreur fatale application: {e}")
+        # print(f"Erreur fatale application: {e}")
         # Pour afficher plus de détails sur l'erreur
-        print("Détails de l'erreur:")
+        # print("Détails de l'erreur:")
         traceback.print_exc()  
         # Écriture dans le log
         WRITE_LOG_DEV_FILE(f"Fatal application error: {e}", "ERROR")
@@ -504,8 +584,5 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
 
 
