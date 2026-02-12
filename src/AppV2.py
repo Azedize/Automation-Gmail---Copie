@@ -57,7 +57,6 @@ except ImportError as e:
 
 file_lock = Lock()
 
-SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 FIREFOX_LAUNCH = []
 LOGS= []
 PROCESS_PIDS = []
@@ -2097,7 +2096,7 @@ class LoginWindow(QMainWindow):
             if self.logoFrame:
                 self.logo_label = QLabel(self.logoFrame)
                 self.logo_label.setScaledContents(True)
-                logo_path = os.path.join(SCRIPT_DIR, "icons", "logo.jpg")
+                logo_path = os.path.join(Settings.ICONS_DIR, "logo.jpg")
                 pixmap = QPixmap(logo_path)
                 if not pixmap.isNull():
                     self.logo_label.setPixmap(pixmap)
@@ -2108,7 +2107,7 @@ class LoginWindow(QMainWindow):
             if self.UseFrame:
                 self.user_label = QLabel(self.UseFrame)
                 self.user_label.setScaledContents(True)
-                user_path = os.path.join(SCRIPT_DIR, "icons", "user.png")
+                user_path = os.path.join(Settings.ICONS_DIR, "user.png")
                 user_pixmap = QPixmap(user_path)
                 if not user_pixmap.isNull():
                     self.user_label.setPixmap(user_pixmap)
