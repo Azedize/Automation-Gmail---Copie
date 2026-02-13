@@ -399,7 +399,7 @@ class UpdateManager:
             WRITE_LOG_DEV_FILE("Date encryption failed", "ERROR")
             sys.exit("❌ Encryption failed, exiting program.")  # Arrêt immédiat
 
-        url = "https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Script&k={date_encrypted}" 
+        url = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Script&k={date_encrypted}" 
 
         DownloadFiles = "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip"
 
@@ -743,7 +743,13 @@ if __name__ == "__main__":
 # EIGRP (Enhanced Interior Gateway Routing Protocol) is a Cisco proprietary IGP that combines features of both distance vector and link-state protocols. It uses a distance vector algorithm to determine the best path for routing traffic, but it also maintains a topology table that contains information about all known routes in the network. EIGRP supports fast convergence and efficient routing within a single administrative domain. It also supports authentication and can be used in both IPv4 and IPv6 networks.
 # RIP (Routing Information Protocol) is one of the oldest distance vector routing protocols. It uses hop count as its metric to determine the best path for routing traffic. RIP has a maximum hop count of 15, which limits its use in larger networks. It is relatively simple to configure and manage, but it can be slow to converge and is prone to routing loops if not properly configured. RIP is typically used in small networks or as a backup routing protocol.
 # IS-IS (Intermediate System to Intermediate System) is a link-state routing protocol that operates within a single autonomous system (AS). It is similar to OSPF in terms of its functionality and features, but it uses a different protocol format and is often used in service provider networks. IS-IS supports hierarchical routing through the use of areas, allowing for scalability in larger networks. It also supports authentication and can be used in both IPv4 and IPv6 networks. IS-IS is known for its efficiency and scalability, making it a popular choice for large enterprise and service provider networks.
-# In summary, OSPF, EIGRP, RIP, and IS-IS are all dynamic routing protocols that operate within a single autonomous system (AS). OSPF and IS-IS are link-state protocols that use the Dijkstra algorithm to calculate the shortest path to each destination network, while EIGRP is a hybrid protocol that combines features of both distance vector and link-state protocols. RIP is a distance vector protocol that uses hop count as its metric. Each protocol has its own strengths and weaknesses, and the choice of which protocol to use depends on the specific requirements of the network being designed.
-# In summary, dynamic routing is a method of routing in which routers automatically exchange routing information with each other using routing protocols. Dynamic routes can adapt to changes in the network topology and are more scalable and flexible than static routes, but they have higher overhead due to the need for routers to exchange routing information and maintain routing tables.
-# Dynamic routing is a method of routing in which routers automatically exchange routing information with each other using routing protocols. Dynamic routes can adapt to changes in the network topology and are more scalable and flexible than static routes, but they have higher overhead due to the need for routers to exchange routing information and maintain routing tables.
 
+
+
+
+
+# crossover cable vs straight through
+
+
+
+# 
