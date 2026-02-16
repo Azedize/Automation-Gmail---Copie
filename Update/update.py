@@ -387,8 +387,16 @@ class UpdateManager:
         # ENCRYPTED = EncryptionService.encrypt_message(json.dumps({  "login":SESSION_INFO ["username"],  "password": SESSION_INFO["password"]}), Settings.KEY)
 
         date_plain = datetime.datetime.now().strftime("%Y-%m-%d")
+
+        # تحويل SESSION_INFO['date'] إلى datetime
+        session_dt = datetime.datetime.fromisoformat(SESSION_INFO['date'].replace("Z","+00:00"))
+
+        # صيغة مشابهة لـ date_plain
+        session_date_plain = session_dt.strftime("%Y-%m-%d")
+
         print("📅 Date (plain):", date_plain)
-        print(f"➤ dete session : {SESSION_INFO['date']}\n\n")
+        print("➤ Date session :", session_date_plain)
+
         #  mon besoin date_plain = SESSION_INFO ["username"]
         # print("📅 Date (plain):", date_plain)
 
