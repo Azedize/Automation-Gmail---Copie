@@ -375,115 +375,143 @@ class UpdateManager:
     # ==========================================================
     @staticmethod
     def check_version_extension(window=None):
+        import datetime
+        import json
+        import os
+        import traceback
+        import requests
+
         SESSION_INFO = SessionManager.check_session()
 
-        if not SESSION_INFO["valid"]:
+        if not SESSION_INFO.get("valid"):
             print("[SESSION] ❌ Session invalide. Impossible de continuer l’extraction.")
             sys.exit()
             return False
-        
-        # print(f"➤ Username : {SESSION_INFO['username']}\n➤ Password : {SESSION_INFO['password']}\n")
 
-        # ENCRYPTED = EncryptionService.encrypt_message(json.dumps({  "login":SESSION_INFO ["username"],  "password": SESSION_INFO["password"]}), Settings.KEY)
+        # -------------------------------------------------------
+        # 🔹 تحويل SESSION_INFO['date'] إلى datetime
+        # -------------------------------------------------------
+        date_value = SESSION_INFO.get('date')
 
-        date_plain = datetime.datetime.now().strftime("%Y-%m-%d")
-
-        # تحويل SESSION_INFO['date'] إلى datetime
-        session_dt = datetime.datetime.fromisoformat(SESSION_INFO['date'].replace("Z","+00:00"))
-
-        # صيغة مشابهة لـ date_plain
-        session_date_plain = session_dt.strftime("%Y-%m-%d")
-
-        print("📅 Date (plain):", date_plain)
-        print("➤ Date session :", session_date_plain)
-
-        #  mon besoin date_plain = SESSION_INFO ["username"]
-        # print("📅 Date (plain):", date_plain)
-
-        date_encrypted = EncryptionService.encrypt_message(date_plain, Settings.KEY)
-
-        if not date_encrypted:
-            Settings.WRITE_LOG_DEV_FILE("Date encryption failed", "ERROR")
-            sys.exit("❌ Encryption failed, exiting program.")  
-
-
-        CHECK_URL_EX3 = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Ext3&k={date_encrypted}"
-                          
         try:
-            # print("\n🔎 Vérification des versions d'extension...")
-
-            # Récupération version distante
-            try:
-                response = requests.get(  CHECK_URL_EX3 , verify=False,  timeout=10 )
-                response.raise_for_status()
-                data = response.json()
-                remote_version = data.get("version_Extention")
-                remote_manifest_version = data.get("manifest_version")
-
-                print("\n=== JSON Response ===")
-                print(json.dumps(data, indent=4, ensure_ascii=False))
-                print("\n=== Versions récupérées ===")
-                print(f"➤ version_Extention : {remote_version}")
-                print(f"➤ manifest_version  : {remote_manifest_version}")
-
-            except Exception as e:
-                print(f"❌ Impossible de récupérer la version distante: {e}")
-                if window:
-                    from ui_utils import UIManager
-                    UIManager.Show_Critical_Message(
-                        window,
-                        "Erreur réseau",
-                        "Impossible de vérifier la mise à jour.\nVérifiez votre connexion.",
-                        message_type="critical"
-                    )
-                return False
-
-            # Vérification fichiers locaux
-            if not os.path.exists(Settings.MANIFEST_PATH_EX3):
-                print("❌ Fichier manifest.json local introuvable")
-                return False
-                
-            if not os.path.exists(Settings.VERSION_LOCAL_EX3):
-                print("❌ Fichier version locale introuvable")
-                return False
-
-            # Lecture manifest local
-            with open(Settings.MANIFEST_PATH_EX3, "r", encoding="utf-8") as f:
-                manifest_data = json.load(f)
-            local_manifest_version = manifest_data.get("version")
-
-            # Lecture version locale
-            local_version = UpdateManager._read_local_version(Settings.VERSION_LOCAL_EX3)
-
-            print(f"📄 Version locale : {local_version}")
-            print(f"📄 Manifest local : {local_manifest_version}")
-
-            # Vérification compatibilité manifest
-            if str(local_manifest_version) != str(remote_manifest_version):
-                print("⚠️ Manifest incompatible, mise à jour automatique impossible")
-                if window:
-                    from ui_utils import UIManager
-                    UIManager.Show_Critical_Message(
-                        window,
-                        "Incompatibilité manifest",
-                        "La version du manifest local ne correspond pas à la distante.",
-                        message_type="critical"
-                    )
-                return False
-
-            # Vérification différence de version
-            if local_version != remote_version:
-                print(f"🔄 Mise à jour requise (nouvelle version: {remote_version})")
-                return remote_version  # retourne la version pour mise à jour
+            # إذا كان timestamp (int)
+            if isinstance(date_value, int):
+                session_dt = datetime.datetime.fromtimestamp(date_value)
+            # إذا كان string بصيغة ISO
+            elif isinstance(date_value, str):
+                session_dt = datetime.datetime.fromisoformat(date_value.replace("Z", "+00:00"))
             else:
-                print("✅ Extension locale à jour")
-                return True
+                raise ValueError("SESSION_INFO['date'] format inconnu")
 
         except Exception as e:
-            print(f"❌ Erreur dans check_version_extension: {e}")
+            print("❌ Impossible de convertir SESSION_INFO['date'] :", e)
             traceback.print_exc()
             return False
 
+        # صيغة مثل date_plain السابقة
+        session_date_plain = session_dt.strftime("%Y-%m-%d")
+        print("➤ Date session (format YYYY-MM-DD) :", session_date_plain)
+
+        # -------------------------------------------------------
+        # 🔹 تشفير التاريخ session_date_plain
+        # -------------------------------------------------------
+        try:
+            date_encrypted = EncryptionService.encrypt_message(session_date_plain, Settings.KEY)
+        except Exception as e:
+            print("❌ Encryption failed:", e)
+            return False
+
+        if not date_encrypted:
+            Settings.WRITE_LOG_DEV_FILE("Date encryption failed", "ERROR")
+            sys.exit("❌ Encryption failed, exiting program.")
+
+        # -------------------------------------------------------
+        # 🔹 تكوين URL لإرسال التوكن المشفر
+        # -------------------------------------------------------
+        import urllib.parse
+        encrypted_safe = urllib.parse.quote(date_encrypted)
+        CHECK_URL_EX3 = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Ext3&k={encrypted_safe}"
+
+        print("\n🌍 URL finale pour API :", CHECK_URL_EX3)
+
+        # -------------------------------------------------------
+        # 🔹 Envoi requête GET
+        # -------------------------------------------------------
+        try:
+            response = requests.get(CHECK_URL_EX3, verify=False, timeout=10)
+            response.raise_for_status()
+
+            # التحقق من Content-Type
+            if "application/json" not in response.headers.get("Content-Type", ""):
+                print("⚠️ La réponse n'est pas JSON")
+                print("Raw text:", response.text)
+                return False
+
+            data = response.json()
+            remote_version = data.get("version_Extention")
+            remote_manifest_version = data.get("manifest_version")
+
+            print("\n=== JSON Response ===")
+            print(json.dumps(data, indent=4, ensure_ascii=False))
+            print(f"➤ version_Extention : {remote_version}")
+            print(f"➤ manifest_version  : {remote_manifest_version}")
+
+        except Exception as e:
+            print(f"❌ Impossible de récupérer la version distante: {e}")
+            if window:
+                from ui_utils import UIManager
+                UIManager.Show_Critical_Message(
+                    window,
+                    "Erreur réseau",
+                    "Impossible de vérifier la mise à jour.\nVérifiez votre connexion.",
+                    message_type="critical"
+                )
+            return False
+
+        # -------------------------------------------------------
+        # 🔹 Vérification fichiers locaux
+        # -------------------------------------------------------
+        if not os.path.exists(Settings.MANIFEST_PATH_EX3):
+            print("❌ Fichier manifest.json local introuvable")
+            return False
+
+        if not os.path.exists(Settings.VERSION_LOCAL_EX3):
+            print("❌ Fichier version locale introuvable")
+            return False
+
+        with open(Settings.MANIFEST_PATH_EX3, "r", encoding="utf-8") as f:
+            manifest_data = json.load(f)
+        local_manifest_version = manifest_data.get("version")
+
+        local_version = UpdateManager._read_local_version(Settings.VERSION_LOCAL_EX3)
+
+        print(f"📄 Version locale : {local_version}")
+        print(f"📄 Manifest local : {local_manifest_version}")
+
+        # -------------------------------------------------------
+        # 🔹 Vérification compatibilité manifest
+        # -------------------------------------------------------
+        if str(local_manifest_version) != str(remote_manifest_version):
+            print("⚠️ Manifest incompatible, mise à jour automatique impossible")
+            if window:
+                from ui_utils import UIManager
+                UIManager.Show_Critical_Message(
+                    window,
+                    "Incompatibilité manifest",
+                    "La version du manifest local ne correspond pas à la distante.",
+                    message_type="critical"
+                )
+            return False
+
+        # -------------------------------------------------------
+        # 🔹 Vérification différence de version
+        # -------------------------------------------------------
+        if local_version != remote_version:
+            print(f"🔄 Mise à jour requise (nouvelle version: {remote_version})")
+            return remote_version
+        else:
+            print("✅ Extension locale à jour")
+            return True
 
 
 
