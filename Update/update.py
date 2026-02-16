@@ -375,12 +375,23 @@ class UpdateManager:
     # ==========================================================
     @staticmethod
     def check_version_extension(window=None):
+        """
+        Vérifie la version de l'extension sur le serveur et la compare avec la version locale.
+        - Utilise la date de SESSION_INFO pour générer le token encrypté.
+        - Supporte datetime, ISO string ou timestamp pour SESSION_INFO['date'].
+        - Affiche des informations complètes pour debug.
+        """
+
         import datetime
         import json
         import os
         import traceback
         import requests
+        import urllib.parse
 
+        # -------------------------------------------------------
+        # 🔹 Récupération de la session
+        # -------------------------------------------------------
         SESSION_INFO = SessionManager.check_session()
 
         if not SESSION_INFO.get("valid"):
@@ -388,58 +399,65 @@ class UpdateManager:
             sys.exit()
             return False
 
+        print(f"➤ Username : {SESSION_INFO.get('username')}")
+        print(f"➤ Password : {SESSION_INFO.get('password')}")
+
         # -------------------------------------------------------
-        # 🔹 تحويل SESSION_INFO['date'] إلى datetime
+        # 🔹 Gestion sécurisée du champ date
         # -------------------------------------------------------
         date_value = SESSION_INFO.get('date')
-
-        if isinstance(date_value, int):
-            session_dt = datetime.datetime.fromtimestamp(date_value)
-        elif isinstance(date_value, str):
-            try:
-                session_dt = datetime.datetime.fromisoformat(date_value.replace("Z","+00:00"))
-            except ValueError:
-                # حاول تحويل string بصيغة أخرى
-                session_dt = datetime.datetime.strptime(date_value, "%Y-%m-%d %H:%M:%S")
-        else:
-            print("❌ SESSION_INFO['date'] فارغ أو نوع غير معروف:", type(date_value), date_value)
+        try:
+            if isinstance(date_value, datetime.datetime):
+                session_dt = date_value
+            elif isinstance(date_value, int):
+                session_dt = datetime.datetime.fromtimestamp(date_value)
+            elif isinstance(date_value, str):
+                try:
+                    session_dt = datetime.datetime.fromisoformat(date_value.replace("Z", "+00:00"))
+                except ValueError:
+                    session_dt = datetime.datetime.strptime(date_value, "%Y-%m-%d %H:%M:%S")
+            else:
+                raise TypeError(f"SESSION_INFO['date'] type inconnu: {type(date_value)}")
+        except Exception as e:
+            print(f"❌ Impossible de convertir SESSION_INFO['date'] : {e}")
+            traceback.print_exc()
             return False
 
+        # Formater la date en YYYY-MM-DD comme ancien date_plain
         session_date_plain = session_dt.strftime("%Y-%m-%d")
         print("➤ Date session (format YYYY-MM-DD) :", session_date_plain)
+
         # -------------------------------------------------------
-        # 🔹 تشفير التاريخ session_date_plain
+        # 🔹 Chiffrement de la date
         # -------------------------------------------------------
         try:
             date_encrypted = EncryptionService.encrypt_message(session_date_plain, Settings.KEY)
         except Exception as e:
-            print("❌ Encryption failed:", e)
+            print(f"❌ Encryption failed: {e}")
+            traceback.print_exc()
             return False
 
         if not date_encrypted:
             Settings.WRITE_LOG_DEV_FILE("Date encryption failed", "ERROR")
             sys.exit("❌ Encryption failed, exiting program.")
 
-        # -------------------------------------------------------
-        # 🔹 تكوين URL لإرسال التوكن المشفر
-        # -------------------------------------------------------
-        import urllib.parse
+        # URL safe pour l'envoi
         encrypted_safe = urllib.parse.quote(date_encrypted)
         CHECK_URL_EX3 = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Ext3&k={encrypted_safe}"
 
         print("\n🌍 URL finale pour API :", CHECK_URL_EX3)
 
         # -------------------------------------------------------
-        # 🔹 Envoi requête GET
+        # 🔹 Récupération des versions distantes
         # -------------------------------------------------------
         try:
             response = requests.get(CHECK_URL_EX3, verify=False, timeout=10)
             response.raise_for_status()
 
-            # التحقق من Content-Type
-            if "application/json" not in response.headers.get("Content-Type", ""):
+            content_type = response.headers.get("Content-Type", "")
+            if "application/json" not in content_type:
                 print("⚠️ La réponse n'est pas JSON")
-                print("Raw text:", response.text)
+                print("Raw response text:", response.text)
                 return False
 
             data = response.json()
@@ -453,6 +471,7 @@ class UpdateManager:
 
         except Exception as e:
             print(f"❌ Impossible de récupérer la version distante: {e}")
+            traceback.print_exc()
             if window:
                 from ui_utils import UIManager
                 UIManager.Show_Critical_Message(
@@ -464,7 +483,7 @@ class UpdateManager:
             return False
 
         # -------------------------------------------------------
-        # 🔹 Vérification fichiers locaux
+        # 🔹 Vérification des fichiers locaux
         # -------------------------------------------------------
         if not os.path.exists(Settings.MANIFEST_PATH_EX3):
             print("❌ Fichier manifest.json local introuvable")
