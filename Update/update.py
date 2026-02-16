@@ -393,25 +393,20 @@ class UpdateManager:
         # -------------------------------------------------------
         date_value = SESSION_INFO.get('date')
 
-        try:
-            # إذا كان timestamp (int)
-            if isinstance(date_value, int):
-                session_dt = datetime.datetime.fromtimestamp(date_value)
-            # إذا كان string بصيغة ISO
-            elif isinstance(date_value, str):
-                session_dt = datetime.datetime.fromisoformat(date_value.replace("Z", "+00:00"))
-            else:
-                raise ValueError("SESSION_INFO['date'] format inconnu")
-
-        except Exception as e:
-            print("❌ Impossible de convertir SESSION_INFO['date'] :", e)
-            traceback.print_exc()
+        if isinstance(date_value, int):
+            session_dt = datetime.datetime.fromtimestamp(date_value)
+        elif isinstance(date_value, str):
+            try:
+                session_dt = datetime.datetime.fromisoformat(date_value.replace("Z","+00:00"))
+            except ValueError:
+                # حاول تحويل string بصيغة أخرى
+                session_dt = datetime.datetime.strptime(date_value, "%Y-%m-%d %H:%M:%S")
+        else:
+            print("❌ SESSION_INFO['date'] فارغ أو نوع غير معروف:", type(date_value), date_value)
             return False
 
-        # صيغة مثل date_plain السابقة
         session_date_plain = session_dt.strftime("%Y-%m-%d")
         print("➤ Date session (format YYYY-MM-DD) :", session_date_plain)
-
         # -------------------------------------------------------
         # 🔹 تشفير التاريخ session_date_plain
         # -------------------------------------------------------
