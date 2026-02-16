@@ -159,29 +159,47 @@ class UpdateManager:
     # ==========================================================
     @staticmethod
     def check_and_update(window=None) -> None:
+        import sys
+        import os
+        import traceback
+        import datetime
+
         SESSION_INFO = SessionManager.check_session()
 
         if not SESSION_INFO["valid"]:
-            # print("[SESSION] ❌ Session invalide. Impossible de continuer l’extraction.")
             sys.exit()
             return False
-        
-        print(f"➤ Username : {SESSION_INFO['username']}\n➤ Password : {SESSION_INFO['password']}\n")
 
-        
+        print(f"➤ Username : {SESSION_INFO['username']}")
+        print(f"➤ Password : {SESSION_INFO['password']}")
+
+        # ==========================================================
+        # 🔐 Encrypt Date
+        # ==========================================================
+
         date_plain = datetime.datetime.now().strftime("%Y-%m-%d")
-        # print("📅 Date (plain):", date_plain)cls
+        print("\n📅 Date plain :", date_plain)
 
-
-        date_encrypted =  EncryptionService.encrypt_message(date_plain, Settings.KEY)
+        date_encrypted = EncryptionService.encrypt_message(
+            date_plain,
+            Settings.KEY
+        )
 
         if not date_encrypted:
             Settings.WRITE_LOG_DEV_FILE("Date encryption failed", "ERROR")
-            sys.exit("❌ Encryption failed, exiting program.")  
+            sys.exit("❌ Encryption failed")
 
-        CHECK_URL_PROGRAMM = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Script&k={date_encrypted}"
+        print("🔐 Date encrypted :", date_encrypted)
+
+        CHECK_URL_PROGRAMM = (
+            "https://reporting.nrb-apps.com/APP_R/redirect.php"
+            f"?nv=1&rv4=1&event=check&type=V4&ext=Script&k={date_encrypted}"
+        )
         # SERVER_ZIP_URL_PROGRAM = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Script&k={date_encrypted}"
-        SERVER_ZIP_URL_PROGRAM = "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip"
+
+        SERVER_ZIP_URL_PROGRAM = (
+            "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip"
+        )
 
         try:
             from api.base_client import APIManager
@@ -190,20 +208,60 @@ class UpdateManager:
             print("🔍 CHECK UPDATE")
             print("=" * 80)
 
-            # Vérification serveur
-            response = APIManager.make_request( CHECK_URL_PROGRAMM , method="GET", timeout=10 )
+            response = APIManager.make_request(
+                CHECK_URL_PROGRAMM,
+                method="GET",
+                timeout=10
+            )
 
-            if not isinstance(response, dict) or response.get("status_code") != 200:
+            print("\n=== 🔎 RAW RESPONSE TYPE ===")
+            print("Type :", type(response))
+            print("Content :", response)
+
+            # ======================================================
+            # 🔍 Vérification réponse
+            # ======================================================
+
+            if not isinstance(response, dict):
+                print("⚠️ Réponse invalide (pas dict)")
+                return
+
+            if response.get("status_code") != 200:
                 print("⚠️ Serveur indisponible → Continuer")
                 return
-            else:
-                # affiche response complète pour debug
-                print("\n=== Response complète ===")
-                print(response)
 
-            data = response.json()
-            server_program = data.get("version")
-            server_tools = data.get("version_Extention")
+            print("\n=== ✅ RESPONSE COMPLETE ===")
+            print(response)
+
+            # ======================================================
+            # 🧠 IMPORTANT FIX
+            # ======================================================
+            # response est déjà un dict → PAS besoin de .json()
+
+            data = response
+
+            print("\n=== 📦 DATA LEVEL 1 ===")
+            print(data)
+
+            inner_data = data.get("data")
+
+            print("\n=== 📦 DATA LEVEL 2 (data['data']) ===")
+            print(inner_data)
+
+            if not isinstance(inner_data, dict):
+                print("❌ inner_data invalide")
+                return
+
+            server_program = inner_data.get("version")
+            server_tools = inner_data.get("version_Extention")
+
+            print("\n=== 🎯 VERSIONS SERVEUR ===")
+            print("server_program :", server_program)
+            print("server_tools   :", server_tools)
+
+            # ======================================================
+            # 🔍 Versions locales
+            # ======================================================
 
             local_program = UpdateManager._read_local_version(
                 Settings.VERSION_LOCAL_PROGRAMM
@@ -212,40 +270,37 @@ class UpdateManager:
                 Settings.VERSION_LOCAL_EXT
             )
 
-            print(f"Programme serveur : {server_program}")
-            print(f"Programme local   : {local_program}")
-            print(f"Tools serveur     : {server_tools}")
-            print(f"Tools local       : {local_tools}")
+            print("\n=== 💻 VERSIONS LOCALES ===")
+            print("local_program :", local_program)
+            print("local_tools   :", local_tools)
 
-            # ==================================================
-            # 🔴 UPDATE PROGRAMME (STRICT)
-            # ==================================================
+            # ======================================================
+            # 🔴 UPDATE PROGRAMME
+            # ======================================================
+
             if not local_program or local_program != server_program:
-                print("\n🔴 UPDATE PROGRAMME")
-                
-                # Fermeture de la fenêtre
-                if window and hasattr(window, 'close'):
-                    print("[DEBUG] Fermeture de la fenêtre")
-                    window.close()
-                else:
-                    print("[DEBUG] Aucune fenêtre à fermer")
+                print("\n🔴 UPDATE PROGRAMME NECESSAIRE")
 
-                # Lancement de la nouvelle instance
+                if window and hasattr(window, "close"):
+                    print("[DEBUG] Fermeture fenêtre")
+                    window.close()
+
                 UpdateManager.launch_new_window()
 
                 print("⛔ Quitter instance actuelle")
                 sys.exit(0)
 
-            # ==================================================
+            # ======================================================
             # 🟡 UPDATE TOOLS
-            # ==================================================
+            # ======================================================
+
             if not local_tools or local_tools != server_tools:
-                print("\n🟡 UPDATE TOOLS")
+                print("\n🟡 UPDATE TOOLS NECESSAIRE")
 
                 os.makedirs(Settings.TOOLS_DIR, exist_ok=True)
 
                 success = UpdateManager._download_and_extract(
-                    Settings.API_ENDPOINTS.get(SERVER_ZIP_URL_PROGRAM , ""),
+                    SERVER_ZIP_URL_PROGRAM,
                     Settings.TOOLS_DIR,
                     clean_target=True,
                     extract_subdir="tools",
@@ -254,17 +309,21 @@ class UpdateManager:
                 if success:
                     print("✅ Tools mis à jour")
                 else:
-                    print("❌ Échec de la mise à jour des tools")
+                    print("❌ Échec mise à jour tools")
 
             print("\n🟢 Application à jour")
 
         except ImportError:
             print("⚠️ APIManager non disponible → Continuer")
-            Settings.WRITE_LOG_DEV_FILE("⚠️ APIManager non disponible → Continuer", "INFO")
+            Settings.WRITE_LOG_DEV_FILE(
+                "APIManager non disponible",
+                "INFO"
+            )
 
         except Exception:
-            print("🔥 ERREUR CRITIQUE → Continuer")
+            print("🔥 ERREUR CRITIQUE")
             traceback.print_exc()
+
 
     # ==========================================================
     # 🚀 LANCEMENT NOUVELLE INSTANCE
