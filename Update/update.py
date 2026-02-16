@@ -152,11 +152,14 @@ class UpdateManager:
                         if os.path.exists(dst):
                             os.remove(dst)
                         shutil.move(src, dst)
+                
+                Settings.WRITE_LOG_DEV_FILE(f"Mise à jour extraite avec succès vers ", "INFO")
 
                 # print(f"✅ Extraction terminée → {target_dir}")
                 return True
 
         except Exception as e:
+            Settings.WRITE_LOG_DEV_FILE(f"Échec de l'extraction de mise à jour - {e}", "ERROR")
             # print("❌ Erreur lors de l'extraction")
             traceback.print_exc()
             return False
@@ -170,6 +173,7 @@ class UpdateManager:
         SESSION_INFO = SessionManager.check_session()
         if not SESSION_INFO.get("valid"):
             # print("[SESSION] ❌ Session invalide. Impossible de continuer.")
+            Settings.WRITE_LOG_DEV_FILE("Session invalide. Impossible de continuer.", "ERROR")
             sys.exit()
             return False
 
@@ -180,6 +184,7 @@ class UpdateManager:
         # ================================================
         session_dt = SESSION_INFO.get("date")
         if not isinstance(session_dt, datetime.datetime):
+            Settings.WRITE_LOG_DEV_FILE(f"SESSION date type incorrect: {type(session_dt)}", "ERROR")
             # print(f"❌ SESSION_INFO['date'] type incorrect: {type(session_dt)}")
             return False
         # print("🟢 SESSION_INFO['date'] est déjà datetime.datetime")
@@ -198,6 +203,7 @@ class UpdateManager:
             # print("🔐 Date encryptée :", encrypted_safe)
         except Exception as e:
             # print(f"❌ Échec du chiffrement : {e}")
+            Settings.WRITE_LOG_DEV_FILE(f"Échec du chiffrement : {e}", "ERROR")
             traceback.print_exc()
             return False
 
