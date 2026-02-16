@@ -390,8 +390,6 @@ class UpdateManager:
 
         import requests
 
-
-
         date_plain = datetime.datetime.now().strftime("%Y-%m-%d")
         # print("📅 Date (plain):", date_plain)
 
