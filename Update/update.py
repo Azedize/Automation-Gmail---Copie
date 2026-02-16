@@ -375,92 +375,185 @@ class UpdateManager:
     # ==========================================================
     @staticmethod
     def check_version_extension(window=None):
+
+        import traceback
+        import urllib.parse
+
+        print("\n" + "="*80)
+        print("🚀 CHECK VERSION EXTENSION (DEBUG MODE)")
+        print("="*80)
+
         SESSION_INFO = SessionManager.check_session()
 
-        if not SESSION_INFO["valid"]:
-            print("[SESSION] ❌ Session invalide. Impossible de continuer l’extraction.")
+        print("\n🔎 SESSION INFO:")
+        print(SESSION_INFO)
+
+        if not SESSION_INFO.get("valid"):
+            print("❌ Session invalide")
             sys.exit()
             return False
-        
-        print(f"➤ Username : {SESSION_INFO['username']}\n➤ Password : {SESSION_INFO['password']}\n")
 
-        ENCRYPTED = EncryptionService.encrypt_message(json.dumps({  "login":SESSION_INFO ["username"],  "password": SESSION_INFO["password"]}), Settings.KEY)
-        CHECK_URL_EX3 = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Ext3&k={ENCRYPTED}"
-                          
+        print(f"\n➤ Username : {SESSION_INFO.get('username')}")
+        print(f"➤ Password : {SESSION_INFO.get('password')}")
+
+        # ==========================================================
+        # 🔐 Encryption
+        # ==========================================================
+
+        payload = json.dumps({
+            "login": SESSION_INFO["username"],
+            "password": SESSION_INFO["password"]
+        }, separators=(',', ':'))
+
+        print("\n📦 Payload JSON:")
+        print(payload)
+
+        ENCRYPTED = EncryptionService.encrypt_message(payload, Settings.KEY)
+
+        print("\n🔐 Encrypted value (raw):")
+        print(ENCRYPTED)
+
+        ENCRYPTED_SAFE = urllib.parse.quote(ENCRYPTED)
+
+        print("\n🔐 Encrypted value (URL encoded):")
+        print(ENCRYPTED_SAFE)
+
+        CHECK_URL_EX3 = (
+            "https://reporting.nrb-apps.com/APP_R/redirect.php"
+            f"?nv=1&rv4=1&event=check&type=V4&ext=Ext3&k={ENCRYPTED_SAFE}"
+        )
+
+        print("\n🌍 URL finale:")
+        print(CHECK_URL_EX3)
+
         try:
-            # print("\n🔎 Vérification des versions d'extension...")
+            print("\n📡 Envoi requête GET...")
 
-            # Récupération version distante
+            response = requests.get(
+                CHECK_URL_EX3,
+                verify=False,
+                timeout=10
+            )
+
+            print("\n=== 🧾 RESPONSE INFO ===")
+            print("Status Code:", response.status_code)
+            print("Headers:", response.headers)
+            print("Content-Type:", response.headers.get("Content-Type"))
+
+            print("\n=== 📄 RAW RESPONSE TEXT ===")
+            print(response.text)
+
+            # ======================================================
+            # 🔎 Vérification JSON
+            # ======================================================
+
+            if "application/json" not in response.headers.get("Content-Type", ""):
+                print("⚠️ La réponse n'est pas JSON")
+                return False
+
             try:
-                response = requests.get(  CHECK_URL_EX3 , verify=False,  timeout=10 )
-                response.raise_for_status()
                 data = response.json()
-                remote_version = data.get("version_Extention")
-                remote_manifest_version = data.get("manifest_version")
-
-                print("\n=== JSON Response ===")
+                print("\n=== ✅ JSON PARSÉ ===")
                 print(json.dumps(data, indent=4, ensure_ascii=False))
-                print("\n=== Versions récupérées ===")
-                print(f"➤ version_Extention : {remote_version}")
-                print(f"➤ manifest_version  : {remote_manifest_version}")
-
+                print("Type JSON:", type(data))
             except Exception as e:
-                # print(f"❌ Impossible de récupérer la version distante: {e}")
-                if window:
-                    from ui_utils import UIManager
-                    UIManager.Show_Critical_Message(
-                        window,
-                        "Erreur réseau",
-                        "Impossible de vérifier la mise à jour.\nVérifiez votre connexion.",
-                        message_type="critical"
-                    )
+                print("❌ Erreur parsing JSON:", e)
                 return False
 
-            # Vérification fichiers locaux
+            # ======================================================
+            # 🔎 Analyse niveaux JSON
+            # ======================================================
+
+            print("\n=== 🔍 NIVEAU 1 ===")
+            for k, v in data.items():
+                print(f"{k} -> {v} (type: {type(v)})")
+
+            inner_data = data.get("data")
+
+            print("\n=== 🔍 NIVEAU 2 (data['data']) ===")
+            print(inner_data)
+            print("Type:", type(inner_data))
+
+            if not isinstance(inner_data, dict):
+                print("❌ data['data'] invalide")
+                return False
+
+            remote_version = inner_data.get("version_Extention")
+            remote_manifest_version = inner_data.get("manifest_version")
+
+            print("\n=== 🎯 VERSIONS DISTANTES ===")
+            print("remote_version         :", remote_version)
+            print("remote_manifest_version:", remote_manifest_version)
+
+            # ======================================================
+            # 📂 Vérification fichiers locaux
+            # ======================================================
+
+            print("\n=== 📂 PATHS LOCAUX ===")
+            print("MANIFEST_PATH_EX3 :", Settings.MANIFEST_PATH_EX3)
+            print("VERSION_LOCAL_EX3 :", Settings.VERSION_LOCAL_EX3)
+
             if not os.path.exists(Settings.MANIFEST_PATH_EX3):
-                print("❌ Fichier manifest.json local introuvable")
-                return False
-                
-            if not os.path.exists(Settings.VERSION_LOCAL_EX3):
-                print("❌ Fichier version locale introuvable")
+                print("❌ manifest.json introuvable")
                 return False
 
-            # Lecture manifest local
+            if not os.path.exists(Settings.VERSION_LOCAL_EX3):
+                print("❌ version locale introuvable")
+                return False
+
+            # ======================================================
+            # 📖 Lecture manifest local
+            # ======================================================
+
             with open(Settings.MANIFEST_PATH_EX3, "r", encoding="utf-8") as f:
                 manifest_data = json.load(f)
-            local_manifest_version = manifest_data.get("version")
 
-            # Lecture version locale
+            print("\n=== 📄 MANIFEST LOCAL ===")
+            print(manifest_data)
+
+            local_manifest_version = manifest_data.get("version")
             local_version = UpdateManager._read_local_version(Settings.VERSION_LOCAL_EX3)
 
-            print(f"📄 Version locale : {local_version}")
-            print(f"📄 Manifest local : {local_manifest_version}")
+            print("\n=== 💻 VERSIONS LOCALES ===")
+            print("local_version          :", local_version)
+            print("local_manifest_version :", local_manifest_version)
 
-            # Vérification compatibilité manifest
+            # ======================================================
+            # 🔄 Comparaisons
+            # ======================================================
+
+            print("\n=== 🔁 COMPARAISON MANIFEST ===")
+            print(str(local_manifest_version), "vs", str(remote_manifest_version))
+
             if str(local_manifest_version) != str(remote_manifest_version):
-                print("⚠️ Manifest incompatible, mise à jour automatique impossible")
+                print("⚠️ Manifest incompatible")
+
                 if window:
                     from ui_utils import UIManager
                     UIManager.Show_Critical_Message(
                         window,
                         "Incompatibilité manifest",
-                        "La version du manifest local ne correspond pas à la distante.",
+                        "Manifest local ≠ manifest distant.",
                         message_type="critical"
                     )
                 return False
 
-            # Vérification différence de version
-            if local_version != remote_version:
-                print(f"🔄 Mise à jour requise (nouvelle version: {remote_version})")
-                return remote_version  # retourne la version pour mise à jour
+            print("\n=== 🔁 COMPARAISON VERSION ===")
+            print(str(local_version), "vs", str(remote_version))
+
+            if str(local_version) != str(remote_version):
+                print(f"🔄 Mise à jour requise → {remote_version}")
+                return remote_version
             else:
-                print("✅ Extension locale à jour")
+                print("✅ Extension à jour")
                 return True
 
         except Exception as e:
-            print(f"❌ Erreur dans check_version_extension: {e}")
+            print("\n🔥 ERREUR GÉNÉRALE")
+            print("Message:", e)
             traceback.print_exc()
             return False
+
 
 
 
