@@ -9,7 +9,7 @@ import traceback
 import subprocess
 from typing import Optional
 import requests
-
+import datetime
 
 
 
@@ -166,28 +166,44 @@ class UpdateManager:
             sys.exit()
             return False
         
-        # print(f"➤ Username : {SESSION_INFO['username']}\n➤ Password : {SESSION_INFO['password']}\n")
+        print(f"➤ Username : {SESSION_INFO['username']}\n➤ Password : {SESSION_INFO['password']}\n")
 
-        ENCRYPTED = EncryptionService.encrypt_message(json.dumps({  "login":SESSION_INFO ["username"],  "password": SESSION_INFO["password"]}), Settings.KEY)
-        CHECK_URL_PROGRAMM = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Script&k={ENCRYPTED}"
-        SERVER_ZIP_URL_PROGRAM = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Script&k={ENCRYPTED}"
+        
+        date_plain = datetime.datetime.now().strftime("%Y-%m-%d")
+        # print("📅 Date (plain):", date_plain)cls
+
+
+        date_encrypted =  EncryptionService.encrypt_message(date_plain, Settings.KEY)
+
+        if not date_encrypted:
+            Settings.WRITE_LOG_DEV_FILE("Date encryption failed", "ERROR")
+            sys.exit("❌ Encryption failed, exiting program.")  
+
+        CHECK_URL_PROGRAMM = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Script&k={date_encrypted}"
+        # SERVER_ZIP_URL_PROGRAM = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Script&k={date_encrypted}"
+        SERVER_ZIP_URL_PROGRAM = "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip"
+
         try:
             from api.base_client import APIManager
 
-            # print("\n" + "=" * 80)
-            # print("🔍 CHECK UPDATE")
-            # print("=" * 80)
+            print("\n" + "=" * 80)
+            print("🔍 CHECK UPDATE")
+            print("=" * 80)
 
             # Vérification serveur
             response = APIManager.make_request( CHECK_URL_PROGRAMM , method="GET", timeout=10 )
 
             if not isinstance(response, dict) or response.get("status_code") != 200:
-                # print("⚠️ Serveur indisponible → Continuer")
+                print("⚠️ Serveur indisponible → Continuer")
                 return
+            else:
+                # affiche response complète pour debug
+                print("\n=== Response complète ===")
+                print(response)
 
-            data = response.get("data", {})
-            server_program = data.get("version_Programme")
-            server_tools = data.get("version_extension")
+            data = response.json()
+            server_program = data.get("version")
+            server_tools = data.get("version_Extention")
 
             local_program = UpdateManager._read_local_version(
                 Settings.VERSION_LOCAL_PROGRAMM
@@ -196,35 +212,35 @@ class UpdateManager:
                 Settings.VERSION_LOCAL_EXT
             )
 
-            # print(f"Programme serveur : {server_program}")
-            # print(f"Programme local   : {local_program}")
-            # print(f"Tools serveur     : {server_tools}")
-            # print(f"Tools local       : {local_tools}")
+            print(f"Programme serveur : {server_program}")
+            print(f"Programme local   : {local_program}")
+            print(f"Tools serveur     : {server_tools}")
+            print(f"Tools local       : {local_tools}")
 
             # ==================================================
             # 🔴 UPDATE PROGRAMME (STRICT)
             # ==================================================
             if not local_program or local_program != server_program:
-                # print("\n🔴 UPDATE PROGRAMME")
+                print("\n🔴 UPDATE PROGRAMME")
                 
                 # Fermeture de la fenêtre
                 if window and hasattr(window, 'close'):
-                    # print("[DEBUG] Fermeture de la fenêtre")
+                    print("[DEBUG] Fermeture de la fenêtre")
                     window.close()
-                # else:
-                #     print("[DEBUG] Aucune fenêtre à fermer")
+                else:
+                    print("[DEBUG] Aucune fenêtre à fermer")
 
                 # Lancement de la nouvelle instance
                 UpdateManager.launch_new_window()
 
-                # print("⛔ Quitter instance actuelle")
+                print("⛔ Quitter instance actuelle")
                 sys.exit(0)
 
             # ==================================================
             # 🟡 UPDATE TOOLS
             # ==================================================
             if not local_tools or local_tools != server_tools:
-                # print("\n🟡 UPDATE TOOLS")
+                print("\n🟡 UPDATE TOOLS")
 
                 os.makedirs(Settings.TOOLS_DIR, exist_ok=True)
 
@@ -235,19 +251,19 @@ class UpdateManager:
                     extract_subdir="tools",
                 )
 
-                # if success:
-                #     print("✅ Tools mis à jour")
-                # else:
-                #     print("❌ Échec de la mise à jour des tools")
+                if success:
+                    print("✅ Tools mis à jour")
+                else:
+                    print("❌ Échec de la mise à jour des tools")
 
-            # print("\n🟢 Application à jour")
+            print("\n🟢 Application à jour")
 
         except ImportError:
-            # print("⚠️ APIManager non disponible → Continuer")
+            print("⚠️ APIManager non disponible → Continuer")
             Settings.WRITE_LOG_DEV_FILE("⚠️ APIManager non disponible → Continuer", "INFO")
 
         except Exception:
-            # print("🔥 ERREUR CRITIQUE → Continuer")
+            print("🔥 ERREUR CRITIQUE → Continuer")
             traceback.print_exc()
 
     # ==========================================================
@@ -303,11 +319,11 @@ class UpdateManager:
         SESSION_INFO = SessionManager.check_session()
 
         if not SESSION_INFO["valid"]:
-            # print("[SESSION] ❌ Session invalide. Impossible de continuer l’extraction.")
+            print("[SESSION] ❌ Session invalide. Impossible de continuer l’extraction.")
             sys.exit()
             return False
         
-        # print(f"➤ Username : {SESSION_INFO['username']}\n➤ Password : {SESSION_INFO['password']}\n")
+        print(f"➤ Username : {SESSION_INFO['username']}\n➤ Password : {SESSION_INFO['password']}\n")
 
         ENCRYPTED = EncryptionService.encrypt_message(json.dumps({  "login":SESSION_INFO ["username"],  "password": SESSION_INFO["password"]}), Settings.KEY)
         CHECK_URL_EX3 = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Ext3&k={ENCRYPTED}"
@@ -323,11 +339,11 @@ class UpdateManager:
                 remote_version = data.get("version_Extention")
                 remote_manifest_version = data.get("manifest_version")
 
-                # print("\n=== JSON Response ===")
-                # print(json.dumps(data, indent=4, ensure_ascii=False))
-                # print("\n=== Versions récupérées ===")
-                # print(f"➤ version_Extention : {remote_version}")
-                # print(f"➤ manifest_version  : {remote_manifest_version}")
+                print("\n=== JSON Response ===")
+                print(json.dumps(data, indent=4, ensure_ascii=False))
+                print("\n=== Versions récupérées ===")
+                print(f"➤ version_Extention : {remote_version}")
+                print(f"➤ manifest_version  : {remote_manifest_version}")
 
             except Exception as e:
                 # print(f"❌ Impossible de récupérer la version distante: {e}")
@@ -343,11 +359,11 @@ class UpdateManager:
 
             # Vérification fichiers locaux
             if not os.path.exists(Settings.MANIFEST_PATH_EX3):
-                # print("❌ Fichier manifest.json local introuvable")
+                print("❌ Fichier manifest.json local introuvable")
                 return False
                 
             if not os.path.exists(Settings.VERSION_LOCAL_EX3):
-                # print("❌ Fichier version locale introuvable")
+                print("❌ Fichier version locale introuvable")
                 return False
 
             # Lecture manifest local
@@ -358,12 +374,12 @@ class UpdateManager:
             # Lecture version locale
             local_version = UpdateManager._read_local_version(Settings.VERSION_LOCAL_EX3)
 
-            # print(f"📄 Version locale : {local_version}")
-            # print(f"📄 Manifest local : {local_manifest_version}")
+            print(f"📄 Version locale : {local_version}")
+            print(f"📄 Manifest local : {local_manifest_version}")
 
             # Vérification compatibilité manifest
             if str(local_manifest_version) != str(remote_manifest_version):
-                # print("⚠️ Manifest incompatible, mise à jour automatique impossible")
+                print("⚠️ Manifest incompatible, mise à jour automatique impossible")
                 if window:
                     from ui_utils import UIManager
                     UIManager.Show_Critical_Message(
@@ -376,14 +392,14 @@ class UpdateManager:
 
             # Vérification différence de version
             if local_version != remote_version:
-                # print(f"🔄 Mise à jour requise (nouvelle version: {remote_version})")
+                print(f"🔄 Mise à jour requise (nouvelle version: {remote_version})")
                 return remote_version  # retourne la version pour mise à jour
             else:
-                # print("✅ Extension locale à jour")
+                print("✅ Extension locale à jour")
                 return True
 
         except Exception as e:
-            # print(f"❌ Erreur dans check_version_extension: {e}")
+            print(f"❌ Erreur dans check_version_extension: {e}")
             traceback.print_exc()
             return False
 

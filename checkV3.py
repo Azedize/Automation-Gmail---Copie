@@ -36,8 +36,8 @@ KEY     = bytes.fromhex(KEY_HEX)
 # 🔹 FIX UTF-8 POUR WINDOWS CONSOLE
 # ==========================================================
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+# sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+# sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 
 
@@ -400,7 +400,6 @@ class UpdateManager:
             sys.exit("❌ Encryption failed, exiting program.")  # Arrêt immédiat
 
         url = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Script&k={date_encrypted}" 
-
         DownloadFiles = "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip"
 
 
@@ -500,9 +499,9 @@ def main():
     # 🔹 DÉMARRAGE DE L'APPLICATION PRINCIPALE
     # ==========================================================
 
-    if sys.platform == "win32":
-        import ctypes
-        ctypes.windll.user32.ShowWindow( ctypes.windll.kernel32.GetConsoleWindow(), 0)
+    # if sys.platform == "win32":
+    #     import ctypes
+    #     ctypes.windll.user32.ShowWindow( ctypes.windll.kernel32.GetConsoleWindow(), 0)
 
 
     try:
@@ -551,11 +550,12 @@ def main():
             if script_path.is_file():
                 subprocess.run(
                     [sys.executable, str(script_path), encrypted_key, secret_key],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    stdin=subprocess.DEVNULL,
-                    creationflags=subprocess.CREATE_NO_WINDOW
+                    # stdout=subprocess.DEVNULL,
+                    # stderr=subprocess.DEVNULL,
+                    # stdin=subprocess.DEVNULL,
+                    # creationflags=subprocess.CREATE_NO_WINDOW
                 )
+                print("Application principale lancée avec succès")
             else:
                 # print("Script principal introuvable")
                 WRITE_LOG_DEV_FILE("Main script not found", "ERROR")

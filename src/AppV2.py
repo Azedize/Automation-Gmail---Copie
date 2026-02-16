@@ -1035,9 +1035,9 @@ def Process_Browser(window, selected_Browser) -> bool:
         with open(secure_prefs, "r", encoding="utf-8") as f:
             data = json.load(f)
         Settings.WRITE_LOG_DEV_FILE(f"Secure preferences file loaded successfully: {secure_prefs}", "INFO")
-        # print("✅ Fichier JSON chargé avec succès")
+        print("✅ Fichier JSON chargé avec succès")
     except Exception as e:
-        # print(f"❌ Erreur lecture fichier JSON : {e}")
+        print(f"❌ Erreur lecture fichier JSON : {e}")
         return False
 
     # 4️⃣ Vérification des clés JSON
@@ -1050,60 +1050,60 @@ def Process_Browser(window, selected_Browser) -> bool:
 
     if missing_keys:
         Settings.WRITE_LOG_DEV_FILE(f"Missing keys in JSON file !!", "WARNING")
-        # print("❌ Clés manquantes :")
-        # for idx, key in enumerate(missing_keys, start=1):
-        #     print(f"   {idx}. {key}")
+        print("❌ Clés manquantes :")
+        for idx, key in enumerate(missing_keys, start=1):
+            print(f"   {idx}. {key}")
         return False
-    # print(f"✅ Toutes les clés JSON requises sont présentes ({len(found_keys)}/{len(required_keys)})")
+    print(f"✅ Toutes les clés JSON requises sont présentes ({len(found_keys)}/{len(required_keys)})")
 
     # 5️⃣ Vérification et mise à jour de l'extension
     ext_path = Settings.EXTENTION_EX3
     if not ValidationUtils.path_exists(ext_path):
-        # print("📥 Extension manquante, téléchargement...")
+        print("📥 Extension manquante, téléchargement...")
         Settings.WRITE_LOG_DEV_FILE(f"Extension not found, downloading...", "INFO")
         valid_ext_dir= ValidationUtils.validate_directory_path(ext_path, must_exist=False)
         if not valid_ext_dir:
-            # print(f"❌ Chemin extension invalide : ")
+            print(f"❌ Chemin extension invalide : ")
             Settings.WRITE_LOG_DEV_FILE(f"Invalid extension path: {ext_path}", "WARNING")
             return False
         if UpdateManager.update_extension_from_server():
-            # print("✅ Extension installée avec succès")
+            print("✅ Extension installée avec succès")
             Settings.WRITE_LOG_DEV_FILE(f"Extension installed successfully", "INFO")
         else:
             Settings.WRITE_LOG_DEV_FILE(f"Failed to install extension", "WARNING")
-            # print("❌ Échec installation extension")
+            print("❌ Échec installation extension")
             return False
     else:
-        # print(f"📂 Extension trouvée : {ext_path}")
+        print(f"📂 Extension trouvée : {ext_path}")
         manifest_file = os.path.join(ext_path, "manifest.json")
         if not os.path.exists(manifest_file):
-            # print("❌ manifest.json manquant")
+            print("❌ manifest.json manquant")
             Settings.WRITE_LOG_DEV_FILE(f"manifest.json not found", "WARNING")
             return False
         
         remote_version = UpdateManager.check_version_extension(window)
         if isinstance(remote_version, str):
-            # print(f"🔄 Mise à jour disponible : {remote_version}")
+            print(f"🔄 Mise à jour disponible : {remote_version}")
             Settings.WRITE_LOG_DEV_FILE(f"Update available: {remote_version}", "INFO")
             if UpdateManager.update_extension_from_server(remote_version):
-                # print("✅ Extension mise à jour avec succès")
+                print("✅ Extension mise à jour avec succès")
                 Settings.WRITE_LOG_DEV_FILE(f"Extension updated successfully", "INFO")
             else:
-                # print("❌ Échec mise à jour extension")
+                print("❌ Échec mise à jour extension")
                 Settings.WRITE_LOG_DEV_FILE(f"Failed to update extension", "WARNING")
                 return False
         elif remote_version is True:
-            # print("✅ Extension déjà à jour")
+            print("✅ Extension déjà à jour")
             Settings.WRITE_LOG_DEV_FILE("✅ Extension déjà à jour", "INFO")
         else:
             Settings.WRITE_LOG_DEV_FILE(f"Failed to check extension version", "WARNING")
-            # print("❌ Impossible de vérifier la version de l'extension")
+            print("❌ Impossible de vérifier la version de l'extension")
             return False
 
 
 
     # ✅ Tout est OK
-    # print("🎉 Traitement terminé avec succès pour le navigateur Chrome")
+    print("🎉 Traitement terminé avec succès pour le navigateur Chrome")
     Settings.WRITE_LOG_DEV_FILE(f"Processing completed successfully for Chrome browser", "INFO")
     return True
 
@@ -1532,7 +1532,7 @@ class MainWindow(QMainWindow):
                 with open(Settings.SESSION_PATH, "w", encoding="utf-8") as f:
                     f.write("")
             except Exception as e:
-                # print(f"[ERREUR NETTOYAGE SESSION] ❌ {e}")
+                print(f"[ERREUR NETTOYAGE SESSION] ❌ {e}")
                 Settings.WRITE_LOG_DEV_FILE(f"An error occurred while cleaning the session: {str(e)}", "ERROR")
 
             return
@@ -1543,16 +1543,16 @@ class MainWindow(QMainWindow):
 
         # Nettoyage des badges de notification
         try:
-            # print("🔄 [BADGES] Début suppression des badges existants")
+            print("🔄 [BADGES] Début suppression des badges existants")
             Settings.WRITE_LOG_DEV_FILE("Start badge cleanup", "INFO")
             if self.result_tab_widget:
-                # print(f"📌 [BADGES] Nombre de tabs dans result_tab_widget = {self.result_tab_widget.count()}")
+                print(f"📌 [BADGES] Nombre de tabs dans result_tab_widget = {self.result_tab_widget.count()}")
                 Settings.WRITE_LOG_DEV_FILE(f"Number of tabs in result_tab_widget = {self.result_tab_widget.count()}", "INFO")
                 
                 # Supprimer badges existants
                 for tab_index, badge in NOTIFICATION_BADGES.items():
                     if badge:
-                        # print(f"🗑️ [BADGES] Suppression badge tab_index={tab_index}")
+                        print(f"🗑️ [BADGES] Suppression badge tab_index={tab_index}")
                         Settings.WRITE_LOG_DEV_FILE(f"Badge removed tab_index={tab_index}", "INFO")
                         badge.deleteLater()
                 NOTIFICATION_BADGES.clear()
@@ -1564,10 +1564,10 @@ class MainWindow(QMainWindow):
                     tab = self.result_tab_widget.widget(i)
                     if tab:
                         list_widgets = tab.findChildren(QListWidget)
-                        # print(f"📂 [TAB {i}] Nombre de QListWidget = {len(list_widgets)}")
+                        print(f"📂 [TAB {i}] Nombre de QListWidget = {len(list_widgets)}")
                         for lw_index, lw in enumerate(list_widgets):
                             lw.clear()
-                            # print(f"🧹 [TAB {i}][LIST {lw_index}] Liste vidée")
+                            print(f"🧹 [TAB {i}][LIST {lw_index}] Liste vidée")
 
             else:
                 # print("⚠️ [BADGES] result_tab_widget est None")
@@ -1588,7 +1588,7 @@ class MainWindow(QMainWindow):
         except SystemExit:
             return
         except Exception as e:
-            # print(f"[UPDATE ERROR] {e}")
+            print(f"[UPDATE ERROR] {e}")
             Settings.WRITE_LOG_DEV_FILE(f"An error occurred while checking for updates: {str(e)}", "ERROR")
 
 

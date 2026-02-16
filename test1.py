@@ -1,128 +1,165 @@
-import pyttsx3
-from textblob import TextBlob
-import random
+import json
+import base64
 import os
-import time
+import requests
 
-# =======================
-# Initialisation TTS
-# =======================
-engine = pyttsx3.init()
-voices = engine.getProperty('voices')
+from cryptography.hazmat.primitives import padding
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.backends import default_backend
 
-# =======================
-# Textes exemples
-# =======================
-example_texts = [
-    "Je suis tellement heureux aujourd'hui, tout va bien !",
-    "Je me sens triste et seul, rien ne va...",
-    "Aujourd'hui est un jour comme les autres.",
-    "Quelle belle surprise ! Je n'y croyais pas !",
-    "Je suis très fatigué et stressé par le travail.",
-    "J'ai juste besoin d'une tasse de café.",
-    "C'est incroyable ce qui m'arrive !",
-    "Je n'ai pas envie de parler à qui que ce soit.",
-    "Le ciel est bleu et les oiseaux chantent.",
-    "Rien de spécial aujourd'hui, tout est calme."
-]
 
-# =======================
-# Musiques par humeur
-# =======================
-music_files = {
-    "heureux": ["happy1.mp3", "happy2.mp3"],
-    "triste": ["sad1.mp3", "sad2.mp3"],
-    "calme": ["calm1.mp3", "calm2.mp3"],
-    "excité": ["excited1.mp3", "excited2.mp3"],
-    "fatigué": ["tired1.mp3", "tired2.mp3"]
+# =====================================================
+# 🔐 CONFIGURATION
+# =====================================================
+
+ENCRYPTION_KEY_HEX = "f564292a5740af4fc4819c6e22f64765232ad35f56079854a0ad3996c68ee7a2"
+
+AES_BLOCK_SIZE = 128
+AES_KEY_LENGTH = 32
+AES_IV_LENGTH_CBC = 16
+
+KEY = bytes.fromhex(ENCRYPTION_KEY_HEX)
+
+
+# =====================================================
+# 🔐 AES-CBC ENCRYPTION
+# =====================================================
+
+def encrypt_message(plaintext: str, key_bytes: bytes) -> str:
+    """
+    Encrypt using AES-256-CBC + PKCS7
+    Return Base64(iv + ciphertext)
+    """
+
+    if len(key_bytes) != AES_KEY_LENGTH:
+        raise ValueError("Invalid AES key length")
+
+    # Padding PKCS7
+    padder = padding.PKCS7(AES_BLOCK_SIZE).padder()
+    padded_data = padder.update(plaintext.encode("utf-8")) + padder.finalize()
+
+    # Generate IV
+    iv = os.urandom(AES_IV_LENGTH_CBC)
+
+    # Create cipher
+    cipher = Cipher(
+        algorithms.AES(key_bytes),
+        modes.CBC(iv),
+        backend=default_backend()
+    )
+
+    encryptor = cipher.encryptor()
+    ciphertext = encryptor.update(padded_data) + encryptor.finalize()
+
+    # Return Base64(iv + ciphertext)
+    encrypted = base64.b64encode(iv + ciphertext).decode("utf-8")
+
+    return encrypted
+
+
+# =====================================================
+# 🔓 AES-CBC DECRYPTION (OPTIONAL DEBUG)
+# =====================================================
+
+def decrypt_message(encrypted_b64: str, key_bytes: bytes) -> str:
+    """
+    Decrypt Base64(iv + ciphertext)
+    """
+
+    raw = base64.b64decode(encrypted_b64)
+
+    iv = raw[:AES_IV_LENGTH_CBC]
+    ciphertext = raw[AES_IV_LENGTH_CBC:]
+
+    cipher = Cipher(
+        algorithms.AES(key_bytes),
+        modes.CBC(iv),
+        backend=default_backend()
+    )
+
+    decryptor = cipher.decryptor()
+    padded_plaintext = decryptor.update(ciphertext) + decryptor.finalize()
+
+    # Remove padding
+    unpadder = padding.PKCS7(AES_BLOCK_SIZE).unpadder()
+    plaintext = unpadder.update(padded_plaintext) + unpadder.finalize()
+
+    return plaintext.decode("utf-8")
+
+
+# =====================================================
+# 📦 DATA AUTH
+# =====================================================
+
+DATA_AUTH = {
+    "login": "rep.test",
+    "password": "zsGEnntKD5q2Brp68yxT"
 }
 
-# =======================
-# Réponses amusantes par humeur
-# =======================
-responses = {
-    "heureux": ["Super ! Lisons avec énergie ! 😄", "Youpi ! Lecture joyeuse !"],
-    "triste": ["Je vais lire doucement... 😢", "Prenons notre temps, lecture triste."],
-    "calme": ["Lecture tranquille... 😌", "Un texte neutre, relaxons-nous."],
-    "excité": ["Wouah ! Lisons avec enthousiasme ! 🤩", "Ça va bouger ! Lecture excitée !"],
-    "fatigué": ["Lecture lente, je suis fatigué... 😴", "Doucement, lecture calme."]
-}
 
-# =======================
-# Choix aléatoire du texte
-# =======================
-text = random.choice(example_texts)
+# =====================================================
+# 🚀 TEST API
+# =====================================================
 
-# =======================
-# Analyse sentiment avec TextBlob
-# =======================
-polarity = TextBlob(text).sentiment.polarity
+def test_api():
 
-# Déterminer humeur avancée
-if polarity > 0.5:
-    mood = "excité"
-elif polarity > 0.2:
-    mood = "heureux"
-elif polarity < -0.5:
-    mood = "triste"
-elif polarity < -0.2:
-    mood = "fatigué"
-else:
-    mood = "calme"
+    print("===================================================")
+    print("🔐 AES-256 CBC API TEST")
+    print("===================================================")
 
-# Choisir voix aléatoire
-voice_id = random.choice(voices).id
-engine.setProperty('voice', voice_id)
+    # Convert to JSON
+    json_payload = json.dumps(DATA_AUTH)
 
-# Choisir vitesse selon humeur
-rate_dict = {"heureux":180, "excité":200, "triste":120, "fatigué":110, "calme":150}
-engine.setProperty('rate', rate_dict[mood])
+    print("\n🔹 JSON original:")
+    print(json_payload)
 
-# Choisir musique aléatoire
-music_file = random.choice(music_files[mood])
+    # Encrypt
+    encrypted_value = encrypt_message(json_payload, KEY)
 
-# Choisir réponse amusante
-response_text = random.choice(responses[mood])
+    print("\n🔹 Donnée chiffrée (Base64):")
+    print(encrypted_value)
 
-# =======================
-# Afficher infos
-# =======================
-print(f"\n📜 Texte choisi : {text}")
-print(f"🎭 Humeur détectée : {mood}")
-print(f"🎤 Voix choisie : {voice_id}")
-print(f"⏱ Vitesse lecture : {rate_dict[mood]}")
-print(f"🎶 Musique choisie : {music_file}")
-print(f"💬 Réponse avant lecture : {response_text}\n")
+    # DEBUG: Decrypt locally
+    decrypted_test = decrypt_message(encrypted_value, KEY)
 
-# =======================
-# Animation du texte à l’écran
-# =======================
-for char in response_text:
-    print(char, end="", flush=True)
-    time.sleep(0.05)
-print("\n")
+    print("\n🔓 Vérification déchiffrement local:")
+    print(decrypted_test)
 
-# =======================
-# Lire réponse
-# =======================
-engine.say(response_text)
-engine.runAndWait()
+    # Build URL
+    CHECK_URL_EX3 = (
+        f"https://reporting.nrb-apps.com/APP_R/redirect.php"
+        f"?nv=1&rv4=1&event=check&type=V4&ext=Ext3&k={encrypted_value}"
+    )
 
-# =======================
-# Lire le texte
-# =======================
-for char in text:
-    print(char, end="", flush=True)
-    time.sleep(0.03)
-print("\n")
+    print("\n🔹 URL finale:")
+    print(CHECK_URL_EX3)
 
-engine.say(text)
-engine.runAndWait()
+    try:
+        print("\n📡 Envoi requête GET...")
 
-# =======================
-# Jouer musique
-# =======================
-if os.path.exists(music_file):
-    os.system(f"start {music_file}")  # Windows
-else:
-    print(f"(Pas de musique trouvée pour {mood})")
+        response = requests.get(CHECK_URL_EX3, timeout=30)
+
+        print("\n================ RESPONSE =================")
+        print("Status Code:", response.status_code)
+        print("\nHeaders:")
+        print(response.headers)
+
+        print("\nResponse Text:")
+        print(response.text)
+
+        try:
+            print("\nJSON décodé:")
+            print(response.json())
+        except:
+            print("\n⚠️ Réponse non JSON")
+
+    except Exception as e:
+        print("❌ Erreur requête:", e)
+
+
+# =====================================================
+# ▶ EXECUTION
+# =====================================================
+
+if __name__ == "__main__":
+    test_api()
