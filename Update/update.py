@@ -10,8 +10,7 @@ import subprocess
 from typing import Optional
 import requests
 import datetime
-
-
+import urllib.parse
 
 # ==========================================================
 # 📁 ROOT DIR
@@ -159,153 +158,107 @@ class UpdateManager:
     # ==========================================================
     @staticmethod
     def check_and_update(window=None) -> None:
-        import sys
-        import os
-        import traceback
-        import datetime
+        import sys, os, traceback, urllib.parse
 
         SESSION_INFO = SessionManager.check_session()
-
-        if not SESSION_INFO["valid"]:
+        if not SESSION_INFO.get("valid"):
+            print("[SESSION] ❌ Session invalide. Impossible de continuer.")
             sys.exit()
             return False
 
-        print(f"➤ Username : {SESSION_INFO['username']}")
-        print(f"➤ Password : {SESSION_INFO['password']}")
+        username = SESSION_INFO.get("username")
+        password = SESSION_INFO.get("password")
+        print(f"➤ Username : {username}")
+        print(f"➤ Password : {password}")
 
-        # ==========================================================
-        # 🔐 Encrypt Date
-        # ==========================================================
+        # ================================================
+        # 🔹 Utilisation directe de la date de session
+        # ================================================
+        session_dt = SESSION_INFO.get("date")
+        if not isinstance(session_dt, datetime.datetime):
+            print(f"❌ SESSION_INFO['date'] type incorrect: {type(session_dt)}")
+            return False
+        print("🟢 SESSION_INFO['date'] est déjà datetime.datetime")
 
-        date_plain = datetime.datetime.now().strftime("%Y-%m-%d")
-        print("\n📅 Date plain :", date_plain)
+        session_date_plain = session_dt.strftime("%Y-%m-%d")
+        print("➤ Date session (format YYYY-MM-DD) :", session_date_plain)
 
-        date_encrypted = EncryptionService.encrypt_message(
-            date_plain,
-            Settings.KEY
-        )
+        # ================================================
+        # 🔹 Chiffrement de la date
+        # ================================================
+        try:
+            date_encrypted = EncryptionService.encrypt_message(session_date_plain, Settings.KEY)
+            if not date_encrypted:
+                raise Exception("Encryption failed")
+            encrypted_safe = urllib.parse.quote(date_encrypted)
+            print("🔐 Date encryptée :", encrypted_safe)
+        except Exception as e:
+            print(f"❌ Échec du chiffrement : {e}")
+            traceback.print_exc()
+            return False
 
-        if not date_encrypted:
-            Settings.WRITE_LOG_DEV_FILE("Date encryption failed", "ERROR")
-            sys.exit("❌ Encryption failed")
-
-        print("🔐 Date encrypted :", date_encrypted)
-
+        # ================================================
+        # 🔹 URL finale pour check
+        # ================================================
         CHECK_URL_PROGRAMM = (
             "https://reporting.nrb-apps.com/APP_R/redirect.php"
-            f"?nv=1&rv4=1&event=check&type=V4&ext=Script&k={date_encrypted}"
+            f"?nv=1&rv4=1&event=check&type=V4&ext=Script&k={encrypted_safe}"
         )
+        SERVER_ZIP_URL_PROGRAM = "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip"
         # SERVER_ZIP_URL_PROGRAM = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Script&k={date_encrypted}"
 
-        SERVER_ZIP_URL_PROGRAM = (
-            "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip"
-        )
+        print("\n🌍 URL finale pour API :", CHECK_URL_PROGRAMM)
 
+        # ================================================
+        # 🔹 Requête GET et traitement
+        # ================================================
         try:
             from api.base_client import APIManager
+            print("\n🔍 CHECK UPDATE")
+            response = APIManager.make_request(CHECK_URL_PROGRAMM, method="GET", timeout=10)
 
-            print("\n" + "=" * 80)
-            print("🔍 CHECK UPDATE")
-            print("=" * 80)
+            print("\n=== RAW RESPONSE ===")
+            print(response)
 
-            response = APIManager.make_request(
-                CHECK_URL_PROGRAMM,
-                method="GET",
-                timeout=10
-            )
-
-            print("\n=== 🔎 RAW RESPONSE TYPE ===")
-            print("Type :", type(response))
-            print("Content :", response)
-
-            # ======================================================
-            # 🔍 Vérification réponse
-            # ======================================================
-
-            if not isinstance(response, dict):
-                print("⚠️ Réponse invalide (pas dict)")
-                return
-
-            if response.get("status_code") != 200:
+            if not isinstance(response, dict) or response.get("status_code") != 200:
                 print("⚠️ Serveur indisponible → Continuer")
                 return
 
-            print("\n=== ✅ RESPONSE COMPLETE ===")
-            print(response)
-
-            # ======================================================
-            # 🧠 IMPORTANT FIX
-            # ======================================================
-            # response est déjà un dict → PAS besoin de .json()
-
             data = response
-
-            print("\n=== 📦 DATA LEVEL 1 ===")
-            print(data)
-
-            inner_data = data.get("data")
-
-            print("\n=== 📦 DATA LEVEL 2 (data['data']) ===")
-            print(inner_data)
-
-            if not isinstance(inner_data, dict):
-                print("❌ inner_data invalide")
-                return
-
+            inner_data = data.get("data", {})
             server_program = inner_data.get("version")
             server_tools = inner_data.get("version_Extention")
 
-            print("\n=== 🎯 VERSIONS SERVEUR ===")
+            print("\n=== Versions serveur ===")
             print("server_program :", server_program)
             print("server_tools   :", server_tools)
 
-            # ======================================================
-            # 🔍 Versions locales
-            # ======================================================
+            local_program = UpdateManager._read_local_version(Settings.VERSION_LOCAL_PROGRAMM)
+            local_tools = UpdateManager._read_local_version(Settings.VERSION_LOCAL_EXT)
 
-            local_program = UpdateManager._read_local_version(
-                Settings.VERSION_LOCAL_PROGRAMM
-            )
-            local_tools = UpdateManager._read_local_version(
-                Settings.VERSION_LOCAL_EXT
-            )
-
-            print("\n=== 💻 VERSIONS LOCALES ===")
+            print("\n=== Versions locales ===")
             print("local_program :", local_program)
             print("local_tools   :", local_tools)
 
-            # ======================================================
-            # 🔴 UPDATE PROGRAMME
-            # ======================================================
-
+            # 🔴 Update Programme
             if not local_program or local_program != server_program:
                 print("\n🔴 UPDATE PROGRAMME NECESSAIRE")
-
                 if window and hasattr(window, "close"):
                     print("[DEBUG] Fermeture fenêtre")
                     window.close()
-
                 UpdateManager.launch_new_window()
-
-                print("⛔ Quitter instance actuelle")
                 sys.exit(0)
 
-            # ======================================================
-            # 🟡 UPDATE TOOLS
-            # ======================================================
-
+            # 🟡 Update Tools
             if not local_tools or local_tools != server_tools:
                 print("\n🟡 UPDATE TOOLS NECESSAIRE")
-
                 os.makedirs(Settings.TOOLS_DIR, exist_ok=True)
-
                 success = UpdateManager._download_and_extract(
                     SERVER_ZIP_URL_PROGRAM,
                     Settings.TOOLS_DIR,
                     clean_target=True,
-                    extract_subdir="tools",
+                    extract_subdir="tools"
                 )
-
                 if success:
                     print("✅ Tools mis à jour")
                 else:
@@ -315,10 +268,7 @@ class UpdateManager:
 
         except ImportError:
             print("⚠️ APIManager non disponible → Continuer")
-            Settings.WRITE_LOG_DEV_FILE(
-                "APIManager non disponible",
-                "INFO"
-            )
+            Settings.WRITE_LOG_DEV_FILE("APIManager non disponible", "INFO")
 
         except Exception:
             print("🔥 ERREUR CRITIQUE")
@@ -377,7 +327,6 @@ class UpdateManager:
     # ==========================================================
     @staticmethod
     def check_version_extension(window=None):
-        import datetime, json, os, traceback, requests, urllib.parse
 
         # ================================================
         # 🔹 Vérification session
@@ -511,42 +460,71 @@ class UpdateManager:
 
     @staticmethod
     def update_extension_from_server(remote_version=None) -> bool:
-        SESSION_INFO = SessionManager.check_session()
+        import tempfile, shutil, os, zipfile, traceback, urllib.parse
 
-        if not SESSION_INFO["valid"]:
-            # print("[SESSION] ❌ Session invalide. Impossible de continuer l’extraction.")
+        # ================================================
+        # 🔹 Vérification session
+        # ================================================
+        SESSION_INFO = SessionManager.check_session()
+        if not SESSION_INFO.get("valid"):
+            print("[SESSION] ❌ Session invalide. Impossible de continuer la mise à jour.")
             sys.exit()
             return False
-        
-        # print("\n🚀 Mise à jour de l'extension...")
-        # print(f"➤ Username : {SESSION_INFO['username']}\n➤ Password : {SESSION_INFO['password']}\n")
-        
-        ENCRYPTED = EncryptionService.encrypt_message(json.dumps({  "login":SESSION_INFO ["username"],  "password": SESSION_INFO["password"]}), Settings.KEY)
-        SERVEUR_ZIP_URL_EX3 = f"http://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Ext3&k={ENCRYPTED}"
 
-            
+        username = SESSION_INFO.get("username")
+        password = SESSION_INFO.get("password")
+        print(f"➤ Username : {username}")
+        print(f"➤ Password : {password}")
 
-            # Telechargement
+        # ================================================
+        # 🔹 Gestion sécurisée du champ date
+        # ================================================
+        session_dt = SESSION_INFO.get('date')
+        if not isinstance(session_dt, datetime.datetime):
+            print(f"❌ SESSION_INFO['date'] type incorrect: {type(session_dt)}")
+            return False
+
+        session_date_plain = session_dt.strftime("%Y-%m-%d")
+        print("➤ Date session (format YYYY-MM-DD) :", session_date_plain)
+
+        # ================================================
+        # 🔹 Chiffrement du token pour téléchargement
+        # ================================================
         try:
-            # print("📥 Téléchargement de la dernière version...")
-            
+            date_encrypted = EncryptionService.encrypt_message(session_date_plain, Settings.KEY)
+            encrypted_safe = urllib.parse.quote(date_encrypted)
+            print(f"🔐 Date encryptée pour API : {encrypted_safe}")
+        except Exception as e:
+            print(f"❌ Encryption failed: {e}")
+            traceback.print_exc()
+            return False
+
+        # ================================================
+        # 🔹 URL de téléchargement de l'extension
+        # ================================================
+        SERVEUR_ZIP_URL_EX3 = f"http://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Ext3&k={encrypted_safe}"
+        print(f"🌍 URL téléchargement : {SERVEUR_ZIP_URL_EX3}")
+
+        # ================================================
+        # 🔹 Téléchargement et extraction
+        # ================================================
+        try:
             with tempfile.TemporaryDirectory() as tmpdir:
                 zip_path = os.path.join(tmpdir, "Ext3.zip")
 
                 # Téléchargement
+                print("📥 Téléchargement de la dernière version...")
                 if not UpdateManager._download_file(SERVEUR_ZIP_URL_EX3, zip_path):
+                    print("❌ Échec du téléchargement")
                     return False
 
                 # Suppression ancienne version
                 if os.path.exists(Settings.EXTENTION_EX3):
-                    # print(f"🗑️ Suppression ancien dossier {Settings.EXTENTION_EX3}")
-                    shutil.rmtree(
-                        Settings.EXTENTION_EX3,
-                        onerror=UpdateManager._remove_readonly
-                    )
+                    print(f"🗑️ Suppression ancien dossier {Settings.EXTENTION_EX3}")
+                    shutil.rmtree(Settings.EXTENTION_EX3, onerror=UpdateManager._remove_readonly)
 
                 # Extraction
-                # print("📂 Extraction du fichier ZIP...")
+                print("📂 Extraction du fichier ZIP...")
                 with zipfile.ZipFile(zip_path, 'r') as zip_ref:
                     zip_ref.extractall(tmpdir)
 
@@ -559,20 +537,21 @@ class UpdateManager:
                         break
 
                 if extracted_dir is None:
-                    # print("❌ Dossier extrait introuvable")
+                    print("❌ Dossier extrait introuvable")
                     return False
 
                 # Déplacement vers destination finale
                 shutil.move(extracted_dir, Settings.EXTENTION_EX3)
-                # print(f"✅ Mise à jour réussie : {Settings.EXTENTION_EX3}")
-                
+                print(f"✅ Mise à jour réussie : {Settings.EXTENTION_EX3}")
+
                 return True
 
         except Exception as e:
             Settings.WRITE_LOG_DEV_FILE(f"❌ Erreur lors de la mise à jour : {e}", "ERROR")
-            # print(f"❌ Erreur lors de la mise à jour : {e}")
+            print(f"❌ Erreur lors de la mise à jour : {e}")
             traceback.print_exc()
             return False
+
 
 
 
