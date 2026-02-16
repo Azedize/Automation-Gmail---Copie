@@ -387,6 +387,9 @@ class UpdateManager:
         # ENCRYPTED = EncryptionService.encrypt_message(json.dumps({  "login":SESSION_INFO ["username"],  "password": SESSION_INFO["password"]}), Settings.KEY)
 
         date_plain = datetime.datetime.now().strftime("%Y-%m-%d")
+        print("📅 Date (plain):", date_plain)
+        print(f"➤ dete session : {SESSION_INFO['date']}\n\n")
+        #  mon besoin date_plain = SESSION_INFO ["username"]
         # print("📅 Date (plain):", date_plain)
 
         date_encrypted = EncryptionService.encrypt_message(date_plain, Settings.KEY)
