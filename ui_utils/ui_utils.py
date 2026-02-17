@@ -430,6 +430,7 @@ class UIManager:
 
 
 
+
     @staticmethod
     def Show_Critical_Message(window, title, message, message_type="critical"):
         dialog = QMessageBox(window)
@@ -446,7 +447,7 @@ class UIManager:
         dialog.setIcon(c["icon"])
         dialog.setWindowTitle(title)
         dialog.setText(f"<h2 style='margin:0; font-weight:700; color:{c['accent']};'>{title}</h2>"
-                       f"<p style='margin:0px; color:#37474f; line-height:1.5;'>{message}</p>")
+                    f"<p style='margin:0px; color:#37474f; line-height:1.5;'>{message}</p>")
 
         # Ombre
         shadow = QGraphicsDropShadowEffect()
@@ -479,7 +480,7 @@ class UIManager:
             }}
             QMessageBox QPushButton:hover {{
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 {UIManager.Lighten_Color(c['start'], 12)}, stop:1 {UIManager.Lighten_Color(c['end'], 12)});
+                stop:0 {UIManager.Lighten_Color(c['start'], 12)}, stop:1 {UIManager.Lighten_Color(c['end'], 12)});
             }}
             QMessageBox QPushButton:pressed {{
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
@@ -489,19 +490,19 @@ class UIManager:
         """)
 
         # Ajouter un bouton OK
-        ok_button = dialog.addButton(QMessageBox.StandardButton.Ok)
+        dialog.setStandardButtons(QMessageBox.Ok)
 
-        # Centrer les boutons
+        # ⚡ Centrer le bouton
         button_box = dialog.findChild(QDialogButtonBox)
         if button_box:
-            layout = button_box.layout()
-            layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+            button_box.setCenterButtons(True)
 
-        # Centrer la boîte de dialogue par rapport à la fenêtre parent
+        # Centrer la fenêtre par rapport à parent
         if window:
             dialog.move(window.frameGeometry().center() - dialog.rect().center())
 
         return dialog.exec()
+
 
     # -----------------------------
     # Ajustement de la couleur HEX (assombrir / éclaircir)
