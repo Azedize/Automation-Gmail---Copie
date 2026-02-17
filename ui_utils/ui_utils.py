@@ -435,7 +435,7 @@ class UIManager:
     def Show_Critical_Message(window, title, message, message_type="critical"):
         dialog = QMessageBox(window)
 
-        # تعريف الألوان حسب النوع
+        # تعريف الألوان حسب نوع الرسالة
         colors = {
             "critical": {"accent": Settings.ERROR_COLOR, "start": Settings.ERROR_COLOR, "end": "#b71c1c", "bg": "#ffebee", "icon": QMessageBox.Icon.Critical},
             "warning": {"accent": Settings.WARNING_COLOR, "start": Settings.WARNING_COLOR, "end": "#e65100", "bg": "#fff3e0", "icon": QMessageBox.Icon.Warning},
@@ -489,18 +489,13 @@ class UIManager:
             }}
         """)
 
-        # إضافة زر افتراضي OK
+        # إضافة زر OK افتراضي
         dialog.setStandardButtons(QMessageBox.StandardButton.Ok)
 
         # محاذاة الأزرار في الوسط
-        buttons = dialog.buttons()
-        if buttons:
-            layout = QHBoxLayout()
-            layout.addSpacerItem(QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum))
-            for btn in buttons:
-                layout.addWidget(btn)
-            layout.addSpacerItem(QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum))
-            dialog.layout().addLayout(layout)
+        button_box = dialog.findChild(QMessageBox.ButtonBox)
+        if button_box:
+            button_box.setCenterButtons(True)
 
         # وضع الـ dialog في مركز النافذة إذا موجودة
         if window:
@@ -508,6 +503,7 @@ class UIManager:
 
         return dialog.exec()
 
+        
 
     # -----------------------------
     # Ajustement de la couleur HEX (assombrir / éclaircir)
