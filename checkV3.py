@@ -542,7 +542,7 @@ def main():
         except Exception as e:
             WRITE_LOG_DEV_FILE(f"Fatal error during update: {e}", "CRITICAL")
             sys.exit(1)
-            
+
 
         if len(sys.argv) == 1:
             # print("Lancement de l'application principale")
@@ -752,8 +752,10 @@ if __name__ == "__main__":
 
 
 
-# crossover cable vs straight through
+
+#  Just keeping the skills up to date. Wrapped up the 𝗢𝗖𝗜 𝟮𝟬𝟮𝟱 𝗚𝗲𝗻𝗲𝗿𝗮𝘁𝗶𝘃𝗲 𝗔𝗜 𝗣𝗿𝗼𝗳𝗲𝘀𝘀𝗶𝗼𝗻𝗮𝗹 certification. Thanks to Oracle and Oracle University for the solid resources. On to the next one! 
 
 
-
-# 
+# 🚀 I’m excited to share that I have successfully completed the Cyber Security Bootcamp organized by GDG Benha University.
+# During this intensive experience, I gained practical knowledge in cybersecurity fundamentals, network traffic analysis, and common web vulnerabilities. I also had hands-on exposure to analyzing requests and using tools like Wireshark to better understand real-world attack scenarios.
+# Grateful for the learning experience and the opportunity to connect with like-minded peers. This is another step forward in my journey toward specializing in SOC analysis. 🔐
