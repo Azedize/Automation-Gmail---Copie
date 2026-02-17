@@ -1602,16 +1602,23 @@ class MainWindow(QMainWindow):
 
 
 
-        # For PROGRAMM COMPLETE UPDATE
+        # 🔹 Vérification complète des mises à jour du programme
         try:
+            # Appel de la fonction check_and_update
             update_ok = UpdateManager.check_and_update(self)
+            print(f"🔄 [UPDATE] Update check result: {update_ok}")
 
             if not update_ok:
-                return  # ❌ Stop total si problème update
+                # إذا كان هناك خطأ أو update tools فشل → توقف المعالجة مباشرة
+                print("❌ Update failed or application not up-to-date, exiting process.")
+                return
 
         except SystemExit:
+            # Si la fonction check_and_update a fait sys.exit (update programme)
             return
+
         except Exception as e:
+            # Tous les autres erreurs critiques
             print(f"[UPDATE ERROR] {e}")
             Settings.WRITE_LOG_DEV_FILE(
                 f"An error occurred while checking for updates: {str(e)}",

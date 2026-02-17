@@ -219,97 +219,103 @@ class UpdateManager:
 
     
     @staticmethod
-    def check_and_update(window=None) -> None:
-
-        SESSION_INFO = SessionManager.check_session()
-        if not SESSION_INFO.get("valid"):
-            # print("[SESSION] ❌ Session invalide. Impossible de continuer.")
-            Settings.WRITE_LOG_DEV_FILE("Session invalide. Impossible de continuer.", "ERROR")
-            sys.exit()
-            return False
-
-
+    def check_and_update(window=None) -> bool:
+        """
+        🔹 Vérifie les mises à jour du programme et des extensions
+        🔹 Retourne True si tout est à jour ou update réussi
+        🔹 Retourne False si échec ou erreur
+        """
 
         # ================================================
-        # 🔹 Utilisation directe de la date de session
+        # 1️⃣ Vérification session
+        # ================================================
+        SESSION_INFO = SessionManager.check_session()
+        if not SESSION_INFO.get("valid"):
+            print("[SESSION] ❌ Session invalide. Impossible de continuer.")
+            Settings.WRITE_LOG_DEV_FILE("Session invalide. Impossible de continuer.", "ERROR")
+            return False
+
+        # ================================================
+        # 2️⃣ Date de session
         # ================================================
         session_dt = SESSION_INFO.get("date")
         if not isinstance(session_dt, datetime.datetime):
             Settings.WRITE_LOG_DEV_FILE(f"SESSION date type incorrect: {type(session_dt)}", "ERROR")
-            # print(f"❌ SESSION_INFO['date'] type incorrect: {type(session_dt)}")
+            print(f"❌ SESSION_INFO['date'] type incorrect: {type(session_dt)}")
             return False
-        # print("🟢 SESSION_INFO['date'] est déjà datetime.datetime")
 
         session_date_plain = session_dt.strftime("%Y-%m-%d")
-        # print("➤ Date session (format YYYY-MM-DD) :", session_date_plain)
+        print("🟢 SESSION_INFO['date'] est déjà datetime.datetime")
+        print("➤ Date session (YYYY-MM-DD) :", session_date_plain)
 
         # ================================================
-        # 🔹 Chiffrement de la date
+        # 3️⃣ Chiffrement de la date
         # ================================================
         try:
             date_encrypted = EncryptionService.encrypt_message(session_date_plain, Settings.KEY)
             if not date_encrypted:
                 raise Exception("Encryption failed")
             encrypted_safe = urllib.parse.quote(date_encrypted)
-            # print("🔐 Date encryptée :", encrypted_safe)
+            print("🔐 Date encryptée :", encrypted_safe)
         except Exception as e:
-            # print(f"❌ Échec du chiffrement : {e}")
+            print(f"❌ Échec du chiffrement : {e}")
             Settings.WRITE_LOG_DEV_FILE(f"Échec du chiffrement : {e}", "ERROR")
             traceback.print_exc()
             return False
 
         # ================================================
-        # 🔹 URL finale pour check
+        # 4️⃣ URL de vérification update
         # ================================================
-        CHECK_URL_PROGRAMM = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Script&k={encrypted_safe}"
-        # SERVER_ZIP_URL_PROGRAM = "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip"
+        CHECK_URL_PROGRAMM = (
+            f"https://reporting.nrb-apps.com/APP_R/redirect.php?"
+            f"nv=1&rv4=1&event=check&type=V4&ext=Script&k={encrypted_safe}"
+        )
+        # SERVER_ZIP_URL_PROGRAM = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Script&k={encrypted_safe}"
 
-        SERVER_ZIP_URL_PROGRAM = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Script&k={encrypted_safe}"
+        SERVER_ZIP_URL_PROGRAM = "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip"
 
-        # print("\n🌍 URL finale pour API :", CHECK_URL_PROGRAMM)
+        print("\n🌍 URL finale pour API :", CHECK_URL_PROGRAMM)
 
         # ================================================
-        # 🔹 Requête GET et traitement
+        # 5️⃣ Requête GET et traitement
         # ================================================
         try:
-            # print("\n🔍 CHECK UPDATE")
+            print("\n🔍 CHECK UPDATE")
             response = APIManager.make_request(CHECK_URL_PROGRAMM, method="GET", timeout=10)
-
-            # print("\n=== RAW RESPONSE ===")
-            # print(response)
+            print("\n=== RAW RESPONSE ===")
+            print(response)
 
             if not isinstance(response, dict) or response.get("status_code") != 200:
-                print("⚠️ Serveur indisponible → Continuer")
-                return
+                print("⚠️ Serveur indisponible → Continuer sans update")
+                return False
 
-            data = response
-            inner_data = data.get("data", {})
-            server_program = inner_data.get("version")
-            server_tools = inner_data.get("version_Extention")
+            data = response.get("data", {})
+            server_program = data.get("version")
+            server_tools = data.get("version_Extention")
 
-            # print("\n=== Versions serveur ===")
-            # print("server_program :", server_program)
-            # print("server_tools   :", server_tools)
+            print("\n=== Versions serveur ===")
+            print("server_program :", server_program)
+            print("server_tools   :", server_tools)
 
             local_program = UpdateManager._read_local_version(Settings.VERSION_LOCAL_PROGRAMM)
             local_tools = UpdateManager._read_local_version(Settings.VERSION_LOCAL_EXT)
 
-            # print("\n=== Versions locales ===")
-            # print("local_program :", local_program)
-            # print("local_tools   :", local_tools)
+            print("\n=== Versions locales ===")
+            print("local_program :", local_program)
+            print("local_tools   :", local_tools)
 
             # 🔴 Update Programme
             if not local_program or local_program != server_program:
-                print("\n🔴 UPDATE PROGRAMME NECESSAIRE")
+                print("🔴 UPDATE PROGRAMME NECESSAIRE")
                 if window and hasattr(window, "close"):
                     print("[DEBUG] Fermeture fenêtre")
                     window.close()
                 UpdateManager.launch_new_window()
-                sys.exit(0)
+                return True  # Update lancé avec succès
 
             # 🟡 Update Tools
             if not local_tools or local_tools != server_tools:
-                print("\n🟡 UPDATE TOOLS NECESSAIRE")
+                print("🟡 UPDATE TOOLS NECESSAIRE")
                 os.makedirs(Settings.TOOLS_DIR, exist_ok=True)
                 success = UpdateManager._download_and_extract(
                     SERVER_ZIP_URL_PROGRAM,
@@ -317,21 +323,25 @@ class UpdateManager:
                     clean_target=True,
                     extract_subdir="tools"
                 )
-                # if success:
-                #     print("✅ Tools mis à jour")
-                # else:
-                #     print("❌ Échec mise à jour tools")
+                if success:
+                    print("✅ Tools mis à jour")
+                else:
+                    print("❌ Échec mise à jour tools")
+                    return False
 
-            # print("\n🟢 Application à jour")
+            print("🟢 Application à jour")
+            return True
 
         except ImportError:
-            # print("⚠️ APIManager non disponible → Continuer")
+            print("⚠️ APIManager non disponible → Continuer")
             Settings.WRITE_LOG_DEV_FILE("APIManager non disponible", "INFO")
+            return False
 
-        except Exception:
-            # print("🔥 ERREUR CRITIQUE")
-            Settings.WRITE_LOG_DEV_FILE("Erreur critique lors de la vérification de mise à jour", "ERROR")
+        except Exception as e:
+            print("🔥 ERREUR CRITIQUE :", e)
+            Settings.WRITE_LOG_DEV_FILE(f"Erreur critique lors de la vérification de mise à jour: {e}", "ERROR")
             traceback.print_exc()
+            return False
 
 
     # ==========================================================
