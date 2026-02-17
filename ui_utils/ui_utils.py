@@ -447,7 +447,7 @@ class UIManager:
         dialog.setIcon(c["icon"])
         dialog.setWindowTitle(title)
         dialog.setText(f"<h2 style='margin:0; font-weight:700; color:{c['accent']};'>{title}</h2>"
-                       f"<p style='margin:0px; color:#37474f; line-height:1.5;'>{message}</p>")
+                    f"<p style='margin:0px; color:#37474f; line-height:1.5;'>{message}</p>")
 
         # تأثير الظل
         shadow = QGraphicsDropShadowEffect()
@@ -493,7 +493,7 @@ class UIManager:
         dialog.setStandardButtons(QMessageBox.StandardButton.Ok)
 
         # محاذاة الأزرار في الوسط
-        button_box = dialog.findChild(QMessageBox.ButtonBox)
+        button_box = dialog.findChild(QDialogButtonBox)
         if button_box:
             button_box.setCenterButtons(True)
 
@@ -503,7 +503,6 @@ class UIManager:
 
         return dialog.exec()
 
-        
 
     # -----------------------------
     # Ajustement de la couleur HEX (assombrir / éclaircir)
