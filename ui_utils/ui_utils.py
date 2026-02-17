@@ -430,7 +430,6 @@ class UIManager:
 
 
 
-
     @staticmethod
     def Show_Critical_Message(window, title, message, message_type="critical"):
         dialog = QMessageBox(window)
@@ -447,7 +446,7 @@ class UIManager:
         dialog.setIcon(c["icon"])
         dialog.setWindowTitle(title)
         dialog.setText(f"<h2 style='margin:0; font-weight:700; color:{c['accent']};'>{title}</h2>"
-                    f"<p style='margin:0px; color:#37474f; line-height:1.5;'>{message}</p>")
+                       f"<p style='margin:0px; color:#37474f; line-height:1.5;'>{message}</p>")
 
         # Ombre
         shadow = QGraphicsDropShadowEffect()
@@ -456,7 +455,7 @@ class UIManager:
         shadow.setOffset(0, 12)
         dialog.setGraphicsEffect(shadow)
 
-        # Style global (fusionné et optimisé)
+        # Style global
         dialog.setStyleSheet(f"""
             QMessageBox {{
                 background-color: {c['bg']};
@@ -465,11 +464,9 @@ class UIManager:
                 font-size: 14px;
                 padding: 20px;
                 min-width: 480px;
-                border-radius: 12px;
             }}
             QMessageBox QLabel#qt_msgbox_label {{
                 padding: 15px;
-                border-radius: 10px;
                 background: {c['bg']};
             }}
             QMessageBox QPushButton {{
@@ -477,7 +474,6 @@ class UIManager:
                     stop:0 {c['start']}, stop:1 {c['end']});
                 color: #fff;
                 font-weight: 600;
-                border-radius: 8px;
                 padding: 10px 25px;
                 min-width: 100px;
             }}
@@ -492,11 +488,20 @@ class UIManager:
             }}
         """)
 
+        # Ajouter un bouton OK
+        ok_button = dialog.addButton(QMessageBox.StandardButton.Ok)
+
+        # Centrer les boutons
+        button_box = dialog.findChild(QDialogButtonBox)
+        if button_box:
+            layout = button_box.layout()
+            layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+
+        # Centrer la boîte de dialogue par rapport à la fenêtre parent
         if window:
             dialog.move(window.frameGeometry().center() - dialog.rect().center())
 
         return dialog.exec()
-
 
     # -----------------------------
     # Ajustement de la couleur HEX (assombrir / éclaircir)
