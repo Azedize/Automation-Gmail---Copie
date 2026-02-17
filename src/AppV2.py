@@ -1538,8 +1538,29 @@ class MainWindow(QMainWindow):
             return
 
 
+        auth_result = SessionManager.check_api_credentials(session_info.get("username"), session_info.get("password"))
+        if isinstance(auth_result, int):
+            messages = {
+                -1: "Invalid credentials. Please login again.",
+                -2: "This device is not authorized.",
+                -3: "Unable to connect to the server.",
+                -4: "Access denied for this application.",
+                -5: "Unknown authentication error."
+            }
 
+            msg = messages.get(auth_result, "Authentication failed.")
 
+            self.erreur_label.setText(msg)
+            self.erreur_label.show()
+
+            Settings.WRITE_LOG_DEV_FILE(
+                f"Authentication failed (code {auth_result}): {msg}",
+                "ERROR"
+            )
+
+            return  # ❌ STOP TOTAL
+        else :
+            Settings.WRITE_LOG_DEV_FILE("Authentication successful", "INFO")
 
         # Nettoyage des badges de notification
         try:
@@ -1583,13 +1604,21 @@ class MainWindow(QMainWindow):
 
         # For PROGRAMM COMPLETE UPDATE
         try:
-            UpdateManager.check_and_update(self)
+            update_ok = UpdateManager.check_and_update(self)
+
+            if not update_ok:
+                return  # ❌ Stop total si problème update
 
         except SystemExit:
             return
         except Exception as e:
             print(f"[UPDATE ERROR] {e}")
-            Settings.WRITE_LOG_DEV_FILE(f"An error occurred while checking for updates: {str(e)}", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(
+                f"An error occurred while checking for updates: {str(e)}",
+                "ERROR"
+            )
+            return
+
 
 
         selected_Browser = self.browser.currentText()

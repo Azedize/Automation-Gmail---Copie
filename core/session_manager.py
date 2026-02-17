@@ -33,7 +33,74 @@ class SessionManager:
         self.key = settings.KEY
         self.timezone = pytz.timezone("Africa/Casablanca")
 
-    # ================== Vérification session locale ==================
+        # ================== Vérification session locale ==================
+        #
+        # Description :
+        # Cette fonction vérifie la validité d’une session locale stockée
+        # dans un fichier chiffré (session.txt).
+        #
+        # Objectif :
+        # - Lire le fichier de session
+        # - Déchiffrer son contenu
+        # - Valider son format
+        # - Vérifier que la session n’est pas expirée (moins de 2 jours)
+        #
+        # Étapes principales :
+        #
+        # 1) Initialisation :
+        #    - Création d’un dictionnaire session_info avec :
+        #         • valid (False par défaut)
+        #         • username
+        #         • password
+        #         • date
+        #         • p_entity
+        #         • Id_User
+        #         • error
+        #
+        # 2) Vérification existence fichier :
+        #    - Vérifie si le fichier session existe.
+        #    - Si inexistant → log WARNING + retour erreur "FileNotFound".
+        #
+        # 3) Lecture fichier :
+        #    - Ouvre le fichier en mode lecture UTF-8.
+        #    - Vérifie qu’il n’est pas vide.
+        #    - Si vide → log WARNING + retour erreur "EmptyFile".
+        #
+        # 4) Déchiffrement :
+        #    - Déchiffre le contenu avec EncryptionService.
+        #
+        # 5) Validation format :
+        #    - Vérifie que les données respectent le format attendu
+        #      via ValidationUtils.validate_session_format().
+        #    - Si format invalide → log WARNING + erreur "InvalidFormat".
+        #
+        # 6) Extraction données :
+        #    - Récupère :
+        #         • username
+        #         • password
+        #         • date (string)
+        #         • entity
+        #         • Id_User
+        #
+        # 7) Vérification expiration :
+        #    - Convertit la date string en datetime.
+        #    - Applique le timezone configuré.
+        #    - Compare avec la date actuelle.
+        #    - Si différence < 2 jours → session valide.
+        #    - Sinon → log WARNING + erreur "Expired".
+        #
+        # 8) Gestion erreurs :
+        #    - Capture toute exception lors de la lecture/déchiffrement.
+        #    - Log l’erreur et retourne "FileReadError".
+        #
+        # Retour :
+        #    - Dictionnaire session_info contenant :
+        #         • valid = True/False
+        #         • informations utilisateur si valide
+        #         • code erreur si invalide
+        #
+        # ================================================================
+    
     def check_session(self) -> Dict:
         session_info = {"valid": False, "username": None , "password": None, "date": None, "p_entity": None, "error": None}
 
@@ -174,7 +241,7 @@ class SessionManager:
     def check_api_credentials(self, username: str, password: str) -> Union[tuple, int]:
         try:
             # print(f"🔹 [DEBUG] Début de la validation des inputs...")
-            settings.WRITE_LOG_DEV_FILE(f"Début de la validation des inputs: username='{username}', password='{'*' * len(password)}'", "DEBUG")
+            # settings.WRITE_LOG_DEV_FILE(f"Début de la validation des inputs: username='{username}', password='{'*' * len(password)}'", "DEBUG")
 
             # Validation username
             valid_user, msg_user = ValidationUtils.validate_qlineedit_text(username, validator_type="text", min_length=5)

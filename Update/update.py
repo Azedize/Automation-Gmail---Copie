@@ -165,8 +165,59 @@ class UpdateManager:
             return False
 
     # ==========================================================
-    # 🔥 LOGIQUE PRINCIPALE DE MISE À JOUR
+    # FONCTION PRINCIPALE DE CHECK ET UPDATE
+    #
+    # Description :
+    # Cette fonction vérifie la validité de la session utilisateur
+    # puis contrôle la disponibilité des mises à jour du programme
+    # principal ainsi que des outils externes.
+    #
+    # Étapes principales :
+    #
+    # 1) Vérification de la session :
+    #    - Appelle SessionManager.check_session()
+    #    - Si la session est invalide → log erreur + arrêt du programme.
+    #
+    # 2) Validation et formatage de la date :
+    #    - Récupère la date depuis SESSION_INFO.
+    #    - Vérifie que le type est datetime.datetime.
+    #    - Convertit la date au format 'YYYY-MM-DD'.
+    #
+    # 3) Sécurisation :
+    #    - Chiffre la date avec EncryptionService.
+    #    - Encode le résultat pour utilisation dans une URL.
+    #    - En cas d’erreur → log + arrêt du processus.
+    #
+    # 4) Vérification serveur :
+    #    - Envoie une requête GET vers l’API distante.
+    #    - Récupère les versions serveur :
+    #         • version programme
+    #         • version outils
+    #
+    # 5) Comparaison des versions :
+    #    - Compare versions locales et serveur.
+    #
+    # 6) Mise à jour programme (obligatoire) :
+    #    - Si version différente :
+    #         • Ferme la fenêtre active si fournie
+    #         • Lance la fenêtre de mise à jour
+    #         • Stoppe l’application
+    #
+    # 7) Mise à jour outils (non bloquante) :
+    #    - Télécharge l’archive ZIP
+    #    - Nettoie le dossier cible
+    #    - Extrait les nouveaux fichiers
+    #
+    # Gestion des erreurs :
+    #    - Journalisation des erreurs critiques
+    #    - Continuité si serveur indisponible
+    #
+    # Paramètre :
+    #    window (optionnel) → fenêtre active à fermer en cas d’update
+    #
     # ==========================================================
+
+    
     @staticmethod
     def check_and_update(window=None) -> None:
 
@@ -210,11 +261,9 @@ class UpdateManager:
         # ================================================
         # 🔹 URL finale pour check
         # ================================================
-        CHECK_URL_PROGRAMM = (
-            "https://reporting.nrb-apps.com/APP_R/redirect.php"
-            f"?nv=1&rv4=1&event=check&type=V4&ext=Script&k={encrypted_safe}"
-        )
+        CHECK_URL_PROGRAMM = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Script&k={encrypted_safe}"
         # SERVER_ZIP_URL_PROGRAM = "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip"
+
         SERVER_ZIP_URL_PROGRAM = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Script&k={encrypted_safe}"
 
         # print("\n🌍 URL finale pour API :", CHECK_URL_PROGRAMM)
@@ -281,6 +330,7 @@ class UpdateManager:
 
         except Exception:
             # print("🔥 ERREUR CRITIQUE")
+            Settings.WRITE_LOG_DEV_FILE("Erreur critique lors de la vérification de mise à jour", "ERROR")
             traceback.print_exc()
 
 
@@ -290,7 +340,7 @@ class UpdateManager:
     @staticmethod
     def launch_new_window() -> bool:
         """Lance une nouvelle instance de l'application"""
-        script_path = os.path.join(Settings.BASE_DIR, "checkV3.py")
+        script_path = os.path.join(Settings.BASE_DIR, "checkV3.pyc")
         # print(f"[DEBUG] Chemin du script à lancer : {script_path}")
 
         if not os.path.isfile(script_path):
@@ -330,10 +380,55 @@ class UpdateManager:
             return False
 
 
+    # =============================================================================
+    # Fonction : check_version_extension
+    # -----------------------------------------------------------------------------
+    # Description générale :
+    # Cette fonction vérifie de manière sécurisée si une extension locale est
+    # à jour ou si une nouvelle version est disponible sur le serveur distant.
+    #
+    # Scénario complet d’exécution :
+    # 1. Vérifie la validité de la session utilisateur (sécurité et autorisation).
+    #    - Si la session est invalide, le programme est arrêté immédiatement.
+    #
+    # 2. Récupère la date de la session et s’assure qu’elle est bien de type
+    #    datetime.datetime afin d’éviter toute incohérence ou erreur de traitement.
+    #
+    # 3. Formate la date selon le standard (YYYY-MM-DD) puis la chiffre à l’aide
+    #    d’une clé secrète pour sécuriser la requête vers le serveur.
+    #
+    # 4. Génère une URL sécurisée et envoie une requête HTTP GET vers l’API distante
+    #    afin de récupérer :
+    #       - la version distante de l’extension
+    #       - la version distante du manifest
+    #
+    # 5. Analyse la réponse du serveur (JSON) et gère les erreurs réseau,
+    #    de parsing ou de réponse invalide.
+    #
+    # 6. Vérifie l’existence des fichiers locaux nécessaires (version locale et
+    #    manifest) et lit leurs valeurs.
+    #
+    # 7. Compare la version du manifest local avec celle du serveur afin de garantir
+    #    la compatibilité de l’extension.
+    #    - En cas d’incompatibilité, l’exécution est stoppée pour éviter tout risque.
+    #
+    # 8. Compare la version locale de l’extension avec la version distante :
+    #    - Si une nouvelle version est disponible, retourne le numéro de version
+    #      distante (string).
+    #    - Si l’extension est déjà à jour, retourne True.
+    #    - En cas d’erreur ou d’impossibilité de vérification, retourne False.
+    #
+    # Valeurs de retour :
+    #    - str   : Nouvelle version disponible (mise à jour requise).
+    #    - True  : Extension déjà à jour.
+    #    - False : Erreur critique ou impossibilité de poursuivre.
+    #
+    # Remarque :
+    # Cette fonction agit comme un point de contrôle critique (gatekeeper).
+    # Toute erreur entraîne l’arrêt du processus de mise à jour afin de garantir
+    # la stabilité, la sécurité et l’intégrité de l’application.
+    # =============================================================================
 
-    # ==========================================================
-    # 🔌 GESTION DES EXTENSIONS
-    # ==========================================================
     @staticmethod
     def check_version_extension(window=None):
 
@@ -551,7 +646,7 @@ class UpdateManager:
                 # Déplacement vers destination finale
                 shutil.move(extracted_dir, Settings.EXTENTION_EX3)
                 # print(f"✅ Mise à jour réussie : {Settings.EXTENTION_EX3}")
-                Settings.WRITE_LOG_DEV_FILE(f"Extension mise à jour vers la version {remote_version}", "INFO")
+                Settings.WRITE_LOG_DEV_FILE(f"Extension mise à jour vers la version ", "INFO")
 
                 return True
 

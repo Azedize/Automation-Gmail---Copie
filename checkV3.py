@@ -531,14 +531,18 @@ def main():
         # startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         # startupinfo.wShowWindow = subprocess.SW_HIDE
 
-        updated = UpdateManager.check_and_update()
-        # print("updated:", updated)
-        if updated:
-            # print("UPDATE EFFECTUÉ")
-            WRITE_LOG_DEV_FILE("Update completed", "INFO")
-        else:
-            # print("APPLICATION À JOUR")
-            WRITE_LOG_DEV_FILE("Application up-to-date", "INFO")
+        try:
+            updated = UpdateManager.check_and_update()
+
+            if updated:
+                WRITE_LOG_DEV_FILE("Update completed", "INFO")
+            else:
+                WRITE_LOG_DEV_FILE("Application up-to-date", "INFO")
+
+        except Exception as e:
+            WRITE_LOG_DEV_FILE(f"Fatal error during update: {e}", "CRITICAL")
+            sys.exit(1)
+            
 
         if len(sys.argv) == 1:
             # print("Lancement de l'application principale")
