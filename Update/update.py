@@ -270,9 +270,9 @@ class UpdateManager:
             f"https://reporting.nrb-apps.com/APP_R/redirect.php?"
             f"nv=1&rv4=1&event=check&type=V4&ext=Script&k={encrypted_safe}"
         )
-        # SERVER_ZIP_URL_PROGRAM = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Script&k={encrypted_safe}"
+        SERVER_ZIP_URL_PROGRAM = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Script&k={encrypted_safe}"
 
-        SERVER_ZIP_URL_PROGRAM = "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip"
+        # SERVER_ZIP_URL_PROGRAM = "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip"
 
         print("\n🌍 URL finale pour API :", CHECK_URL_PROGRAMM)
 
