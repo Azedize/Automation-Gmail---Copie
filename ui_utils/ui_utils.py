@@ -435,7 +435,7 @@ class UIManager:
     def Show_Critical_Message(window, title, message, message_type="critical"):
         dialog = QMessageBox(window)
 
-        # Définition des styles pour chaque type
+        # تعريف الألوان حسب النوع
         colors = {
             "critical": {"accent": Settings.ERROR_COLOR, "start": Settings.ERROR_COLOR, "end": "#b71c1c", "bg": "#ffebee", "icon": QMessageBox.Icon.Critical},
             "warning": {"accent": Settings.WARNING_COLOR, "start": Settings.WARNING_COLOR, "end": "#e65100", "bg": "#fff3e0", "icon": QMessageBox.Icon.Warning},
@@ -447,16 +447,16 @@ class UIManager:
         dialog.setIcon(c["icon"])
         dialog.setWindowTitle(title)
         dialog.setText(f"<h2 style='margin:0; font-weight:700; color:{c['accent']};'>{title}</h2>"
-                    f"<p style='margin:0px; color:#37474f; line-height:1.5;'>{message}</p>")
+                       f"<p style='margin:0px; color:#37474f; line-height:1.5;'>{message}</p>")
 
-        # Ombre
+        # تأثير الظل
         shadow = QGraphicsDropShadowEffect()
         shadow.setBlurRadius(50)
         shadow.setColor(QColor(0, 0, 0, 160))
         shadow.setOffset(0, 12)
         dialog.setGraphicsEffect(shadow)
 
-        # Style global
+        # ستايل الزر والـ QMessageBox
         dialog.setStyleSheet(f"""
             QMessageBox {{
                 background-color: {c['bg']};
@@ -480,7 +480,7 @@ class UIManager:
             }}
             QMessageBox QPushButton:hover {{
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                stop:0 {UIManager.Lighten_Color(c['start'], 12)}, stop:1 {UIManager.Lighten_Color(c['end'], 12)});
+                    stop:0 {UIManager.Lighten_Color(c['start'], 12)}, stop:1 {UIManager.Lighten_Color(c['end'], 12)});
             }}
             QMessageBox QPushButton:pressed {{
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
@@ -489,15 +489,20 @@ class UIManager:
             }}
         """)
 
-        # Ajouter un bouton OK
-        dialog.setStandardButtons(QMessageBox.Ok)
+        # إضافة زر افتراضي OK
+        dialog.setStandardButtons(QMessageBox.StandardButton.Ok)
 
-        # ⚡ Centrer le bouton
-        button_box = dialog.findChild(QDialogButtonBox)
-        if button_box:
-            button_box.setCenterButtons(True)
+        # محاذاة الأزرار في الوسط
+        buttons = dialog.buttons()
+        if buttons:
+            layout = QHBoxLayout()
+            layout.addSpacerItem(QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum))
+            for btn in buttons:
+                layout.addWidget(btn)
+            layout.addSpacerItem(QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum))
+            dialog.layout().addLayout(layout)
 
-        # Centrer la fenêtre par rapport à parent
+        # وضع الـ dialog في مركز النافذة إذا موجودة
         if window:
             dialog.move(window.frameGeometry().center() - dialog.rect().center())
 
