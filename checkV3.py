@@ -211,7 +211,6 @@ class DependencyManager:
     
     
 
-
     # =========================================================
     # 🔹 INSTALLATION ET IMPORTATION D'UNE DÉPENDANCE
     #=========================================================
