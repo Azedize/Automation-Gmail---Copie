@@ -239,26 +239,29 @@ class SessionManager:
 
     # ================== Vérification credentials API ==================
     def check_api_credentials(self, username: str, password: str) -> Union[tuple, int]:
+        import traceback
+        import time
+
         try:
-            # print(f"🔹 [DEBUG] Début de la validation des inputs...")
-            # settings.WRITE_LOG_DEV_FILE(f"Début de la validation des inputs: username='{username}', password='{'*' * len(password)}'", "DEBUG")
+            print(f"[DEBUG] Début de check_api_credentials")
+            settings.WRITE_LOG_DEV_FILE(f"Début check_api_credentials: username='{username}', password='{'*' * len(password)}'", "DEBUG")
 
             # Validation username
             valid_user, msg_user = ValidationUtils.validate_qlineedit_text(username, validator_type="text", min_length=5)
-            # print(f"📝 Validation username: valid={valid_user}, message='{msg_user}'")
+            print(f"[DEBUG] Validation username: valid={valid_user}, message='{msg_user}'")
             if not valid_user:
                 settings.WRITE_LOG_DEV_FILE(f"❌ Username invalide: {msg_user}", "ERROR")
                 return -1
 
             # Validation password
             valid_pass, msg_pass = ValidationUtils.validate_qlineedit_text(password, min_length=6)
-            # print(f"📝 Validation password: valid={valid_pass}, message='{msg_pass}'")
+            print(f"[DEBUG] Validation password: valid={valid_pass}, message='{msg_pass}'")
             if not valid_pass:
                 settings.WRITE_LOG_DEV_FILE(f"❌ Password invalide: {msg_pass}", "ERROR")
                 return -1
 
-            # print("✅ Validation des inputs réussie")
             settings.WRITE_LOG_DEV_FILE("Validation des inputs réussie", "DEBUG")
+            print("[DEBUG] Validation inputs réussie")
 
             # Préparation payload API
             payload = {
@@ -268,58 +271,60 @@ class SessionManager:
                 "k": "mP5QXYrK9E67Y",
                 "l": "1"
             }
-            # print(f"📦 Payload API: {payload}")
+            print(f"[DEBUG] Payload API préparé: {payload}")
 
             resp = None
             for attempt in range(1, 6):
-                # print(f"🔁 Tentative API {attempt}/5...")
+                print(f"[DEBUG] Tentative API {attempt}/5...")
                 settings.WRITE_LOG_DEV_FILE(f"Tentative {attempt}/5", "DEBUG")
                 try:
                     result = APIManager.make_request("_APIACCESS_API", method="POST", data=payload, timeout=10)
-                    # print(f"📡 Réponse brute API: {result}")
+                    print(f"[DEBUG] Réponse brute API: {result}")
                     resp = APIManager._handle_response(result, failure_default=None)
-                    # print(f"🔍 Réponse traitée API: {resp}")
+                    print(f"[DEBUG] Réponse traitée API: {resp}")
+
                     if resp is not None:
                         settings.WRITE_LOG_DEV_FILE("Réponse API reçue", "DEBUG")
-                        # print("✅ Réponse API reçue")
+                        print("[DEBUG] Réponse API reçue")
                         break
                 except Exception as e:
-                    # print(f"❌ Exception lors de la requête API: {e}")
+                    print(f"[ERROR] Exception lors de la requête API: {e}")
+                    traceback.print_exc()
                     settings.WRITE_LOG_DEV_FILE(f"Exception lors de la requête API: {e}", "ERROR")
                 time.sleep(2)
             else:
+                print("[ERROR] Connexion échouée après 5 tentatives")
                 settings.WRITE_LOG_DEV_FILE("Connexion échouée après 5 tentatives", "ERROR")
-                # print("❌ Connexion échouée après 5 tentatives")
                 return -3
 
-            # Vérification des codes d'erreur renvoyés par l'API
+            # Vérification des codes d'erreur API
             if isinstance(resp, int) or str(resp) in ("-1", "-2", "-3", "-4", "-5"):
-                # print(f"⚠️ Code d'erreur API reçu: {resp}")
+                print(f"[DEBUG] Code d'erreur API reçu: {resp}")
                 return int(resp)
 
             # Décryptage et séparation idUser / entity
             try:
-                # print("🔑 Tentative de décryptage de la réponse API...")
+                print(f"[DEBUG] Tentative de décryptage de la réponse API (length={len(resp) if resp else 0})...")
                 decrypted = EncryptionService.decrypt_message(resp, self.key)
-                # print(f"🔓 Décrypté: {decrypted}")
+                print(f"[DEBUG] Décrypté: {decrypted}")
 
                 if not decrypted or ";" not in decrypted:
-                    # print("❌ Décryptage invalide ou format inattendu")
+                    print("[ERROR] Décryptage invalide ou format inattendu")
                     return -4
 
                 id_user, entity = decrypted.split(";", 1)  # split une seule fois
-                # print(f"✅ Décryptage réussi: idUser={id_user}, entity={entity}")
+                print(f"[DEBUG] Décryptage réussi: idUser={id_user}, entity={entity}")
                 return (id_user, entity)
 
             except Exception as e:
+                print(f"[CRITICAL] Exception lors du décryptage: {e}")
                 settings.WRITE_LOG_DEV_FILE(f"Exception lors du décryptage: {e}", "ERROR")
-                # print(f"❌ Exception lors du décryptage: {e}")
                 traceback.print_exc()
                 return -5
 
         except Exception as e:
+            print(f"[CRITICAL] Exception inattendue dans check_api_credentials: {e}")
             settings.WRITE_LOG_DEV_FILE(f"Exception inattendue dans check_api_credentials: {e}", "ERROR")
-            # print(f"❌ Exception inattendue dans check_api_credentials: {e}")
             traceback.print_exc()
             return -5
 

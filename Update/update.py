@@ -63,7 +63,7 @@ class UpdateManager:
     def _download_file(url: str, dest_path: str) -> bool:
         try:
             # print(f"⬇️ Téléchargement depuis : {url}")
-            response = requests.get(url, stream=True, verify=False, timeout=60)
+            response = requests.get(url, stream=True, headers=Settings.HEADER, verify=False, timeout=60)
             response.raise_for_status()
             total_size = int(response.headers.get("content-length", 0))
             downloaded = 0
