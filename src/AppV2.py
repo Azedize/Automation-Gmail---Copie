@@ -72,6 +72,7 @@ SELECTED_BROWSER_GLOBAL=None
 
 
 
+
 # ==========================================================
 # 🔹 FUNCTION INSTALLED NODE
 # ==========================================================
@@ -287,25 +288,46 @@ class CloseBrowserThread(QThread):
         # print("🚀 [THREAD] CloseBrowserThread démarré")
         time.sleep(10)
 
-        while not self.stop_flag and PROCESS_PIDS:
+        empty_counter = 0  # Compteur pour vérifier si PROCESS_PIDS reste vide
+
+        while not self.stop_flag:
             try:
-                session_files = [f for f in os.listdir(self.downloads_folder) if f.startswith(self.session_id) and f.endswith(".txt")]
-                log_files = [f for f in os.listdir(self.downloads_folder) if f.startswith("log_") and f.endswith(".txt")]
-                screenshots = [f for f in os.listdir(self.downloads_folder) if f.lower().endswith((".png", ".jpg", ".jpeg"))]
+                if PROCESS_PIDS:
+                    # Reset counter si PROCESS_PIDS n'est pas vide
+                    empty_counter = 0
 
-                with ThreadPoolExecutor(max_workers=4) as executor:
-                    executor.map(lambda f: self.process_log_file(f), log_files)
+                    session_files = [
+                        f for f in os.listdir(self.downloads_folder)
+                        if f.startswith(self.session_id) and f.endswith(".txt")
+                    ]
+                    log_files = [
+                        f for f in os.listdir(self.downloads_folder)
+                        if f.startswith("log_") and f.endswith(".txt")
+                    ]
+                    screenshots = [
+                        f for f in os.listdir(self.downloads_folder)
+                        if f.lower().endswith((".png", ".jpg", ".jpeg"))
+                    ]
 
-                with ThreadPoolExecutor(max_workers=4) as executor:
-                    executor.map(lambda f: self.process_session_file(f, screenshots), session_files)
+                    with ThreadPoolExecutor(max_workers=4) as executor:
+                        executor.map(lambda f: self.process_log_file(f), log_files)
+
+                    with ThreadPoolExecutor(max_workers=4) as executor:
+                        executor.map(lambda f: self.process_session_file(f, screenshots), session_files)
+
+                else:
+                    # PROCESS_PIDS vide → attendre 1 seconde et incrémenter compteur
+                    empty_counter += 1
+                    if empty_counter >= 30:  # 30 secondes
+                        break  # Sortie du while
+                time.sleep(1)
 
             except Exception as e:
                 # print(f"❌ [THREAD] Erreur boucle: {e}")
                 pass
 
-            time.sleep(2)
-
         # print("🛑 [THREAD] CloseBrowserThread terminé")
+
 
     # ======================================================
     # 📄 LOG FILE
