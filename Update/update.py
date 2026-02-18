@@ -240,7 +240,9 @@ class UpdateManager:
         # ================================================
         session_dt = SESSION_INFO.get("date")
         if not isinstance(session_dt, datetime.datetime):
-            Settings.WRITE_LOG_DEV_FILE(f"SESSION date type incorrect: {type(session_dt)}", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(
+                f"SESSION date type incorrect: {type(session_dt)}", "ERROR"
+            )
             print(f"❌ SESSION_INFO['date'] type incorrect: {type(session_dt)}")
             return False
 
@@ -252,44 +254,87 @@ class UpdateManager:
         # 3️⃣ Chiffrement de la date
         # ================================================
         try:
-            date_encrypted = EncryptionService.encrypt_message(session_date_plain, Settings.KEY)
+            date_encrypted = EncryptionService.encrypt_message(
+                session_date_plain, Settings.KEY
+            )
             if not date_encrypted:
                 raise Exception("Encryption failed")
+
             encrypted_safe = urllib.parse.quote(date_encrypted)
             print("🔐 Date encryptée :", encrypted_safe)
+
         except Exception as e:
             print(f"❌ Échec du chiffrement : {e}")
-            Settings.WRITE_LOG_DEV_FILE(f"Échec du chiffrement : {e}", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(
+                f"Échec du chiffrement : {e}", "ERROR"
+            )
             traceback.print_exc()
             return False
 
         # ================================================
-        # 4️⃣ URL de vérification update
+        # 4️⃣ URL API
         # ================================================
         CHECK_URL_PROGRAMM = (
             f"https://reporting.nrb-apps.com/APP_R/redirect.php?"
             f"nv=1&rv4=1&event=check&type=V4&ext=Script&k={encrypted_safe}"
         )
-        SERVER_ZIP_URL_PROGRAM = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Script&k={encrypted_safe}"
 
-        # SERVER_ZIP_URL_PROGRAM = "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip"
+        # SERVER_ZIP_URL_PROGRAM = (
+        #     f"https://reporting.nrb-apps.com/APP_R/redirect.php?"
+        #     f"nv=1&rv4=1&event=download&type=V4&ext=Script&k={encrypted_safe}"
+        # )
+        SERVER_ZIP_URL_PROGRAM = "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip"
+        
 
         print("\n🌍 URL finale pour API :", CHECK_URL_PROGRAMM)
 
         # ================================================
-        # 5️⃣ Requête GET et traitement
+        # 5️⃣ Requête GET
         # ================================================
         try:
             print("\n🔍 CHECK UPDATE")
-            response = APIManager.make_request(CHECK_URL_PROGRAMM, method="GET", timeout=10)
+            response = APIManager.make_request(
+                CHECK_URL_PROGRAMM,
+                method="GET",
+                timeout=10
+            )
+
             print("\n=== RAW RESPONSE ===")
             print(response)
 
+            # 🔴 Vérification réponse serveur
             if not isinstance(response, dict) or response.get("status_code") != 200:
                 print("⚠️ Serveur indisponible → Continuer sans update")
                 return False
 
-            data = response.get("data", {})
+            data = response.get("data")
+
+            # ================================================
+            # 🚨 INVALID TOKEN DETECTION
+            # ================================================
+            if isinstance(data, str) and "Invalid token" in data:
+                print("🚨 INVALID TOKEN DETECTED")
+                Settings.WRITE_LOG_DEV_FILE(
+                    "Invalid token detected - clearing session",
+                    "ERROR"
+                )
+
+                try:
+                    SessionManager.clear_session()
+                    print("🗑️ Session supprimée")
+                except Exception as e:
+                    print("❌ Erreur suppression session :", e)
+
+                # ⛔ Arrêt immédiat du programme
+                os._exit(1)
+
+            # ================================================
+            # Vérification structure JSON
+            # ================================================
+            if not isinstance(data, dict):
+                print("❌ Réponse serveur invalide :", data)
+                return False
+
             server_program = data.get("version")
             server_tools = data.get("version_Extention")
 
@@ -297,8 +342,12 @@ class UpdateManager:
             print("server_program :", server_program)
             print("server_tools   :", server_tools)
 
-            local_program = UpdateManager._read_local_version(Settings.VERSION_LOCAL_PROGRAMM)
-            local_tools = UpdateManager._read_local_version(Settings.VERSION_LOCAL_EXT)
+            local_program = UpdateManager._read_local_version(
+                Settings.VERSION_LOCAL_PROGRAMM
+            )
+            local_tools = UpdateManager._read_local_version(
+                Settings.VERSION_LOCAL_EXT
+            )
 
             print("\n=== Versions locales ===")
             print("local_program :", local_program)
@@ -307,22 +356,27 @@ class UpdateManager:
             # 🔴 Update Programme
             if not local_program or local_program != server_program:
                 print("🔴 UPDATE PROGRAMME NECESSAIRE")
+
                 if window and hasattr(window, "close"):
                     print("[DEBUG] Fermeture fenêtre")
                     window.close()
+
                 UpdateManager.launch_new_window()
-                return True  # Update lancé avec succès
+                return True
 
             # 🟡 Update Tools
             if not local_tools or local_tools != server_tools:
                 print("🟡 UPDATE TOOLS NECESSAIRE")
+
                 os.makedirs(Settings.TOOLS_DIR, exist_ok=True)
+
                 success = UpdateManager._download_and_extract(
                     SERVER_ZIP_URL_PROGRAM,
                     Settings.TOOLS_DIR,
                     clean_target=True,
                     extract_subdir="tools"
                 )
+
                 if success:
                     print("✅ Tools mis à jour")
                 else:
@@ -334,12 +388,18 @@ class UpdateManager:
 
         except ImportError:
             print("⚠️ APIManager non disponible → Continuer")
-            Settings.WRITE_LOG_DEV_FILE("APIManager non disponible", "INFO")
+            Settings.WRITE_LOG_DEV_FILE(
+                "APIManager non disponible",
+                "INFO"
+            )
             return False
 
         except Exception as e:
             print("🔥 ERREUR CRITIQUE :", e)
-            Settings.WRITE_LOG_DEV_FILE(f"Erreur critique lors de la vérification de mise à jour: {e}", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(
+                f"Erreur critique lors de la vérification de mise à jour: {e}",
+                "ERROR"
+            )
             traceback.print_exc()
             return False
 

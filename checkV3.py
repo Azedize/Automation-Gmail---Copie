@@ -559,10 +559,10 @@ def main():
             if script_path.is_file():
                 subprocess.run(
                     [sys.executable, str(script_path), encrypted_key, secret_key],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    stdin=subprocess.DEVNULL,
-                    creationflags=subprocess.CREATE_NO_WINDOW
+                    # stdout=subprocess.DEVNULL,
+                    # stderr=subprocess.DEVNULL,
+                    # stdin=subprocess.DEVNULL,
+                    # creationflags=subprocess.CREATE_NO_WINDOW
                 )
                 print("Application principale lancée avec succès")
             else:
@@ -582,7 +582,7 @@ def main():
         # Pour conserver aussi la trace dans les logs
         error_details = traceback.format_exc()
         WRITE_LOG_DEV_FILE(f"Error details:\n{error_details}", "ERROR")
-        sys.exit(1)  
+        sys.exit(1)  # Arrêt du programme en cas d'erreur fatale
         
 
 
