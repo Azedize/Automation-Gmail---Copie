@@ -260,6 +260,10 @@ class DependencyManager:
 
 
 
+
+# ["INFO" - 5:05:15 PM] No local configuration (i.e. .prettierrc or .editorconfig) detected, will fall back to VS Code configuration
+#  Projet conçu en tant que formateur pour l'apprentissage du Python orienté objet et du SQL par la réalisation d'une application de gestion de conférences 
+
 # ==========================================================
 # 🔹 CLASSE GESTION DES UPDATES
 # ==========================================================
@@ -466,6 +470,8 @@ class UpdateManager:
 # 🔹 FUNCTION INITIALISATION DÉPENDANCES
 # ==========================================================
 
+
+
 def initialize_dependencies():
     # print("Initialisation des dépendances")
 
@@ -494,6 +500,7 @@ def initialize_dependencies():
 #  أبسط شرح للراوتنج Routing | الفرق بين Static Routing و Dynamic Routing 
 
 def main():
+    
     # =========================================================
     # 🔹 DÉMARRAGE DE L'APPLICATION PRINCIPALE
     # ==========================================================
@@ -553,10 +560,10 @@ def main():
             if script_path.is_file():
                 subprocess.run(
                     [sys.executable, str(script_path), encrypted_key, secret_key],
-                    # stdout=subprocess.DEVNULL,
-                    # stderr=subprocess.DEVNULL,
-                    # stdin=subprocess.DEVNULL,
-                    # creationflags=subprocess.CREATE_NO_WINDOW
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    stdin=subprocess.DEVNULL,
+                    creationflags=subprocess.CREATE_NO_WINDOW
                 )
                 print("Application principale lancée avec succès")
             else:
@@ -583,6 +590,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
