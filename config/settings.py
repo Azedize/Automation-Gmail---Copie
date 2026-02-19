@@ -143,8 +143,8 @@ class Settings:
     # Chemin Extentions
     # ═══════════════════════════════════════════════════════════
 
-    CONFIG_PROFILE              = r"C:\RepProxy\template Profile"
-    SECURE_PREFERENCES_TEMPLATE = r"C:\RepProxy\template Profile\default\Secure Preferences"
+    CONFIG_PROFILE              = r"C:\RepProxy\template_Profile"
+    SECURE_PREFERENCES_TEMPLATE = r"C:\RepProxy\template_Profile\default\Secure Preferences"
     EXTENTION_EX3               = r"C:\RepProxy\Ext3"
     MANIFEST_PATH_EX3           = os.path.join(EXTENTION_EX3, "manifest.json")
     VERSION_LOCAL_EX3           = os.path.join(EXTENTION_EX3, "version.txt")
@@ -295,7 +295,8 @@ class Settings:
             cls.EXTENSIONS_DIR_FAMILY_CHROME_TEMPLETE,
             cls.FOLDER_EXTENSIONS_DIR,
             cls.FOLDER_EXTENTIONS_FIREFOX,
-            cls.FOLDER_EXTENTIONS_FAMILY_CHROME
+            cls.FOLDER_EXTENTIONS_FAMILY_CHROME,
+            cls.RESULT_FILE_PATH
         ]
 
         for directory in directories:

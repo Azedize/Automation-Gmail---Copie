@@ -285,14 +285,18 @@ class CloseBrowserThread(QThread):
     # 🔁 THREAD PRINCIPAL
     # ======================================================
     def run(self):
-        # print("🚀 [THREAD] CloseBrowserThread démarré")
+        print("🚀 [THREAD] CloseBrowserThread démarré")
         time.sleep(10)
 
         empty_counter = 0  # Compteur pour vérifier si PROCESS_PIDS reste vide
 
         while not self.stop_flag:
             try:
+                print(f"\n🔄 [LOOP] Nouvelle itération | stop_flag={self.stop_flag}")
+
                 if PROCESS_PIDS:
+                    print(f"✅ PROCESS_PIDS détecté : {PROCESS_PIDS}")
+
                     # Reset counter si PROCESS_PIDS n'est pas vide
                     empty_counter = 0
 
@@ -300,34 +304,42 @@ class CloseBrowserThread(QThread):
                         f for f in os.listdir(self.downloads_folder)
                         if f.startswith(self.session_id) and f.endswith(".txt")
                     ]
+                    print(f"📄 Session files trouvés : {session_files}")
+
                     log_files = [
                         f for f in os.listdir(self.downloads_folder)
                         if f.startswith("log_") and f.endswith(".txt")
                     ]
+                    print(f"📝 Log files trouvés : {log_files}")
+
                     screenshots = [
                         f for f in os.listdir(self.downloads_folder)
                         if f.lower().endswith((".png", ".jpg", ".jpeg"))
                     ]
+                    print(f"🖼️ Screenshots trouvés : {screenshots}")
 
+                    print("⚙️ Traitement des fichiers log...")
                     with ThreadPoolExecutor(max_workers=4) as executor:
                         executor.map(lambda f: self.process_log_file(f), log_files)
 
+                    print("⚙️ Traitement des fichiers session...")
                     with ThreadPoolExecutor(max_workers=4) as executor:
                         executor.map(lambda f: self.process_session_file(f, screenshots), session_files)
 
                 else:
-                    # PROCESS_PIDS vide → attendre 1 seconde et incrémenter compteur
                     empty_counter += 1
-                    if empty_counter >= 30:  # 30 secondes
-                        break  # Sortie du while
+                    print(f"⏳ PROCESS_PIDS vide | Compteur: {empty_counter}/30")
+
+                    if empty_counter >= 30:
+                        print("🛑 PROCESS_PIDS vide depuis 30 secondes → arrêt du thread")
+                        break
+
                 time.sleep(1)
 
             except Exception as e:
-                # print(f"❌ [THREAD] Erreur boucle: {e}")
-                pass
+                print(f"❌ [THREAD] Erreur dans la boucle principale : {e}")
 
-        # print("🛑 [THREAD] CloseBrowserThread terminé")
-
+        print("🛑 [THREAD] CloseBrowserThread terminé")
 
     # ======================================================
     # 📄 LOG FILE
@@ -402,13 +414,22 @@ class CloseBrowserThread(QThread):
                     dst_img = os.path.join(email_folder, f"{email}.png")
                     shutil.move(src_img, dst_img)
                     break
+            
 
-            Send_Status({
-                "id": inserted_id,
-                "login": self.username,
-                "status": "OK" if status == "completed" else "NotOK",
-                "error": "" if status == "completed" else status
-            })
+            try:
+                with open(Settings.RESULT_FILE_PATH, 'a', encoding='utf-8') as result_file:
+                    result_file.write(f"{session_id}:{pid}:{email}:{status}\n")
+                    Send_Status({
+                        "id": inserted_id,
+                        "login": self.username,
+                        "status": "OK" if status == "completed" else "NotOK",
+                        "error": "" if status == "completed" else status
+                    })
+
+            except Exception as e:
+                return f"⚠️ Erreur lors de l'écriture dans le fichier {file_name}: {e}"
+
+           
 
             if pid:
                 self._close_browser_process(pid, email, self.selected_Browser)

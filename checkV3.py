@@ -32,6 +32,18 @@ KEY_HEX = "f564292a5740af4fc4819c6e22f64765232ad35f56079854a0ad3996c68ee7a2"
 KEY     = bytes.fromhex(KEY_HEX)
 
 
+
+HEADER = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                  "AppleWebKit/537.36 (KHTML, like Gecko) "
+                  "Chrome/122.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Connection": "keep-alive",
+    "Upgrade-Insecure-Requests": "1",
+}
+
 # ==========================================================
 # 🔹 FIX UTF-8 POUR WINDOWS CONSOLE
 # ==========================================================
@@ -331,7 +343,7 @@ class UpdateManager:
             with tempfile.TemporaryDirectory() as tmpdir:
                 zip_path = os.path.join(tmpdir, "update.zip")
                 import requests
-                r = requests.get(zip_url, stream=True, timeout=60, verify=False)
+                r = requests.get(zip_url, stream=True , headers=HEADER, timeout=60, verify=False)
                 r.raise_for_status()
                 with open(zip_path, "wb") as f:
                     for chunk in r.iter_content(8192):
@@ -409,7 +421,7 @@ class UpdateManager:
         max_attempts = 3
         for attempt in range(1, max_attempts + 1):
             try:
-                response = requests.get(url, timeout=10)
+                response = requests.get(url,headers=HEADER, timeout=10)
 
                 if response.status_code != 200:
                     WRITE_LOG_DEV_FILE(f"Attempt {attempt}: Failed to fetch version.json (status {response.status_code})", "ERROR")

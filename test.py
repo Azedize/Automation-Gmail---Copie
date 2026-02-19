@@ -18,6 +18,8 @@ API_ENDPOINTS = {
     "_APIACCESS_API": "https://reporting.nrb-apps.com/pub/chk_usr1.php?rv4=1"
 }
 
+# le programme is runi
+
 USERNAME = "rep.test"
 PASSWORD = "zsGEnntKD5q2Brp68yxT"
 
@@ -120,3 +122,7 @@ for attempt in range(1, MAX_ATTEMPTS + 1):
         time.sleep(2)
     else:
         print("[ERROR] All attempts failed.")
+
+
+
+
