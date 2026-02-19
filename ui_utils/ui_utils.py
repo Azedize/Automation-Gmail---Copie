@@ -253,7 +253,22 @@ class UIManager:
 
 
 
+    @staticmethod
+    def clear_result_file():
+        try:
+            # Vérifier si le fichier existe, sinon le créer
+            if not os.path.exists(Settings.RESULT_FILE_PATH):
+                with open(Settings.RESULT_FILE_PATH, 'w', encoding='utf-8') as f:
+                    f.write("")  # Créer le fichier vide
+            else:
+                # Ouvrir le fichier en mode 'w' pour le vider
+                with open(Settings.RESULT_FILE_PATH, 'w', encoding='utf-8') as f:
+                    f.write("")  # Effacer le contenu actuel
 
+            print(f"🗑️ Le fichier {Settings.RESULT_FILE_PATH} a été vidé avec succès")
+
+        except Exception as e:
+            print(f"⚠️ Erreur lors du vidage du fichier : {e}")
 
 
 
@@ -368,6 +383,9 @@ class UIManager:
             # Settings.WRITE_LOG_DEV_FILE(f"Une erreur est survenue: {type(e).__name__} : {e}", "ERROR")
             # UIManager.Show_Critical_Message(window, "Error", f"An error occurred while displaying results: {e}")
             Settings.WRITE_LOG_DEV_FILE(f"Une erreur est survenue: {type(e).__name__} : {e}", "ERROR")
+        finally:
+            clear_result_file()
+
 
 
 

@@ -46,7 +46,7 @@ try:
     from services import JsonManager
     from Update import UpdateManager
 except ImportError as e:
-    # print(f"[ERROR] Import modules failed: {e}")
+    print(f"[ERROR] Import modules failed: {e}")
     pass
 
 
@@ -376,10 +376,12 @@ class CloseBrowserThread(QThread):
         profile_data_file = None
 
         try:
+            # 📄 Lecture du fichier session
             session_path = os.path.join(self.downloads_folder, file_name)
             with open(session_path, "r", encoding="utf-8") as f:
                 content = f.read().strip()
 
+            # 🔍 Parsing selon le navigateur
             if self.selected_Browser.lower() == "chrome":
                 match = re.search(r"session_id:(\w+)_email:([\w.@+-]+)_etat:(\w+)", content, re.IGNORECASE)
             else:
@@ -407,40 +409,70 @@ class CloseBrowserThread(QThread):
             email_folder = os.path.join(self.SESSION_DIR, email)
             os.makedirs(email_folder, exist_ok=True)
 
-            # 🖼️ Screenshot
+            # 🖼️ Gestion des screenshots
+            self._move_screenshot(email, screenshots, email_folder)
+
+            # ✍️ Écriture dans le fichier résultat + envoi statut
+            self.write_result_and_send_status(session_id, pid, email, status, inserted_id)
+
+            # 🛑 Fermeture du processus si nécessaire
+            if pid:
+                self._close_browser_process(pid, email, self.selected_Browser)
+
+        except Exception as e:
+            print(f"❌ [SESSION] Erreur lors du traitement de {file_name}: {e}")
+
+        finally:
+            # 🧹 Nettoyage des fichiers
+            try:
+                if os.path.exists(session_path):
+                    os.remove(session_path)
+                if profile_data_file and os.path.exists(profile_data_file):
+                    os.remove(profile_data_file)
+            except Exception as e:
+                print(f"⚠️ Erreur nettoyage fichiers pour {file_name}: {e}")
+
+    # ======================================================
+    # 🔹 Fonction séparée pour écrire le résultat et envoyer le statut
+    # ======================================================
+    def write_result_and_send_status(self, session_id, pid, email, status, inserted_id):
+        try:
+            # 🔹 التأكد من وجود الملف، إذا لم يكن موجوداً يتم إنشاؤه
+            if not os.path.exists(Settings.RESULT_FILE_PATH):
+                with open(Settings.RESULT_FILE_PATH, 'w', encoding='utf-8') as f:
+                    f.write("")
+
+            # 🔹 فتح الملف للكتابة والإضافة
+            with open(Settings.RESULT_FILE_PATH, 'a', encoding='utf-8') as result_file:
+                result_file.write(f"{session_id}:{pid}:{email}:{status}\n")
+                Send_Status({
+                    "id": inserted_id,
+                    "login": self.username,
+                    "status": "✅ OK" if status.lower() == "completed" else "❌ NotOK",
+                    "error": "" if status.lower() == "completed" else status
+                })
+
+            print(f"✅ Statut écrit et envoyé pour {email}")
+
+        except Exception as e:
+            print(f"⚠️ Erreur lors de l'écriture/envoi du statut pour {email}: {e}")
+
+
+    # ======================================================
+    # 🔹 Fonction pour déplacer les screenshots
+    # ======================================================
+    def _move_screenshot(self, email, screenshots, email_folder):
+        try:
             for img in screenshots:
                 if email.lower() in img.lower():
                     src_img = os.path.join(self.downloads_folder, img)
                     dst_img = os.path.join(email_folder, f"{email}.png")
                     shutil.move(src_img, dst_img)
+                    print(f"🖼️ Screenshot déplacé pour {email}")
                     break
-            
-
-            try:
-                with open(Settings.RESULT_FILE_PATH, 'a', encoding='utf-8') as result_file:
-                    result_file.write(f"{session_id}:{pid}:{email}:{status}\n")
-                    Send_Status({
-                        "id": inserted_id,
-                        "login": self.username,
-                        "status": "OK" if status == "completed" else "NotOK",
-                        "error": "" if status == "completed" else status
-                    })
-
-            except Exception as e:
-                return f"⚠️ Erreur lors de l'écriture dans le fichier {file_name}: {e}"
-
-           
-
-            if pid:
-                self._close_browser_process(pid, email, self.selected_Browser)
-
-            os.remove(session_path)
-            if profile_data_file and os.path.exists(profile_data_file):
-                os.remove(profile_data_file)
-
         except Exception as e:
-            # print(f"❌ [SESSION] Erreur: {e}")
-            pass
+            print(f"⚠️ Erreur déplacement screenshot pour {email}: {e}")
+
 
     # ======================================================
     # 🌐 FONCTIONS NAVIGATEURS

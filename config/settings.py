@@ -296,7 +296,6 @@ class Settings:
             cls.FOLDER_EXTENSIONS_DIR,
             cls.FOLDER_EXTENTIONS_FIREFOX,
             cls.FOLDER_EXTENTIONS_FAMILY_CHROME,
-            cls.RESULT_FILE_PATH
         ]
 
         for directory in directories:
