@@ -99,3 +99,6 @@ def validate_file(file_path):
 if __name__ == "__main__":
     file_path = "input.txt"  # 🔹 Remplace par le nom de ton fichier
     validate_file(file_path)
+
+
+

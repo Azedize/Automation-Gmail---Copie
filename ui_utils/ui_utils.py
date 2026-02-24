@@ -384,7 +384,7 @@ class UIManager:
             # UIManager.Show_Critical_Message(window, "Error", f"An error occurred while displaying results: {e}")
             Settings.WRITE_LOG_DEV_FILE(f"Une erreur est survenue: {type(e).__name__} : {e}", "ERROR")
         finally:
-            clear_result_file()
+            UIManager.clear_result_file()
 
 
 
