@@ -98,5 +98,4 @@ if __name__ == "__main__":
     launch_chrome_with_profile(profile_name)
 
 
-# 
-
+    
