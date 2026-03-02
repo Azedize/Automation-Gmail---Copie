@@ -43,9 +43,12 @@ def get_chrome_path() -> Optional[str]:
     return None
 
 
+
+
 # ==========================================================
 # 📁 Création du dossier de profil Chrome
 # ==========================================================
+
 def ensure_chrome_profile(base_dir: str, profile_name: str) -> str:
     os.makedirs(base_dir, exist_ok=True)
 
@@ -55,9 +58,11 @@ def ensure_chrome_profile(base_dir: str, profile_name: str) -> str:
     return profile_path
 
 
+
 # ==========================================================
 # 🚀 Lancer Chrome avec un profil spécifique
 # ==========================================================
+
 def launch_chrome_with_profile(profile_name: str):
     chrome_path = get_chrome_path()
 
@@ -65,7 +70,7 @@ def launch_chrome_with_profile(profile_name: str):
         raise FileNotFoundError("❌ Google Chrome introuvable sur le système")
 
     # 📂 Dossier parent des profils Chrome personnalisés
-    CHROME_PROFILES_DIR = r"C:\ChromeProfiles\Profile5"
+    CHROME_PROFILES_DIR = r"C:\ChromeProfiles\Profile2"
 
     ensure_chrome_profile(CHROME_PROFILES_DIR, profile_name)
 
@@ -89,13 +94,11 @@ def launch_chrome_with_profile(profile_name: str):
     )
 
 
-# ==========================================================
-# ▶️ POINT D'ENTRÉE
-# ==========================================================
+    
 
 if __name__ == "__main__":
-    profile_name = "Profile5"
+    profile_name = "Profile2"
     launch_chrome_with_profile(profile_name)
 
 
-    
+
