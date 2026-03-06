@@ -102,4 +102,3 @@ if __name__ == "__main__":
     profile_name = "Profile1"
     launch_chrome_with_profile(profile_name)
 
-
