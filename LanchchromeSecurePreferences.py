@@ -7,6 +7,7 @@ from typing import Optional
 # ==========================================================
 # 🔍 Recherche du chemin de Google Chrome
 # ==========================================================
+
 def get_chrome_path() -> Optional[str]:
     exe_name = "chrome.exe"
 
@@ -69,8 +70,8 @@ def launch_chrome_with_profile(profile_name: str):
     if not chrome_path:
         raise FileNotFoundError("❌ Google Chrome introuvable sur le système")
 
-    # 📂 Dossier parent des profils Chrome personnalisés
-    CHROME_PROFILES_DIR = r"C:\ChromeProfiles\Profile2"
+
+    CHROME_PROFILES_DIR = r"C:\ChromeProfiles\Profile1"
 
     ensure_chrome_profile(CHROME_PROFILES_DIR, profile_name)
 
@@ -85,20 +86,20 @@ def launch_chrome_with_profile(profile_name: str):
 
     print("🚀 Lancement Chrome avec la commande :")
     print(" ".join(command))
-
+    
     subprocess.Popen(
         command,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         creationflags=subprocess.DETACHED_PROCESS
     )
-
-
     
 
-if __name__ == "__main__":
-    profile_name = "Profile2"
-    launch_chrome_with_profile(profile_name)
 
+
+
+if __name__ == "__main__":
+    profile_name = "Profile1"
+    launch_chrome_with_profile(profile_name)
 
 

@@ -63,17 +63,7 @@ class JsonManager:
     # ==============================
     # MAIN PIPELINE
     # ==============================
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
     @staticmethod
     def generate(scenario_layout, selected_browser: str):
 
@@ -243,11 +233,12 @@ class JsonManager:
     
     
     
-    
+    # Data Science: Productivity Tools
     
     # ==============================
     # SPLIT JSON
     # ==============================
+
     @staticmethod
     def process_and_split_json( input_json):
         output, section, current = [], [], None
@@ -369,10 +360,10 @@ class JsonManager:
     
     
     
-    
     # ==============================
     # SAVE FILE
     # ==============================
+
     @staticmethod
     def save_json_to_file(json_data, browser):
         try:
