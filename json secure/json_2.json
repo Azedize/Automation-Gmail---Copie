@@ -666,6 +666,9 @@
         "was_installed_by_default": true,
         "was_installed_by_oem": false
       }
+    },
+    "ui": {
+      "developer_mode": true
     }
   },
   "pinned_tabs": [],
@@ -730,7 +733,7 @@
         },
         "ui": {
           "developer_mode": "93BF669E48A500E5612136B47B620E3712D96FB235B789D55BBA14D672636CA1",
-          "developer_mode_encrypted_hash": "djEwJAukNWAIbTO7o7U7e+kNLp44+GUFnqeN5sOoK6mlT84hShT2ya5GfSpnZww0ueQSfdrgTanZf56cYPvn"
+          "developer_mode_encrypted_hash": "djEwbd/+Z8gqzQXgmVoL6h5Aqt/V2TDINeQd8iyfGvnXFeFTd7baFaUAePYNdf8umzQiaGs31H/xnYdyP2tU"        
         }
       },
       "google": {
