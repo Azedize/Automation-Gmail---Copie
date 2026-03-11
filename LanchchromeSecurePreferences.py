@@ -102,3 +102,5 @@ if __name__ == "__main__":
     profile_name = "Profile2"
     launch_chrome_with_profile(profile_name)
 
+
+# https://www.youtube.com/watch?v=SNlTiMQJLKg&list=PLtsZ69x5q-X_MJj_iwBwpJaLg_C6JGiWW&index=5
