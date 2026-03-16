@@ -145,6 +145,9 @@ class Settings:
 
     CONFIG_PROFILE              = r"C:\RepProxy\template_Profile"
     SECURE_PREFERENCES_TEMPLATE = r"C:\RepProxy\template_Profile\default\Secure Preferences"
+    FICHIER_LOCAL_STATE         = r"C:\RepProxy\template_Profile\Local State"
+    FICHIER_VARIATIONS        = r"C:\RepProxy\template_Profile\Variations"
+    
     EXTENTION_EX3               = r"C:\RepProxy\Ext3"
     MANIFEST_PATH_EX3           = os.path.join(EXTENTION_EX3, "manifest.json")
     VERSION_LOCAL_EX3           = os.path.join(EXTENTION_EX3, "version.txt")

@@ -14,6 +14,9 @@ import win32con
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import time
+import shutil
+from typing import List, Dict, Any, Optional
+
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT_DIR not in sys.path:
@@ -222,7 +225,11 @@ class BrowserManager:
     
 
     
-    
+    #=======================================================
+    # Run_Browser_Create_Profile
+    #=======================================================
+    # Crée un profil Chrome avec le nom spécifié et lance temporairement le navigateur.
+    # Configure les options du profil et ferme le navigateur après quelques secondes.
     
     @staticmethod
     def Run_Browser_Create_Profile(profile_name: str):
@@ -256,6 +263,11 @@ class BrowserManager:
     
     
     
+    #=======================================================
+    # Search_Keys
+    #=======================================================
+    # Parcourt récursivement un JSON (dict ou list),
+    # cherche les clés spécifiées et ajoute les résultats dans la liste fournie.
     
     @staticmethod
     def Search_Keys(data: Any, search_keys: List[str], results: List[Dict[str, Any]], path_trace: str = ""):
@@ -277,150 +289,119 @@ class BrowserManager:
             
 
 
-
-
+    #=======================================================
+    # Upload_EXTENSION_PROXY
+    #=======================================================
+    # Vérifie et lit le fichier 'Secure Preferences' d'un profil,
+    # recherche les clés spécifiées et retourne la liste des résultats si trouvés,
+    # sinon retourne None.
+    
     
     @staticmethod
-    def Upload_EXTENSION_PROXY(profile_name: str, search_keys: List[str], results: List[Dict[str, Any]]):
+
+    def Upload_EXTENSION_PROXY(profile_name: str, search_keys: List[str], results: List[Dict[str, Any]]) -> Optional[List[Dict[str, Any]]]:
         path_file = os.path.join(Settings.CONFIG_PROFILE, profile_name, "Secure Preferences")
-        # print(f"🔍 Vérification du fichier Secure Preferences : {path_file}")
+        print(f"[DEBUG] Vérification du fichier Secure Preferences : {path_file}")
 
         if not ValidationUtils.path_exists(path_file):
-            # print(f"❌ Fichier introuvable pour le profil {profile_name}")
+            print(f"[ERROR] Fichier introuvable pour le profil {profile_name}")
             Settings.WRITE_LOG_DEV_FILE(f"Fichier introuvable pour le profil {profile_name}", "ERROR")
             return None
 
         try:
-            # print(f"📖 Lecture du fichier JSON en cours pour le profil {profile_name}...")
+            print(f"[DEBUG] Lecture du fichier JSON en cours pour le profil {profile_name}...")
             with open(path_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            # print("✅ Lecture réussie du fichier JSON.")
+            print("[DEBUG] Lecture réussie du fichier JSON.")
 
             results.clear()
-            # print(f"🔎 Début de la recherche des clés : {search_keys}")
+            print(f"[DEBUG] Début de la recherche des clés : {search_keys}")
             BrowserManager.Search_Keys(data, search_keys, results)
 
-            # if results:
-            #     print(f"📌 Résultats trouvés pour {profile_name}:")
-            #     for idx, item in enumerate(results, start=1):
-            #         print(f"   {idx}. {item}")
-            # else:
-            #     print("⚠️ Aucun résultat trouvé pour les clés spécifiées.")
-
-            return results
+            if results:
+                print(f"[INFO] Résultats trouvés pour {profile_name}:")
+                for idx, item in enumerate(results, start=1):
+                    print(f"   {idx}. {item}")
+                return results  # retourne la liste si des résultats trouvés
+            else:
+                print(f"[WARNING] Aucun résultat trouvé pour les clés spécifiées pour {profile_name}")
+                return None  # retourne None si aucun résultat
 
         except json.JSONDecodeError as e:
-            # print(f"💥 Erreur JSON : impossible de décoder le fichier {path_file} : {e}")
+            print(f"[ERROR] Erreur JSON : impossible de décoder le fichier {path_file} : {e}")
             Settings.WRITE_LOG_DEV_FILE(f"Erreur JSON : impossible de décoder le fichier {path_file} : {e}", "ERROR")
         except PermissionError:
-            # print(f"💥 Permission refusée pour lire le fichier {path_file}")
+            print(f"[ERROR] Permission refusée pour lire le fichier {path_file}")
             Settings.WRITE_LOG_DEV_FILE(f"Permission refusée pour lire le fichier {path_file}", "ERROR")
         except FileNotFoundError:
-            # print(f"💥 Fichier non trouvé (malgré la vérification précédente) : {path_file}")
+            print(f"[ERROR] Fichier non trouvé (malgré la vérification précédente) : {path_file}")
             Settings.WRITE_LOG_DEV_FILE(f"Fichier non trouvé (malgré la vérification précedente) : {path_file}", "ERROR")
         except Exception as e:
-            # print(f"💥 Erreur inattendue lors du traitement de {path_file} : {e}")
+            print(f"[ERROR] Erreur inattendue lors du traitement de {path_file} : {e}")
             Settings.WRITE_LOG_DEV_FILE(f"Erreur inattendue lors du traitement de {path_file} : {e}", "ERROR")
 
-        return None
-
-
-
+        return None  
 
 
 
     @staticmethod
-    def Updated_Secure_Preferences(profile_name, RESULTATS_EX):
+    def UpdateChromeProfileFromTemplate(profile_name: str):
+        """
+        Copie les fichiers template dans le profil Chrome cible après suppression des anciens fichiers.
+        Affichage détaillé pour debug et logging.
+        """
         try:
-            # print("\n🔐 ===== DÉMARRAGE : Mise à jour Secure Preferences =====")
+            # 📂 Définir chemins cibles
+            profile_dir = os.path.join(Settings.CHROME_PROFILES, profile_name)
+            secure_preferences_path = os.path.join(profile_dir, "Secure Preferences")
+            local_state_path = os.path.join(profile_dir, "Local State")
+            variations_path = os.path.join(profile_dir, "Variations")
 
-            # 📂 Construction du chemin (flexible & sécurisé)
-            secure_preferences_path = os.path.abspath(
-                os.path.join(
-                    Settings.CHROME_PROFILES,
-                    profile_name,
-                    profile_name,
-                    "Secure Preferences"
-                )
-            )
+            print(f"[DEBUG] Profil cible : {profile_dir}")
+            print(f"[DEBUG] Secure Preferences : {secure_preferences_path}")
+            print(f"[DEBUG] Local State : {local_state_path}")
+            print(f"[DEBUG] Variations : {variations_path}")
 
-            # print("📁 Chemin détecté :")
-            # print(f"   ➜ {secure_preferences_path}")
+            # 🔹 Supprimer fichiers existants si présents
+            for path in [secure_preferences_path, local_state_path, variations_path]:
+                if os.path.exists(path):
+                    try:
+                        if os.path.isdir(path):
+                            print(f"[DEBUG] Suppression du dossier existant : {path}")
+                            shutil.rmtree(path)
+                        else:
+                            print(f"[DEBUG] Suppression du fichier existant : {path}")
+                            os.remove(path)
+                    except Exception as e:
+                        print(f"[ERROR] Erreur suppression fichier {path} : {e}")
+                        Settings.WRITE_LOG_DEV_FILE(f"Erreur suppression fichier {path} : {e}", "ERROR")
 
-            # ❌ Vérification existence
-            if not os.path.exists(secure_preferences_path):
-                # print(f"❌ Fichier introuvable pour le profil : {profile_name}")
-                return None
+            # 🔹 Vérifier que les templates existent avant copie
+            if not os.path.exists(Settings.SECURE_PREFERENCES_TEMPLATE):
+                raise FileNotFoundError(f"Template Secure Preferences introuvable : {Settings.SECURE_PREFERENCES_TEMPLATE}")
+            if not os.path.exists(Settings.FICHIER_LOCAL_STATE):
+                raise FileNotFoundError(f"Template Local State introuvable : {Settings.FICHIER_LOCAL_STATE}")
+            if not os.path.isdir(Settings.FICHIER_VARIATIONS):
+                raise FileNotFoundError(f"Template Variations introuvable ou pas un dossier : {Settings.FICHIER_VARIATIONS}")
 
-            # print("✅ Fichier trouvé. Lecture du contenu JSON...")
+            # 🔹 Copier fichiers templates
+            print(f"[DEBUG] Copie de SECURE_PREFERENCES_TEMPLATE vers {os.path.join(profile_dir, profile_name)}")
+            shutil.copy2(Settings.SECURE_PREFERENCES_TEMPLATE, os.path.join(profile_dir, profile_name))
 
-            # 📖 Lecture JSON
-            with open(secure_preferences_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
+            print(f"[DEBUG] Copie de FICHIER_LOCAL_STATE vers {profile_dir}")
+            shutil.copy2(Settings.FICHIER_LOCAL_STATE, profile_dir)
 
-            # print("🧩 Vérification & préparation de la structure JSON...")
+            print(f"[DEBUG] Copie de FICHIER_VARIATIONS vers {profile_dir}")
+            shutil.copytree(Settings.FICHIER_VARIATIONS, os.path.join(profile_dir, "Variations"))
 
-            # 🔧 Initialisation sécurisée de la structure
-            data.setdefault("extensions", {})
-            data["extensions"].setdefault("ui", {})
-            data["extensions"].setdefault("settings", {})
-
-            data.setdefault("protection", {})
-            data["protection"].setdefault("macs", {})
-            data["protection"]["macs"].setdefault("extensions", {})
-            data["protection"]["macs"]["extensions"].setdefault("settings", {})
-            data["protection"]["macs"]["extensions"].setdefault("ui", {})
-
-            # print("✅ Structure JSON prête.")
-            # 🔄 Traitement des résultats
-            # print("🔄 Application des RESULTATS_EX...")
-            for idx, item in enumerate(RESULTATS_EX, start=1):
-                # print(f"\n➡️ Élément {idx} : {item}")
-
-                if not isinstance(item, dict):
-                    # print("⚠️ Ignoré : élément non dict.")
-                    continue
-
-                for k, v in item.items():
-
-                    # 🧩 Extension settings
-                    if isinstance(v, dict) and "account_extension_type" in v:
-                        data["extensions"]["settings"][k] = v
-                        #print(f"   🧩 extensions.settings[{k}] mis à jour.")
-
-                    # 🔐 MAC extensions settings
-                    elif isinstance(v, str) and len(v) > 30 and k != "developer_mode":
-                        data["protection"]["macs"]["extensions"]["settings"][k] = v
-                        #print(f"   🔐 MAC ajouté pour extensions.settings[{k}].")
-
-                    # ⚙️ Developer mode (UI)
-                    elif isinstance(v, bool) and k == "developer_mode":
-                        data["extensions"]["ui"]["developer_mode"] = v
-                        #print(f"   ⚙️ developer_mode = {v}")
-
-                    # 🔐 MAC developer mode
-                    elif isinstance(v, str) and k == "developer_mode":
-                        data["protection"]["macs"]["extensions"]["ui"]["developer_mode"] = v
-                        #print("   🔐 MAC developer_mode enregistré.")
-
-                    # else:
-                    #     print(f"   ⚠️ Clé ignorée : {k}")
-
-            # 💾 Sauvegarde finale
-            # print("\n💾 Écriture du fichier Secure Preferences...")
-            with open(secure_preferences_path, "w", encoding="utf-8") as f:
-                json.dump(data, f, separators=(',', ':'), ensure_ascii=False)
-
-            # print("✅ Mise à jour terminée avec succès.")
-            # print("🔐 ===== FIN : Secure Preferences =====\n")
-
-            return data
+            print(f"[INFO] Mise à jour du profil {profile_name} effectuée avec succès.")
+            Settings.WRITE_LOG_DEV_FILE(f"Mise à jour du profil {profile_name} effectuée avec succès.", "INFO")
+            return True
 
         except Exception as e:
-            # print("\n❌ ERREUR CRITIQUE lors de la mise à jour Secure Preferences")
-            # print(f"🧨 Détail : {e}\n")
-            Settings.WRITE_LOG_DEV_FILE(f"ERREUR CRITIQUE lors de la mise à jour Secure Preferences : {e}", "ERROR")
-            return None
+            print(f"[ERROR] Erreur lors de la mise à jour du profil {profile_name} : {e}")
+            Settings.WRITE_LOG_DEV_FILE(f"Erreur lors de la mise à jour du profil {profile_name} : {e}", "ERROR")
+            return False
 
 
 

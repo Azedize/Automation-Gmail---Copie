@@ -865,6 +865,17 @@ class ExtractionThread(QThread):
 
         if self.selected_Browser.lower() == "chrome":
             Settings.RESULTATS_EX = BrowserManager.Upload_EXTENSION_PROXY("default", Settings.CLES_RECHERCHE, Settings.RESULTATS)
+            
+            # 🔹 Vérification si RESULTATS_EX est None
+            if Settings.RESULTATS_EX is None:
+                msg = "An issue occurred while copying the JSON file to the template profile ➡ Please contact support."
+                UIManager.Show_Critical_Message(self.window, msg, message_type="critical")
+                self.stopped.emit(msg)
+                self.stop_flag = True
+                Settings.WRITE_LOG_DEV_FILE(msg, "ERROR")
+                return  # arrête complètement la méthode run
+
+        # 🔹 Vérification si RESULTATS_EX est vide
 
         while remaining_emails or PROCESS_PIDS:
 
@@ -1011,7 +1022,12 @@ class ExtractionThread(QThread):
                                 Settings.WRITE_LOG_DEV_FILE("An issue occurred while copying the JSON file to the template profile  ➡ Please contact support.", "ERROR") 
                                 return                   
                             else:
-                                BrowserManager.Updated_Secure_Preferences(profile_email, Settings.RESULTATS_EX)
+                                success = BrowserManager.UpdateChromeProfileFromTemplate(profile_email )
+                                if success:
+                                    print(f"✅ Profil {profile_email} mis à jour avec succès.")
+                                else:
+                                    print(f"❌ Échec de la mise à jour du profil {profile_email}.")
+                                    return
 
                             time.sleep(1)
                             
@@ -1133,7 +1149,7 @@ def Process_Browser(window, selected_Browser) -> bool:
     if not ValidationUtils.path_exists(ext_path):
         print("📥 Extension manquante, téléchargement...")
         Settings.WRITE_LOG_DEV_FILE(f"Extension not found, downloading...", "INFO")
-        valid_ext_dir= ValidationUtils.validate_directory_path(ext_path, must_exist=False)
+        valid_ext_dir= ValidationUtils.validate_directory_path(ext_path, must_exist=False )
         if not valid_ext_dir:
             print(f"❌ Chemin extension invalide : ")
             Settings.WRITE_LOG_DEV_FILE(f"Invalid extension path: {ext_path}", "WARNING")
@@ -1581,6 +1597,29 @@ class MainWindow(QMainWindow):
 
 
 
+    def verify_required_paths(self) -> bool:
+        paths = [
+            (Settings.CONFIG_PROFILE, False),    
+            (Settings.EXTENTION_EX3, False),            
+            (Settings.SECURE_PREFERENCES_TEMPLATE, True),   
+            (Settings.FICHIER_LOCAL_STATE, True),           
+            (Settings.FICHIER_VARIATIONS, True), 
+                      
+        ]
+
+        all_ok = True
+
+        for path, is_file in paths:
+            # Vérifier si le chemin existe et correct
+            valid = ValidationUtils.validate_path(path, must_exist=True, is_file=is_file)
+
+            if not valid:
+                print(f"[ERROR] Path does not exist or is incorrect: {path}")
+                all_ok = False
+
+        return all_ok
+        
+    
     
     def Submit_Button_Clicked(self, window):
         global CURRENT_HOUR, CURRENT_DATE, LOGS_RUNNING, NOTIFICATION_BADGES  
@@ -1630,11 +1669,21 @@ class MainWindow(QMainWindow):
                 "ERROR"
             )
 
-            return  # ❌ STOP TOTAL
+            return
         else :
             Settings.WRITE_LOG_DEV_FILE("Authentication successful", "INFO")
 
-        # Nettoyage des badges de notification
+
+
+        if self.verify_required_paths():
+            print("Tous les chemins sont valides.")
+            # return
+        else:
+            print("Erreur avec les chemins.")
+            return
+            
+            
+        
         try:
             print("🔄 [BADGES] Début suppression des badges existants")
             Settings.WRITE_LOG_DEV_FILE("Start badge cleanup", "INFO")

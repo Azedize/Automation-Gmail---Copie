@@ -513,46 +513,70 @@ class ValidationUtils:
     
     
     @staticmethod
-    def validate_directory_path(path: str, must_exist: bool = True) -> Tuple[bool, str]:
-        if not path or not isinstance(path, str):
-            return False
-        if must_exist and not os.path.exists(path):
-            return False
-        try:
-            if must_exist and not os.path.isdir(path):
-                return False
-            os.path.normpath(path)
-            return True
-        except Exception:
-            return False
-    
-    
-    
-    
-    
-    @staticmethod
-    def ensure_path_exists(path: str, is_file: bool = True) -> bool:
-        try:
-            if is_file:
-                directory = os.path.dirname(path)
-                if directory and not os.path.exists(directory):
-                    os.makedirs(directory, exist_ok=True)
+    def validate_path(path: str, must_exist: bool = True, is_file: bool = False) -> bool:
+        print(f"[DEBUG] Checking path: {path}")
 
-                if not os.path.exists(path):
-                    open(path, "a", encoding="utf-8").close()
-                    
-            else:
-                if not os.path.exists(path):
-                    os.makedirs(path, exist_ok=True)
+        if not path or not isinstance(path, str):
+            print("[ERROR] Path is invalid or not a string")
+            return False
+
+        if must_exist and not os.path.exists(path):
+            print(f"[ERROR] Path does not exist: {path}")
+            return False
+
+        try:
+            if must_exist:
+                if is_file and not os.path.isfile(path):
+                    print(f"[ERROR] Path is not a file: {path}")
+                    return False
+                elif not is_file and not os.path.isdir(path):
+                    print(f"[ERROR] Path is not a directory: {path}")
+                    return False
+
+            print(f"[DEBUG] Normalized path: {os.path.normpath(path)}")
             return True
 
         except Exception as e:
-            #print(f"Error ensuring path exists: {e}")
+            print(f"[EXCEPTION] validate_path error: {e}")
             return False
-    
+        
+
+    @staticmethod
+    def ensure_path_exists(path: str, is_file: bool = True) -> bool:
+        print(f"[DEBUG] Ensuring path exists: {path}")
+
+        try:
+            if is_file:
+                directory = os.path.dirname(path)
+
+                if directory and not os.path.exists(directory):
+                    print(f"[DEBUG] Creating directory: {directory}")
+                    os.makedirs(directory, exist_ok=True)
+
+                if not os.path.exists(path):
+                    print(f"[DEBUG] Creating file: {path}")
+                    open(path, "a", encoding="utf-8").close()
+                else:
+                    print(f"[DEBUG] File already exists: {path}")
+
+            else:
+                if not os.path.exists(path):
+                    print(f"[DEBUG] Creating directory: {path}")
+                    os.makedirs(path, exist_ok=True)
+                else:
+                    print(f"[DEBUG] Directory already exists: {path}")
+
+            return True
+
+        except Exception as e:
+            print(f"[EXCEPTION] ensure_path_exists error: {e}")
+            return False
+
     @staticmethod
     def path_exists(path: str) -> bool:
-        return os.path.exists(path)
+        exists = os.path.exists(path)
+        print(f"[DEBUG] Path exists check: {path} -> {exists}")
+        return exists
     
 
     # ==================== VALIDATION JSON ET STRUCTURES ====================
