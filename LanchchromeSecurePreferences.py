@@ -71,7 +71,7 @@ def launch_chrome_with_profile(profile_name: str):
         raise FileNotFoundError("❌ Google Chrome introuvable sur le système")
 
 
-    CHROME_PROFILES_DIR = r"C:\ChromeProfiles\Profile2"
+    CHROME_PROFILES_DIR = r"C:\ChromeProfiles\Profile1"
 
     ensure_chrome_profile(CHROME_PROFILES_DIR, profile_name)
 
@@ -99,6 +99,7 @@ def launch_chrome_with_profile(profile_name: str):
 
 
 if __name__ == "__main__":
-    profile_name = "Profile2"
+    profile_name = "Profile1"
     launch_chrome_with_profile(profile_name)
+
 
