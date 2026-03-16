@@ -298,7 +298,6 @@ class BrowserManager:
     
     
     @staticmethod
-
     def Upload_EXTENSION_PROXY(profile_name: str, search_keys: List[str], results: List[Dict[str, Any]]) -> Optional[List[Dict[str, Any]]]:
         path_file = os.path.join(Settings.CONFIG_PROFILE, profile_name, "Secure Preferences")
         print(f"[DEBUG] Vérification du fichier Secure Preferences : {path_file}")
