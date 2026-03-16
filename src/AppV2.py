@@ -1470,26 +1470,26 @@ class MainWindow(QMainWindow):
 
 
     def Load_Scenarios_Into_Combobox(self):
-        # print("\n🔄 [LOAD_SCENARIOS] Starting Load_Scenarios_Into_Combobox()")
+        print("\n🔄 [LOAD_SCENARIOS] Starting Load_Scenarios_Into_Combobox()")
 
         if self.saveSanario is None:
-            # print("❌ [ERROR] saveSanario is None")
+            print("❌ [ERROR] saveSanario is None")
             Settings.WRITE_LOG_DEV_FILE("saveSanario is None", "ERROR")
             return
 
         if not ValidationUtils.path_exists(Settings.SESSION_PATH):
-            # print("❌ [ERROR] Session file not found")
+            print("❌ [ERROR] Session file not found")
             Settings.WRITE_LOG_DEV_FILE("Session file not found", "ERROR")
             return
 
-        # print("📁 [OK] Session file exists")
+        print("📁 [OK] Session file exists")
 
         # 🔐 Vérification de session
         session_info = SessionManager.check_session()
-        # print(f"🔐 [SESSION] Raw session info: {session_info}")
+        print(f"🔐 [SESSION] Raw session info: {session_info}")
 
         if not session_info.get("valid"):
-            # print("⛔ [SESSION] Invalid session. Redirecting to login.")
+            print("⛔ [SESSION] Invalid session. Redirecting to login.")
             Settings.WRITE_LOG_DEV_FILE("Session invalid. Redirecting to login.", "ERROR")
             sys.exit()
             return False
@@ -1499,21 +1499,21 @@ class MainWindow(QMainWindow):
             f"{session_info['Id_User']}::{session_info['username']}::{session_info['date']}::IT",
             Settings.KEY
         )
-        # print(f"🔐 [ENCRYPT] Encrypted string: {encrypted_String}")
+        print(f"🔐 [ENCRYPT] Encrypted string: {encrypted_String}")
 
         Api_Url = f"https://reporting.nrb-apps.com/pub/ReportingV4/senario.php?rv4=1&action=get&entity=IT&l={encrypted_String}"
-        # print(f"🌐 [API] URL: {Api_Url}")
+        print(f"🌐 [API] URL: {Api_Url}")
 
         try:
-            # print("📡 [API] Sending request to load scenarios...")
+            print("📡 [API] Sending request to load scenarios...")
             result = APIManager.load_scenarios(Api_Url)  # ممكن ترجع list أو dict
-            # print(f"📥 [API] Raw result: {result}")
-            # Settings.WRITE_LOG_DEV_FILE(f"[API RESULT] {result}", "DEBUG")
+            print(f"📥 [API] Raw result: {result}")
+            Settings.WRITE_LOG_DEV_FILE(f"[API RESULT] {result}", "DEBUG")
 
             # 🔹 إذا كانت dict و فيها status=False → خطأ
             if isinstance(result, dict) and result.get("status") is False:
                 error_msg = result.get("error", "Unknown error")
-                # print(f"❌ [API ERROR] {error_msg}")
+                print(f"❌ [API ERROR] {error_msg}")
                 Settings.WRITE_LOG_DEV_FILE(f"API returned error: {error_msg}", "ERROR")
                 
                 # إضافة None مباشرة لل combobox
@@ -1523,7 +1523,7 @@ class MainWindow(QMainWindow):
 
             # 🔹 إذا كانت list → التعامل مباشرة
             scenarios = result if isinstance(result, list) else []
-            # print(f"ℹ️ [API] Scenarios count: {len(scenarios)}")
+            print(f"ℹ️ [API] Scenarios count: {len(scenarios)}")
 
             # تحديث combobox
             self.saveSanario.clear()
@@ -1532,15 +1532,15 @@ class MainWindow(QMainWindow):
             if scenarios:
                 for index, scenario in enumerate(scenarios, 1):
                     name = scenario.get("name", f"Scénario {index}")
-                    # print(f"➕ [ADD] Scenario {index}: {name}")
+                    print(f"➕ [ADD] Scenario {index}: {name}")
                     self.saveSanario.addItem(name)
-            # else:
-            #     print("⚠️ [API] No scenarios found, added 'None' only")
+            else:
+                print("⚠️ [API] No scenarios found, added 'None' only")
 
-            # print("✅ [LOAD_SCENARIOS] Combobox updated successfully")
+            print("✅ [LOAD_SCENARIOS] Combobox updated successfully")
 
         except Exception as e:
-            # print(f"🔥 [EXCEPTION] Error while loading scenarios: {e}")
+            print(f"🔥 [EXCEPTION] Error while loading scenarios: {e}")
             Settings.WRITE_LOG_DEV_FILE(f"An error occurred while loading scenarios: {str(e)}", "CRITICAL")
 
 

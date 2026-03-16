@@ -347,13 +347,14 @@ class BrowserManager:
     @staticmethod
     def UpdateChromeProfileFromTemplate(profile_name: str):
         """
-        Copie les fichiers template dans le profil Chrome cible après suppression des anciens fichiers.
+        Copie les fichiers template (Secure Preferences, Local State, Variations)
+        dans le profil Chrome cible après suppression des anciens fichiers.
         Affichage détaillé pour debug et logging.
         """
         try:
             # 📂 Définir chemins cibles
             profile_dir = os.path.join(Settings.CHROME_PROFILES, profile_name)
-            secure_preferences_path = os.path.join(profile_dir, "Secure Preferences")
+            secure_preferences_path = os.path.join(profile_dir,profile_name , "Secure Preferences")
             local_state_path = os.path.join(profile_dir, "Local State")
             variations_path = os.path.join(profile_dir, "Variations")
 
@@ -366,33 +367,30 @@ class BrowserManager:
             for path in [secure_preferences_path, local_state_path, variations_path]:
                 if os.path.exists(path):
                     try:
-                        if os.path.isdir(path):
-                            print(f"[DEBUG] Suppression du dossier existant : {path}")
-                            shutil.rmtree(path)
-                        else:
-                            print(f"[DEBUG] Suppression du fichier existant : {path}")
-                            os.remove(path)
+                        print(f"[DEBUG] Suppression du fichier existant : {path}")
+                        os.remove(path)
                     except Exception as e:
                         print(f"[ERROR] Erreur suppression fichier {path} : {e}")
                         Settings.WRITE_LOG_DEV_FILE(f"Erreur suppression fichier {path} : {e}", "ERROR")
 
-            # 🔹 Vérifier que les templates existent avant copie
-            if not os.path.exists(Settings.SECURE_PREFERENCES_TEMPLATE):
-                raise FileNotFoundError(f"Template Secure Preferences introuvable : {Settings.SECURE_PREFERENCES_TEMPLATE}")
-            if not os.path.exists(Settings.FICHIER_LOCAL_STATE):
-                raise FileNotFoundError(f"Template Local State introuvable : {Settings.FICHIER_LOCAL_STATE}")
-            if not os.path.isdir(Settings.FICHIER_VARIATIONS):
-                raise FileNotFoundError(f"Template Variations introuvable ou pas un dossier : {Settings.FICHIER_VARIATIONS}")
+            # 🔹 Vérifier que les fichiers templates existent avant copie
+            for template_path, name in [
+                (Settings.SECURE_PREFERENCES_TEMPLATE, "Secure Preferences"),
+                (Settings.FICHIER_LOCAL_STATE, "Local State"),
+                (Settings.FICHIER_VARIATIONS, "Variations")
+            ]:
+                if not os.path.isfile(template_path):
+                    raise FileNotFoundError(f"Template {name} introuvable ou pas un fichier : {template_path}")
 
             # 🔹 Copier fichiers templates
-            print(f"[DEBUG] Copie de SECURE_PREFERENCES_TEMPLATE vers {os.path.join(profile_dir, profile_name)}")
-            shutil.copy2(Settings.SECURE_PREFERENCES_TEMPLATE, os.path.join(profile_dir, profile_name))
+            print(f"[DEBUG] Copie de SECURE_PREFERENCES_TEMPLATE vers {secure_preferences_path}")
+            shutil.copy2(Settings.SECURE_PREFERENCES_TEMPLATE, secure_preferences_path)
 
-            print(f"[DEBUG] Copie de FICHIER_LOCAL_STATE vers {profile_dir}")
-            shutil.copy2(Settings.FICHIER_LOCAL_STATE, profile_dir)
+            print(f"[DEBUG] Copie de FICHIER_LOCAL_STATE vers {local_state_path}")
+            shutil.copy2(Settings.FICHIER_LOCAL_STATE, local_state_path)
 
-            print(f"[DEBUG] Copie de FICHIER_VARIATIONS vers {profile_dir}")
-            shutil.copytree(Settings.FICHIER_VARIATIONS, os.path.join(profile_dir, "Variations"))
+            print(f"[DEBUG] Copie de FICHIER_VARIATIONS vers {variations_path}")
+            shutil.copy2(Settings.FICHIER_VARIATIONS, variations_path)
 
             print(f"[INFO] Mise à jour du profil {profile_name} effectuée avec succès.")
             Settings.WRITE_LOG_DEV_FILE(f"Mise à jour du profil {profile_name} effectuée avec succès.", "INFO")
@@ -402,7 +400,6 @@ class BrowserManager:
             print(f"[ERROR] Erreur lors de la mise à jour du profil {profile_name} : {e}")
             Settings.WRITE_LOG_DEV_FILE(f"Erreur lors de la mise à jour du profil {profile_name} : {e}", "ERROR")
             return False
-
 
 
 

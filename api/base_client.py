@@ -131,6 +131,30 @@ class APIManager:
             print(f"🔥 [HANDLE EXCEPTION] _handle_response crashed: {str(e)}")
             return failure_default
 
+
+    def load_scenarios(self, Url_Api) -> Dict[str, Any]:
+        print("🔹 Starting load_scenarios")
+
+        # 1️⃣ Show API URL
+        print(f"🌐 API URL: {Url_Api}")
+
+        # 2️⃣ Send GET request
+        try:
+            print("📡 Sending GET request to API...")
+            result = self.make_request(Url_Api, "GET")
+            print(f"📥 Raw API response: {result}")
+        except Exception as e:
+            print(f"❌ Exception during API request: {e}")
+            return {"session": False, "scenarios": []}
+
+        try:
+            print("🔄 Handling API response...")
+            response = self._handle_response( result,  {"session": False, "scenarios": []}, {"session": False, "scenarios": []} )
+            print(f"🔍 Final handled response: {response}")
+            return response
+        except Exception as e:
+            print(f"❌ Exception while handling response: {e}")
+            return {"session": False, "scenarios": []}
     # --------------------- Méthodes API ---------------------
     def save_process(self, params: Dict[str, Any]) -> int:
         result = self.make_request("_SAVE_PROCESS_API", "POST", json_data=params)
@@ -149,6 +173,14 @@ class APIManager:
         result = self.make_request("_SEND_STATUS_API", "POST", json_data=params)
         return str(self._handle_response(result, ""))
 
+
+    def handle_save_scenario(self, payload: Dict[str, Any], Url_Api) -> Dict[str, Any]:
+        result = self.make_request(Url_Api, "POST", data=payload)
+        return self._handle_response(result, {"success": True} , {"success": False, "error": "Format de réponse invalide"})
+
+    def on_scenario_changed(self,  payload: Dict[str, Any], Url_Api) -> Dict[str, Any]:
+        result = self.make_request(Url_Api, "POST", data=payload)
+        return self._handle_response(result, {"success": True},{"success": False, "error": "Format de réponse invalide"})
 
 # ==========================================================
 # Instance globale
