@@ -22,36 +22,24 @@ class Settings:
     #  Sopport des navigateurs
     # ═══════════════════════════════════════════════════════════
 
-
     SUPPORTED_BROWSERS = {
         "chrome": {
-            "exe_name": "chrome.exe",
-            "display_name": "Google Chrome"
+            "exe_name": "chrome.exe"
         },
         "firefox": {
-            "exe_name": "firefox.exe",
-            "display_name": "Mozilla Firefox"
+            "exe_name": "firefox.exe"
         },
         "edge": {
-            "exe_name": "msedge.exe",
-            "display_name": "Microsoft Edge"
+            "exe_name": "msedge.exe"
         },
         "icedragon": {
-            "exe_name": "dragon.exe",
-            "display_name": "Ice Dragon"
-     
+            "exe_name": "dragon.exe"
         },
         "comodo": {
-            "exe_name": "chrome.exe",  
-            "display_name": "Comodo Dragon"
+            "exe_name": "chrome.exe"
         }
     }
-    # ═══════════════════════════════════════════════════════════
-    # 🌐 Paramètres de l’environnement
-    # ═══════════════════════════════════════════════════════════
-
-
-
+    
 
     
     # ═══════════════════════════════════════════════════════════
@@ -77,13 +65,6 @@ class Settings:
         '__CHECK_URL_PROGRAMM__': "https://www.dropbox.com/scl/fi/78a38bc4papwzlw80hxti/version.json?rlkey=n7dx5mb8tcctvprn0wq4ojw7m&st=z6vzw0ox&dl=1",
         '__SERVER_ZIP_URL_PROGRAM__': "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/master.zip"
     }
-
-
-
-
-
-
-
 
 
     
@@ -302,10 +283,10 @@ class Settings:
         ]
 
         for directory in directories:
-            path = Path(directory)  # تحويل النص إلى Path
+            path = Path(directory)  
             if not path.exists():
                 try:
-                    path.mkdir(parents=True, exist_ok=True)  # ينشئ كل المجلدات المفقودة
+                    path.mkdir(parents=True, exist_ok=True)  
                     # print(f"✅ Dossier créé: {path}")
                 except Exception as e:
                     print(f"💥 Erreur lors de la création du dossier {path}: {e}")
@@ -315,7 +296,6 @@ class Settings:
     
     @classmethod
     def get_encryption_key_bytes(cls) -> bytes:
-        """Obtenir la clé de chiffrement au format bytes"""
         return bytes.fromhex(cls.ENCRYPTION_KEY_HEX)
 
 
