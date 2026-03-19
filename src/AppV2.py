@@ -1629,26 +1629,19 @@ class MainWindow(QMainWindow):
     
     
     def disable_button_temporarily(self, button: QPushButton, disabled_style: str = None) -> str:
-        print("🟢 [DEBUG] Tentative de désactivation du bouton...")
-
         if button is None:
-            print("⚠️ [DEBUG] Bouton inexistant !")
+            print("⚠️ Bouton inexistant !")
             return ""
 
-        print(f"🟢 [DEBUG] Bouton trouvé : {button.objectName()}")
-        print(f"🟢 [DEBUG] Bouton avant désactivation -> Enabled: {button.isEnabled()}, Style:\n{button.styleSheet()}")
-
         if not button.isEnabled():
-            print("⚠️ [DEBUG] Bouton déjà désactivé !")
+            # Déjà désactivé
             return button.styleSheet()
 
         # Sauvegarder l'ancien style
         old_style = button.styleSheet()
-        print(f"🟢 [DEBUG] Ancien style sauvegardé")
 
         # Désactiver le bouton
         button.setEnabled(False)
-        print(f"🟢 [DEBUG] Bouton désactivé -> Enabled: {button.isEnabled()}")
 
         # Appliquer le style "disabled"
         if disabled_style is None:
@@ -1656,10 +1649,7 @@ class MainWindow(QMainWindow):
                 "background-color: #cccccc; color: #666666; "
                 "border: 1px solid #999999;"
             )
-
         button.setStyleSheet(disabled_style)
-        print(f"🟢 [DEBUG] Nouveau style appliqué :\n{disabled_style}")
-        print(f"🟢 [DEBUG] Bouton après style -> Style:\n{button.styleSheet()}")
 
         return old_style
 
