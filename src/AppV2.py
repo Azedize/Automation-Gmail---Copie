@@ -66,7 +66,7 @@ CLOSE_BROWSER_THREAD = None
 NEW_VERSION = None
 LOGS_RUNNING = True  
 SELECTED_BROWSER_GLOBAL=None
-
+OlD_STYLE_SUBMIT_BUTTON = None
 
 
 
@@ -1200,6 +1200,7 @@ def Process_Browser(window, selected_Browser) -> bool:
 
 
 
+
 class MainWindow(QMainWindow):
 
     
@@ -1625,12 +1626,60 @@ class MainWindow(QMainWindow):
                 all_ok = False
 
         return all_ok
-        
     
     
-    def Submit_Button_Clicked(self, window):
-        global CURRENT_HOUR, CURRENT_DATE, LOGS_RUNNING, NOTIFICATION_BADGES  
+    def disable_button_temporarily(self, button: QPushButton, disabled_style: str = None) -> str:
+        print("🟢 [DEBUG] Tentative de désactivation du bouton...")
 
+        if button is None:
+            print("⚠️ [DEBUG] Bouton inexistant !")
+            return ""
+
+        print(f"🟢 [DEBUG] Bouton trouvé : {button.objectName()}")
+        print(f"🟢 [DEBUG] Bouton avant désactivation -> Enabled: {button.isEnabled()}, Style:\n{button.styleSheet()}")
+
+        if not button.isEnabled():
+            print("⚠️ [DEBUG] Bouton déjà désactivé !")
+            return button.styleSheet()
+
+        # Sauvegarder l'ancien style
+        old_style = button.styleSheet()
+        print(f"🟢 [DEBUG] Ancien style sauvegardé")
+
+        # Désactiver le bouton
+        button.setEnabled(False)
+        print(f"🟢 [DEBUG] Bouton désactivé -> Enabled: {button.isEnabled()}")
+
+        # Appliquer le style "disabled"
+        if disabled_style is None:
+            disabled_style = (
+                "background-color: #cccccc; color: #666666; "
+                "border: 1px solid #999999;"
+            )
+
+        button.setStyleSheet(disabled_style)
+        print(f"🟢 [DEBUG] Nouveau style appliqué :\n{disabled_style}")
+        print(f"🟢 [DEBUG] Bouton après style -> Style:\n{button.styleSheet()}")
+
+        return old_style
+
+    
+    def enable_button_with_old_style(self, button: QPushButton, old_style: str):
+        if button is None:
+            print("⚠️ Bouton inexistant !")
+            return
+
+        button.setEnabled(True)
+        button.setStyleSheet(old_style)
+        print("✅ Bouton réactivé avec l'ancien style")
+        
+        
+    def Submit_Button_Clicked(self, window):
+        global CURRENT_HOUR, CURRENT_DATE, LOGS_RUNNING, NOTIFICATION_BADGES , OlD_STYLE_SUBMIT_BUTTON
+        
+        OlD_STYLE_SUBMIT_BUTTON = self.disable_button_temporarily(self.submitButton)
+        print(f"🫀🫀🫀🫀🫀🫀🫀  old_style : {OlD_STYLE_SUBMIT_BUTTON}")
+        
         # Vérification de session
         session_info = SessionManager.check_session()
         if not session_info["valid"]:
@@ -1652,7 +1701,7 @@ class MainWindow(QMainWindow):
             except Exception as e:
                 print(f"[ERREUR NETTOYAGE SESSION] ❌ {e}")
                 Settings.WRITE_LOG_DEV_FILE(f"An error occurred while cleaning the session: {str(e)}", "ERROR")
-
+            self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
             return
 
 
@@ -1675,7 +1724,7 @@ class MainWindow(QMainWindow):
                 f"Authentication failed (code {auth_result}): {msg}",
                 "ERROR"
             )
-
+            self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
             return
         else :
             Settings.WRITE_LOG_DEV_FILE("Authentication successful", "INFO")
@@ -1687,6 +1736,8 @@ class MainWindow(QMainWindow):
             # return
         else:
             print("Erreur avec les chemins.")
+            self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
+
             return
             
             
@@ -1725,6 +1776,9 @@ class MainWindow(QMainWindow):
         except Exception as e:
             # print(f"❌ [BADGES ERROR] Erreur pendant la suppression des badges: {type(e).__name__} : {e}")
             Settings.WRITE_LOG_DEV_FILE(f"An error occurred while removing badges: {str(e)}", "ERROR")
+            self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
+            return
+
 
 
 
@@ -1739,9 +1793,13 @@ class MainWindow(QMainWindow):
             if not update_ok:
                 # إذا كان هناك خطأ أو update tools فشل → توقف المعالجة مباشرة
                 print("❌ Update failed or application not up-to-date, exiting process.")
+                self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
+
                 return
 
         except SystemExit:
+            self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
+
             # Si la fonction check_and_update a fait sys.exit (update programme)
             return
 
@@ -1752,6 +1810,7 @@ class MainWindow(QMainWindow):
                 f"An error occurred while checking for updates: {str(e)}",
                 "ERROR"
             )
+            self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
             return
 
 
@@ -1762,6 +1821,8 @@ class MainWindow(QMainWindow):
             if not Process_Browser(window, selected_Browser):
                 # print("❌ Navigateur non traité :", selected_Browser)
                 Settings.WRITE_LOG_DEV_FILE(f"Browser not processed: {selected_Browser}", "WARNING")
+                self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
+
                 return
 
         # print("🌐 Navigateur traité avec succès :", selected_Browser)
@@ -1777,6 +1838,8 @@ class MainWindow(QMainWindow):
 
       
         if self.scenario_layout.count() == 0:
+            self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
+
             UIManager.Show_Critical_Message(
                 window,
                 "Empty Scenario",
@@ -1790,12 +1853,15 @@ class MainWindow(QMainWindow):
             result = Generate_User_Input_Data(window)
 
             if not result:  
+                self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
                 return
             data_list, entered_number = result  
             # print("✅ User input data generated successfully. Data list:", data_list, "Entered number:", entered_number)
 
         except Exception as e:
             QMessageBox.critical(window, "Error", f"Error while parsing the JSON: {e}")
+            self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
+
             return
         
         current_time = datetime.datetime.now()
@@ -1822,6 +1888,8 @@ class MainWindow(QMainWindow):
                 message_type="critical"
             )
             Settings.WRITE_LOG_DEV_FILE("No valid actions could be generated or an error occurred while saving the configuration file.", "ERROR")
+            self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
+
             return
 
 
@@ -1837,6 +1905,7 @@ class MainWindow(QMainWindow):
                     message_type="critical"
                 )
                 Settings.WRITE_LOG_DEV_FILE("An error occurred while saving the configuration file.", "ERROR")
+                self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
                 return
             # else:
             #     print("✅ JSON file saved with status:", save_status)
@@ -1850,12 +1919,15 @@ class MainWindow(QMainWindow):
                 message_type="critical"
             )
             Settings.WRITE_LOG_DEV_FILE(f"An error occurred while saving the configuration file: {e}", "ERROR")
+            self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
             return
 
         try:
             with open(Settings.FILE_ISP, 'w', encoding='utf-8') as f:
                 f.write(self.Isp.currentText().strip())
         except Exception as e:
+            self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
+
             # print("❌ Error writing to Isp.txt:", e)
             # print(f"❌ Erreur lors de l'écriture dans Isp.txt : {e}")
             Settings.WRITE_LOG_DEV_FILE(f"Error writing to Isp.txt: {e}", "ERROR")
@@ -1885,15 +1957,17 @@ class MainWindow(QMainWindow):
                 message_type="critical"
             )
             Settings.WRITE_LOG_DEV_FILE("Failed to save the process in the database.", "ERROR")
+            self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
+
             return
         # print("✅ Obtained Process ID:", unique_id)
         # print(f"✅ Process ID obtenu: {unique_id}")
 
 
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            executor.submit(Start_Extraction, window, data_list , entered_number, selected_Browser, self.Isp.currentText() , unique_id , result_json, session_info["username"])
-            executor.submit(self.LOGS_THREAD.start)
-        EXTRACTION_THREAD.finished.connect(lambda: self.Extraction_Finished(window))
+        # with ThreadPoolExecutor(max_workers=2) as executor:
+        #     executor.submit(Start_Extraction, window, data_list , entered_number, selected_Browser, self.Isp.currentText() , unique_id , result_json, session_info["username"])
+        #     executor.submit(self.LOGS_THREAD.start)
+        # EXTRACTION_THREAD.finished.connect(lambda: self.Extraction_Finished(window))
 
 
 
