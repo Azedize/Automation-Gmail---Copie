@@ -1213,6 +1213,7 @@ class MainWindow(QMainWindow):
     
     
     def _init_ui(self):
+        print("🟢 Initialisation de l'interface utilisateur...")
         uic.loadUi(Settings.INTERFACE_UI, self)
     
     
@@ -1236,6 +1237,7 @@ class MainWindow(QMainWindow):
     
     def _find_widget(self, name, widget_type=None):
         widget = self.findChild(widget_type, name) if widget_type else self.findChild(QWidget, name)
+        print(f"🔍 Recherche du widget : {name} ({widget_type})")
         return widget
     
 
@@ -1256,11 +1258,13 @@ class MainWindow(QMainWindow):
         self.Button_Initaile_state = self._setup_button(
             "Button_Initaile_state", self.Load_Initial_Options
         )
+        print(f"🟢 Bouton 'Initial State' configuré avec succès")
         
         # Submit button
         self.submit_button = self._setup_button(
             "submitButton", lambda: self.Submit_Button_Clicked(self)
         )
+        print(f"🟢 Bouton 'Submit' configuré avec succès")
         
         # Clear button with icon
         self.ClearButton = self._setup_icon_button(
@@ -1268,17 +1272,20 @@ class MainWindow(QMainWindow):
             icon_size=(32, 32), button_size=(36, 36)
         )
         
+        print(f"🟢 Bouton 'Clear' configuré avec succès")
         # Copy button with icon
         self.CopyButton = self._setup_icon_button(
             "CopyButton", "copyLog.png", self.Copy_Logs_To_Clipboard,
             icon_size=(26, 26), button_size=(38, 38)
         )
+        print(f"🟢 Bouton 'Copy' configuré avec succès")
         
         # Save button with icon
         self.SaveButton = self._setup_icon_button(
             "saveButton", "save.png", self.Handle_Save,
             icon_size=(16, 16)
         )
+        print(f"🟢 Bouton 'Save' configuré avec succès")
         
         # Logout button
         self.log_out_Button = UIManager._setup_logout_button(self, self.logOut)
@@ -2406,61 +2413,125 @@ class LoginWindow(QMainWindow):
 
 
 
-
-
 def main():
+    print("\n========== [APP START] ==========\n")
+
+    # 1️⃣ Vérification des arguments
+    print(f"[DEBUG] Arguments reçus: {sys.argv}")
 
     if len(sys.argv) < 3:
+        print("[ERROR] Arguments insuffisants.")
+        print("Usage: python AppV2.py <encrypted_key> <secret_key>")
         sys.exit(1)
 
     encrypted_key = sys.argv[1]
     secret_key = sys.argv[2]
 
+    print(f"[DEBUG] encrypted_key: {encrypted_key}")
+    print(f"[DEBUG] secret_key: {secret_key}")
+
+    # 2️⃣ Vérification de la clé
+    print("[DEBUG] Vérification de la clé...")
     if not EncryptionService.verify_key(encrypted_key, secret_key):
+        print("[ERROR] Clé invalide. Accès refusé.")
         sys.exit(1)
+    else:
+        print("[SUCCESS] Clé valide.")
 
+    # 3️⃣ Vérification session
+    print("[DEBUG] Vérification de la session...")
     session_info = SessionManager.check_session_full()
-    session_valid = session_info["valid"]
+    session_valid = session_info.get("valid", False)
 
+    print(f"[DEBUG] Session valid: {session_valid}")
+    print(f"[DEBUG] Session info: {session_info}")
+
+    # 4️⃣ Initialisation app Qt
     app = QApplication(sys.argv)
+    print("[DEBUG] QApplication initialisée.")
 
+    # 5️⃣ Icône application
+    icon_path = Path(Settings.APP_ICON)
+    print(f"[DEBUG] Chemin icône: {icon_path}")
 
-    if ValidationUtils.path_exists(Path(Settings.APP_ICON)):
-        app.setWindowIcon(QIcon(str(Path(Settings.APP_ICON))))  
-    # else:
-    #     print("⚠️ [LOG] Fichier d'icone introuvable")
+    if ValidationUtils.path_exists(icon_path):
+        app.setWindowIcon(QIcon(str(icon_path)))
+        print("[SUCCESS] Icône appliquée.")
+    else:
+        print("[WARNING] Fichier d'icône introuvable.")
+
+    # 6️⃣ Choix de la fenêtre
+    window = None
 
     if session_valid:
+        print("[INFO] Session valide → tentative d'ouverture MainWindow")
+
         try:
+            print(f"[DEBUG] Chargement fichier config: {Settings.FILE_ACTIONS_JSON}")
+
             with open(Settings.FILE_ACTIONS_JSON, "r", encoding='utf-8') as file:
                 json_data = json.load(file)
 
-            if json_data:
-                window = MainWindow(json_data)
-            else:
-                Settings.WRITE_LOG_DEV_FILE("Fichier de configuration vide", "INFO")
+            if not json_data:
+                print("[WARNING] Fichier JSON vide.")
                 raise ValueError("Fichier de configuration vide")
+
+            print("[SUCCESS] Configuration chargée.")
+
+            window = MainWindow(json_data)
+            print("[SUCCESS] MainWindow initialisée.")
+
         except Exception as e:
+            print(f"[ERROR] Impossible de charger MainWindow: {e}")
+            print("[INFO] Fallback → LoginWindow")
+            SessionManager.clear_session()  # Clear session if loading MainWindow fails
+
             window = LoginWindow()
+
     else:
+        print("[INFO] Session invalide → ouverture LoginWindow")
+        SessionManager.clear_session()  # Clear session if loading MainWindow fails
         window = LoginWindow()
 
+    # 7️⃣ Vérification sécurité
+    if window is None:
+        print("[CRITICAL] Aucune fenêtre créée !")
+        sys.exit(1)
+
+    # 8️⃣ Taille et position
+    print("[DEBUG] Configuration taille et position fenêtre...")
+
     window.setFixedSize(Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT)
+
     screen = QGuiApplication.primaryScreen()
     screen_geometry = screen.availableGeometry()
+
     x = (screen_geometry.width() - window.width()) // 2
     y = (screen_geometry.height() - window.height()) // 2
+
     window.move(x, y)
 
-    if hasattr(window, "stopButton"):
-        window.stopButton.clicked.connect(lambda: Stop_All_Processes(window))
+    print(f"[DEBUG] Position fenêtre: x={x}, y={y}")
 
+    # 9️⃣ Connexion stop button
+    if hasattr(window, "stopButton"):
+        print("[DEBUG] stopButton détecté → connexion")
+        try:
+            window.stopButton.clicked.connect(lambda: Stop_All_Processes(window))
+            print("[SUCCESS] stopButton connecté.")
+        except Exception as e:
+            print(f"[ERROR] Erreur connexion stopButton: {e}")
+    else:
+        print("[INFO] Aucun stopButton trouvé.")
+
+    # 🔟 Finalisation
     window.setWindowTitle("AutoMailPro")
     window.show()
 
+    print("[SUCCESS] Fenêtre affichée.")
+    print("\n========== [APP RUNNING] ==========\n")
+
     sys.exit(app.exec())
-
-
 
 
 if __name__ == "__main__":

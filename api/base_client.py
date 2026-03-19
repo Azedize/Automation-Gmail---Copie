@@ -67,16 +67,8 @@ class APIManager:
         for attempt in range(1, 4):
             try:
                 print(f"🌐 [TRY {attempt}] {method.upper()} {url}")
-                response = self.session.request(
-                    method=method.upper(),
-                    url=url,
-                    data=data,
-                    json=json_data,
-                    params=params,
-                    headers=req_headers,
-                    timeout=timeout
-                )
-
+                response = self.session.request(  method=method.upper(),  url=url,   data=data,   json=json_data,   params=params, headers=req_headers,   timeout=timeout   )
+                print(f"🌍 [FULL URL] {response.url}")  
                 print(f"➡️ Response: HTTP {response.status_code}")
                 print(f"📄 Headers: {dict(response.headers)}")
                 print(f"📄 Body preview: {response.text[:200]}")

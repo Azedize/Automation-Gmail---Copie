@@ -1357,24 +1357,50 @@ class UIManager:
     
     @staticmethod
     def _setup_icon_button(window, button_name, icon_file, callback, icon_size=None, button_size=None):
-        """Helper to setup icon button with consistent styling"""
+        """Helper to setup icon button with detailed debug output"""
+
+        print(f"[DEBUG] Initialisation du bouton: {button_name}")
+
+        # 1️⃣ Recherche du bouton
         button = UIManager._find_widget(window, button_name, QPushButton)
         if not button:
+            print(f"[ERROR] Bouton '{button_name}' introuvable.")
             return None
+        else:
+            print(f"[DEBUG] Bouton '{button_name}' trouvé.")
 
+        # 2️⃣ Construction du chemin de l'icône
         icon_path = os.path.join(Settings.ICONS_DIR, icon_file).replace("\\", "/")
+        print(f"[DEBUG] Chemin icône: {icon_path}")
+
+        # 3️⃣ Vérification et application de l'icône
         if ValidationUtils.path_exists(icon_path):
+            print(f"[DEBUG] Icône trouvée.")
             icon = QIcon(icon_path)
+
             if icon_size:
+                print(f"[DEBUG] Taille icône: {icon_size}")
                 button.setIconSize(QSize(*icon_size))
+
             button.setIcon(icon)
+        else:
+            print(f"[WARNING] Icône introuvable: {icon_path}")
 
-        button.clicked.connect(callback)
+        # 4️⃣ Connexion du callback
+        try:
+            button.clicked.connect(callback)
+            print(f"[DEBUG] Callback connecté pour '{button_name}'")
+        except Exception as e:
+            print(f"[ERROR] Erreur connexion callback: {e}")
 
+        # 5️⃣ Taille du bouton
         if button_size:
+            print(f"[DEBUG] Taille bouton: {button_size}")
             button.setFixedSize(*button_size)
 
+        # 6️⃣ Style spécifique pour certains boutons
         if button_name in ("ClearButton", "copyButton"):
+            print(f"[DEBUG] Application style spécial pour: {button_name}")
             button.setText("")
             button.setStyleSheet("""
                 QPushButton {
@@ -1387,6 +1413,8 @@ class UIManager:
                     alignment: center;
                 }
             """)
+
+        print(f"[SUCCESS] Bouton '{button_name}' configuré avec succès.\n")
 
         return button
 
@@ -1403,10 +1431,31 @@ class UIManager:
     
     @staticmethod
     def _setup_button(window, widget_name, callback):
-        """Setup simple button with connection"""
+        """Setup simple button with connection + debug"""
+
+        print(f"[DEBUG] Recherche du bouton: {widget_name}")
+
+        # 1️⃣ Trouver le bouton
         button = UIManager._find_widget(window, widget_name, QPushButton)
-        if button and callback:
+
+        if not button:
+            print(f"[ERROR] Bouton '{widget_name}' introuvable.")
+            return None
+        else:
+            print(f"[DEBUG] Bouton '{widget_name}' trouvé.")
+
+        # 2️⃣ Vérifier callback
+        if not callback:
+            print(f"[WARNING] Aucun callback fourni pour '{widget_name}'")
+            return button
+
+        # 3️⃣ Connecter le signal
+        try:
             button.clicked.connect(callback)
+            print(f"[SUCCESS] Callback connecté pour '{widget_name}'")
+        except Exception as e:
+            print(f"[ERROR] Erreur lors de la connexion du callback: {e}")
+
         return button
 
     
@@ -1428,22 +1477,35 @@ class UIManager:
 
 
     
-    
-    
+        
+        
     @staticmethod
     def _setup_browser_combobox(window):
-        """Setup browser selection combobox"""
+        """Setup browser selection combobox with debug"""
+
+        print("[DEBUG] Initialisation du QComboBox 'browsers'")
+
+        # 1️⃣ Trouver le combobox
         window.browser = UIManager._find_widget(window, "browsers", QComboBox)
+
         if window.browser is None:
+            print("[ERROR] QComboBox 'browsers' introuvable.")
             return
+        else:
+            print("[DEBUG] QComboBox trouvé.")
 
-        # Appliquer le style commun
-        UIManager._apply_combobox_style(window, window.browser)
+        # 2️⃣ Appliquer style
+        try:
+            UIManager._apply_combobox_style(window, window.browser)
+            print("[DEBUG] Style appliqué au QComboBox.")
+        except Exception as e:
+            print(f"[ERROR] Erreur application style: {e}")
 
-        # Nettoyer pour éviter les doublons
+        # 3️⃣ Nettoyage (éviter doublons)
+        print("[DEBUG] Nettoyage des anciens éléments...")
         window.browser.clear()
 
-        # Définition centralisée des navigateurs
+        # 4️⃣ Liste des navigateurs
         browsers = [
             ("Chrome", "chrome.png"),
             ("Firefox", "firefox.png"),
@@ -1451,19 +1513,27 @@ class UIManager:
             ("Comodo", "comodo.png"),
         ]
 
+        print(f"[DEBUG] Nombre de navigateurs à ajouter: {len(browsers)}")
+
+        # 5️⃣ Ajout des items
         for name, icon_file in browsers:
-            icon_path = os.path.join(Settings.ICONS_DIR, icon_file)
+            icon_path = os.path.join(Settings.ICONS_DIR, icon_file).replace("\\", "/")
+            print(f"[DEBUG] Traitement: {name} | Icône: {icon_path}")
+
             if ValidationUtils.path_exists(icon_path):
+                print(f"[DEBUG] Icône trouvée pour {name}")
                 window.browser.addItem(QIcon(icon_path), name)
             else:
+                print(f"[WARNING] Icône introuvable pour {name}")
                 window.browser.addItem(name)
 
-
-    
-    
-    
-    
-    
+        # 6️⃣ Vérification finale
+        count = window.browser.count()
+        print(f"[SUCCESS] QComboBox configuré avec {count} éléments.\n")
+        
+        
+        
+        
     @staticmethod
     def _apply_combobox_style(window, combobox):
         """Apply custom arrow style to combobox"""
