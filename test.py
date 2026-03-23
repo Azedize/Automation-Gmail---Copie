@@ -44,7 +44,7 @@ def decrypt_message(base64_data: str, key_bytes: bytes) -> str:
 if __name__ == "__main__":
     # Exemple de message chiffré (base64) généré avec AES-CBC et la même clé et IV
     # Pour tester, tu peux créer un message chiffré toi-même avec la même clé.
-    encrypted_example = "oH8KYjuMmx1vcqrUDepd5S4VnN37PDRib2pAvS5HzfA="
+    encrypted_example = "/tqNhbwyQrTeB8Ddaz/D8TNm+askIgYcyA3ZeRG9OYY="
 
     try:
         decrypted = decrypt_message(encrypted_example, KEY)

@@ -66,8 +66,6 @@ CLOSE_BROWSER_THREAD = None
 NEW_VERSION = None
 LOGS_RUNNING = True  
 SELECTED_BROWSER_GLOBAL=None
-OlD_STYLE_SUBMIT_BUTTON = None
-
 
 
 
@@ -181,77 +179,83 @@ SESSION_ID = ValidationUtils.generate_session_id()
 # ==========================================================
 # 🔹 FUNCTION STOP ALL PROCESSES
 # ==========================================================
-
 def Stop_All_Processes(window):
+    """
+    Stop all running threads and processes safely.
+    Handles Chrome and Firefox separately, and reactivates the Submit button.
+    Shows professional warning if no processes are running.
+    """
     global EXTRACTION_THREAD, CLOSE_BROWSER_THREAD, PROCESS_PIDS, LOGS_RUNNING, SELECTED_BROWSER_GLOBAL
 
-    # print("Stopping all processes...")
     Settings.WRITE_LOG_DEV_FILE("Stopping all processes...", "INFO")
     LOGS_RUNNING = False
+    
+    disable_button(window.stopButton)
 
+    # --- Stop des threads ---
     if EXTRACTION_THREAD:
-        # print("Stopping extraction thread...")
-        Settings.WRITE_LOG_DEV_FILE("Stopping extraction thread...", "INFO")
         EXTRACTION_THREAD.stop_flag = True
         EXTRACTION_THREAD.wait()
         EXTRACTION_THREAD = None
-        # print("Extraction thread stopped.")
         Settings.WRITE_LOG_DEV_FILE("Extraction thread stopped.", "INFO")
 
-
     if CLOSE_BROWSER_THREAD:
-        # print("Stopping close Chrome thread...")
-        Settings.WRITE_LOG_DEV_FILE("Stopping close Chrome thread...", "INFO")
         CLOSE_BROWSER_THREAD.stop_flag = True
         CLOSE_BROWSER_THREAD.wait()
         CLOSE_BROWSER_THREAD = None
-        # print("Close Chrome thread stopped.")
-        Settings.WRITE_LOG_DEV_FILE("Close Chrome thread stopped.", "INFO")
+        Settings.WRITE_LOG_DEV_FILE("Close browser thread stopped.", "INFO")
 
-    if EXTRACTION_THREAD and EXTRACTION_THREAD.isRunning():
-        # print("Waiting for extraction thread to finish before updating UI...")
-        Settings.WRITE_LOG_DEV_FILE("Waiting for extraction thread to finish before updating UI...", "INFO")
-        EXTRACTION_THREAD.finished.connect(
-            lambda: QTimer.singleShot(100, 
-            lambda: UIManager.Read_Result_Update_List(window,NOTIFICATION_BADGES))
+    # --- Vérification sécurisée du navigateur sélectionné ---
+    if not SELECTED_BROWSER_GLOBAL:
+        print("⚠️ No browser selected or no processes running.")
+        Settings.WRITE_LOG_DEV_FILE("Stop failed: No browser selected or no processes running.", "WARNING")
+        
+        # Affichage alerte professionnelle : uniquement sur les processus
+        UIManager.Show_Critical_Message(
+            window,
+            "No Processes Running",
+            "No processes are currently running.",
+            message_type="warning"
         )
 
-    if SELECTED_BROWSER_GLOBAL.lower() != "firefox":
+        # Réactivation du bouton Submit pour éviter blocage UI
+        enable_button(window.submitButton)
+        return  # Sortir de la fonction
+
+    browser_name = SELECTED_BROWSER_GLOBAL.lower()
+
+    # --- Stop des processus selon le navigateur ---
+    if browser_name != "firefox":
         for pid in PROCESS_PIDS[:]:
             try:
-                # print(f"Attempting to terminate process with PID {pid}...")
                 Settings.WRITE_LOG_DEV_FILE(f"Attempting to terminate process with PID {pid}...", "INFO")
                 process = psutil.Process(pid)
                 process.terminate()
                 process.wait(timeout=5)
-                # print(f"Process {pid} terminated successfully.")
                 Settings.WRITE_LOG_DEV_FILE(f"Process {pid} terminated successfully.", "INFO")
             except psutil.NoSuchProcess:
-                # print(f"The process with PID {pid} no longer exists.")
-                Settings.WRITE_LOG_DEV_FILE(f"The process with PID {pid} no longer exists.", "INFO")
+                Settings.WRITE_LOG_DEV_FILE(f"Process {pid} no longer exists.", "INFO")
             except psutil.AccessDenied:
-                # print(f"Permission denied to terminate the process with PID {pid}.")
-                Settings.WRITE_LOG_DEV_FILE(f"Permission denied to terminate the process with PID {pid}.", "INFO")
+                Settings.WRITE_LOG_DEV_FILE(f"Permission denied for PID {pid}.", "INFO")
             except Exception as e:
-                # print(f"An error occurred while terminating PID {pid}: {e}")
-                Settings.WRITE_LOG_DEV_FILE(f"An error occurred while terminating PID {pid}: {e}", "ERROR")
+                Settings.WRITE_LOG_DEV_FILE(f"Error terminating PID {pid}: {e}", "ERROR")
             finally:
                 if pid in PROCESS_PIDS:
                     PROCESS_PIDS.remove(pid)
-                    # print(f"PID {pid} removed from process list.")
                     Settings.WRITE_LOG_DEV_FILE(f"PID {pid} removed from process list.", "INFO")
     else:
-            try:
-                BrowserManager.Close_Windows_By_Profiles(FIREFOX_LAUNCH)
-            except Exception as e:
-                # print(f"⚠️ Erreur lors de la fermeture des profils Firefox: {e}")
-                Settings.WRITE_LOG_DEV_FILE(f"Error closing Firefox profiles: {e}", "WARNING")
- 
-            finally:
-                for pid in PROCESS_PIDS[:]:
-                    PROCESS_PIDS.remove(pid)
-                    # print(f"PID {pid} removed from process list.")
-                    Settings.WRITE_LOG_DEV_FILE(f"PID {pid} removed from process list.", "INFO")
+        try:
+            BrowserManager.Close_Windows_By_Profiles(FIREFOX_LAUNCH)
+        except Exception as e:
+            Settings.WRITE_LOG_DEV_FILE(f"Error closing Firefox profiles: {e}", "WARNING")
+        finally:
+            for pid in PROCESS_PIDS[:]:
+                PROCESS_PIDS.remove(pid)
+                Settings.WRITE_LOG_DEV_FILE(f"PID {pid} removed from process list.", "INFO")
+
+    # --- Toujours réactiver le bouton Submit à la fin ---
+    enable_button(window.submitButton)
+    enable_button(window.stopButton)
 
 
 
@@ -1084,6 +1088,7 @@ class ExtractionThread(QThread):
 
         log_message("[INFO] Processing finished for all emails.") 
         Settings.WRITE_LOG_DEV_FILE("Processing finished for all emails.", "INFO")
+        enable_button(self.window.submitButton)
         time.sleep(3)
         LOGS_RUNNING=False
         self.finished.emit()
@@ -1201,6 +1206,64 @@ def Process_Browser(window, selected_Browser) -> bool:
 
 
 
+
+
+
+def disable_button(button: QPushButton, disabled_style: str = None) -> None:
+    print("🟢 [DEBUG] Désactivation bouton...")
+
+    if button is None:
+        print("⚠️ Bouton inexistant !")
+        return
+
+    if not button.isEnabled():
+        print("⚠️ Bouton déjà désactivé !")
+        return
+
+    # Sauvegarder style dans le bouton (pas de global)
+    button.setProperty("old_style", button.styleSheet())
+
+    # Désactiver
+    button.setEnabled(False)
+
+    # Style par défaut si non fourni
+    if disabled_style is None:
+        disabled_style = (
+            "background-color: #cccccc; "
+            "color: #666666; "
+            "border: 1px solid #999999;"
+        )
+
+    button.setStyleSheet(disabled_style)
+
+    print(f"🟢 [DEBUG] {button.objectName()} désactivé")
+
+
+
+
+
+def enable_button(button: QPushButton) -> None:
+    print("🟩 [DEBUG] Réactivation bouton...")
+
+    if button is None:
+        print("⚠️ Bouton inexistant !")
+        return
+
+    # Réactiver
+    button.setEnabled(True)
+
+    # Récupérer ancien style
+    old_style = button.property("old_style")
+
+    if old_style:
+        button.setStyleSheet(old_style)
+        print(f"🟩 [DEBUG] {button.objectName()} restauré")
+    else:
+        print("⚠️ Aucun ancien style trouvé")
+
+
+
+        
 class MainWindow(QMainWindow):
 
     
@@ -1623,52 +1686,21 @@ class MainWindow(QMainWindow):
 
             if not valid:
                 print(f"[ERROR] Path does not exist or is incorrect: {path}")
+                Settings.WRITE_LOG_DEV_FILE(f"Path does not exist or is incorrect: {path}", "ERROR")
                 all_ok = False
 
         return all_ok
     
     
-    def disable_button_temporarily(self, button: QPushButton, disabled_style: str = None) -> str:
-        if button is None:
-            print("⚠️ Bouton inexistant !")
-            return ""
 
-        if not button.isEnabled():
-            # Déjà désactivé
-            return button.styleSheet()
-
-        # Sauvegarder l'ancien style
-        old_style = button.styleSheet()
-
-        # Désactiver le bouton
-        button.setEnabled(False)
-
-        # Appliquer le style "disabled"
-        if disabled_style is None:
-            disabled_style = (
-                "background-color: #cccccc; color: #666666; "
-                "border: 1px solid #999999;"
-            )
-        button.setStyleSheet(disabled_style)
-
-        return old_style
 
     
-    def enable_button_with_old_style(self, button: QPushButton, old_style: str):
-        if button is None:
-            print("⚠️ Bouton inexistant !")
-            return
 
-        button.setEnabled(True)
-        button.setStyleSheet(old_style)
-        print("✅ Bouton réactivé avec l'ancien style")
-        
         
     def Submit_Button_Clicked(self, window):
-        global CURRENT_HOUR, CURRENT_DATE, LOGS_RUNNING, NOTIFICATION_BADGES , OlD_STYLE_SUBMIT_BUTTON
+        global CURRENT_HOUR, CURRENT_DATE, LOGS_RUNNING, NOTIFICATION_BADGES 
         
-        OlD_STYLE_SUBMIT_BUTTON = self.disable_button_temporarily(self.submitButton)
-        print(f"🫀🫀🫀🫀🫀🫀🫀  old_style : {OlD_STYLE_SUBMIT_BUTTON}")
+        disable_button(self.submitButton)
         
         # Vérification de session
         session_info = SessionManager.check_session()
@@ -1691,7 +1723,7 @@ class MainWindow(QMainWindow):
             except Exception as e:
                 print(f"[ERREUR NETTOYAGE SESSION] ❌ {e}")
                 Settings.WRITE_LOG_DEV_FILE(f"An error occurred while cleaning the session: {str(e)}", "ERROR")
-            self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
+            enable_button(self.submitButton)
             return
 
 
@@ -1714,7 +1746,7 @@ class MainWindow(QMainWindow):
                 f"Authentication failed (code {auth_result}): {msg}",
                 "ERROR"
             )
-            self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
+            enable_button(self.submitButton)
             return
         else :
             Settings.WRITE_LOG_DEV_FILE("Authentication successful", "INFO")
@@ -1726,7 +1758,7 @@ class MainWindow(QMainWindow):
             # return
         else:
             print("Erreur avec les chemins.")
-            self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
+            enable_button(self.submitButton)
 
             return
             
@@ -1766,7 +1798,7 @@ class MainWindow(QMainWindow):
         except Exception as e:
             # print(f"❌ [BADGES ERROR] Erreur pendant la suppression des badges: {type(e).__name__} : {e}")
             Settings.WRITE_LOG_DEV_FILE(f"An error occurred while removing badges: {str(e)}", "ERROR")
-            self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
+            enable_button(self.submitButton)
             return
 
 
@@ -1783,12 +1815,12 @@ class MainWindow(QMainWindow):
             if not update_ok:
                 # إذا كان هناك خطأ أو update tools فشل → توقف المعالجة مباشرة
                 print("❌ Update failed or application not up-to-date, exiting process.")
-                self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
+                enable_button(self.submitButton)
 
                 return
 
         except SystemExit:
-            self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
+            enable_button(self.submitButton)
 
             # Si la fonction check_and_update a fait sys.exit (update programme)
             return
@@ -1800,7 +1832,7 @@ class MainWindow(QMainWindow):
                 f"An error occurred while checking for updates: {str(e)}",
                 "ERROR"
             )
-            self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
+            enable_button(self.submitButton)
             return
 
 
@@ -1811,7 +1843,7 @@ class MainWindow(QMainWindow):
             if not Process_Browser(window, selected_Browser):
                 # print("❌ Navigateur non traité :", selected_Browser)
                 Settings.WRITE_LOG_DEV_FILE(f"Browser not processed: {selected_Browser}", "WARNING")
-                self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
+                enable_button(self.submitButton)
 
                 return
 
@@ -1828,7 +1860,6 @@ class MainWindow(QMainWindow):
 
       
         if self.scenario_layout.count() == 0:
-            self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
 
             UIManager.Show_Critical_Message(
                 window,
@@ -1836,6 +1867,8 @@ class MainWindow(QMainWindow):
                 "No actions have been added. Please add actions before submitting.",
                 message_type="warning"
             )
+            enable_button(self.submitButton)
+
             Settings.WRITE_LOG_DEV_FILE("No actions have been added. Please add actions before submitting.", "WARNING")
             return
 
@@ -1843,14 +1876,14 @@ class MainWindow(QMainWindow):
             result = Generate_User_Input_Data(window)
 
             if not result:  
-                self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
+                enable_button(self.submitButton)
                 return
             data_list, entered_number = result  
             # print("✅ User input data generated successfully. Data list:", data_list, "Entered number:", entered_number)
 
         except Exception as e:
             QMessageBox.critical(window, "Error", f"Error while parsing the JSON: {e}")
-            self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
+            enable_button(self.submitButton)
 
             return
         
@@ -1878,7 +1911,7 @@ class MainWindow(QMainWindow):
                 message_type="critical"
             )
             Settings.WRITE_LOG_DEV_FILE("No valid actions could be generated or an error occurred while saving the configuration file.", "ERROR")
-            self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
+            enable_button(self.submitButton)
 
             return
 
@@ -1895,7 +1928,7 @@ class MainWindow(QMainWindow):
                     message_type="critical"
                 )
                 Settings.WRITE_LOG_DEV_FILE("An error occurred while saving the configuration file.", "ERROR")
-                self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
+                enable_button(self.submitButton)
                 return
             # else:
             #     print("✅ JSON file saved with status:", save_status)
@@ -1909,14 +1942,14 @@ class MainWindow(QMainWindow):
                 message_type="critical"
             )
             Settings.WRITE_LOG_DEV_FILE(f"An error occurred while saving the configuration file: {e}", "ERROR")
-            self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
+            enable_button(self.submitButton)
             return
 
         try:
             with open(Settings.FILE_ISP, 'w', encoding='utf-8') as f:
                 f.write(self.Isp.currentText().strip())
         except Exception as e:
-            self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
+            enable_button(self.submitButton)
 
             # print("❌ Error writing to Isp.txt:", e)
             # print(f"❌ Erreur lors de l'écriture dans Isp.txt : {e}")
@@ -1947,17 +1980,17 @@ class MainWindow(QMainWindow):
                 message_type="critical"
             )
             Settings.WRITE_LOG_DEV_FILE("Failed to save the process in the database.", "ERROR")
-            self.enable_button_with_old_style(self.submitButton, OlD_STYLE_SUBMIT_BUTTON)
+            enable_button(self.submitButton)
 
             return
         # print("✅ Obtained Process ID:", unique_id)
         # print(f"✅ Process ID obtenu: {unique_id}")
 
 
-        # with ThreadPoolExecutor(max_workers=2) as executor:
-        #     executor.submit(Start_Extraction, window, data_list , entered_number, selected_Browser, self.Isp.currentText() , unique_id , result_json, session_info["username"])
-        #     executor.submit(self.LOGS_THREAD.start)
-        # EXTRACTION_THREAD.finished.connect(lambda: self.Extraction_Finished(window))
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            executor.submit(Start_Extraction, window, data_list , entered_number, selected_Browser, self.Isp.currentText() , unique_id , result_json, session_info["username"])
+            executor.submit(self.LOGS_THREAD.start)
+        EXTRACTION_THREAD.finished.connect(lambda: self.Extraction_Finished(window))
 
 
 
