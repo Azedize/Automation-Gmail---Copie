@@ -19,6 +19,7 @@ import win32gui
 import win32con
 import copy
 import warnings
+import  threading
 from threading import Lock
 from pathlib import Path
 from PyQt6.QtWidgets import QInputDialog
@@ -264,6 +265,258 @@ def Stop_All_Processes(window):
 # 🔹 CLASS CLOSE BROWSER THREAD
 # ==========================================================
 
+# class CloseBrowserThread(QThread):
+
+#     progress = pyqtSignal(str)
+
+#     def __init__(self, selected_Browser, username):
+#         super().__init__()
+#         self.selected_Browser = selected_Browser
+#         self.username = username
+#         self.session_id = SESSION_ID
+#         self.stop_flag = False
+#         self.downloads_folder = user_downloads_dir()
+#         self.CURRENT_DATETIME = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+#         self.BASE_LOG_DIR = Settings.LOGS_DIRECTORY
+#         self.SESSION_DIR = os.path.join(self.BASE_LOG_DIR, f"{self.CURRENT_DATETIME}")
+#         os.makedirs(self.SESSION_DIR, exist_ok=True)
+
+#         # print(f"🧩 [INIT] Thread créé | Browser={selected_Browser} | User={username}")
+#         Settings.WRITE_LOG_DEV_FILE(f"Thread created | Browser={selected_Browser} | User={username}", "INFO")
+
+#     # ======================================================
+#     # 🔁 THREAD PRINCIPAL
+#     # ======================================================
+#     def run(self):
+#         print("🚀 [THREAD] CloseBrowserThread démarré")
+#         time.sleep(10)
+
+#         empty_counter = 0  # Compteur pour vérifier si PROCESS_PIDS reste vide
+
+#         while not self.stop_flag:
+#             try:
+#                 print(f"\n🔄 [LOOP] Nouvelle itération | stop_flag={self.stop_flag}")
+
+#                 if PROCESS_PIDS:
+#                     print(f"✅ PROCESS_PIDS détecté : {PROCESS_PIDS}")
+
+#                     # Reset counter si PROCESS_PIDS n'est pas vide
+#                     empty_counter = 0
+
+#                     session_files = [
+#                         f for f in os.listdir(self.downloads_folder)
+#                         if f.startswith(self.session_id) and f.endswith(".txt")
+#                     ]
+#                     print(f"📄 Session files trouvés : {session_files}")
+
+#                     log_files = [
+#                         f for f in os.listdir(self.downloads_folder)
+#                         if f.startswith("log_") and f.endswith(".txt")
+#                     ]
+#                     print(f"📝 Log files trouvés : {log_files}")
+
+#                     screenshots = [
+#                         f for f in os.listdir(self.downloads_folder)
+#                         if f.lower().endswith((".png", ".jpg", ".jpeg"))
+#                     ]
+#                     print(f"🖼️ Screenshots trouvés : {screenshots}")
+
+#                     print("⚙️ Traitement des fichiers log...")
+#                     with ThreadPoolExecutor(max_workers=4) as executor:
+#                         executor.map(lambda f: self.process_log_file(f), log_files)
+
+#                     print("⚙️ Traitement des fichiers session...")
+#                     with ThreadPoolExecutor(max_workers=4) as executor:
+#                         executor.map(lambda f: self.process_session_file(f, screenshots), session_files)
+
+#                 else:
+#                     empty_counter += 1
+#                     print(f"⏳ PROCESS_PIDS vide | Compteur: {empty_counter}/30")
+
+#                     if empty_counter >= 15 :
+#                         print("🛑 PROCESS_PIDS vide depuis 30 secondes → arrêt du thread")
+#                         break
+
+#                 time.sleep(1)
+
+#             except Exception as e:
+#                 print(f"❌ [THREAD] Erreur dans la boucle principale : {e}")
+
+#         print("🛑 [THREAD] CloseBrowserThread terminé")
+
+#     # ======================================================
+#     # 📄 LOG FILE
+#     # ======================================================
+#     def process_log_file(self, log_file):
+#         try:
+#             full_path = os.path.join(self.downloads_folder, log_file)
+#             email = ValidationUtils.get_email_from_log_file(full_path)
+#             if not email:
+#                 return
+
+#             email_folder = os.path.join(self.SESSION_DIR, email)
+#             os.makedirs(email_folder, exist_ok=True)
+
+#             target_log = os.path.join(email_folder, f"{email}_{self.CURRENT_HOUR}.txt")
+
+#             with open(full_path, "r", encoding="utf-8") as f:
+#                 content = f.read()
+
+#             with open(target_log, "a", encoding="utf-8") as tf:
+#                 tf.write(content + "\n")
+
+#             os.remove(full_path)
+
+#         except Exception as e:
+#             # print(f"❌ [LOG] Erreur {log_file}: {e}")
+            
+#             pass
+
+#     # ======================================================
+#     # 📄 SESSION FILE + SCREENSHOT
+#     # ======================================================
+    
+#     def process_session_file(self, file_name, screenshots):
+#         profile_data_file = None
+
+#         try:
+#             # 📄 Lecture du fichier session
+#             session_path = os.path.join(self.downloads_folder, file_name)
+#             with open(session_path, "r", encoding="utf-8") as f:
+#                 content = f.read().strip()
+
+#             # 🔍 Parsing selon le navigateur
+#             if self.selected_Browser.lower() == "chrome":
+#                 match = re.search(r"session_id:(\w+)_email:([\w.@+-]+)_etat:(\w+)", content, re.IGNORECASE)
+#             else:
+#                 match = re.search(r"session_id:(\w+)_PID:(\d+)_Email:([\w.@]+)_Status:(\w+)", content)
+
+#             if not match:
+#                 os.remove(session_path)
+#                 return
+
+#             if self.selected_Browser.lower() == "chrome":
+#                 session_id, email, status = match.groups()
+#                 pid = None
+#                 inserted_id = None
+
+#                 profile_data_file = os.path.join(Settings.CHROME_PROFILES, email, "data.txt")
+#                 if os.path.exists(profile_data_file):
+#                     with open(profile_data_file, "r", encoding="utf-8") as f:
+#                         pid, email, session_id, inserted_id = f.readline().strip().split(":")[:4]
+
+#             else:
+#                 session_id, pid, email, status = match.groups()
+#                 pid = int(pid)
+#                 inserted_id = None
+
+#             email_folder = os.path.join(self.SESSION_DIR, email)
+#             os.makedirs(email_folder, exist_ok=True)
+
+#             # 🖼️ Gestion des screenshots
+#             self._move_screenshot(email, screenshots, email_folder)
+
+#             # ✍️ Écriture dans le fichier résultat + envoi statut
+#             self.write_result_and_send_status(session_id, pid, email, status, inserted_id)
+
+#             # 🛑 Fermeture du processus si nécessaire
+#             if pid:
+#                 self._close_browser_process(pid, email, self.selected_Browser)
+
+#         except Exception as e:
+#             print(f"❌ [SESSION] Erreur lors du traitement de {file_name}: {e}")
+
+#         finally:
+#             # 🧹 Nettoyage des fichiers
+#             try:
+#                 if os.path.exists(session_path):
+#                     os.remove(session_path)
+#                 if profile_data_file and os.path.exists(profile_data_file):
+#                     os.remove(profile_data_file)
+#             except Exception as e:
+#                 print(f"⚠️ Erreur nettoyage fichiers pour {file_name}: {e}")
+
+#     # ======================================================
+#     # 🔹 Fonction séparée pour écrire le résultat et envoyer le statut
+#     # ======================================================
+#     def write_result_and_send_status(self, session_id, pid, email, status, inserted_id):
+#         try:
+#             # 🔹 التأكد من وجود الملف، إذا لم يكن موجوداً يتم إنشاؤه
+#             if not os.path.exists(Settings.RESULT_FILE_PATH):
+#                 with open(Settings.RESULT_FILE_PATH, 'w', encoding='utf-8') as f:
+#                     f.write("")
+
+#             # 🔹 فتح الملف للكتابة والإضافة
+#             with open(Settings.RESULT_FILE_PATH, 'a', encoding='utf-8') as result_file:
+#                 result_file.write(f"{session_id}:{pid}:{email}:{status}\n")
+#                 Send_Status({
+#                     "id": inserted_id,
+#                     "login": self.username,
+#                     "status": "✅ OK" if status.lower() == "completed" else "❌ NotOK",
+#                     "error": "" if status.lower() == "completed" else status
+#                 })
+
+#             print(f"✅ Statut écrit et envoyé pour {email}")
+
+#         except Exception as e:
+#             print(f"⚠️ Erreur lors de l'écriture/envoi du statut pour {email}: {e}")
+
+
+#     # ======================================================
+#     # 🔹 Fonction pour déplacer les screenshots
+#     # ======================================================
+#     def _move_screenshot(self, email, screenshots, email_folder):
+#         try:
+#             for img in screenshots:
+#                 if email.lower() in img.lower():
+#                     src_img = os.path.join(self.downloads_folder, img)
+#                     dst_img = os.path.join(email_folder, f"{email}.png")
+#                     shutil.move(src_img, dst_img)
+#                     print(f"🖼️ Screenshot déplacé pour {email}")
+#                     break
+#         except Exception as e:
+#             print(f"⚠️ Erreur déplacement screenshot pour {email}: {e}")
+
+
+#     # ======================================================
+#     # 🌐 FONCTIONS NAVIGATEURS
+#     # ======================================================
+    
+#     def _close_browser_process(self, pid, email, browser):
+#         try:
+#             pid = int(pid)
+#             if not psutil.pid_exists(pid):
+#                 if pid in PROCESS_PIDS:
+#                     PROCESS_PIDS.remove(pid)
+#                 return
+
+#             if browser.lower() == "firefox":
+#                 try:
+#                     hwnd = self.find_firefox_window(email)
+#                     self.wait_then_close(email)
+#                 except:
+#                     pass
+#             else:
+#                 try:
+#                     os.kill(pid, signal.SIGTERM)
+#                     time.sleep(2)
+#                     if psutil.pid_exists(pid):
+#                         p = psutil.Process(pid)
+#                         p.terminate()
+#                         p.wait(timeout=3)
+#                 except:
+#                     pass
+
+#             if pid in PROCESS_PIDS:
+#                 PROCESS_PIDS.remove(pid)
+
+#         except Exception as e:
+#             # print(f"🔥 [PROC] Erreur inattendue PID={pid} | {e}")
+#             pass
+
+
+
 class CloseBrowserThread(QThread):
 
     progress = pyqtSignal(str)
@@ -275,15 +528,20 @@ class CloseBrowserThread(QThread):
         self.session_id = SESSION_ID
         self.stop_flag = False
         self.downloads_folder = user_downloads_dir()
-        self.CURRENT_DATE = datetime.datetime.now().strftime("%Y-%m-%d")
-        self.CURRENT_HOUR = datetime.datetime.now().strftime("%H")
+        self.CURRENT_DATETIME = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
         self.BASE_LOG_DIR = Settings.LOGS_DIRECTORY
-        self.SESSION_DIR = os.path.join(self.BASE_LOG_DIR, f"{self.CURRENT_DATE}_{self.CURRENT_HOUR}")
+        self.SESSION_DIR = os.path.join(self.BASE_LOG_DIR, f"{self.CURRENT_DATETIME}")
         os.makedirs(self.SESSION_DIR, exist_ok=True)
 
-        # print(f"🧩 [INIT] Thread créé | Browser={selected_Browser} | User={username}")
-        Settings.WRITE_LOG_DEV_FILE(f"Thread created | Browser={selected_Browser} | User={username}", "INFO")
+        # ✅ tracking success emails (thread-safe)
+        self.completed_emails = set()
+        self.lock = threading.Lock()
+
+        Settings.WRITE_LOG_DEV_FILE(
+            f"Thread created | Browser={selected_Browser} | User={username}",
+            "INFO"
+        )
 
     # ======================================================
     # 🔁 THREAD PRINCIPAL
@@ -292,58 +550,50 @@ class CloseBrowserThread(QThread):
         print("🚀 [THREAD] CloseBrowserThread démarré")
         time.sleep(10)
 
-        empty_counter = 0  # Compteur pour vérifier si PROCESS_PIDS reste vide
+        empty_counter = 0
 
         while not self.stop_flag:
             try:
                 print(f"\n🔄 [LOOP] Nouvelle itération | stop_flag={self.stop_flag}")
 
                 if PROCESS_PIDS:
-                    print(f"✅ PROCESS_PIDS détecté : {PROCESS_PIDS}")
-
-                    # Reset counter si PROCESS_PIDS n'est pas vide
                     empty_counter = 0
 
                     session_files = [
                         f for f in os.listdir(self.downloads_folder)
                         if f.startswith(self.session_id) and f.endswith(".txt")
                     ]
-                    print(f"📄 Session files trouvés : {session_files}")
 
                     log_files = [
                         f for f in os.listdir(self.downloads_folder)
                         if f.startswith("log_") and f.endswith(".txt")
                     ]
-                    print(f"📝 Log files trouvés : {log_files}")
 
                     screenshots = [
                         f for f in os.listdir(self.downloads_folder)
                         if f.lower().endswith((".png", ".jpg", ".jpeg"))
                     ]
-                    print(f"🖼️ Screenshots trouvés : {screenshots}")
 
-                    print("⚙️ Traitement des fichiers log...")
+                    # 🔹 logs
                     with ThreadPoolExecutor(max_workers=4) as executor:
-                        executor.map(lambda f: self.process_log_file(f), log_files)
+                        executor.map(self.process_log_file, log_files)
 
-                    print("⚙️ Traitement des fichiers session...")
+                    # 🔹 sessions
                     with ThreadPoolExecutor(max_workers=4) as executor:
                         executor.map(lambda f: self.process_session_file(f, screenshots), session_files)
 
                 else:
                     empty_counter += 1
-                    print(f"⏳ PROCESS_PIDS vide | Compteur: {empty_counter}/30")
-
-                    if empty_counter >= 30:
-                        print("🛑 PROCESS_PIDS vide depuis 30 secondes → arrêt du thread")
+                    if empty_counter >= 15:
+                        print("🛑 PROCESS_PIDS vide → arrêt du thread")
                         break
 
                 time.sleep(1)
 
             except Exception as e:
-                print(f"❌ [THREAD] Erreur dans la boucle principale : {e}")
+                print(f"❌ [THREAD] Erreur: {e}")
 
-        print("🛑 [THREAD] CloseBrowserThread terminé")
+        print("🛑 [THREAD] Terminé")
 
     # ======================================================
     # 📄 LOG FILE
@@ -352,13 +602,19 @@ class CloseBrowserThread(QThread):
         try:
             full_path = os.path.join(self.downloads_folder, log_file)
             email = ValidationUtils.get_email_from_log_file(full_path)
+
             if not email:
                 return
+
+            # ❌ تجاهل logs ديال success
+            with self.lock:
+                if email in self.completed_emails:
+                    return
 
             email_folder = os.path.join(self.SESSION_DIR, email)
             os.makedirs(email_folder, exist_ok=True)
 
-            target_log = os.path.join(email_folder, f"{email}_{self.CURRENT_HOUR}.txt")
+            target_log = os.path.join(email_folder, f"{email}_{self.CURRENT_DATETIME}.txt")
 
             with open(full_path, "r", encoding="utf-8") as f:
                 content = f.read()
@@ -369,30 +625,26 @@ class CloseBrowserThread(QThread):
             os.remove(full_path)
 
         except Exception as e:
-            # print(f"❌ [LOG] Erreur {log_file}: {e}")
-            pass
+            print(f"❌ [LOG] {e}")
 
     # ======================================================
-    # 📄 SESSION FILE + SCREENSHOT
+    # 📄 SESSION FILE
     # ======================================================
-    
     def process_session_file(self, file_name, screenshots):
         profile_data_file = None
+        session_path = os.path.join(self.downloads_folder, file_name)
 
         try:
-            # 📄 Lecture du fichier session
-            session_path = os.path.join(self.downloads_folder, file_name)
             with open(session_path, "r", encoding="utf-8") as f:
                 content = f.read().strip()
 
-            # 🔍 Parsing selon le navigateur
+            # 🔍 parsing
             if self.selected_Browser.lower() == "chrome":
                 match = re.search(r"session_id:(\w+)_email:([\w.@+-]+)_etat:(\w+)", content, re.IGNORECASE)
             else:
                 match = re.search(r"session_id:(\w+)_PID:(\d+)_Email:([\w.@]+)_Status:(\w+)", content)
 
             if not match:
-                os.remove(session_path)
                 return
 
             if self.selected_Browser.lower() == "chrome":
@@ -410,81 +662,85 @@ class CloseBrowserThread(QThread):
                 pid = int(pid)
                 inserted_id = None
 
+            # ======================================================
+            # ✅ LIGHT FLOW (completed / bad_proxy)
+            # ======================================================
+            if status.lower() in ("completed", "bad_proxy"):
+                print(f"✅ LIGHT FLOW {status.upper()} {email}")
+
+                with self.lock:
+                    self.completed_emails.add(email)
+
+                self.write_result_and_send_status(session_id, pid, email, status, inserted_id)
+
+                if pid:
+                    self._close_browser_process(pid, email, self.selected_Browser)
+
+                return
+
+            # ======================================================
+            # ❌ ERROR FLOW
+            # ======================================================
             email_folder = os.path.join(self.SESSION_DIR, email)
             os.makedirs(email_folder, exist_ok=True)
 
-            # 🖼️ Gestion des screenshots
             self._move_screenshot(email, screenshots, email_folder)
 
-            # ✍️ Écriture dans le fichier résultat + envoi statut
             self.write_result_and_send_status(session_id, pid, email, status, inserted_id)
 
-            # 🛑 Fermeture du processus si nécessaire
             if pid:
                 self._close_browser_process(pid, email, self.selected_Browser)
 
         except Exception as e:
-            print(f"❌ [SESSION] Erreur lors du traitement de {file_name}: {e}")
+            print(f"❌ [SESSION] {e}")
 
         finally:
-            # 🧹 Nettoyage des fichiers
+            # ✅ cleanup مرة واحدة فقط
             try:
                 if os.path.exists(session_path):
                     os.remove(session_path)
                 if profile_data_file and os.path.exists(profile_data_file):
                     os.remove(profile_data_file)
             except Exception as e:
-                print(f"⚠️ Erreur nettoyage fichiers pour {file_name}: {e}")
+                print(f"⚠️ Cleanup error: {e}")
 
-    # ======================================================
-    # 🔹 Fonction séparée pour écrire le résultat et envoyer le statut
     # ======================================================
     def write_result_and_send_status(self, session_id, pid, email, status, inserted_id):
         try:
-            # 🔹 التأكد من وجود الملف، إذا لم يكن موجوداً يتم إنشاؤه
             if not os.path.exists(Settings.RESULT_FILE_PATH):
-                with open(Settings.RESULT_FILE_PATH, 'w', encoding='utf-8') as f:
-                    f.write("")
+                open(Settings.RESULT_FILE_PATH, 'w').close()
 
-            # 🔹 فتح الملف للكتابة والإضافة
-            with open(Settings.RESULT_FILE_PATH, 'a', encoding='utf-8') as result_file:
-                result_file.write(f"{session_id}:{pid}:{email}:{status}\n")
-                Send_Status({
-                    "id": inserted_id,
-                    "login": self.username,
-                    "status": "✅ OK" if status.lower() == "completed" else "❌ NotOK",
-                    "error": "" if status.lower() == "completed" else status
-                })
+            with open(Settings.RESULT_FILE_PATH, 'a', encoding='utf-8') as f:
+                f.write(f"{session_id}:{pid}:{email}:{status}\n")
 
-            print(f"✅ Statut écrit et envoyé pour {email}")
+            Send_Status({
+                "id": inserted_id,
+                "login": self.username,
+                "status": "✅ OK" if status.lower() == "completed" else "❌ NotOK",
+                "error": "" if status.lower() == "completed" else status
+            })
 
         except Exception as e:
-            print(f"⚠️ Erreur lors de l'écriture/envoi du statut pour {email}: {e}")
+            print(f"⚠️ Status error: {e}")
 
-
-    # ======================================================
-    # 🔹 Fonction pour déplacer les screenshots
     # ======================================================
     def _move_screenshot(self, email, screenshots, email_folder):
         try:
             for img in screenshots:
                 if email.lower() in img.lower():
-                    src_img = os.path.join(self.downloads_folder, img)
-                    dst_img = os.path.join(email_folder, f"{email}.png")
-                    shutil.move(src_img, dst_img)
-                    print(f"🖼️ Screenshot déplacé pour {email}")
+                    shutil.move(
+                        os.path.join(self.downloads_folder, img),
+                        os.path.join(email_folder, f"{email}.png")
+                    )
                     break
         except Exception as e:
-            print(f"⚠️ Erreur déplacement screenshot pour {email}: {e}")
-
+            print(f"⚠️ Screenshot error: {e}")
 
     # ======================================================
-    # 🌐 FONCTIONS NAVIGATEURS
-    # ======================================================
-    
     def _close_browser_process(self, pid, email, browser):
         try:
             pid = int(pid)
+
             if not psutil.pid_exists(pid):
                 if pid in PROCESS_PIDS:
                     PROCESS_PIDS.remove(pid)
@@ -492,7 +748,7 @@ class CloseBrowserThread(QThread):
 
             if browser.lower() == "firefox":
                 try:
-                    hwnd = self.find_firefox_window(email)
+                    self.find_firefox_window(email)
                     self.wait_then_close(email)
                 except:
                     pass
@@ -510,11 +766,8 @@ class CloseBrowserThread(QThread):
             if pid in PROCESS_PIDS:
                 PROCESS_PIDS.remove(pid)
 
-        except Exception as e:
-            # print(f"🔥 [PROC] Erreur inattendue PID={pid} | {e}")
+        except:
             pass
-
-    
     
     
     
@@ -926,14 +1179,14 @@ class ExtractionThread(QThread):
                     new_password = ValidationUtils.generate_secure_password(16)
 
                     # 🔹 Création du chemin du dossier de session
-                    session_directory = Path(Settings.LOGS_DIRECTORY) / f"{CURRENT_DATE}_{CURRENT_HOUR}"
+                    # session_directory = Path(Settings.LOGS_DIRECTORY) / f"{CURRENT_DATE}_{CURRENT_HOUR}"
 
-                    try:
-                        # Crée le dossier seulement s'il n'existe pas déjà
-                        if not session_directory.exists():
-                            session_directory.mkdir(parents=True, exist_ok=True)
-                    except Exception:
-                        pass
+                    # try:
+                    #     # Crée le dossier seulement s'il n'existe pas déjà
+                    #     if not session_directory.exists():
+                    #         session_directory.mkdir(parents=True, exist_ok=True)
+                    # except Exception:
+                    #     pass
 
                     logs_subdirs = [os.path.join(Settings.LOGS_DIRECTORY, d) for d in os.listdir(Settings.LOGS_DIRECTORY) if os.path.isdir(os.path.join(Settings.LOGS_DIRECTORY, d))]
                     logs_subdirs.sort(key=os.path.getctime)
@@ -1143,11 +1396,11 @@ def Process_Browser(window, selected_Browser) -> bool:
 
     if missing_keys:
         Settings.WRITE_LOG_DEV_FILE(f"Missing keys in JSON file !!", "WARNING")
-        print("❌ Clés manquantes :")
-        for idx, key in enumerate(missing_keys, start=1):
-            print(f"   {idx}. {key}")
+        # print("❌ Clés manquantes :")
+        # for idx, key in enumerate(missing_keys, start=1):
+        #     print(f"   {idx}. {key}")
         return False
-    print(f"✅ Toutes les clés JSON requises sont présentes ({len(found_keys)}/{len(required_keys)})")
+    # print(f"✅ Toutes les clés JSON requises sont présentes ({len(found_keys)}/{len(required_keys)})")
 
     # 5️⃣ Vérification et mise à jour de l'extension
     ext_path = Settings.EXTENTION_EX3
@@ -1573,13 +1826,13 @@ class MainWindow(QMainWindow):
         print(f"🔐 [ENCRYPT] Encrypted string: {encrypted_String}")
 
         Api_Url = f"https://reporting.nrb-apps.com/pub/ReportingV4/senario.php?rv4=1&action=get&entity=IT&l={encrypted_String}"
-        print(f"🌐 [API] URL: {Api_Url}")
+        # print(f"🌐 [API] URL: {Api_Url}")
 
         try:
             print("📡 [API] Sending request to load scenarios...")
             result = APIManager.load_scenarios(Api_Url)  # ممكن ترجع list أو dict
-            print(f"📥 [API] Raw result: {result}")
-            Settings.WRITE_LOG_DEV_FILE(f"[API RESULT] {result}", "DEBUG")
+            # print(f"📥 [API] Raw result: {result}")
+            # Settings.WRITE_LOG_DEV_FILE(f"[API RESULT] {result}", "DEBUG")
 
             # 🔹 إذا كانت dict و فيها status=False → خطأ
             if isinstance(result, dict) and result.get("status") is False:
@@ -1698,7 +1951,7 @@ class MainWindow(QMainWindow):
 
         
     def Submit_Button_Clicked(self, window):
-        global CURRENT_HOUR, CURRENT_DATE, LOGS_RUNNING, NOTIFICATION_BADGES 
+        global  LOGS_RUNNING, NOTIFICATION_BADGES 
         
         disable_button(self.submitButton)
         
@@ -1742,10 +1995,10 @@ class MainWindow(QMainWindow):
             self.erreur_label.setText(msg)
             self.erreur_label.show()
 
-            Settings.WRITE_LOG_DEV_FILE(
-                f"Authentication failed (code {auth_result}): {msg}",
-                "ERROR"
-            )
+            # Settings.WRITE_LOG_DEV_FILE(
+            #     f"Authentication failed (code {auth_result}): {msg}",
+            #     "ERROR"
+            # )
             enable_button(self.submitButton)
             return
         else :
@@ -1887,11 +2140,11 @@ class MainWindow(QMainWindow):
 
             return
         
-        current_time = datetime.datetime.now()
-        CURRENT_DATE = current_time.strftime("%Y-%m-%d")
-        CURRENT_HOUR = current_time.strftime("%H-%M-%S") 
+        # current_time = datetime.datetime.now()
+        # CURRENT_DATE = current_time.strftime("%Y-%m-%d")
+        # CURRENT_HOUR = current_time.strftime("%H-%M-%S") 
         # print("✅ Current date and hour set:", CURRENT_DATE, CURRENT_HOUR)
-        Settings.WRITE_LOG_DEV_FILE(f"Current date and hour set: {CURRENT_DATE} {CURRENT_HOUR}", "INFO")
+        # Settings.WRITE_LOG_DEV_FILE(f"Current date and hour set: {CURRENT_DATE} {CURRENT_HOUR}", "INFO")
 
         # print("📦 JSON Final:")
         Settings.WRITE_LOG_DEV_FILE("Final JSON:", "INFO")

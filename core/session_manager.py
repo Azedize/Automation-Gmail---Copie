@@ -292,7 +292,7 @@ class SessionManager:
 
         try:
             print(f"[DEBUG] Début de check_api_credentials")
-            settings.WRITE_LOG_DEV_FILE(f"Début check_api_credentials: username='{username}', password='{'*' * len(password)}'", "DEBUG")
+            # settings.WRITE_LOG_DEV_FILE(f"Début check_api_credentials: username='{username}', password='{'*' * len(password)}'", "DEBUG")
 
             # Validation username
             valid_user, msg_user = ValidationUtils.validate_qlineedit_text(username, validator_type="text", min_length=5)

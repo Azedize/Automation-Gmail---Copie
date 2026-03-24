@@ -36,11 +36,19 @@ class BrowserManager:
     
     @staticmethod
     def get_browser_path(browser_name_or_exe: str) -> Optional[str]:
-        """Récupère le chemin d'un navigateur via le registre Windows"""
+        """Récupère le chemin d'un navigateur via le registre Windows avec logs détaillés"""
+
         exe_name = Settings.SUPPORTED_BROWSERS.get(
             browser_name_or_exe.lower(), {}
         ).get("exe_name", browser_name_or_exe)
-        #print(f"🔍 Recherche de l'exécutable : {exe_name}")
+
+        Settings.WRITE_LOG_DEV_FILE(f"🔍 Recherche du navigateur: {exe_name}", "INFO")
+
+        # Mapping professionnel des hives
+        HIVE_NAMES = {
+            winreg.HKEY_LOCAL_MACHINE: "HKEY_LOCAL_MACHINE",
+            winreg.HKEY_CURRENT_USER: "HKEY_CURRENT_USER",
+        }
 
         registry_paths = [
             (winreg.HKEY_LOCAL_MACHINE, winreg.KEY_READ | winreg.KEY_WOW64_32KEY),
@@ -52,22 +60,53 @@ class BrowserManager:
         key_app_paths = rf"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\{exe_name}"
 
         for hive, access in registry_paths:
+            hive_name = HIVE_NAMES.get(hive, str(hive))
+
             try:
+                Settings.WRITE_LOG_DEV_FILE(
+                    f"🔎 Recherche dans: {hive_name}",
+                    "INFO"
+                )
+
                 with winreg.OpenKey(hive, key_app_paths, 0, access) as key_obj:
                     path, _ = winreg.QueryValueEx(key_obj, None)
-                    if path and ValidationUtils.path_exists(path):
-                        #print(f"✅ Navigateur trouvé : {path}")
-                        return path
+
+                    if path:
+                        if ValidationUtils.path_exists(path):
+                            Settings.WRITE_LOG_DEV_FILE(
+                                f"✅ Navigateur trouvé: {exe_name}",
+                                "SUCCESS"
+                            )
+                            Settings.WRITE_LOG_DEV_FILE(
+                                f"📂 Chemin: {path}",
+                                "SUCCESS"
+                            )
+                            return path
+                        else:
+                            Settings.WRITE_LOG_DEV_FILE(
+                                f"⚠️ Chemin trouvé mais fichier inexistant: {path}",
+                                "WARNING"
+                            )
+
             except FileNotFoundError:
-                Settings.WRITE_LOG_DEV_FILE(f"Navigateur introuvable ({hive})", "INFO")
+                Settings.WRITE_LOG_DEV_FILE(
+                    f"❌ Non trouvé dans: {hive_name}",
+                    "INFO"
+                )
                 continue
+
             except Exception as e:
-                Settings.WRITE_LOG_DEV_FILE(f"Erreur registre ({hive}): {e}", "ERROR")
-                # print(f"⚠️ Erreur registre ({hive}): {e}")
+                Settings.WRITE_LOG_DEV_FILE(
+                    f"🚨 Erreur registre ({hive_name}): {str(e)}",
+                    "ERROR"
+                )
 
-        #print(f"❌ Navigateur {exe_name} introuvable")
+        Settings.WRITE_LOG_DEV_FILE(
+            f"❌ Navigateur introuvable: {exe_name}",
+            "ERROR"
+        )
+
         return None
-
     
     
     # ---------------------- Firefox ----------------------

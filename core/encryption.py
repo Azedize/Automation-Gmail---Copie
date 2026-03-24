@@ -59,6 +59,7 @@ class EncryptionService:
     # =========================
     # 🔓 AES-CBC Decrypt
     # =========================
+    
     @staticmethod
     def decrypt_message(base64_data: str, key_bytes: bytes) -> str:
         if len(key_bytes) != settings.AES_KEY_LENGTH:
