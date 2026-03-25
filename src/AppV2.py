@@ -1768,7 +1768,7 @@ class MainWindow(QMainWindow):
             "state": json.dumps(self.STATE_STACK[-1]),
             "state_stack": json.dumps(self.STATE_STACK)
         }
-        print(f"📋 [Handle_Save] Payload prepared: user_id={payload['user_id']}, name={payload['name']}")
+        print(f"📋 [Handle_Save] Complete payload: {json.dumps(payload, indent=2, ensure_ascii=False)}")
 
         print("🌐 [Handle_Save] Building API URL")
         # 7️⃣ API URL
@@ -1777,6 +1777,7 @@ class MainWindow(QMainWindow):
             f"senario.php?rv4=1&entity=IT&action=add&l={encrypted_String}"
         )
         print(f"🔗 [Handle_Save] API URL: {Api_Url}")
+        # return
 
         print("📡 [Handle_Save] Calling API...")
         # 8️⃣ Call API
