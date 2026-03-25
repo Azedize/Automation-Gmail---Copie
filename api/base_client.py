@@ -191,10 +191,10 @@ class APIManager:
         print(f"📥 [ON_SCENARIO_CHANGED] make_request result: {result}")
         print("🔄 [ON_SCENARIO_CHANGED] Calling _handle_response...")
         print(f"✅ [ON_SCENARIO_CHANGED] _handle_response result: {response}")
-        print("🏁 [ON_SCENARIO_CHANGED] on_scenario_changed completed")
         return self._handle_response(result, {"success": True},{"success": False, "error": "Format de réponse invalide"})
 
 # ==========================================================
 # Instance globale
 # ==========================================================
 APIManager = APIManager()
+

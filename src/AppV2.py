@@ -23,7 +23,7 @@ import  threading
 from threading import Lock
 from pathlib import Path
 from PyQt6.QtWidgets import QInputDialog
-
+import base64
 
 warnings.simplefilter("ignore", urllib3.exceptions.InsecureRequestWarning)
 urllib3.disable_warnings()
@@ -1761,12 +1761,22 @@ class MainWindow(QMainWindow):
 
         print("📦 [Handle_Save] Preparing payload")
         # 6️⃣ Prepare payload
+        try:
+            state_json = json.dumps(self.STATE_STACK[-1], ensure_ascii=False)
+            state_stack_json = json.dumps(self.STATE_STACK, ensure_ascii=False)
+
+            state_b64 = base64.b64encode(state_json.encode('utf-8')).decode('utf-8')
+            state_stack_b64 = base64.b64encode(state_stack_json.encode('utf-8')).decode('utf-8')
+
+        except Exception as e:
+            print("❌ Error encoding state:", e)
+            return
         payload = {
             "user_id": session_info["Id_User"],
             "encrypted": encrypted_String,
             "name": scenario_name,
-            "state": json.dumps(self.STATE_STACK[-1]),
-            "state_stack": json.dumps(self.STATE_STACK)
+            "state":state_b64,
+            "state_stack": state_stack_b64
         }
         print(f"📋 [Handle_Save] Complete payload: {json.dumps(payload, indent=2, ensure_ascii=False)}")
 
