@@ -1707,44 +1707,59 @@ class MainWindow(QMainWindow):
 
 
     def Handle_Save(self):
+        print("🔄 [Handle_Save] Starting Handle_Save function...")
 
         # 1️⃣ Check if there is data to save
+        print(f"🔍 [Handle_Save] Checking STATE_STACK: {len(self.STATE_STACK) if self.STATE_STACK else 0} items")
         if not self.STATE_STACK:
+            print("❌ [Handle_Save] STATE_STACK is empty, showing error message")
             UIManager.Show_Critical_Message( self, "No Data",  "No actions to save. Please add actions before saving.",  message_type="critical")
             Settings.WRITE_LOG_DEV_FILE( "No actions to save. Please add actions before saving.", "ERROR" )
             return
 
+        print("✅ [Handle_Save] STATE_STACK has data, proceeding to get scenario name")
         scenario_name, ok = QInputDialog.getText( self,"Save Scenario", "Enter scenario name:" )
 
         if not ok:
+            print("⚠️ [Handle_Save] User cancelled scenario name input")
             # User clicked Cancel
             return
 
         scenario_name = scenario_name.strip()
+        print(f"📝 [Handle_Save] Scenario name entered: '{scenario_name}'")
 
         if not scenario_name:
+            print("❌ [Handle_Save] Scenario name is empty, showing error message")
             UIManager.Show_Critical_Message( self, "Invalid Name",  "Scenario name cannot be empty.", message_type="critical")
             return
 
+        print("✅ [Handle_Save] Scenario name is valid, checking session file")
         # 3️⃣ Check if session file exists
         if not ValidationUtils.path_exists(Settings.SESSION_PATH):
+            print(f"❌ [Handle_Save] Session file not found at: {Settings.SESSION_PATH}")
             UIManager.Show_Critical_Message(self, "Session Not Found","[❌] Your session file is missing. Please restart the application.", message_type="critical"  )
             Settings.WRITE_LOG_DEV_FILE( "Your session file is missing. Please restart the application.", "ERROR")
             return
 
+        print("✅ [Handle_Save] Session file exists, checking session validity")
         # 4️⃣ Check session validity
         session_info = SessionManager.check_session()
+        print(f"🔐 [Handle_Save] Session info: valid={session_info.get('valid')}, user={session_info.get('username')}")
 
         if not session_info["valid"]:
+            print("❌ [Handle_Save] Session is invalid, exiting")
             sys.exit()
             return False
 
+        print("✅ [Handle_Save] Session is valid, encrypting session info")
         # 5️⃣ Encrypt session info
         encrypted_String = EncryptionService.encrypt_message(
             f"{session_info['Id_User']}::{session_info['username']}::{session_info['date']}::IT",
             Settings.KEY
         )
+        print(f"🔒 [Handle_Save] Encrypted string generated (length: {len(encrypted_String)})")
 
+        print("📦 [Handle_Save] Preparing payload")
         # 6️⃣ Prepare payload
         payload = {
             "user_id": session_info["Id_User"],
@@ -1753,18 +1768,24 @@ class MainWindow(QMainWindow):
             "state": json.dumps(self.STATE_STACK[-1]),
             "state_stack": json.dumps(self.STATE_STACK)
         }
+        print(f"📋 [Handle_Save] Payload prepared: user_id={payload['user_id']}, name={payload['name']}")
 
+        print("🌐 [Handle_Save] Building API URL")
         # 7️⃣ API URL
         Api_Url = (
             "https://reporting.nrb-apps.com/pub/ReportingV4/"
             f"senario.php?rv4=1&entity=IT&action=add&l={encrypted_String}"
         )
+        print(f"🔗 [Handle_Save] API URL: {Api_Url}")
 
+        print("📡 [Handle_Save] Calling API...")
         # 8️⃣ Call API
         try:
             result = APIManager.handle_save_scenario(payload, Api_Url)
+            print(f"📥 [Handle_Save] API response received: {result}")
 
             if result.get("status") is False:
+                print("❌ [Handle_Save] API returned status=False, showing error message")
                 UIManager.Show_Critical_Message(
                     self,
                     "Action Not Saved",
@@ -1777,16 +1798,21 @@ class MainWindow(QMainWindow):
                 return
 
             if result.get("status"):
+                print("✅ [Handle_Save] API returned status=True, scenario saved successfully")
                 self.Load_Scenarios_Into_Combobox()
                 UIManager.Show_Critical_Message( self, "Success", "The scenario has been saved successfully.",message_type="success")
                 Settings.WRITE_LOG_DEV_FILE( "The scenario has been saved successfully.",  "INFO" )
             else:
+                print("⚠️ [Handle_Save] API returned status=None or unexpected, showing API error")
                 UIManager.Show_Critical_Message( self,  "API Error", "An error occurred while saving the scenario.",  message_type="critical"  )
                 Settings.WRITE_LOG_DEV_FILE( "An error occurred while saving the scenario.", "ERROR")
 
         except Exception as e:
+            print(f"💥 [Handle_Save] Exception during API call: {e}")
             UIManager.Show_Critical_Message(  self, "Error", "An error occurred while saving the scenario.",  message_type="critical" )
             Settings.WRITE_LOG_DEV_FILE(  f"An error occurred while saving the scenario: {str(e)}", "ERROR")
+
+        print("🏁 [Handle_Save] Handle_Save function completed")
 
 
 
