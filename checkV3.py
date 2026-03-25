@@ -415,8 +415,8 @@ class UpdateManager:
             sys.exit("❌ Encryption failed, exiting program.")  # Arrêt immédiat
 
         url = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Script&k={date_encrypted}" 
-        DownloadFiles = "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip"
-
+        # DownloadFiles = "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip"
+        DownloadFiles = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Script&k={date_encrypted}"
 
         max_attempts = 3
         for attempt in range(1, max_attempts + 1):
@@ -516,9 +516,9 @@ def main():
     # 🔹 DÉMARRAGE DE L'APPLICATION PRINCIPALE
     # ==========================================================
 
-    # if sys.platform == "win32":
-    #     import ctypes
-    #     ctypes.windll.user32.ShowWindow( ctypes.windll.kernel32.GetConsoleWindow(), 0)
+    if sys.platform == "win32":
+        import ctypes
+        ctypes.windll.user32.ShowWindow( ctypes.windll.kernel32.GetConsoleWindow(), 0)
 
 
     try:

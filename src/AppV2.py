@@ -220,7 +220,7 @@ def Stop_All_Processes(window):
         )
 
         # Réactivation du bouton Submit pour éviter blocage UI
-        enable_button(window.submitButton)
+        enable_button(window.stopButton)
         return  # Sortir de la fonction
 
     browser_name = SELECTED_BROWSER_GLOBAL.lower()
