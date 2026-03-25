@@ -7,6 +7,7 @@ import os
 import sys
 import json
 import time
+from urllib import response
 import requests
 from typing import Dict, Any, Optional
 from requests.adapters import HTTPAdapter, Retry
@@ -183,7 +184,14 @@ class APIManager:
         return response
 
     def on_scenario_changed(self,  payload: Dict[str, Any], Url_Api) -> Dict[str, Any]:
+        print("🚀 [ON_SCENARIO_CHANGED] Starting on_scenario_changed function")
+        print(f"📋 [ON_SCENARIO_CHANGED] Payload: {json.dumps(payload, indent=2, ensure_ascii=False)}")
+        print(f"🔗 [ON_SCENARIO_CHANGED] API URL: {Url_Api}")
         result = self.make_request(Url_Api, "POST", data=payload)
+        print(f"📥 [ON_SCENARIO_CHANGED] make_request result: {result}")
+        print("🔄 [ON_SCENARIO_CHANGED] Calling _handle_response...")
+        print(f"✅ [ON_SCENARIO_CHANGED] _handle_response result: {response}")
+        print("🏁 [ON_SCENARIO_CHANGED] on_scenario_changed completed")
         return self._handle_response(result, {"success": True},{"success": False, "error": "Format de réponse invalide"})
 
 # ==========================================================

@@ -1798,6 +1798,7 @@ class MainWindow(QMainWindow):
                 Settings.WRITE_LOG_DEV_FILE( "Save failed: session expired or action name already exists.", "ERROR")
                 return
 
+
             if result.get("status"):
                 print("✅ [Handle_Save] API returned status=True, scenario saved successfully")
                 self.Load_Scenarios_Into_Combobox()
