@@ -604,24 +604,3 @@ if __name__ == "__main__":
 
 
 
-
-# FH2MRE recrute un Développeur Web & Multimédia (H/F)
-
-# Dans le cadre du renforcement de ses équipes, FH2MRE recrute un Développeur Web & Multimédia (H/F).
-
-# 🎯 Missions principales :
-# - Participer à la création de contenus et modules e-learning via Adobe Captivate,
-# - Assurer la maintenance et l’optimisation des sites web existants,
-# - Installer et configurer des plugins WordPress,
-# - Diagnostiquer et résoudre les incidents techniques liés aux projets WordPress.
-# 👤 Profil recherché :
-# - Bac+2 minimum en Développement Web & Multimédia ou équivalent,
-# - Expérience de 2 à 3 ans dans un poste similaire,
-# - Bonne maîtrise du CMS WordPress,
-# - Maîtrise des langages PHP, JavaScript, HTML5, CSS3,
-# - Connaissance d’Adobe Captivate,
-# -Maîtrise des outils de conception graphique (Photoshop, Illustrator…).
-
-# 📍 Rabat
-
-# 📩 Intéressé(e) ? Envoyez votre CV à : emploi@ifcarsolutions.com

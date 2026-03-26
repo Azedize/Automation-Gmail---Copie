@@ -61,7 +61,7 @@ class APIManager:
         print(f"📥 JSON: {json_data}")
         print(f"📥 Params: {params}")
         print(f"📝 Headers: {req_headers}")
-        print(f"⏱️ Timeout: {timeout}s\n")
+        print(f"⏱️ Timeout: {timeout}s\n")       
 
         last_exception = None
 
@@ -107,6 +107,7 @@ class APIManager:
         # ❌ Échec final
         print(f"❌ [FINAL] Failed after 3 attempts: {last_exception}")
         return {"status": "error", "error": f"Failed after 3 attempts: {last_exception}", "status_code": None}
+
 
     # --------------------- Gestion de réponse ---------------------
     def _handle_response(self, result: Dict[str, Any], success_default: Any = None, failure_default: Any = None):
