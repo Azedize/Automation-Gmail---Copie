@@ -12,6 +12,7 @@ import subprocess
 import re
 import datetime
 import sys
+from sqlalchemy import true
 import urllib3
 import psutil
 from platformdirs import user_downloads_dir
@@ -24,6 +25,12 @@ from threading import Lock
 from pathlib import Path
 from PyQt6.QtWidgets import QInputDialog
 import base64
+from colorama import Fore, Style, init
+import requests
+import json
+from typing import List, Dict, Tuple, Union ,Any , Set
+
+
 
 warnings.simplefilter("ignore", urllib3.exceptions.InsecureRequestWarning)
 urllib3.disable_warnings()
@@ -820,51 +827,327 @@ class CloseBrowserThread(QThread):
 # 📝 FONCTIONS VALIDATION
 # ======================================================
 
-
-def Generate_User_Input_Data(window):
-    # print("🟢 [START] Generate_User_Input_Data")
-
-    # Récupération des données depuis l’UI
-    # print("📝 Lecture des données depuis l'interface...")
-    input_data = window.textEdit_3.toPlainText().strip()
-    entered_number_text = window.textEdit_4.toPlainText().strip()
-    # print(f"🔹 Données brutes:\n{input_data[:100]}{'...' if len(input_data) > 100 else ''}")
-    # print(f"🔹 Numéro saisi: {entered_number_text}")
-    Settings.WRITE_LOG_DEV_FILE(f"Raw data:\n{input_data[:100]}{'...' if len(input_data) > 100 else ''}", "INFO")
-    Settings.WRITE_LOG_DEV_FILE(f"Entered number: {entered_number_text}", "INFO")
-
-    # Appel de la logique de validation
-    # print("⚙️ Appel de process_user_input pour validation...")
-    validation_result = ValidationUtils.process_user_input(
-        input_data,
-        entered_number_text
-    )
-
-    # En cas d’erreur → affichage UI
-    if not validation_result["success"]:
-        #print(f"❌ Validation échouée: {validation_result['error_title']} - {validation_result['error_message']}")
-        Settings.WRITE_LOG_DEV_FILE(f"Validation failed: {validation_result['error_title']} - {validation_result['error_message']}", "ERROR")
-        UIManager.Show_Critical_Message(
-            window,
-            validation_result["error_title"],
-            validation_result["error_message"],
-            message_type=validation_result.get("error_type", "critical")
-        )
-        # print("🟢 [END] Generate_User_Input_Data (Erreur)")
-        return None
-
-    # Succès → même retour que la fonction originale
-    # print(f"✅ Validation réussie! Nombre de lignes valides: {len(validation_result['data_list'])}")
-    # print("🟢 [END] Generate_User_Input_Data (Succès)")
-    Settings.WRITE_LOG_DEV_FILE(f"Validation succeeded! Number of valid lines: {len(validation_result['data_list'])}", "INFO")
-    return (
-        validation_result["data_list"],
-        validation_result["entered_number"]
-    )
-
-# le programme is runing dans une interface 
+_ENTITY_V = "opm74"
+AUTHORISED_PORTS = ['5836', '0000', '8080','3128','1111','16666']
+API_URL = "https://reporting.nrb-apps.com/pub/getInfoProxy.php"
+API_KEY = "Gmf15dfVD61G8gZQg"
 
 
+
+
+
+
+def safe_get(item: dict, key: str, default=None):
+    return item.get(key, default) if isinstance(item, dict) else default
+
+
+def format_ip(raw_ip: str) -> Dict[str, Any]:
+    """
+    Safely format IP → IP#PORT if exists
+    """
+    try:
+        if not raw_ip:
+            Settings.WRITE_LOG_DEV_FILE("Empty IP provided", "ERROR")
+            return {"valid": False, "data": None, "error": "Empty IP"}
+
+        parts = raw_ip.split(';')
+
+        if len(parts) >= 3:
+            Settings.WRITE_LOG_DEV_FILE(f"IP with port detected: {raw_ip}", "INFO")
+            formatted = parts[2].replace(':', '#')
+        else:
+            Settings.WRITE_LOG_DEV_FILE(f"IP without port detected: {raw_ip}", "INFO")
+            formatted = raw_ip
+
+        if '#' in formatted:
+            Settings.WRITE_LOG_DEV_FILE(f"Validating IP with port: {formatted}", "INFO")
+            ip_parts = formatted.split('#')
+
+            if len(ip_parts) != 2:
+                Settings.WRITE_LOG_DEV_FILE(f"Malformed IP: {formatted}", "ERROR")
+                return {"valid": False, "data": None, "error": f"Malformed IP: {formatted}"}
+
+            ip, port = ip_parts
+
+            if not port.isdigit():
+                Settings.WRITE_LOG_DEV_FILE(f"Invalid port in IP: {formatted}", "ERROR")
+                return {"valid": False, "data": None, "error": f"Invalid port in IP: {formatted}"}
+            
+        Settings.WRITE_LOG_DEV_FILE(f"Formatted IP: {formatted}", "INFO")
+        return {"valid": True, "data": formatted, "error": None}
+
+    except Exception as e:
+        Settings.WRITE_LOG_DEV_FILE(f"Error formatting IP: {e}", "ERROR")
+        return {"valid": False, "data": None, "error": str(e)}
+
+
+# =========================================================
+# 🔐 PORT PIPELINE (CHECK + FILTER)
+# =========================================================
+
+def process_ports(data_list: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Combine:
+    - Authorised ports validation
+    - Suspicious ports filtering (0000 / 1111)
+    """
+
+    try:
+        if not data_list:
+            Settings.WRITE_LOG_DEV_FILE("No data provided for port processing", "WARNING")
+            return {"valid": True, "data": {"filtered": [], "invalid": []}, "error": None}
+
+        all_ports = []
+        invalid_accounts = []
+        suspicious_accounts = []
+
+        for index, item in enumerate(data_list):
+            if not isinstance(item, dict):
+                Settings.WRITE_LOG_DEV_FILE(f"Invalid item at index {index}: Not a dictionary", "ERROR")
+                return {"valid": False, "data": None, "error": f"Invalid item at index {index}"}
+
+            port = str(safe_get(item, "port", "")).strip()
+
+            if not port:
+                Settings.WRITE_LOG_DEV_FILE(f"Missing port at index {index}", "ERROR")
+                return {"valid": False, "data": None, "error": f"Missing port at index {index}"}
+
+            all_ports.append(port)
+
+            # ❌ Unauthorized
+            if port not in Settings.AUTHORISED_PORTS:
+                invalid_accounts.append(item)
+
+            # ⚠️ Suspicious
+            if port in ['0000', '1111']:
+                suspicious_accounts.append(item)
+
+        # ❌ Stop if unauthorized exists
+        if invalid_accounts:
+            msg = "Unauthorised ports detected"
+            Settings.WRITE_LOG_DEV_FILE(f"{msg}: {len(invalid_accounts)} accounts", "ERROR")
+            return {"valid": False, "data": invalid_accounts, "error": msg}
+
+        Settings.WRITE_LOG_DEV_FILE(f"Suspicious ports count: {len(suspicious_accounts)}", "INFO")
+
+        return {
+            "valid": True,
+            "data": {
+                "filtered": suspicious_accounts,
+                "invalid": []
+            },
+            "error": None
+        }
+
+    except Exception as e:
+        Settings.WRITE_LOG_DEV_FILE(f"Error processing ports: {e}", "ERROR")
+        return {"valid": False, "data": None, "error": str(e)}
+
+
+# =========================================================
+# 🌐 IP EXTRACTION
+# =========================================================
+
+def extract_unique_ips(data_list: List[Dict[str, Any]]) -> Dict[str, Any]:
+    try:
+        unique_ips: Set[str] = set()
+
+        for index, item in enumerate(data_list):
+            ip = safe_get(item, "ipAddress")
+
+            if ip:
+                unique_ips.add(str(ip))
+            else:
+                Settings.WRITE_LOG_DEV_FILE(f"Missing ipAddress at index {index}", "WARNING")
+
+        Settings.WRITE_LOG_DEV_FILE(f"Unique IPs count: {len(unique_ips)}", "INFO")
+
+        return {"valid": True, "data": unique_ips, "error": None}
+
+    except Exception as e:
+        Settings.WRITE_LOG_DEV_FILE(f"Error extracting unique IPs: {e}", "ERROR")
+        return {"valid": False, "data": None, "error": str(e)}
+
+
+# =========================================================
+# 📡 API CALL
+# =========================================================
+
+def call_api(unique_ips: Set[str], entity_v: str) -> Dict[str, Any]:
+    try:
+        if not unique_ips:
+            Settings.WRITE_LOG_DEV_FILE("No IPs provided", "ERROR")
+            return {"valid": False, "data": None, "error": "No IPs provided"}
+
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        k_proxy = ','.join(unique_ips) + "---" + entity_v
+
+        params = {
+            'm': '5454542z15szsdz4jklhjhdfz',
+            'k': k_proxy
+        }
+
+        retries = 0
+        response_text = None
+
+        while retries < 12:
+            try:
+                Settings.WRITE_LOG_DEV_FILE("Connecting to API...", "INFO")
+                response = requests.post(
+                    Settings.API_ENDPOINTS['__GET_PROXY_INFO__'],
+                    headers=headers,
+                    verify=False,
+                    data=params
+                )
+                response_text = response.text
+                break
+            except requests.RequestException:
+                retries += 1
+                time.sleep(5)
+
+        if not response_text:
+            Settings.WRITE_LOG_DEV_FILE("API failed after retries", "ERROR")
+            return {"valid": False, "data": None, "error": "API failed after retries"}
+
+        # 🔐 Decrypt
+        decrypted = EncryptionService.decrypt_message(response_text, Settings.API_KEY_PROXY)
+        decrypted = re.sub(r'[^\x20-\x7E]', '', decrypted)
+
+        data = json.loads(decrypted)
+
+        # 🔍 Check missing IPs
+        api_ips = set(k.split('#')[0] for k in data.keys())
+        missing = unique_ips - api_ips
+
+        if missing:
+            Settings.WRITE_LOG_DEV_FILE(f"Missing IPs: {missing}", "ERROR")
+            return {"valid": False, "data": data, "error": f"Missing IPs: {missing}"}
+        
+        Settings.WRITE_LOG_DEV_FILE(f"API returned data for all IPs", "INFO")
+        return {"valid": True, "data": data, "error": None}
+
+    except Exception as e:
+        Settings.WRITE_LOG_DEV_FILE(f"Error calling API: {e}", "ERROR")
+        return {"valid": False, "data": None, "error": str(e)}
+
+
+# =========================================================
+# 🔄 MERGE
+# =========================================================
+
+def merge_data(api_data: dict, data_list: list) -> Dict[str, Any]:
+    try:
+        final_list = []
+
+        api_map = {k.split('#')[0]: v for k, v in api_data.items()}
+
+        for index, item in enumerate(data_list, 1):
+            raw_ip = safe_get(item, "ipAddress")
+
+            # Format IP
+            result = format_ip(raw_ip)
+            if not result["valid"]:
+                return {"valid": False, "data": None, "error": result["error"]}
+
+            formatted_ip = result["data"]
+            ip_only = formatted_ip.split('#')[0]
+
+            api_info = api_map.get(ip_only)
+            if not api_info:
+                Settings.WRITE_LOG_DEV_FILE(f"No API data for {ip_only}", "ERROR")
+                return {"valid": False, "data": None, "error": f"No API data for {ip_only}"}
+
+            final_list.append({
+                "email": safe_get(item, "email"),
+                "password_email": safe_get(item, "passwordEmail"),
+                "ip_address": formatted_ip,
+                "port": api_info.get("port"),
+                "login": api_info.get("login"),
+                "password": api_info.get("pass"),
+                "recovery_email": safe_get(item, "recoveryEmail"),
+                "new_recovery_email": safe_get(item, "new_recovery_email"),
+            })
+        Settings.WRITE_LOG_DEV_FILE("Merged data successfully", "INFO")
+        return {"valid": True, "data": final_list, "error": None}
+
+    except Exception as e:
+        Settings.WRITE_LOG_DEV_FILE(f"Error merging data: {e}", "ERROR")
+        return {"valid": False, "data": None, "error": str(e)}
+
+
+# =========================================================
+# 🚀 MAIN PIPELINE
+# =========================================================
+
+def Generate_User_Input_Data(window) -> Dict[str, Any]:
+    try:
+        Settings.WRITE_LOG_DEV_FILE("START Generate_User_Input_Data", "INFO")
+
+        input_data = window.textEdit_3.toPlainText().strip()
+        entered_number_text = window.textEdit_4.toPlainText().strip()
+
+        # 1️⃣ Validation
+        validation = ValidationUtils.process_user_input(input_data, entered_number_text)
+
+        if not validation["success"]:
+            Settings.WRITE_LOG_DEV_FILE(f"Input validation failed: {validation['error_message']}", "ERROR")
+            return {"valid": False, "data": None, "entered_number": None, "error": validation["error_message"]}
+
+        data_list = validation["data_list"]
+        entered_number = validation["entered_number"]
+
+        # 2️⃣ Ports pipeline
+        ports_result = process_ports(data_list)
+
+        if not ports_result["valid"]:
+            Settings.WRITE_LOG_DEV_FILE(f"Ports processing failed: {ports_result['error']}", "ERROR")
+            return {
+                "valid": False,
+                "data": ports_result["data"],
+                "entered_number": entered_number,
+                "error": ports_result["error"]
+            }
+
+        filtered_accounts = ports_result["data"]["filtered"]
+
+        # 3️⃣ Extract IPs
+        ip_result = extract_unique_ips(filtered_accounts)
+
+        if not ip_result["valid"]:
+            Settings.WRITE_LOG_DEV_FILE(f"IP extraction failed: {ip_result['error']}", "ERROR")
+            return {"valid": False, "data": None, "entered_number": entered_number, "error": ip_result["error"]}
+
+        # 4️⃣ API
+        api_result = call_api(ip_result["data"], "opm74")
+
+        if not api_result["valid"]:
+            Settings.WRITE_LOG_DEV_FILE(f"API call failed: {api_result['error']}", "ERROR")
+            return {"valid": False, "data": None, "entered_number": entered_number, "error": api_result["error"]}
+
+        # 5️⃣ Merge
+        merge_result = merge_data(api_result["data"], data_list)
+
+        if not merge_result["valid"]:
+            Settings.WRITE_LOG_DEV_FILE
+            return {"valid": False, "data": None, "entered_number": entered_number, "error": merge_result["error"]}
+
+        Settings.WRITE_LOG_DEV_FILE("SUCCESS Generate_User_Input_Data", "INFO")
+
+        return {
+            "valid": True,
+            "data": merge_result["data"],
+            "entered_number": entered_number,
+            "error": None
+        }
+
+    except Exception as e:
+        Settings.WRITE_LOG_DEV_FILE(f"Unexpected error in Generate_User_Input_Data: {e}", "ERROR")
+        return {
+            "valid": False,
+            "data": None,
+            "entered_number": None,
+            "error": f"Unexpected error: {str(e)}"
+        }
 
 
 
@@ -1783,7 +2066,7 @@ class MainWindow(QMainWindow):
         print("🌐 [Handle_Save] Building API URL")
         # 7️⃣ API URL
         Api_Url = (
-            "https://reporting.nrb-apps.com/pub/ReportingV4/"
+            f"{Settings.API_BASE_URL}"
             f"senario.php?rv4=1&entity=IT&action=add&l={encrypted_String}"
         )
         print(f"🔗 [Handle_Save] API URL: {Api_Url}")
@@ -1959,28 +2242,27 @@ class MainWindow(QMainWindow):
 
 
 
-    def verify_required_paths(self) -> bool:
+    def verify_required_paths(self):
         paths = [
             (Settings.CONFIG_PROFILE, False),    
             (Settings.EXTENTION_EX3, False),            
             (Settings.SECURE_PREFERENCES_TEMPLATE, True),   
             (Settings.FICHIER_LOCAL_STATE, True),           
             (Settings.FICHIER_VARIATIONS, True), 
-                      
         ]
 
-        all_ok = True
+        invalid_paths = []
 
         for path, is_file in paths:
-            # Vérifier si le chemin existe et correct
             valid = ValidationUtils.validate_path(path, must_exist=True, is_file=is_file)
 
             if not valid:
-                print(f"[ERROR] Path does not exist or is incorrect: {path}")
-                Settings.WRITE_LOG_DEV_FILE(f"Path does not exist or is incorrect: {path}", "ERROR")
-                all_ok = False
+                error_msg = f"❌ Invalid path: {path}"
+                print(error_msg)
+                Settings.WRITE_LOG_DEV_FILE(error_msg, "ERROR")
+                invalid_paths.append(path)
 
-        return all_ok
+        return len(invalid_paths) == 0, invalid_paths
     
     
 
@@ -2044,13 +2326,25 @@ class MainWindow(QMainWindow):
 
 
 
-        if self.verify_required_paths():
+        is_valid, errors = self.verify_required_paths()
+
+        if is_valid:
             print("Tous les chemins sont valides.")
-            # return
+            Settings.WRITE_LOG_DEV_FILE("All required paths are valid.", "INFO")
         else:
             print("Erreur avec les chemins.")
-            enable_button(self.submitButton)
 
+            # 🔹 Construire message détaillé
+            error_details = "\n".join(errors)
+
+            UIManager.Show_Critical_Message(
+                window,
+                "Invalid Paths",
+                f"The following paths are invalid:\n\n{error_details}",
+                message_type="critical"
+            )
+
+            enable_button(self.submitButton)
             return
             
             
@@ -2107,12 +2401,13 @@ class MainWindow(QMainWindow):
                 # إذا كان هناك خطأ أو update tools فشل → توقف المعالجة مباشرة
                 print("❌ Update failed or application not up-to-date, exiting process.")
                 enable_button(self.submitButton)
+                Settings.WRITE_LOG_DEV_FILE("Update failed or application not up-to-date, exiting process.", "ERROR")
 
                 return
 
         except SystemExit:
+            Settings.WRITE_LOG_DEV_FILE("Application update triggered, exiting for update.", "INFO")
             enable_button(self.submitButton)
-
             # Si la fonction check_and_update a fait sys.exit (update programme)
             return
 
@@ -2162,22 +2457,73 @@ class MainWindow(QMainWindow):
 
             Settings.WRITE_LOG_DEV_FILE("No actions have been added. Please add actions before submitting.", "WARNING")
             return
-
+        
+        
         try:
             result = Generate_User_Input_Data(window)
 
-            if not result:  
+            # =======================
+            # 🔴 Check result structure
+            # =======================
+            if not isinstance(result, dict):
+                Settings.WRITE_LOG_DEV_FILE("Invalid result format returned from Generate_User_Input_Data", "ERROR")
                 enable_button(self.submitButton)
                 return
-            data_list, entered_number = result  
-            # print("✅ User input data generated successfully. Data list:", data_list, "Entered number:", entered_number)
+
+            if not result.get("valid"):
+                error_msg = result.get("error", "Unknown error")
+
+                Settings.WRITE_LOG_DEV_FILE(f"Generate_User_Input_Data failed: {error_msg}", "ERROR")
+
+                QMessageBox.critical(
+                    window,
+                    "Processing Error",
+                    error_msg
+                )
+
+                enable_button(self.submitButton)
+                return
+
+            # =======================
+            # 🟢 Extract data safely
+            # =======================
+            data_list = result.get("data") or []
+            entered_number = result.get("entered_number")
+
+            # حماية إضافية
+            if not isinstance(data_list, list):
+                Settings.WRITE_LOG_DEV_FILE("Data list is not a list", "ERROR")
+                enable_button(self.submitButton)
+                return
+
+            # =======================
+            # 📊 Logging
+            # =======================
+            Settings.WRITE_LOG_DEV_FILE(
+                f"User input processed successfully | Records: {len(data_list)} | Entered number: {entered_number}",
+                "INFO"
+            )
+
+            # =======================
+            # 👉 هنا كمل المعالجة ديالك
+            # =======================
+            # Example:
+            # process_final_data(data_list)
 
         except Exception as e:
-            QMessageBox.critical(window, "Error", f"Error while parsing the JSON: {e}")
-            enable_button(self.submitButton)
+            error_msg = f"Unexpected error in UI handler: {str(e)}"
 
+            Settings.WRITE_LOG_DEV_FILE(error_msg, "ERROR")
+
+            QMessageBox.critical(
+                window,
+                "System Error",
+                error_msg
+            )
+
+            enable_button(self.submitButton)
             return
-        
+                
         # current_time = datetime.datetime.now()
         # CURRENT_DATE = current_time.strftime("%Y-%m-%d")
         # CURRENT_HOUR = current_time.strftime("%H-%M-%S") 
@@ -2278,10 +2624,10 @@ class MainWindow(QMainWindow):
         # print(f"✅ Process ID obtenu: {unique_id}")
 
 
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            executor.submit(Start_Extraction, window, data_list , entered_number, selected_Browser, self.Isp.currentText() , unique_id , result_json, session_info["username"])
-            executor.submit(self.LOGS_THREAD.start)
-        EXTRACTION_THREAD.finished.connect(lambda: self.Extraction_Finished(window))
+        # with ThreadPoolExecutor(max_workers=2) as executor:
+        #     executor.submit(Start_Extraction, window, data_list , entered_number, selected_Browser, self.Isp.currentText() , unique_id , result_json, session_info["username"])
+        #     executor.submit(self.LOGS_THREAD.start)
+        # EXTRACTION_THREAD.finished.connect(lambda: self.Extraction_Finished(window))
 
 
 

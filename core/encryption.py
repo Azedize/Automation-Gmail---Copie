@@ -1,19 +1,62 @@
 import os
 import base64
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+import hashlib
 from cryptography.hazmat.primitives import hashes, padding
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.fernet import Fernet
+from cryptography.hazmat.backends import default_backend
 from config.settings import settings
 
+
 # =========================================================
-# 🔒 Classe EncryptionService (AES-CBC, AES-GCM, Fernet)
+# 🔒 EncryptionService (AES-CBC, AES-GCM, Fernet)
 # =========================================================
 class EncryptionService:
 
     # =========================
-    # 🔑 Key Derivation (PBKDF2)
+    # 🔹 AES-CBC decrypt unified
+    # =========================
+    @staticmethod
+    def decrypt_message(base64_data: str, key) -> str:
+        """
+        🔓 AES-CBC decrypt (PKCS7) unified
+        - base64_data: النص المشفر Base64
+        - key: str أو bytes
+        """
+        # تحويل المفتاح إلى bytes إذا كان str
+        if isinstance(key, str):
+            key_bytes = hashlib.sha256(key.encode('utf-8')).digest()
+        elif isinstance(key, bytes):
+            key_bytes = key
+        else:
+            raise ValueError("المفتاح يجب أن يكون str أو bytes")
+
+        if len(key_bytes) != settings.AES_KEY_LENGTH:
+            settings.WRITE_LOG_DEV_FILE("Invalid AES key length", level="ERROR")
+            raise ValueError("Invalid AES key length")
+
+        try:
+            raw = base64.b64decode(base64_data)
+            iv = raw[:settings.AES_IV_LENGTH_CBC]
+            ciphertext = raw[settings.AES_IV_LENGTH_CBC:]
+
+            cipher = Cipher(algorithms.AES(key_bytes), modes.CBC(iv), backend=default_backend())
+            decryptor = cipher.decryptor()
+            padded_plaintext = decryptor.update(ciphertext) + decryptor.finalize()
+
+            # PKCS7 unpadding
+            unpadder = padding.PKCS7(settings.AES_BLOCK_SIZE).unpadder()
+            plaintext_bytes = unpadder.update(padded_plaintext) + unpadder.finalize()
+
+            return plaintext_bytes.decode("utf-8")
+        except Exception as e:
+            settings.WRITE_LOG_DEV_FILE(f"AES-CBC decryption failed: {e}", level="ERROR")
+            raise Exception(f"AES-CBC decryption failed: {e}")
+
+    # =========================
+    # 🔑 Key derivation (PBKDF2)
     # =========================
     @staticmethod
     def Derive_Key(password: str, salt: bytes) -> bytes:
@@ -41,7 +84,6 @@ class EncryptionService:
         if len(key_bytes) != settings.AES_KEY_LENGTH:
             settings.WRITE_LOG_DEV_FILE("Invalid AES key length", level="ERROR")
             raise ValueError("Invalid AES key length")
-
         try:
             padder = padding.PKCS7(settings.AES_BLOCK_SIZE).padder()
             padded = padder.update(plaintext.encode("utf-8")) + padder.finalize()
@@ -55,33 +97,6 @@ class EncryptionService:
         except Exception as e:
             settings.WRITE_LOG_DEV_FILE(f"AES-CBC encryption failed: {e}", level="ERROR")
             raise Exception(f"AES-CBC encryption failed: {e}")
-
-    # =========================
-    # 🔓 AES-CBC Decrypt
-    # =========================
-    
-    @staticmethod
-    def decrypt_message(base64_data: str, key_bytes: bytes) -> str:
-        if len(key_bytes) != settings.AES_KEY_LENGTH:
-            settings.WRITE_LOG_DEV_FILE("Invalid AES key length", level="ERROR")
-            raise ValueError("Invalid AES key length")
-
-        try:
-            raw = base64.b64decode(base64_data)
-            iv = raw[:settings.AES_IV_LENGTH_CBC]
-            ciphertext = raw[settings.AES_IV_LENGTH_CBC:]
-
-            cipher = Cipher(algorithms.AES(key_bytes), modes.CBC(iv))
-            decryptor = cipher.decryptor()
-            padded_plaintext = decryptor.update(ciphertext) + decryptor.finalize()
-
-            unpadder = padding.PKCS7(settings.AES_BLOCK_SIZE).unpadder()
-            plaintext = unpadder.update(padded_plaintext) + unpadder.finalize()
-
-            return plaintext.decode("utf-8")
-        except Exception as e:
-            settings.WRITE_LOG_DEV_FILE(f"AES-CBC decryption failed: {e}", level="ERROR")
-            raise Exception(f"AES-CBC decryption failed: {e}")
 
     # =========================
     # 🔐 AES-GCM Encrypt

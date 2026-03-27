@@ -23,10 +23,9 @@ class ValidationUtils:
     
     # Patterns regex pré-compilés pour meilleure performance
     _PATTERN_EMAIL = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
-    _PATTERN_IP = re.compile(r'^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$')
     _PATTERN_NUMERIC_RANGE = re.compile(r'^\s*(\d+)(?:\s*,\s*(\d+))?\s*$')
     
-
+    
     
     
     @staticmethod
@@ -35,56 +34,13 @@ class ValidationUtils:
             return False
         return ValidationUtils._PATTERN_EMAIL.match(email) is not None
     
-    @staticmethod
-    def validate_password(password: str, min_length: int = 8) -> Tuple[bool, str]:
-        if not password or len(password) < min_length:
-            return False
-        
-        has_upper = any(c.isupper() for c in password)
-        has_lower = any(c.islower() for c in password)
-        has_digit = any(c.isdigit() for c in password)
-        has_special = any(c in "!@#$%^&*()-_+=<>?/|" for c in password)
-        
-        if not (has_upper and has_lower and has_digit and has_special):
-            return False
-        
-        return True
+   
     
-    @staticmethod
-    def validate_ip_address(ip: str) -> bool:
-        """Valide une adresse IP"""
-        if not ip or not isinstance(ip, str):
-            return False
-        
-        match = ValidationUtils._PATTERN_IP.match(ip)
-        if not match:
-            return False
-        
-        for num in match.groups():
-            if not 0 <= int(num) <= 255:
-                return False
-        
-        return True
+
     
-    @staticmethod
-    def validate_port(port: str) -> bool:
-        """Valide un numéro de port"""
-        try:
-            port_num = int(port)
-            return 1 <= port_num <= 65535
-        except (ValueError, TypeError):
-            return False
+
     
-    @staticmethod
-    def validate_proxy_info(ip: str, port: str) -> Tuple[bool, str]:
-        """Valide les informations de proxy"""
-        if not ValidationUtils.validate_ip_address(ip):
-            return False, "Adresse IP invalide"
-        
-        if not ValidationUtils.validate_port(port):
-            return False, "Port invalide (doit être entre 1 et 65535)"
-        
-        return True, "Proxy valide"
+
     
     @staticmethod
     def validate_numeric_range(text: str) -> Tuple[bool, Optional[Tuple[int, int]]]:
@@ -109,76 +65,27 @@ class ValidationUtils:
         
         return True, (min_val, max_val)
     
-    @staticmethod
-    def validate_user_input_format(lines: List[str]) -> Tuple[bool, Optional[List[Dict]], str]:
-        """
-        Valide le format des données utilisateur (email, proxy, etc.)
-        """
-        if not lines:
-            return False, None, "Aucune donnée fournie"
-        
-        data_list = []
-        
-        for line_num, line in enumerate(lines, 1):
-            parts = [p.strip() for p in line.split(";")]
-            
-            # Format minimal attendu : email;password;ip;port
-            if len(parts) < 4:
-                return False, None, f"Ligne {line_num}: Format invalide (au moins 4 champs requis)"
-            
-            email = parts[0]
-            password_email = parts[1] if len(parts) > 1 else ""
-            ip_address = parts[2] if len(parts) > 2 else ""
-            port = parts[3] if len(parts) > 3 else ""
-            
-            # Validation de l'email
-            if not ValidationUtils.validate_email(email):
-                return False, None, f"Ligne {line_num}: Email invalide: {email}"
-            
-            # Validation de l'adresse IP
-            if ip_address and not ValidationUtils.validate_ip_address(ip_address):
-                return False, None, f"Ligne {line_num}: Adresse IP invalide: {ip_address}"
-            
-            # Validation du port
-            if port and not ValidationUtils.validate_port(port):
-                return False, None, f"Ligne {line_num}: Port invalide: {port}"
-            
-            # Construction de l'entrée
-            entry = {
-                "email": email,
-                "password_email": password_email,
-                "ip_address": ip_address,
-                "port": port
-            }
-            
-            # Ajout des champs optionnels
-            if len(parts) > 4:
-                entry["login"] = parts[4]
-            if len(parts) > 5:
-                entry["password"] = parts[5]
-            if len(parts) > 6:
-                entry["recovery_email"] = parts[6]
-            if len(parts) > 7:
-                entry["new_recovery_email"] = parts[7]
-            
-            data_list.append(entry)
-        
-        return True, data_list, f"Format valide - {len(data_list)} entrées traitées"
-    
-
-
-
+  
 
 
 
     @staticmethod
-    def process_user_input(input_data: str, entered_number_text: str) -> dict:
+    def process_user_input(input_data: str, entered_number_text: str) -> Dict[str, Any]:
         """
-        Traite et valide les données d'entrée utilisateur complètes avec affichage debug
-        """
-        # print("🔵 [START] process_user_input")
+        Processes and validates user input data.
 
-        result = {
+        Returns a structured dictionary with:
+            - success (bool): True if validation passed, False otherwise
+            - data_list (List[Dict[str, str]] | None): Parsed data rows
+            - entered_number (int | None): Validated entered number
+            - error_title (str): Short title of the error or success
+            - error_message (str): Detailed message
+            - error_type (str): 'critical' for errors, 'success' for success
+        """
+        print("🔵 [START] process_user_input")
+
+        # Default result structure
+        result: Dict[str, Any] = {
             "success": False,
             "data_list": None,
             "entered_number": None,
@@ -188,60 +95,49 @@ class ValidationUtils:
         }
 
         # --------------------
-        # Validation de base
+        # 1️⃣ Basic input validation
         # --------------------
-        # print("📝 Vérification de la présence des données...")
         if not input_data or not input_data.strip():
-            # print("⚠️ Input data manquant!")
             result.update({
-                "error_title": "Error - Missing Data",
-                "error_message": "Please enter the required information before proceeding."
+                "error_title": "No Data Provided",
+                "error_message": "No input was detected. Please enter the required data to continue."
             })
             return result
 
-        # print("📝 Vérification du numéro saisi...")
         if not entered_number_text or not entered_number_text.strip():
-            # print("⚠️ Numéro manquant!")
             result.update({
-                "error_title": "Error - Missing Number",
-                "error_message": "Please enter the number of operations to process."
+                "error_title": "Missing Number",
+                "error_message": "Please enter the number of rows you want to process."
             })
             return result
 
         if not entered_number_text.isdigit():
-            # print(f"❌ Numéro invalide: {entered_number_text}")
             result.update({
-                "error_title": "Error - Invalid Input",
-                "error_message": "Please enter a valid numerical value in the number field."
+                "error_title": "Invalid Number",
+                "error_message": "The number entered is not valid. Please enter a positive integer."
             })
             return result
 
         entered_number = int(entered_number_text)
-        # print(f"✅ Numéro saisi valide: {entered_number}")
+        print(f"✅ Entered number is valid: {entered_number}")
 
+        # --------------------
+        # 2️⃣ Parse input lines
+        # --------------------
         try:
-            # --------------------
-            # Parsing des lignes
-            # --------------------
-            # print("📄 Parsing des lignes...")
             lines = [line.strip() for line in input_data.split("\n") if line.strip()]
-            # print(f"🔹 Nombre de lignes trouvées: {len(lines)}")
-
             if len(lines) < 2:
-                # print("⚠️ Pas de données après l'entête!")
                 result.update({
-                    "error_title": "Error - Invalid Format",
-                    "error_message": "Header detected but no data rows found."
+                    "error_title": "No Data Rows",
+                    "error_message": "The input contains a header but no data rows were found."
                 })
                 return result
 
             header = [k.strip() for k in lines[0].split(";")]
             data_lines = lines[1:]
-            # print(f"🔹 Entête détectée: {header}")
-            # print(f"🔹 Lignes de données détectées: {len(data_lines)}")
 
             # --------------------
-            # Définition des patterns
+            # 3️⃣ Validate required keys
             # --------------------
             mandatory_patterns = [
                 ["email", "passwordEmail", "ipAddress", "port"],
@@ -253,88 +149,81 @@ class ValidationUtils:
                 ["login", "password", "recovery_email", "New_recovery_email"]
             ]
 
-            all_valid_keys = set()
-            for pat in mandatory_patterns + optional_patterns:
-                all_valid_keys.update(pat)
-            # print(f"🔹 Clés valides reconnues: {all_valid_keys}")
+            all_valid_keys = set(k for pat in mandatory_patterns + optional_patterns for k in pat)
 
-            # --------------------
-            # Vérification des clés
-            # --------------------
             if not any(set(pat).issubset(header) for pat in mandatory_patterns):
-                # print("❌ Clés obligatoires manquantes!")
                 result.update({
-                    "error_title": "Error - Required Keys Missing",
+                    "error_title": "Required Columns Missing",
                     "error_message": (
-                        "Please include required keys using one of the supported formats."
+                        "Some mandatory columns are missing in your input. "
+                        "Please make sure the header matches one of the supported formats."
                     )
                 })
                 return result
 
             invalid_keys = [k for k in header if k not in all_valid_keys]
             if invalid_keys:
-                # print(f"❌ Clés invalides détectées: {invalid_keys}")
                 result.update({
-                    "error_title": "Error - Invalid Keys",
-                    "error_message": f"Invalid keys detected: {', '.join(invalid_keys)}"
-                })
-                return result
-
-            # --------------------
-            # Conversion en data_list
-            # --------------------
-            # print("🔄 Conversion des lignes en dictionnaires...")
-            data_list = []
-
-            for index, line in enumerate(data_lines, start=1):
-                values = [v.strip() for v in line.split(";")]
-
-                if len(values) != len(header):
-                    # print(f"❌ Ligne {index} - nombre de valeurs différent de l'entête!")
-                    result.update({
-                        "error_title": "Error - Key/Value Mismatch",
-                        "error_message": f"Line {index}: number of values does not match header."
-                    })
-                    return result
-
-                data_list.append(dict(zip(header, values)))
-            # print(f"✅ Conversion réussie - Total objets: {len(data_list)}")
-
-            # --------------------
-            # Validation de la plage
-            # --------------------
-            # print(f"🔢 Vérification de la plage du numéro saisi: {entered_number}")
-            if entered_number > len(data_list):
-                # print(f"⚠️ Numéro saisi hors plage! Maximum autorisé: {len(data_list)}")
-                result.update({
-                    "error_title": "Error - Invalid Range",
+                    "error_title": "Unrecognized Columns",
                     "error_message": (
-                        f"Please enter a value between 1 and {len(data_list)}."
+                        f"The following columns are not recognized: {', '.join(invalid_keys)}. "
+                        "Please correct your header."
                     )
                 })
                 return result
 
             # --------------------
-            # Succès
+            # 4️⃣ Convert lines to dictionaries
             # --------------------
-            # print("✅ Toutes les validations réussies! Données prêtes à l'emploi.")
+            data_list: List[Dict[str, str]] = []
+            for index, line in enumerate(data_lines, start=1):
+                values = [v.strip() for v in line.split(";")]
+                if len(values) != len(header):
+                    result.update({
+                        "error_title": "Row Format Error",
+                        "error_message": (
+                            f"Row {index} does not match the expected format. "
+                            "Please ensure all columns are filled correctly."
+                        )
+                    })
+                    return result
+                data_list.append(dict(zip(header, values)))
+
+            # --------------------
+            # 5️⃣ Validate entered number range
+            # --------------------
+            if entered_number > len(data_list):
+                result.update({
+                    "error_title": "Number Out of Range",
+                    "error_message": (
+                        f"The number entered exceeds the available rows ({len(data_list)}). "
+                        "Please enter a valid number within the range."
+                    )
+                })
+                return result
+
+            # --------------------
+            # 6️⃣ Success
+            # --------------------
             result.update({
                 "success": True,
                 "data_list": data_list,
                 "entered_number": entered_number,
                 "error_title": "Success",
-                "error_message": "Input data validated successfully",
+                "error_message": "Input data has been successfully validated.",
                 "error_type": "success"
             })
 
         except Exception as e:
-            # print(f"💥 Exception capturée: {e}")
             result.update({
-                "error_title": "Operation Failed - System Error",
-                "error_message": f"Critical failure during data processing: {str(e)}"
+                "error_title": "Processing Error",
+                "error_message": (
+                    f"An unexpected error occurred while processing your data. "
+                    "Please try again or contact support.\n\nError details: {str(e)}"
+                )
             })
 
-        # print("🔵 [END] process_user_input")
+        print("🔵 [END] process_user_input")
         return result
 
 
@@ -344,142 +233,8 @@ class ValidationUtils:
 
 
 
-    @staticmethod
-    def _validate_entries_detailed(data_list: List[Dict]) -> Dict[str, Any]:
-        errors = []
-        
-        for i, entry in enumerate(data_list, start=2):
-            line_errors = []
-            
-            # Identifier les clés
-            keys = list(entry.keys())
-            email_key = ValidationUtils._get_email_key(keys)
-            ip_key = ValidationUtils._get_ip_key(keys)
-            port_key = ValidationUtils._get_port_key(keys)
-            
-            # Valider l'email
-            if email_key and email_key in entry and entry[email_key]:
-                if not ValidationUtils.validate_email(entry[email_key]):
-                    line_errors.append(f"Invalid email format: {entry[email_key]}")
-            
-            # Valider le proxy
-            if ip_key and port_key and ip_key in entry and port_key in entry:
-                if entry[ip_key] and entry[port_key]:
-                    is_valid, proxy_msg = ValidationUtils.validate_proxy_info(entry[ip_key], entry[port_key])
-                    if not is_valid:
-                        line_errors.append(f"Invalid proxy: {proxy_msg}")
-            
-            # Valider le mot de passe email (s'il existe)
-            password_keys = [k for k in keys if "password" in k.lower() and "email" in k.lower()]
-            for pass_key in password_keys:
-                if pass_key in entry and entry[pass_key]:
-                    is_valid = ValidationUtils.validate_password(entry[pass_key], min_length=6)
-                    if not is_valid:
-                        line_errors.append("Password is too short (minimum 6 characters)")
-            
-            if line_errors:
-                errors.append(f"Line {i}: {', '.join(line_errors)}")
-        
-        if errors:
-            error_count = len(errors)
-            display_errors = errors[:5]
-            error_text = "<br>".join(display_errors)
-            
-            if error_count > 5:
-                error_text += f"<br>... and {error_count - 5} more errors"
-            
-            return {
-                "valid": False,
-                "message": f"Validation errors detected:<br>{error_text}"
-            }
-        
-        return {
-            "valid": True,
-            "message": "All entries validated successfully"
-        }
     
-    @staticmethod
-    def get_input_statistics(data_list: List[Dict]) -> Dict[str, Any]:
-        if not data_list:
-            return {"error": "No data available"}
-        
-        stats = {
-            "total_entries": len(data_list),
-            "fields_per_entry": len(data_list[0]) if data_list else 0,
-            "unique_fields": set(),
-            "validation_summary": {
-                "valid_emails": 0,
-                "valid_proxies": 0,
-                "complete_entries": 0
-            }
-        }
-        
-        for entry in data_list:
-            stats["unique_fields"].update(entry.keys())
-            
-            # Valider les emails
-            email_key = ValidationUtils._get_email_key(list(entry.keys()))
-            if email_key and email_key in entry and entry[email_key]:
-                if ValidationUtils.validate_email(entry[email_key]):
-                    stats["validation_summary"]["valid_emails"] += 1
-            
-            # Valider les proxies
-            ip_key = ValidationUtils._get_ip_key(list(entry.keys()))
-            port_key = ValidationUtils._get_port_key(list(entry.keys()))
-            if all([ip_key, port_key, ip_key in entry, port_key in entry, 
-                   entry[ip_key], entry[port_key]]):
-                is_valid, _ = ValidationUtils.validate_proxy_info(entry[ip_key], entry[port_key])
-                if is_valid:
-                    stats["validation_summary"]["valid_proxies"] += 1
-            
-            # Vérifier les entrées complètes
-            if all([email_key, email_key in entry, entry[email_key],
-                   ip_key, ip_key in entry, entry[ip_key],
-                   port_key, port_key in entry, entry[port_key]]):
-                stats["validation_summary"]["complete_entries"] += 1
-        
-        stats["unique_fields"] = list(stats["unique_fields"])
-        return stats
-    
-
-
-
-
-
-
-
-    @staticmethod
-    def format_input_for_display(data_list: List[Dict], max_entries: int = 3) -> str:
-        if not data_list:
-            return "No data available"
-        
-        stats = ValidationUtils.get_input_statistics(data_list)
-        
-        formatted = (
-            f"✅ Input validated successfully!<br><br>"
-            f"• Total entries: {stats['total_entries']}<br>"
-            f"• Fields per entry: {stats['fields_per_entry']}<br>"
-            f"• Valid emails: {stats['validation_summary']['valid_emails']}<br>"
-            f"• Valid proxies: {stats['validation_summary']['valid_proxies']}<br>"
-            f"• Complete entries: {stats['validation_summary']['complete_entries']}<br><br>"
-        )
-        
-        # Ajouter un aperçu des premières entrées
-        if data_list:
-            formatted += "Sample entries:<br>"
-            for i, entry in enumerate(data_list[:max_entries], 1):
-                entry_preview = []
-                for key, value in list(entry.items())[:3]:
-                    if value:
-                        truncated = value[:20] + "..." if len(value) > 20 else value
-                        entry_preview.append(f"{key}: {truncated}")
-                
-                formatted += f"{i}. {', '.join(entry_preview)}<br>"
-            
-            if len(data_list) > max_entries:
-                formatted += f"... and {len(data_list) - max_entries} more entries"
-        
-        return formatted
+  
     
     @staticmethod
     def _get_email_key(keys: List[str]) -> Optional[str]:

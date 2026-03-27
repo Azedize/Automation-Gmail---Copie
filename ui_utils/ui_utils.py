@@ -453,7 +453,7 @@ class UIManager:
     def Show_Critical_Message(window, title, message, message_type="critical"):
         dialog = QMessageBox(window)
 
-        # تعريف الألوان حسب نوع الرسالة
+        
         colors = {
             "critical": {"accent": Settings.ERROR_COLOR, "start": Settings.ERROR_COLOR, "end": "#b71c1c", "bg": "#ffebee", "icon": QMessageBox.Icon.Critical},
             "warning": {"accent": Settings.WARNING_COLOR, "start": Settings.WARNING_COLOR, "end": "#e65100", "bg": "#fff3e0", "icon": QMessageBox.Icon.Warning},
@@ -493,8 +493,9 @@ class UIManager:
                     stop:0 {c['start']}, stop:1 {c['end']});
                 color: #fff;
                 font-weight: 600;
-                padding: 10px 25px;
+                padding: 8px 20px;         /* padding uniforme pour centrer texte */
                 min-width: 100px;
+                text-align: center;         /* centrage du texte */
             }}
             QMessageBox QPushButton:hover {{
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
@@ -503,11 +504,11 @@ class UIManager:
             QMessageBox QPushButton:pressed {{
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
                     stop:0 {UIManager.Darken_Color(c['start'], 12)}, stop:1 {UIManager.Darken_Color(c['end'], 12)});
-                padding: 11px 26px 9px 26px;
+                padding: 9px 20px;           /* léger ajustement padding pressed */
             }}
         """)
 
-        # إضافة زر OK افتراضي
+        # Ajouter bouton OK par défaut
         dialog.setStandardButtons(QMessageBox.StandardButton.Ok)
 
         # محاذاة الأزرار في الوسط
@@ -520,8 +521,6 @@ class UIManager:
             dialog.move(window.frameGeometry().center() - dialog.rect().center())
 
         return dialog.exec()
-
-
     # -----------------------------
     # Ajustement de la couleur HEX (assombrir / éclaircir)
     # -----------------------------
