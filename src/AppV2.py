@@ -827,10 +827,7 @@ class CloseBrowserThread(QThread):
 # 📝 FONCTIONS VALIDATION
 # ======================================================
 
-_ENTITY_V = "opm74"
-AUTHORISED_PORTS = ['5836', '0000', '8080','3128','1111','16666']
-API_URL = "https://reporting.nrb-apps.com/pub/getInfoProxy.php"
-API_KEY = "Gmf15dfVD61G8gZQg"
+
 
 
 

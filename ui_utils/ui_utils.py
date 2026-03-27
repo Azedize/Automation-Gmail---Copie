@@ -1459,19 +1459,6 @@ class UIManager:
 
     
     
-    
-    
-    @staticmethod
-    def Copy_Logs_To_Clipboard(window):
-        log_box = window.findChild(QGroupBox, "log")
-        if not log_box:
-            return
-        labels = log_box.findChildren(QLabel)
-        if not labels:
-            return
-        log_lines = [label.text() for label in labels]
-        text_to_copy = "\n".join(log_lines)
-        QApplication.clipboard().setText(text_to_copy)
 
 
 

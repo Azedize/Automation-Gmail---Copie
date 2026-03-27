@@ -1,14 +1,12 @@
 # utils/validation_utils.py
 import os
-import json
 import re
 import random
 import string
 import uuid
 from typing import Dict, List, Any, Optional, Tuple, Union, Callable
 from datetime import datetime
-from urllib.parse import urlparse
-from PyQt6.QtWidgets import QLineEdit, QMessageBox, QApplication
+from PyQt6.QtWidgets import QLineEdit
 from PyQt6.QtCore import QTimer
 import sys
 
@@ -44,10 +42,7 @@ class ValidationUtils:
     
     @staticmethod
     def validate_numeric_range(text: str) -> Tuple[bool, Optional[Tuple[int, int]]]:
-        """
-        Valide un texte représentant un nombre ou une plage
-        Formats acceptés: "50", "50,100", "1,10"
-        """
+
         if not text or not isinstance(text, str):
             return False, None
         
@@ -234,31 +229,6 @@ class ValidationUtils:
 
 
     
-  
-    
-    @staticmethod
-    def _get_email_key(keys: List[str]) -> Optional[str]:
-        for key in keys:
-            if key.lower() in ["email", "mail"]:
-                return key
-        return None
-    
-    @staticmethod
-    def _get_ip_key(keys: List[str]) -> Optional[str]:
-        """Trouve la clé correspondant à l'IP"""
-        for key in keys:
-            if "ip" in key.lower():
-                return key
-        return None
-    
-    @staticmethod
-    def _get_port_key(keys: List[str]) -> Optional[str]:
-        """Trouve la clé correspondant au port"""
-        for key in keys:
-            if "port" in key.lower():
-                return key
-        return None
-    
     # ==================== VALIDATION DE FICHIERS ET CHEMINS ====================
     
 
@@ -326,6 +296,9 @@ class ValidationUtils:
         except Exception as e:
             print(f"[EXCEPTION] ensure_path_exists error: {e}")
             return False
+
+
+
 
     @staticmethod
     def path_exists(path: str) -> bool:
@@ -561,24 +534,12 @@ class ValidationUtils:
 
 
 
-
-
-    @staticmethod
-    def generate_random_number(min_val: int, max_val: int) -> int:
-        if min_val > max_val:
-            min_val, max_val = max_val, min_val
-        return random.randint(min_val, max_val)
     
 
 
 
 
-    @staticmethod
-    def generate_timestamp_filename(prefix: str = "", extension: str = "txt") -> str:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        if prefix:
-            return f"{prefix}_{timestamp}.{extension}"
-        return f"{timestamp}.{extension}"
+
     
     # ==================== UTILITAIRES DE DÉBOGAGE ====================
 
