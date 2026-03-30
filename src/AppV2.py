@@ -967,49 +967,55 @@ def extract_unique_ips(data_list: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 
 # =========================================================
-# 📡 API CALL
+# 📡 API CALL (User-friendly messages)
 # =========================================================
-
 def call_api(unique_ips: Set[str], entity_v: str) -> Dict[str, Any]:
     try:
+        print("🚀 [API] Starting API call...")
+
         if not unique_ips:
-            Settings.WRITE_LOG_DEV_FILE("No IPs provided", "ERROR")
-            return {"valid": False, "data": None, "error": "No IPs provided"}
+            Settings.WRITE_LOG_DEV_FILE("No IPs provided to API", "ERROR")
+            return {"valid": False, "data": None, "error": "No IP addresses were provided."}
 
         headers = {'User-Agent': 'Mozilla/5.0'}
         k_proxy = ','.join(unique_ips) + "---" + entity_v
 
-        params = {
-            'm': '5454542z15szsdz4jklhjhdfz',
-            'k': k_proxy
-        }
+        params = {'m': '5454542z15szsdz4jklhjhdfz', 'k': k_proxy}
 
         retries = 0
         response_text = None
 
-        while retries < 12:
+        while retries < 5:
             try:
-                Settings.WRITE_LOG_DEV_FILE("Connecting to API...", "INFO")
+                Settings.WRITE_LOG_DEV_FILE(f"Attempting API call, try #{retries + 1}", "INFO")
+                
                 response = requests.post(
                     Settings.API_ENDPOINTS['__GET_PROXY_INFO__'],
                     headers=headers,
-                    verify=False,
-                    data=params
+                    verify=True,
+                    data=params,
+                    timeout=10
                 )
+                response.raise_for_status()
                 response_text = response.text
                 break
-            except requests.RequestException:
+
+            except requests.RequestException as e:
+                Settings.WRITE_LOG_DEV_FILE(f"API request exception: {e}", "ERROR")
                 retries += 1
-                time.sleep(5)
+                time.sleep(3)
 
         if not response_text:
             Settings.WRITE_LOG_DEV_FILE("API failed after retries", "ERROR")
-            return {"valid": False, "data": None, "error": "API failed after retries"}
+            return {
+                "valid": False,
+                "data": None,
+                "error": "Failed to connect to the service. Please try again later."
+            }
 
         # 🔐 Decrypt
         decrypted = EncryptionService.decrypt_message(response_text, Settings.API_KEY_PROXY)
         decrypted = re.sub(r'[^\x20-\x7E]', '', decrypted)
-
         data = json.loads(decrypted)
 
         # 🔍 Check missing IPs
@@ -1017,34 +1023,40 @@ def call_api(unique_ips: Set[str], entity_v: str) -> Dict[str, Any]:
         missing = unique_ips - api_ips
 
         if missing:
-            Settings.WRITE_LOG_DEV_FILE(f"Missing IPs: {missing}", "ERROR")
-            return {"valid": False, "data": data, "error": f"Missing IPs: {missing}"}
-        
-        Settings.WRITE_LOG_DEV_FILE(f"API returned data for all IPs", "INFO")
+            Settings.WRITE_LOG_DEV_FILE(f"Missing IPs in API response: {missing}", "ERROR")
+            return {
+                "valid": False,
+                "data": data,
+                "error": "Some IP addresses were not found in the service. Please try again."
+            }
+
+        Settings.WRITE_LOG_DEV_FILE("API returned data for all IPs", "INFO")
         return {"valid": True, "data": data, "error": None}
 
     except Exception as e:
-        Settings.WRITE_LOG_DEV_FILE(f"Error calling API: {e}", "ERROR")
-        return {"valid": False, "data": None, "error": str(e)}
+        Settings.WRITE_LOG_DEV_FILE(f"Unexpected error in call_api: {e}", "ERROR")
+        return {
+            "valid": False,
+            "data": None,
+            "error": "An unexpected error occurred. Please try again later."
+        }
 
 
 # =========================================================
-# 🔄 MERGE
+# 🔄 MERGE DATA (User-friendly messages)
 # =========================================================
-
 def merge_data(api_data: dict, data_list: list) -> Dict[str, Any]:
     try:
         final_list = []
-
         api_map = {k.split('#')[0]: v for k, v in api_data.items()}
 
-        for index, item in enumerate(data_list, 1):
+        for item in data_list:
             raw_ip = safe_get(item, "ipAddress")
-
-            # Format IP
             result = format_ip(raw_ip)
+
             if not result["valid"]:
-                return {"valid": False, "data": None, "error": result["error"]}
+                Settings.WRITE_LOG_DEV_FILE(f"Invalid IP format: {raw_ip}", "ERROR")
+                return {"valid": False, "data": None, "error": "There is an invalid IP address. Please check your data."}
 
             formatted_ip = result["data"]
             ip_only = formatted_ip.split('#')[0]
@@ -1052,7 +1064,7 @@ def merge_data(api_data: dict, data_list: list) -> Dict[str, Any]:
             api_info = api_map.get(ip_only)
             if not api_info:
                 Settings.WRITE_LOG_DEV_FILE(f"No API data for {ip_only}", "ERROR")
-                return {"valid": False, "data": None, "error": f"No API data for {ip_only}"}
+                return {"valid": False, "data": None, "error": "Service data is missing for some IP addresses."}
 
             final_list.append({
                 "email": safe_get(item, "email"),
@@ -1064,71 +1076,98 @@ def merge_data(api_data: dict, data_list: list) -> Dict[str, Any]:
                 "recovery_email": safe_get(item, "recoveryEmail"),
                 "new_recovery_email": safe_get(item, "new_recovery_email"),
             })
+
         Settings.WRITE_LOG_DEV_FILE("Merged data successfully", "INFO")
         return {"valid": True, "data": final_list, "error": None}
 
     except Exception as e:
         Settings.WRITE_LOG_DEV_FILE(f"Error merging data: {e}", "ERROR")
-        return {"valid": False, "data": None, "error": str(e)}
+        return {"valid": False, "data": None, "error": "An error occurred while merging the data."}
 
 
 # =========================================================
-# 🚀 MAIN PIPELINE
+# 🚀 MAIN PIPELINE (User-friendly messages)
 # =========================================================
-
 def Generate_User_Input_Data(window) -> Dict[str, Any]:
     try:
-        Settings.WRITE_LOG_DEV_FILE("START Generate_User_Input_Data", "INFO")
+        print("\n🚀 START Generate_User_Input_Data")
 
         input_data = window.textEdit_3.toPlainText().strip()
         entered_number_text = window.textEdit_4.toPlainText().strip()
 
+        print(f"📥 Input Data preview: {input_data[:100]}...")
+        print(f"🔢 Entered Number: {entered_number_text}")
+
         # 1️⃣ Validation
         validation = ValidationUtils.process_user_input(input_data, entered_number_text)
-
         if not validation["success"]:
-            Settings.WRITE_LOG_DEV_FILE(f"Input validation failed: {validation['error_message']}", "ERROR")
-            return {"valid": False, "data": None, "entered_number": None, "error": validation["error_message"]}
+            Settings.WRITE_LOG_DEV_FILE(f"Validation failed: {validation['error_message']}", "ERROR")
+            return {
+                "valid": False,
+                "data": None,
+                "entered_number": None,
+                "error": "The input data is invalid. Please check your input."
+            }
 
         data_list = validation["data_list"]
         entered_number = validation["entered_number"]
 
         # 2️⃣ Ports pipeline
         ports_result = process_ports(data_list)
-
         if not ports_result["valid"]:
             Settings.WRITE_LOG_DEV_FILE(f"Ports processing failed: {ports_result['error']}", "ERROR")
             return {
                 "valid": False,
-                "data": ports_result["data"],
+                "data": ports_result.get("data"),
                 "entered_number": entered_number,
-                "error": ports_result["error"]
+                "error": "Failed to process ports. Please try again later."
             }
 
         filtered_accounts = ports_result["data"]["filtered"]
 
         # 3️⃣ Extract IPs
         ip_result = extract_unique_ips(filtered_accounts)
-
         if not ip_result["valid"]:
             Settings.WRITE_LOG_DEV_FILE(f"IP extraction failed: {ip_result['error']}", "ERROR")
-            return {"valid": False, "data": None, "entered_number": entered_number, "error": ip_result["error"]}
+            return {
+                "valid": False,
+                "data": None,
+                "entered_number": entered_number,
+                "error": "Failed to extract IP addresses. Please check your data."
+            }
 
-        # 4️⃣ API
-        api_result = call_api(ip_result["data"], "opm74")
+        unique_ips = ip_result["data"]
 
+        # 4️⃣ Session check
+        session_info = SessionManager.check_session()
+        if not session_info["valid"]:
+            Settings.WRITE_LOG_DEV_FILE(f"Invalid session: {session_info['error']}", "ERROR")
+            return {
+                "valid": False,
+                "data": None,
+                "entered_number": entered_number,
+                "error": "Your session is invalid. Please log in again."
+            }
+
+        # 5️⃣ API Call
+        api_result = call_api(unique_ips, session_info["p_entity"])
         if not api_result["valid"]:
-            Settings.WRITE_LOG_DEV_FILE(f"API call failed: {api_result['error']}", "ERROR")
-            return {"valid": False, "data": None, "entered_number": entered_number, "error": api_result["error"]}
+            return {
+                "valid": False,
+                "data": None,
+                "entered_number": entered_number,
+                "error": api_result["error"]
+            }
 
-        # 5️⃣ Merge
+        # 6️⃣ Merge
         merge_result = merge_data(api_result["data"], data_list)
-
         if not merge_result["valid"]:
-            Settings.WRITE_LOG_DEV_FILE
-            return {"valid": False, "data": None, "entered_number": entered_number, "error": merge_result["error"]}
-
-        Settings.WRITE_LOG_DEV_FILE("SUCCESS Generate_User_Input_Data", "INFO")
+            return {
+                "valid": False,
+                "data": None,
+                "entered_number": entered_number,
+                "error": merge_result["error"]
+            }
 
         return {
             "valid": True,
@@ -1138,15 +1177,20 @@ def Generate_User_Input_Data(window) -> Dict[str, Any]:
         }
 
     except Exception as e:
-        Settings.WRITE_LOG_DEV_FILE(f"Unexpected error in Generate_User_Input_Data: {e}", "ERROR")
+        Settings.WRITE_LOG_DEV_FILE(f"Unexpected error: {e}", "ERROR")
         return {
             "valid": False,
             "data": None,
             "entered_number": None,
-            "error": f"Unexpected error: {str(e)}"
+            "error": "An unexpected error occurred. Please try again later."
         }
-
-
+        
+        
+        
+        
+        
+        
+        
 
 # ======================================================
 # 🚀 FONCTIONS EXTRACTION
