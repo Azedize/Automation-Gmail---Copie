@@ -966,59 +966,48 @@ def extract_unique_ips(data_list: List[Dict[str, Any]]) -> Dict[str, Any]:
         return {"valid": False, "data": None, "error": str(e)}
 
 
+
 # =========================================================
-# 📡 API CALL (User-friendly messages)
+# 📡 API CALL using APIManager (User-friendly messages)
 # =========================================================
-def call_api(unique_ips: Set[str], entity_v: str) -> Dict[str, Any]:
+def call_api(unique_ips: set, entity_v: str) -> dict:
     try:
-        print("🚀 [API] Starting API call...")
+        print("🚀 [API] Starting API call via APIManager...")
 
         if not unique_ips:
             Settings.WRITE_LOG_DEV_FILE("No IPs provided to API", "ERROR")
             return {"valid": False, "data": None, "error": "No IP addresses were provided."}
 
-        headers = {'User-Agent': 'Mozilla/5.0'}
+        # Prepare payload
         k_proxy = ','.join(unique_ips) + "---" + entity_v
+        payload = {
+            "m": "5454542z15szsdz4jklhjhdfz",
+            "k": k_proxy
+        }
 
-        params = {'m': '5454542z15szsdz4jklhjhdfz', 'k': k_proxy}
+        print(f"📥 Payload prepared: {payload}")
 
-        retries = 0
-        response_text = None
+        # 1️⃣ Make API request using safe APIManager
+        result = APIManager.make_request("__GET_PROXY_INFO__", "POST", data=payload)
+        print(f"📥 APIManager response: {result}")
 
-        while retries < 5:
-            try:
-                Settings.WRITE_LOG_DEV_FILE(f"Attempting API call, try #{retries + 1}", "INFO")
-                
-                response = requests.post(
-                    Settings.API_ENDPOINTS['__GET_PROXY_INFO__'],
-                    headers=headers,
-                    verify=True,
-                    data=params,
-                    timeout=10
-                )
-                response.raise_for_status()
-                response_text = response.text
-                break
+        # 2️⃣ Handle response safely
+        response_data = APIManager._handle_response(result, success_default=None, failure_default=None)
 
-            except requests.RequestException as e:
-                Settings.WRITE_LOG_DEV_FILE(f"API request exception: {e}", "ERROR")
-                retries += 1
-                time.sleep(3)
-
-        if not response_text:
-            Settings.WRITE_LOG_DEV_FILE("API failed after retries", "ERROR")
+        if not response_data:
+            Settings.WRITE_LOG_DEV_FILE("API returned no data or failed", "ERROR")
             return {
                 "valid": False,
                 "data": None,
                 "error": "Failed to connect to the service. Please try again later."
             }
 
-        # 🔐 Decrypt
-        decrypted = EncryptionService.decrypt_message(response_text, Settings.API_KEY_PROXY)
+        # 3️⃣ Clean/decrypt if needed
+        decrypted = EncryptionService.decrypt_message(str(response_data), Settings.API_KEY_PROXY)
         decrypted = re.sub(r'[^\x20-\x7E]', '', decrypted)
         data = json.loads(decrypted)
 
-        # 🔍 Check missing IPs
+        # 4️⃣ Check missing IPs
         api_ips = set(k.split('#')[0] for k in data.keys())
         missing = unique_ips - api_ips
 
@@ -1040,8 +1029,10 @@ def call_api(unique_ips: Set[str], entity_v: str) -> Dict[str, Any]:
             "data": None,
             "error": "An unexpected error occurred. Please try again later."
         }
-
-
+        
+        
+        
+        
 # =========================================================
 # 🔄 MERGE DATA (User-friendly messages)
 # =========================================================
@@ -1150,7 +1141,8 @@ def Generate_User_Input_Data(window) -> Dict[str, Any]:
             }
 
         # 5️⃣ API Call
-        api_result = call_api(unique_ips, session_info["p_entity"])
+        # "opm74"
+        api_result = call_api(unique_ips,session_info["p_entity"])
         if not api_result["valid"]:
             return {
                 "valid": False,

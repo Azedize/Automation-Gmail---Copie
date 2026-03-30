@@ -27,7 +27,7 @@ class APIManager:
         self.session = requests.Session()
         self.session.verify = False  # ⚠️ SSL désactivé volontairement
 
-        retries = Retry(total=3, backoff_factor=0.5, status_forcelist=[500, 502, 503, 504])
+        retries = Retry(total=5, backoff_factor=0.5, status_forcelist=[500, 502, 503, 504])
         self.session.mount("https://", HTTPAdapter(max_retries=retries))
         self.session.mount("http://", HTTPAdapter(max_retries=retries))
 
@@ -65,7 +65,7 @@ class APIManager:
 
         last_exception = None
 
-        for attempt in range(1, 4):
+        for attempt in range(1, 6):
             try:
                 print(f"🌐 [TRY {attempt}] {method.upper()} {url}")
                 response = self.session.request(  method=method.upper(),  url=url,   data=data,   json=json_data,   params=params, headers=req_headers,   timeout=timeout   )
@@ -105,8 +105,8 @@ class APIManager:
                 time.sleep(2)
 
         # ❌ Échec final
-        print(f"❌ [FINAL] Failed after 3 attempts: {last_exception}")
-        return {"status": "error", "error": f"Failed after 3 attempts: {last_exception}", "status_code": None}
+        print(f"❌ [FINAL] Failed after 5 attempts: {last_exception}")
+        return {"status": "error", "error": f"Failed after 5 attempts: {last_exception}", "status_code": None}
 
 
     # --------------------- Gestion de réponse ---------------------
