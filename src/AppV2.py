@@ -2087,6 +2087,7 @@ class MainWindow(QMainWindow):
         except Exception as e:
             print("❌ Error encoding state:", e)
             return
+        
         payload = {
             "user_id": session_info["Id_User"],
             "encrypted": encrypted_String,
@@ -2099,7 +2100,7 @@ class MainWindow(QMainWindow):
         print("🌐 [Handle_Save] Building API URL")
         # 7️⃣ API URL
         Api_Url = (
-            f"{Settings.API_BASE_URL}"
+            f"https://reporting.nrb-apps.com/pub/ReportingV4/"
             f"senario.php?rv4=1&entity=IT&action=add&l={encrypted_String}"
         )
         print(f"🔗 [Handle_Save] API URL: {Api_Url}")

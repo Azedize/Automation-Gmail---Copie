@@ -184,15 +184,7 @@ class APIManager:
         print("🏁 [HANDLE_SAVE_SCENARIO] handle_save_scenario completed")
         return response
 
-    def on_scenario_changed(self,  payload: Dict[str, Any], Url_Api) -> Dict[str, Any]:
-        print("🚀 [ON_SCENARIO_CHANGED] Starting on_scenario_changed function")
-        print(f"📋 [ON_SCENARIO_CHANGED] Payload: {json.dumps(payload, indent=2, ensure_ascii=False)}")
-        print(f"🔗 [ON_SCENARIO_CHANGED] API URL: {Url_Api}")
-        result = self.make_request(Url_Api, "POST", data=payload)
-        print(f"📥 [ON_SCENARIO_CHANGED] make_request result: {result}")
-        print("🔄 [ON_SCENARIO_CHANGED] Calling _handle_response...")
-        print(f"✅ [ON_SCENARIO_CHANGED] _handle_response result: {response}")
-        return self._handle_response(result, {"success": True},{"success": False, "error": "Format de réponse invalide"})
+
 
 # ==========================================================
 # Instance globale
