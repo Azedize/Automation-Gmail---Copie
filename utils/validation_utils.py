@@ -552,47 +552,49 @@ class ValidationUtils:
     
     # ==================== VALIDATION D'INTERFACE UTILISATEUR ====================
 
+
     @staticmethod
-    def validate_qlineedit_text(input_data: Union[QLineEdit, str],   validator_type: str = "any",  min_length: int = 0, max_length: int = 1000) -> Tuple[bool, str]:
+    def validate_qlineedit_text( input_data: Union[QLineEdit, str], validator_type: str = "any", min_length: int = 0,  max_length: int = 1000 ) -> Tuple[bool, str]:
 
         try:
-            # Récupérer le texte
+            # Get the text
             if hasattr(input_data, "text"):
                 text = input_data.text().strip()
             else:
                 text = str(input_data).strip()
             
-            # Validation de base
+            # Basic validation
             if not text and min_length > 0:
-                return False, "Ce champ est obligatoire"
+                return False, "This field is required"
             
             if len(text) < min_length:
-                return False, f"Minimum {min_length} caractères requis"
+                return False, f"Minimum {min_length} characters required"
             
             if len(text) > max_length:
-                return False, f"Maximum {max_length} caractères autorisés"
+                return False, f"Maximum {max_length} characters allowed"
             
-            # Validation spécifique au type
+            # Type-specific validation
             if validator_type == "email":
                 if not ValidationUtils.validate_email(text):
-                    return False, "Format d'email invalide"
+                    return False, "Invalid email format"
             
             elif validator_type == "numeric":
                 if not text.isdigit():
-                    return False, "Valeur numérique requise"
+                    return False, "Numeric value required"
             
             elif validator_type == "numeric_range":
                 valid, _ = ValidationUtils.validate_numeric_range(text)
                 if not valid:
-                    return False, "Format invalide. Utilisez: nombre ou min,max"
+                    return False, "Invalid format. Use: number or min,max"
             
-            return True, "Texte valide"
+            return True, "Valid text"
         
         except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE(f"Exception in validate_qlineedit_text: {e}\n{traceback.format_exc()}", "ERROR")
-            return False, f"Erreur de validation: {str(e)}"
-    
-
+            Settings.WRITE_LOG_DEV_FILE(
+                f"Exception in validate_qlineedit_text: {e}\n{traceback.format_exc()}",
+                "ERROR"
+            )
+            return False, f"Validation error: {str(e)}"
 
 
 
