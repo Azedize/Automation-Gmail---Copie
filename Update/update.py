@@ -8,6 +8,7 @@ import tempfile
 import traceback
 import subprocess
 from typing import Optional
+from config import settings
 import requests
 import datetime
 import urllib.parse
@@ -29,6 +30,7 @@ try:
     from core import EncryptionService
     from core import SessionManager
     from api.base_client import APIManager
+    from ui_utils import UIManager
 
 except ImportError as e:
     # print(f"[ERROR] Import modules failed: {e}")
@@ -57,6 +59,7 @@ class UpdateManager:
             with open(path, "r", encoding="utf-8") as f:
                 return f.read().strip()
         except Exception:
+            Settings.WRITE_LOG_DEV_FILE(f"Error reading local version from {path}\n{traceback.format_exc()}", "ERROR")
             return None
 
     @staticmethod
@@ -81,7 +84,7 @@ class UpdateManager:
             return True
         except Exception as e:
             # print(f"❌ Erreur lors du téléchargement : {e}")
-            Settings.WRITE_LOG_DEV_FILE(f"Erreur lors du téléchargement : - {e}", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(f"Erreur lors du téléchargement : - {e} \n{traceback.format_exc()}", "ERROR")
             return False
 
     @staticmethod
@@ -159,7 +162,7 @@ class UpdateManager:
                 return True
 
         except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE(f"Échec de l'extraction de mise à jour - {e}", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(f"Échec de l'extraction de mise à jour - {e}\n{traceback.format_exc()}", "ERROR")
             # print("❌ Erreur lors de l'extraction")
             traceback.print_exc()
             return False
@@ -265,9 +268,7 @@ class UpdateManager:
 
         except Exception as e:
             print(f"❌ Échec du chiffrement : {e}")
-            Settings.WRITE_LOG_DEV_FILE(
-                f"Échec du chiffrement : {e}", "ERROR"
-            )
+            Settings.WRITE_LOG_DEV_FILE( f"Échec du chiffrement : {e}\n{traceback.format_exc()}", "ERROR")
             traceback.print_exc()
             return False
 
@@ -323,6 +324,7 @@ class UpdateManager:
                     SessionManager.clear_session()
                     print("🗑️ Session supprimée")
                 except Exception as e:
+                    Settings.WRITE_LOG_DEV_FILE(f"Error clearing session after invalid token detection\n{traceback.format_exc()}", "ERROR")
                     print("❌ Erreur suppression session :", e)
 
                 # ⛔ Arrêt immédiat du programme
@@ -396,10 +398,7 @@ class UpdateManager:
 
         except Exception as e:
             print("🔥 ERREUR CRITIQUE :", e)
-            Settings.WRITE_LOG_DEV_FILE(
-                f"Erreur critique lors de la vérification de mise à jour: {e}",
-                "ERROR"
-            )
+            Settings.WRITE_LOG_DEV_FILE( f"Erreur critique lors de la vérification de mise à jour: {e}\n{traceback.format_exc()}",  "ERROR"  )
             traceback.print_exc()
             return False
 
@@ -446,6 +445,7 @@ class UpdateManager:
 
         except Exception as e:
             # print(f"[LAUNCH] Échec du lancement : {e}")
+            Settings.WRITE_LOG_DEV_FILE(f"Échec du lancement de la nouvelle instance: {e}\n{traceback.format_exc()}", "ERROR")
             traceback.print_exc()
             return False
 
@@ -532,6 +532,7 @@ class UpdateManager:
             date_encrypted = EncryptionService.encrypt_message(session_date_plain, Settings.KEY)
             print(f"🔐 Date encryptée : {date_encrypted}")
         except Exception as e:
+            settings.WRITE_LOG_DEV_FILE(f"Encryption failed: {e}\n{traceback.format_exc()}", level="ERROR")
             print(f"❌ Encryption failed: {e}")
             traceback.print_exc()
             return False
@@ -558,6 +559,7 @@ class UpdateManager:
                     data = json.loads(response.text)
                     print("⚠️ Content-Type incorrect, mais JSON parsé avec succès")
                 except Exception as e:
+                    settings.WRITE_LOG_DEV_FILE(f"Failed to parse JSON response: {e}\n{traceback.format_exc()}", level="ERROR")
                     print("❌ Impossible de parser la réponse JSON :", e)
                     print("Raw response:", response.text)
                     return False
@@ -571,14 +573,14 @@ class UpdateManager:
             print(f"➤ manifest_version  : {remote_manifest_version}")
 
         except Exception as e:
+            settings.WRITE_LOG_DEV_FILE(f"Failed to get remote version: {e}\n{traceback.format_exc()}", level="ERROR")
             print(f"❌ Impossible de récupérer la version distante: {e}")
             traceback.print_exc()
             if window:
-                from ui_utils import UIManager
                 UIManager.Show_Critical_Message(
                     window,
-                    "Erreur réseau",
-                    "Impossible de vérifier la mise à jour.\nVérifiez votre connexion.",
+                    "Network Error",
+                    "Unable to check for updates.\nPlease check your internet connection.",
                     message_type="critical"
                 )
             return False
@@ -607,11 +609,10 @@ class UpdateManager:
         if str(local_manifest_version) != str(remote_manifest_version):
             print("⚠️ Manifest incompatible, mise à jour automatique impossible")
             if window:
-                from ui_utils import UIManager
                 UIManager.Show_Critical_Message(
                     window,
-                    "Incompatibilité manifest",
-                    "La version du manifest local ne correspond pas à la distante.",
+                    "Manifest Incompatibility",
+                    "The local manifest version does not match the remote version.",
                     message_type="critical"
                 )
             return False
@@ -621,8 +622,10 @@ class UpdateManager:
         # ================================================
         if local_version != remote_version:
             print(f"🔄 Mise à jour requise (nouvelle version: {remote_version})")
+            settings.WRITE_LOG_DEV_FILE(f"Extension update required - new version: {remote_version}", "INFO")
             return remote_version
         else:
+            settings.WRITE_LOG_DEV_FILE(f"Extension up-to-date", "INFO")
             print("✅ Extension locale à jour")
             return True
 
@@ -665,7 +668,7 @@ class UpdateManager:
             # print(f"🔐 Date encryptée pour API : {encrypted_safe}")
         except Exception as e:
             # print(f"❌ Encryption failed: {e}")
-            Settings.WRITE_LOG_DEV_FILE(f"❌ Encryption failed: {e}", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(f"❌ Encryption failed: {e}\n{traceback.format_exc()}", "ERROR")
             traceback.print_exc()
             return False
 
@@ -683,20 +686,20 @@ class UpdateManager:
                 zip_path = os.path.join(tmpdir, "Ext3.zip")
 
                 # Téléchargement
-                # print("📥 Téléchargement de la dernière version...")
+                print("📥 Téléchargement de la dernière version...")
                 if not UpdateManager._download_file(SERVEUR_ZIP_URL_EX3, zip_path):
-                    # print("❌ Échec du téléchargement")
+                    print("❌ Échec du téléchargement")
                     Settings.WRITE_LOG_DEV_FILE("Échec du téléchargement", "ERROR")
                     return False
 
                 # Suppression ancienne version
                 if os.path.exists(Settings.EXTENTION_EX3):
-                    # print(f"🗑️ Suppression ancien dossier {Settings.EXTENTION_EX3}")
+                    print(f"🗑️ Suppression ancien dossier {Settings.EXTENTION_EX3}")
                     Settings.WRITE_LOG_DEV_FILE(f"Suppression de l'ancienne extension avant mise à jour", "INFO")
                     shutil.rmtree(Settings.EXTENTION_EX3, onerror=UpdateManager._remove_readonly)
 
                 # Extraction
-                # print("📂 Extraction du fichier ZIP...")
+                print("📂 Extraction du fichier ZIP...")
                 with zipfile.ZipFile(zip_path, 'r') as zip_ref:
                     zip_ref.extractall(tmpdir)
 
@@ -709,19 +712,19 @@ class UpdateManager:
                         break
 
                 if extracted_dir is None:
-                    # print("❌ Dossier extrait introuvable")
+                    print("❌ Dossier extrait introuvable")
                     Settings.WRITE_LOG_DEV_FILE("Dossier extrait introuvable", "ERROR")
                     return False
 
                 # Déplacement vers destination finale
                 shutil.move(extracted_dir, Settings.EXTENTION_EX3)
-                # print(f"✅ Mise à jour réussie : {Settings.EXTENTION_EX3}")
-                Settings.WRITE_LOG_DEV_FILE(f"Extension mise à jour vers la version ", "INFO")
+                print(f"✅ Mise à jour réussie : {Settings.EXTENTION_EX3}")
+                Settings.WRITE_LOG_DEV_FILE(f"Extension mise à jour vers la version {remote_version}", "INFO")
 
                 return True
 
         except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE(f"❌ Erreur lors de la mise à jour : {e}", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(f"❌ Erreur lors de la mise à jour : {e}\n{traceback.format_exc()}", "ERROR")
             # print(f"❌ Erreur lors de la mise à jour : {e}")
             traceback.print_exc()
             return False

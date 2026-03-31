@@ -7,6 +7,7 @@ import os
 import sys
 import json
 import time
+import traceback
 from urllib import response
 import requests
 from typing import Dict, Any, Optional
@@ -36,19 +37,8 @@ class APIManager:
         print(f"🟢 [INIT] Headers globaux appliqués : {self.session.headers}")
 
     # --------------------- Requête HTTP ---------------------
-    def make_request(
-        self,
-        endpoint: str,
-        method: str = "POST",
-        data: Optional[Dict] = None,
-        json_data: Optional[Dict] = None,
-        params: Optional[Dict] = None,
-        headers: Optional[Dict] = None,
-        timeout: int = 30
-    ) -> Dict[str, Any]:
-
+    def make_request( self, endpoint: str, method: str = "POST",  data: Optional[Dict] = None, json_data: Optional[Dict] = None,  params: Optional[Dict] = None,  headers: Optional[Dict] = None, timeout: int = 30) -> Dict[str, Any]:
         url = Settings.API_ENDPOINTS.get(endpoint, endpoint) if endpoint.startswith('_') else endpoint
-
         # 🔹 Fusionner headers globaux مع headers spécifiques
         req_headers = self.session.headers.copy()
         if headers:
@@ -96,6 +86,8 @@ class APIManager:
                     print(f"⚠️ [FAIL] HTTP {response.status_code} - Body preview: {response.text[:200]}")
 
             except requests.RequestException as e:
+                detailed_error  = traceback.format_exc()
+                Settings.WRITE_LOG_DEV_FILE(f"RequestException on attempt {attempt}: {detailed_error}", "ERROR")
                 last_exception = str(e)
                 print(f"🔥 [EXCEPTION] Try {attempt}: {last_exception}")
 
@@ -122,6 +114,9 @@ class APIManager:
                 print(f"🟥 [HANDLE ERROR] {error_msg}")
                 return failure_default
         except Exception as e:
+            detailed_error = traceback.format_exc()
+            Settings.WRITE_LOG_DEV_FILE(f"Exception in _handle_response: {detailed_error}", "ERROR")
+
             print(f"🔥 [HANDLE EXCEPTION] _handle_response crashed: {str(e)}")
             return failure_default
 
@@ -138,6 +133,8 @@ class APIManager:
             result = self.make_request(Url_Api, "GET")
             print(f"📥 Raw API response: {result}")
         except Exception as e:
+            detailed_error = traceback.format_exc()
+            Settings.WRITE_LOG_DEV_FILE(f"Exception during API request: {detailed_error}", "ERROR")
             print(f"❌ Exception during API request: {e}")
             return {"session": False, "scenarios": []}
 
@@ -147,6 +144,8 @@ class APIManager:
             print(f"🔍 Final handled response: {response}")
             return response
         except Exception as e:
+            detailed_error = traceback.format_exc()
+            Settings.WRITE_LOG_DEV_FILE(f"Exception while handling response: {detailed_error}", "ERROR")
             print(f"❌ Exception while handling response: {e}")
             return {"session": False, "scenarios": []}
     # --------------------- Méthodes API ---------------------

@@ -1,6 +1,7 @@
 import json
 import random
 import os
+import traceback
 from PyQt6.QtWidgets import QCheckBox, QLineEdit, QComboBox
 import sys
 
@@ -42,7 +43,8 @@ class JsonManager:
                 return random.randint(a, b)
             return int(text)
         except Exception:
-            Settings.WRITE_LOG_DEV_FILE(f"Error parsing random range: {text}", level="ERROR")
+            detailed_error = traceback.format_exc()
+            Settings.WRITE_LOG_DEV_FILE(f"Error parsing random range: {text}\n{detailed_error}", level="ERROR")
             return 0
 
     
@@ -387,9 +389,10 @@ class JsonManager:
             return "SUCCESS"
 
         except Exception as e:
+            detailed_error = traceback.format_exc()
             #print("❌ Error while saving JSON file")
             #print(f"❌ Exception: {e}")
-            Settings.WRITE_LOG_DEV_FILE(f"Error while saving JSON file: {e}", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(f"Error while saving JSON file: {e}\n{detailed_error}", "ERROR")
             return "ERROR"
 
 

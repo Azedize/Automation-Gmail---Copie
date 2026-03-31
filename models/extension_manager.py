@@ -3,6 +3,7 @@ import json
 import shutil
 from pathlib import Path
 import os
+import traceback
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
@@ -64,6 +65,9 @@ class ExtensionManager:
                     shutil.copy2(src, dst)
                     # print(f"📄 Copied file : {item}")
             except Exception as e:
+                detailed_error = traceback.format_exc()
+                print(f"💥 Exception lors de la copie de {item} : {e}\n{detailed_error}")
+                Settings.WRITE_LOG_DEV_FILE(f"Exception lors de la copie de {item}: {e}\n{detailed_error}", "ERROR")
                 # print(f"❌ Erreur copie {item} : {e}")
                 pass
 

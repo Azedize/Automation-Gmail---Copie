@@ -1,5 +1,7 @@
 # ui_utils.py
 import os
+import traceback
+from tracemalloc import StatisticDiff
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import QIcon, QColor
 from PyQt6.QtCore import Qt, QTimer, QSize
@@ -9,6 +11,8 @@ from collections import defaultdict
 from functools import partial
 
 import sys
+
+from config import settings
 
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -268,6 +272,7 @@ class UIManager:
             print(f"🗑️ Le fichier {Settings.RESULT_FILE_PATH} a été vidé avec succès")
 
         except Exception as e:
+            Settings.WRITE_LOG_DEV_FILE(f"Error clearing result file: {e}\n{traceback.format_exc()}", "ERROR")
             print(f"⚠️ Erreur lors du vidage du fichier : {e}")
 
 
@@ -382,7 +387,7 @@ class UIManager:
             # print(f"❌ [ERROR] Une erreur est survenue: {type(e).__name__} : {e}")
             # Settings.WRITE_LOG_DEV_FILE(f"Une erreur est survenue: {type(e).__name__} : {e}", "ERROR")
             # UIManager.Show_Critical_Message(window, "Error", f"An error occurred while displaying results: {e}")
-            Settings.WRITE_LOG_DEV_FILE(f"Une erreur est survenue: {type(e).__name__} : {e}", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(f"Une erreur est survenue: {type(e).__name__} : {e}\n{traceback.format_exc()}", "ERROR")
         finally:
             UIManager.clear_result_file()
 
@@ -440,10 +445,9 @@ class UIManager:
             tab_widget.update()
             tab_bar.update()
         except Exception as e:
-            UIManager.Show_Critical_Message(tab_widget, "Error", f"Error adding notification badge: {e}")
-
-
-
+            print(f"Error adding notification badge: {e}")
+            Settings.WRITE_LOG_DEV_FILE(f"Error adding notification badge: {e}\n{traceback.format_exc()}", "ERROR")
+            # UIManager.Show_Critical_Message(tab_widget, "Error", f"Error adding notification badge: {e}")
 
 
 
@@ -453,74 +457,133 @@ class UIManager:
     def Show_Critical_Message(window, title, message, message_type="critical"):
         dialog = QMessageBox(window)
 
-        
+        # Couleurs professionnelles
         colors = {
-            "critical": {"accent": Settings.ERROR_COLOR, "start": Settings.ERROR_COLOR, "end": "#b71c1c", "bg": "#ffebee", "icon": QMessageBox.Icon.Critical},
-            "warning": {"accent": Settings.WARNING_COLOR, "start": Settings.WARNING_COLOR, "end": "#e65100", "bg": "#fff3e0", "icon": QMessageBox.Icon.Warning},
-            "info": {"accent": Settings.INFO_COLOR, "start": Settings.INFO_COLOR, "end": "#01579b", "bg": "#e1f5fe", "icon": QMessageBox.Icon.Information},
-            "success": {"accent": Settings.SUCCESS_COLOR, "start": Settings.SUCCESS_COLOR, "end": "#1b5e20", "bg": "#e8f5e9", "icon": QMessageBox.Icon.Information}
+            "critical": {
+                "icon_bg": "#ffebee",
+                "icon_color": "#d32f2f",
+                "button_start": "#ef5350",
+                "button_end": "#b71c1c",
+                "icon": QMessageBox.Icon.Critical
+            },
+            "warning": {
+                "icon_bg": "#fff3e0",
+                "icon_color": "#f57c00",
+                "button_start": "#ffb74d",
+                "button_end": "#e65100",
+                "icon": QMessageBox.Icon.Warning
+            },
+            "info": {
+                "icon_bg": "#e1f5fe",
+                "icon_color": "#0288d1",
+                "button_start": "#4fc3f7",
+                "button_end": "#01579b",
+                "icon": QMessageBox.Icon.Information
+            },
+            "success": {
+                "icon_bg": "#e8f5e9",
+                "icon_color": "#388e3c",
+                "button_start": "#81c784",
+                "button_end": "#1b5e20",
+                "icon": QMessageBox.Icon.Information
+            }
         }
 
         c = colors.get(message_type, colors["info"])
         dialog.setIcon(c["icon"])
         dialog.setWindowTitle(title)
-        dialog.setText(f"<h2 style='margin:0; font-weight:700; color:{c['accent']};'>{title}</h2>"
-                    f"<p style='margin:0px; color:#37474f; line-height:1.5;'>{message}</p>")
 
-        # تأثير الظل
+        # Texte avec fond icône, style pro (sans arrondi)
+        dialog.setText(f"""
+            <div style='background-color:{c['icon_bg']}; 
+                        padding:20px; 
+                        color:{c['icon_color']}; 
+                        font-size:15px;
+                        font-weight:600;
+                        line-height:1.5;
+                        font-family: "Segoe UI", Roboto, sans-serif;
+                        border: 1px solid {UIManager.Darken_Color(c['icon_color'], 30)}'>
+                {message}
+            </div>
+        """)
+
+        # Ombre légère
         shadow = QGraphicsDropShadowEffect()
-        shadow.setBlurRadius(50)
-        shadow.setColor(QColor(0, 0, 0, 160))
-        shadow.setOffset(0, 12)
+        shadow.setBlurRadius(20)
+        shadow.setColor(QColor(0, 0, 0, 80))
+        shadow.setOffset(0, 5)
         dialog.setGraphicsEffect(shadow)
 
-        # ستايل الزر والـ QMessageBox
+        # Styles QMessageBox et boutons sans arrondi
         dialog.setStyleSheet(f"""
+            /* Style général de la fenêtre */
             QMessageBox {{
-                background-color: {c['bg']};
-                color: #263238;
-                font-family: 'Segoe UI', 'Roboto', sans-serif;
-                font-size: 14px;
+                background-color: {c['icon_bg']};
                 padding: 20px;
-                min-width: 480px;
+                min-width: 450px;
+                font-family: "Segoe UI", "Roboto", "Helvetica Neue", sans-serif; /* Police professionnelle */
+                font-size: 14px;       /* taille pro lisible */
             }}
+
+            /* Texte principal */
             QMessageBox QLabel#qt_msgbox_label {{
-                padding: 15px;
-                background: {c['bg']};
+                background-color: {c['icon_bg']};
+                padding: 20px;
+                font-family: "Segoe UI", "Roboto", "Helvetica Neue", sans-serif;
+                font-size: 15px;
+                font-weight: 600;
+                color: {c['icon_color']};
+                line-height: 1.5;
             }}
+
+            /* Style des boutons */
             QMessageBox QPushButton {{
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 {c['start']}, stop:1 {c['end']});
+                    stop:0 {c['button_start']}, stop:1 {c['button_end']});
+                border: none;
                 color: #fff;
+                font-family: "Segoe UI", "Roboto", "Helvetica Neue", sans-serif;
                 font-weight: 600;
-                padding: 8px 20px;         /* padding uniforme pour centrer texte */
+                font-size: 14px;
+                padding: 10px 25px;
                 min-width: 100px;
-                text-align: center;         /* centrage du texte */
+                text-align: center;
+                qproperty-alignment: AlignCenter;
             }}
+
             QMessageBox QPushButton:hover {{
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 {UIManager.Lighten_Color(c['start'], 12)}, stop:1 {UIManager.Lighten_Color(c['end'], 12)});
+                    stop:0 {UIManager.Lighten_Color(c['button_start'], 15)},
+                    stop:1 {UIManager.Lighten_Color(c['button_end'], 15)});
             }}
+
             QMessageBox QPushButton:pressed {{
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 {UIManager.Darken_Color(c['start'], 12)}, stop:1 {UIManager.Darken_Color(c['end'], 12)});
-                padding: 9px 20px;           /* léger ajustement padding pressed */
+                    stop:0 {UIManager.Darken_Color(c['button_start'], 15)},
+                    stop:1 {UIManager.Darken_Color(c['button_end'], 15)});
+                padding: 11px 25px;
             }}
         """)
 
-        # Ajouter bouton OK par défaut
         dialog.setStandardButtons(QMessageBox.StandardButton.Ok)
 
-        # محاذاة الأزرار في الوسط
+        # Centrer les boutons
         button_box = dialog.findChild(QDialogButtonBox)
         if button_box:
             button_box.setCenterButtons(True)
 
-        # وضع الـ dialog في مركز النافذة إذا موجودة
+        # Centrer la fenêtre sur le parent
         if window:
-            dialog.move(window.frameGeometry().center() - dialog.rect().center())
+            geo = window.frameGeometry()
+            center = geo.center()
+            dialog.move(center - dialog.rect().center())
 
         return dialog.exec()
+
+
+
+
+
     # -----------------------------
     # Ajustement de la couleur HEX (assombrir / éclaircir)
     # -----------------------------
@@ -1034,7 +1097,7 @@ class UIManager:
                                 te.clearFocus()
                             except Exception as e:
                                 # print(f"[❌] Erreur lors de l’ouverture de la boîte de dialogue : {e}")
-                                Settings.WRITE_LOG_DEV_FILE(f"[❌] Erreur lors de l’ouverture de la boîte de dialogue : {e}", "ERROR")
+                                Settings.WRITE_LOG_DEV_FILE(f"[❌] Erreur lors de l’ouverture de la boîte de dialogue : {e}\n{traceback.format_exc()}", "ERROR")
 
                         return handler
 
@@ -1267,6 +1330,7 @@ class UIManager:
                 return None
             return content
         except Exception:
+            settings.WRITE_LOG_DEV_FILE(f"Error reading file content: {file_path}\n{traceback.format_exc()}", "ERROR")
             return None
 
 
@@ -1390,6 +1454,7 @@ class UIManager:
             button.clicked.connect(callback)
             print(f"[DEBUG] Callback connecté pour '{button_name}'")
         except Exception as e:
+            settings.WRITE_LOG_DEV_FILE(f"Error connecting callback: {button_name}\n{traceback.format_exc()}", "ERROR")
             print(f"[ERROR] Erreur connexion callback: {e}")
 
         # 5️⃣ Taille du bouton
@@ -1453,6 +1518,7 @@ class UIManager:
             button.clicked.connect(callback)
             print(f"[SUCCESS] Callback connecté pour '{widget_name}'")
         except Exception as e:
+            settings.WRITE_LOG_DEV_FILE(f"Error connecting callback: {widget_name}\n{traceback.format_exc()}", "ERROR")
             print(f"[ERROR] Erreur lors de la connexion du callback: {e}")
 
         return button
@@ -1485,6 +1551,7 @@ class UIManager:
             UIManager._apply_combobox_style(window, window.browser)
             print("[DEBUG] Style appliqué au QComboBox.")
         except Exception as e:
+            settings.WRITE_LOG_DEV_FILE(f"Error applying style to browsers combobox\n{traceback.format_exc()}", "ERROR")
             print(f"[ERROR] Erreur application style: {e}")
 
         # 3️⃣ Nettoyage (éviter doublons)
@@ -1694,6 +1761,7 @@ class UIManager:
                         try:
                             button.clicked.disconnect()
                         except Exception:
+                            Settings.WRITE_LOG_DEV_FILE(f"Error disconnecting previous signals for copy button in tab {i}\n{traceback.format_exc()}", "ERROR")
                             pass
                         button.clicked.connect(partial(UIManager.Copy_Result_From_Tab, window , i))
 
@@ -1769,6 +1837,7 @@ class UIManager:
         try:
             window.INTERFACE.tabBar().setCursor(Qt.CursorShape.PointingHandCursor)
         except Exception:
+            Settings.WRITE_LOG_DEV_FILE(f"Error setting cursor for TabBar\n{traceback.format_exc()}", "ERROR")
             pass
 
         # Chercher le tab commençant par "Result" et ajouter un frame
@@ -1826,6 +1895,7 @@ class UIManager:
         try:
             UIManager._style_spin_boxes(window)
         except Exception:
+            Settings.WRITE_LOG_DEV_FILE(f"Error styling spin boxes\n{traceback.format_exc()}", "ERROR")
             pass
 
         # Initialize result tab widget reference

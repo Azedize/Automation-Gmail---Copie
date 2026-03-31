@@ -5,6 +5,7 @@ import sys
 import json
 import subprocess
 import configparser
+import traceback
 from typing import Optional, List, Dict, Any
 import psutil
 import winreg
@@ -96,10 +97,8 @@ class BrowserManager:
                 continue
 
             except Exception as e:
-                Settings.WRITE_LOG_DEV_FILE(
-                    f"🚨 Erreur registre ({hive_name}): {str(e)}",
-                    "ERROR"
-                )
+                detailed_error = traceback.format_exc()
+                Settings.WRITE_LOG_DEV_FILE(f"🚨 Erreur registre ({hive_name}): {str(e)}\n{detailed_error}", "ERROR")
 
         Settings.WRITE_LOG_DEV_FILE(
             f"❌ Navigateur introuvable: {exe_name}",
@@ -203,6 +202,8 @@ class BrowserManager:
                     if profile['name'] in f.path:
                         return profile
         except Exception:
+            detailed_error = traceback.format_exc()
+            Settings.WRITE_LOG_DEV_FILE(f"🚨 Erreur proc ({pid}): {detailed_error}", "ERROR")
             Settings.WRITE_LOG_DEV_FILE("Profil introuvable.", "ERROR")
             return None
         return None
@@ -231,6 +232,8 @@ class BrowserManager:
                             'profile': profile['name']
                         })
                 except Exception:
+                    detailed_error = traceback.format_exc()
+                    Settings.WRITE_LOG_DEV_FILE(f"🚨 Erreur proc ({hwnd}): {detailed_error}", "ERROR")
                     Settings.WRITE_LOG_DEV_FILE("Profil introuvable.", "ERROR")
                     pass
             return True
@@ -255,7 +258,8 @@ class BrowserManager:
                     win32gui.PostMessage(window["hwnd"], win32con.WM_CLOSE, 0, 0)
                     #print(f"✅ Fermeture : {window['profile']} - {window['title']}")
                 except Exception as e:
-                    Settings.WRITE_LOG_DEV_FILE(f"Erreur fermeture {window['profile']} : {e}", "ERROR")
+                    detailed_error = traceback.format_exc()
+                    Settings.WRITE_LOG_DEV_FILE(f"Erreur fermeture {window['profile']} : {e}\n{detailed_error}", "ERROR")
                     # print(f"❌ Erreur fermeture {window['profile']}: {e}")
 
     # ---------------------- Chrome ----------------------
@@ -289,7 +293,8 @@ class BrowserManager:
             #print("✅ Chrome lancé")
             time.sleep(2)
         except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE(f"Erreur lancement Chrome : {e}", "ERROR")
+            detailed_error = traceback.format_exc()
+            Settings.WRITE_LOG_DEV_FILE(f"Erreur lancement Chrome : {e}\n{detailed_error}", "ERROR")
             # print(f"❌ Erreur lancement Chrome : {e}")
         finally:
             if 'driver' in locals():
@@ -323,6 +328,8 @@ class BrowserManager:
                     current_path = f"{path_trace}[{idx}]"
                     BrowserManager.Search_Keys(item, search_keys, results, current_path)
         except Exception as e:
+            detailed_error = traceback.format_exc()
+            Settings.WRITE_LOG_DEV_FILE(f"Erreur lors de la recherche des clés à {path_trace} : {e}\n{detailed_error}", "ERROR")
             # print(f"💥 Erreur lors de la recherche des clés à {path_trace}: {e}")
             Settings.WRITE_LOG_DEV_FILE(f"Erreur lors de la recherche des clés à {path_trace} : {e}", "ERROR")
             
@@ -366,17 +373,24 @@ class BrowserManager:
                 return None  # retourne None si aucun résultat
 
         except json.JSONDecodeError as e:
-            print(f"[ERROR] Erreur JSON : impossible de décoder le fichier {path_file} : {e}")
-            Settings.WRITE_LOG_DEV_FILE(f"Erreur JSON : impossible de décoder le fichier {path_file} : {e}", "ERROR")
-        except PermissionError:
-            print(f"[ERROR] Permission refusée pour lire le fichier {path_file}")
-            Settings.WRITE_LOG_DEV_FILE(f"Permission refusée pour lire le fichier {path_file}", "ERROR")
-        except FileNotFoundError:
-            print(f"[ERROR] Fichier non trouvé (malgré la vérification précédente) : {path_file}")
-            Settings.WRITE_LOG_DEV_FILE(f"Fichier non trouvé (malgré la vérification précedente) : {path_file}", "ERROR")
+            error_msg = f"JSONDecodeError: impossible de décoder le fichier {path_file} : {e}\n{traceback.format_exc()}"
+            print(f"[ERROR] {error_msg}")
+            Settings.WRITE_LOG_DEV_FILE(error_msg, "ERROR")
+
+        except PermissionError as e:
+            error_msg = f"PermissionError: Permission refusée pour lire le fichier {path_file} : {e}\n{traceback.format_exc()}"
+            print(f"[ERROR] {error_msg}")
+            Settings.WRITE_LOG_DEV_FILE(error_msg, "ERROR")
+
+        except FileNotFoundError as e:
+            error_msg = f"FileNotFoundError: Fichier non trouvé : {path_file} : {e}\n{traceback.format_exc()}"
+            print(f"[ERROR] {error_msg}")
+            Settings.WRITE_LOG_DEV_FILE(error_msg, "ERROR")
+
         except Exception as e:
-            print(f"[ERROR] Erreur inattendue lors du traitement de {path_file} : {e}")
-            Settings.WRITE_LOG_DEV_FILE(f"Erreur inattendue lors du traitement de {path_file} : {e}", "ERROR")
+            error_msg = f"UnexpectedError: Erreur inattendue lors du traitement de {path_file} : {e}\n{traceback.format_exc()}"
+            print(f"[ERROR] {error_msg}")
+            Settings.WRITE_LOG_DEV_FILE(error_msg, "ERROR")
 
         return None  
 
@@ -435,8 +449,9 @@ class BrowserManager:
             return True
 
         except Exception as e:
+            detailed_error = traceback.format_exc()
             print(f"[ERROR] Erreur lors de la mise à jour du profil {profile_name} : {e}")
-            Settings.WRITE_LOG_DEV_FILE(f"Erreur lors de la mise à jour du profil {profile_name} : {e}", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(f"Erreur lors de la mise à jour du profil {profile_name} : {e}\n{detailed_error}", "ERROR")
             return False
 
 
