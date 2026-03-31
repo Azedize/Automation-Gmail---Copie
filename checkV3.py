@@ -484,13 +484,14 @@ class UpdateManager:
 
 
 def initialize_dependencies():
-    # print("Initialisation des dépendances")
+    WRITE_LOG_DEV_FILE("Initialisation des dépendances", level="INFO")
 
-    WRITE_LOG_DEV_FILE("Initialisation des dépendances" , level="INFO")
-
+    # Installer pywin32 pour Windows
     DependencyManager.install_and_verify_pywin32()
 
     global requests, urllib3, PyQt6, cryptography_module, psutil, pytz, tqdm, platformdirs, selenium
+    global colorama, sqlalchemy
+
     requests = DependencyManager.install_and_import("requests")
     urllib3 = DependencyManager.install_and_import("urllib3", version="2.2.3")
     if urllib3:
@@ -503,6 +504,9 @@ def initialize_dependencies():
     tqdm = DependencyManager.install_and_import("tqdm")
     platformdirs = DependencyManager.install_and_import("platformdirs")
     selenium = DependencyManager.install_and_import("selenium", required_import="webdriver", version="4.27.1")
+    colorama = DependencyManager.install_and_import("colorama")
+    sqlalchemy = DependencyManager.install_and_import("sqlalchemy")
+    
 
 
 
@@ -592,8 +596,7 @@ def main():
         WRITE_LOG_DEV_FILE(f"Fatal application error: {e}", "ERROR")
         
         # Pour conserver aussi la trace dans les logs
-        error_details = traceback.format_exc()
-        WRITE_LOG_DEV_FILE(f"Error details:\n{error_details}", "ERROR")
+        WRITE_LOG_DEV_FILE(f"Error details:\n{traceback.format_exc()}", "ERROR")
         sys.exit(1)  # Arrêt du programme en cas d'erreur fatale
         
 

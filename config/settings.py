@@ -265,8 +265,7 @@ class Settings:
             #     print(f"⚠️ [LOG] Fichier log inexistant: {cls.LOG_DEV_FILE}")
 
         except Exception as e:
-            detailed_error = traceback.format_exc()
-            Settings.WRITE_LOG_DEV_FILE(f"Exception while clearing log: {detailed_error}", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(f"Exception while clearing log: {traceback.format_exc()}", "ERROR")
 
             # print(f"❌ [LOG] Erreur lors de la suppression du fichier log: {e}")
             pass
@@ -300,8 +299,7 @@ class Settings:
                     path.mkdir(parents=True, exist_ok=True)  
                     # print(f"✅ Dossier créé: {path}")
                 except Exception as e:
-                    detailed_error = traceback.format_exc()
-                    Settings.WRITE_LOG_DEV_FILE(f"Exception while creating directory {path}: {detailed_error}", "ERROR")
+                    Settings.WRITE_LOG_DEV_FILE(f"Exception while creating directory {path}: {traceback.format_exc()}", "ERROR")
                     print(f"💥 Erreur lors de la création du dossier {path}: {e}")
                     
             # else:

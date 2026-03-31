@@ -149,10 +149,9 @@ class SessionManager:
                 session_info["error"] = "Expired"
 
         except Exception as e:
-            detailed_error = traceback.format_exc()
             print(f"[ERROR] Lecture fichier session : {e}")
             session_info["error"] = f"FileReadError: {e}"
-            settings.WRITE_LOG_DEV_FILE(f"Erreur lors de la lecture du fichier session : {e}\n{detailed_error}", "ERROR")
+            settings.WRITE_LOG_DEV_FILE(f"Erreur lors de la lecture du fichier session : {e}\n{traceback.format_exc()}", "ERROR")
 
         return session_info
 
@@ -175,8 +174,7 @@ class SessionManager:
             settings.WRITE_LOG_DEV_FILE(f"Session crée pour '{username}'", "INFO")
             return True
         except Exception as e:
-            detailed_error = traceback.format_exc()
-            settings.WRITE_LOG_DEV_FILE(f"Erreur lors de la création de la session : {e}\n{detailed_error}", "ERROR")
+            settings.WRITE_LOG_DEV_FILE(f"Erreur lors de la création de la session : {e}\n{traceback.format_exc()}", "ERROR")
             print(f"[ERROR] Création session échouée : {e}")
             return False
 
@@ -189,8 +187,7 @@ class SessionManager:
                 print("[INFO] Session supprimée")
                 
             except Exception as e:
-                detailed_error = traceback.format_exc()
-                settings.WRITE_LOG_DEV_FILE(f"Erreur lors de la suppression de la session : {e}\n{detailed_error}", "ERROR")
+                settings.WRITE_LOG_DEV_FILE(f"Erreur lors de la suppression de la session : {e}\n{traceback.format_exc()}", "ERROR")
                 print(f"[ERROR] Suppression session échouée : {e}")
                 settings.WRITE_LOG_DEV_FILE(f"[ERROR] Suppression session échouée : {e}", "ERROR")
         else:
@@ -252,16 +249,14 @@ class SessionManager:
                 return {"valid": True}
 
             except Exception as e_decrypt:
-                detailed_error = traceback.format_exc()
                 print(f"💥 Exception lors du décryptage : {e_decrypt}")
-                settings.WRITE_LOG_DEV_FILE(f"Exception lors du décryptage: {e_decrypt}\n{detailed_error}", "ERROR")
+                settings.WRITE_LOG_DEV_FILE(f"Exception lors du décryptage: {e_decrypt}\n{traceback.format_exc()}", "ERROR")
                 traceback.print_exc()
                 return {"valid": False, "error": "DecryptionFailed"}
 
         except Exception as e_api:
-            detailed_error = traceback.format_exc()
             print(f"⚠️ Validation API échouée : {e_api}")
-            settings.WRITE_LOG_DEV_FILE(f"Erreur lors de la validation de la session via l'API : {e_api}\n{detailed_error}", "ERROR")
+            settings.WRITE_LOG_DEV_FILE(f"Erreur lors de la validation de la session via l'API : {e_api}\n{traceback.format_exc()}", "ERROR")
             traceback.print_exc()
             return {"valid": False, "error": str(e_api)}
 
@@ -340,10 +335,9 @@ class SessionManager:
                         print("[DEBUG] Réponse API reçue")
                         break
                 except Exception as e:
-                    detailed_error = traceback.format_exc()
                     print(f"[ERROR] Exception lors de la requête API: {e}")
                     traceback.print_exc()
-                    settings.WRITE_LOG_DEV_FILE(f"Exception lors de la requête API: {e}\n{detailed_error}", "ERROR")
+                    settings.WRITE_LOG_DEV_FILE(f"Exception lors de la requête API: {e}\n{traceback.format_exc()}", "ERROR")
                 time.sleep(2)
             else:
                 print("[ERROR] Connexion échouée après 5 tentatives")
@@ -370,16 +364,14 @@ class SessionManager:
                 return (id_user, entity)
 
             except Exception as e:
-                detailed_error = traceback.format_exc()
                 print(f"[CRITICAL] Exception lors du décryptage: {e}")
-                settings.WRITE_LOG_DEV_FILE(f"Exception lors du décryptage: {e}\n{detailed_error}", "ERROR")
+                settings.WRITE_LOG_DEV_FILE(f"Exception lors du décryptage: {e}\n{traceback.format_exc()}", "ERROR")
                 traceback.print_exc()
                 return -5
 
         except Exception as e:
-            detailed_error = traceback.format_exc()
             print(f"[CRITICAL] Exception inattendue dans check_api_credentials: {e}")
-            settings.WRITE_LOG_DEV_FILE(f"Exception inattendue dans check_api_credentials: {e}\n{detailed_error}", "ERROR")
+            settings.WRITE_LOG_DEV_FILE(f"Exception inattendue dans check_api_credentials: {e}\n{traceback.format_exc()}", "ERROR")
             traceback.print_exc()
             return -5
 

@@ -97,8 +97,7 @@ class BrowserManager:
                 continue
 
             except Exception as e:
-                detailed_error = traceback.format_exc()
-                Settings.WRITE_LOG_DEV_FILE(f"🚨 Erreur registre ({hive_name}): {str(e)}\n{detailed_error}", "ERROR")
+                Settings.WRITE_LOG_DEV_FILE(f"🚨 Erreur registre ({hive_name}): {str(e)}\n{traceback.format_exc()}", "ERROR")
 
         Settings.WRITE_LOG_DEV_FILE(
             f"❌ Navigateur introuvable: {exe_name}",
@@ -202,8 +201,7 @@ class BrowserManager:
                     if profile['name'] in f.path:
                         return profile
         except Exception:
-            detailed_error = traceback.format_exc()
-            Settings.WRITE_LOG_DEV_FILE(f"🚨 Erreur proc ({pid}): {detailed_error}", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(f"🚨 Erreur proc ({pid}): {traceback.format_exc()}", "ERROR")
             Settings.WRITE_LOG_DEV_FILE("Profil introuvable.", "ERROR")
             return None
         return None
@@ -232,8 +230,7 @@ class BrowserManager:
                             'profile': profile['name']
                         })
                 except Exception:
-                    detailed_error = traceback.format_exc()
-                    Settings.WRITE_LOG_DEV_FILE(f"🚨 Erreur proc ({hwnd}): {detailed_error}", "ERROR")
+                    Settings.WRITE_LOG_DEV_FILE(f"🚨 Erreur proc ({hwnd}): {traceback.format_exc()}", "ERROR")
                     Settings.WRITE_LOG_DEV_FILE("Profil introuvable.", "ERROR")
                     pass
             return True
@@ -258,8 +255,7 @@ class BrowserManager:
                     win32gui.PostMessage(window["hwnd"], win32con.WM_CLOSE, 0, 0)
                     #print(f"✅ Fermeture : {window['profile']} - {window['title']}")
                 except Exception as e:
-                    detailed_error = traceback.format_exc()
-                    Settings.WRITE_LOG_DEV_FILE(f"Erreur fermeture {window['profile']} : {e}\n{detailed_error}", "ERROR")
+                    Settings.WRITE_LOG_DEV_FILE(f"Erreur fermeture {window['profile']} : {e}\n{traceback.format_exc()}", "ERROR")
                     # print(f"❌ Erreur fermeture {window['profile']}: {e}")
 
     # ---------------------- Chrome ----------------------
@@ -293,8 +289,7 @@ class BrowserManager:
             #print("✅ Chrome lancé")
             time.sleep(2)
         except Exception as e:
-            detailed_error = traceback.format_exc()
-            Settings.WRITE_LOG_DEV_FILE(f"Erreur lancement Chrome : {e}\n{detailed_error}", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(f"Erreur lancement Chrome : {e}\n{traceback.format_exc()}", "ERROR")
             # print(f"❌ Erreur lancement Chrome : {e}")
         finally:
             if 'driver' in locals():
@@ -328,9 +323,7 @@ class BrowserManager:
                     current_path = f"{path_trace}[{idx}]"
                     BrowserManager.Search_Keys(item, search_keys, results, current_path)
         except Exception as e:
-            detailed_error = traceback.format_exc()
-            Settings.WRITE_LOG_DEV_FILE(f"Erreur lors de la recherche des clés à {path_trace} : {e}\n{detailed_error}", "ERROR")
-            # print(f"💥 Erreur lors de la recherche des clés à {path_trace}: {e}")
+            Settings.WRITE_LOG_DEV_FILE(f"Erreur lors de la recherche des clés à {path_trace} : {e}\n{traceback.format_exc()}", "ERROR")
             Settings.WRITE_LOG_DEV_FILE(f"Erreur lors de la recherche des clés à {path_trace} : {e}", "ERROR")
             
 
@@ -426,12 +419,10 @@ class BrowserManager:
                         Settings.WRITE_LOG_DEV_FILE(f"Erreur suppression fichier {path} : {e}", "ERROR")
 
             # 🔹 Vérifier que les fichiers templates existent avant copie
-            for template_path, name in [
-                (Settings.SECURE_PREFERENCES_TEMPLATE, "Secure Preferences"),
-                (Settings.FICHIER_LOCAL_STATE, "Local State"),
-                (Settings.FICHIER_VARIATIONS, "Variations")
-            ]:
+            for template_path, name in [ (Settings.SECURE_PREFERENCES_TEMPLATE, "Secure Preferences"), (Settings.FICHIER_LOCAL_STATE, "Local State"), (Settings.FICHIER_VARIATIONS, "Variations")]:
                 if not os.path.isfile(template_path):
+                    print(f"[ERROR] Template {name} introuvable ou pas un fichier : {template_path}")
+                    Settings.WRITE_LOG_DEV_FILE(f"Template {name} introuvable ou pas un fichier : {template_path}", "ERROR")
                     raise FileNotFoundError(f"Template {name} introuvable ou pas un fichier : {template_path}")
 
             # 🔹 Copier fichiers templates
@@ -449,9 +440,8 @@ class BrowserManager:
             return True
 
         except Exception as e:
-            detailed_error = traceback.format_exc()
             print(f"[ERROR] Erreur lors de la mise à jour du profil {profile_name} : {e}")
-            Settings.WRITE_LOG_DEV_FILE(f"Erreur lors de la mise à jour du profil {profile_name} : {e}\n{detailed_error}", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(f"Erreur lors de la mise à jour du profil {profile_name} : {e}\n{traceback.format_exc()}", "ERROR")
             return False
 
 

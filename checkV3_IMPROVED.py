@@ -341,9 +341,8 @@ def encrypt_message( plaintext: str, key_bytes: bytes) -> BootstrapResult[str]:
             "cryptography library required for encryption"
         )
     except Exception as e:
-        error_details = traceback.format_exc()
         WRITE_LOG_DEV_FILE(
-            f"AES-256-CBC encryption failed: {error_details}",
+            f"AES-256-CBC encryption failed: {traceback.format_exc()}",
             "ERROR",
             BootstrapErrorCode.ENCRYPTION_FAILED
         )
@@ -406,16 +405,8 @@ def find_pythonw() -> BootstrapResult[Path]:
                 continue
         
         # Not found anywhere
-        WRITE_LOG_DEV_FILE(
-            "pythonw.exe not found in system",
-            "ERROR",
-            BootstrapErrorCode.PYTHONW_NOT_FOUND
-        )
-        return BootstrapResult.error(
-            BootstrapErrorCode.PYTHONW_NOT_FOUND,
-            "pythonw.exe not found in any location. Install Python correctly.",
-            details={"searched_locations": ["Python dir", "PATH"]}
-        )
+        WRITE_LOG_DEV_FILE("pythonw.exe not found in system", "ERROR", BootstrapErrorCode.PYTHONW_NOT_FOUND)
+        return BootstrapResult.error( BootstrapErrorCode.PYTHONW_NOT_FOUND,"pythonw.exe not found in any location. Install Python correctly.",  details={"searched_locations": ["Python dir", "PATH"]} )
     
     except Exception as e:
         WRITE_LOG_DEV_FILE(
@@ -491,25 +482,11 @@ class DependencyManager:
                 )
                 WRITE_LOG_DEV_FILE("pywin32 installed successfully", "INFO")
             except subprocess.TimeoutExpired:
-                WRITE_LOG_DEV_FILE(
-                    "pywin32 installation timed out",
-                    "ERROR",
-                    BootstrapErrorCode.DEPENDENCY_INSTALLATION_FAILED
-                )
-                return BootstrapResult.error(
-                    BootstrapErrorCode.DEPENDENCY_INSTALLATION_FAILED,
-                    "pywin32 installation timed out (>5 minutes)"
-                )
+                WRITE_LOG_DEV_FILE("pywin32 installation timed out", "ERROR", BootstrapErrorCode.DEPENDENCY_INSTALLATION_FAILED)
+                return BootstrapResult.error( BootstrapErrorCode.DEPENDENCY_INSTALLATION_FAILED,   "pywin32 installation timed out (>5 minutes)")
             except subprocess.CalledProcessError as e:
-                WRITE_LOG_DEV_FILE(
-                    f"pip installation failed: {str(e)}",
-                    "ERROR",
-                    BootstrapErrorCode.DEPENDENCY_INSTALLATION_FAILED
-                )
-                return BootstrapResult.error(
-                    BootstrapErrorCode.DEPENDENCY_INSTALLATION_FAILED,
-                    f"pip failed to install pywin32: {str(e)}"
-                )
+                WRITE_LOG_DEV_FILE( f"pip installation failed: {str(e)}","ERROR",  BootstrapErrorCode.DEPENDENCY_INSTALLATION_FAILED )
+                return BootstrapResult.error(  BootstrapErrorCode.DEPENDENCY_INSTALLATION_FAILED, f"pip failed to install pywin32: {str(e)}")
             
             # Run post-install script
             postinstall_script = Path(python_exe).parent / "Scripts" / "pywin32_postinstall.py"
@@ -524,30 +501,17 @@ class DependencyManager:
                     )
                     WRITE_LOG_DEV_FILE("pywin32 post-installation completed", "INFO")
                 except subprocess.TimeoutExpired:
-                    WRITE_LOG_DEV_FILE(
-                        "pywin32 post-install timed out",
-                        "WARNING"
-                    )
+                    WRITE_LOG_DEV_FILE(  "pywin32 post-install timed out",  "WARNING" )
                     # Don't fail, might still work
                 except subprocess.CalledProcessError as e:
-                    WRITE_LOG_DEV_FILE(
-                        f"pywin32 post-install failed: {str(e)}",
-                        "WARNING"
-                    )
+                    WRITE_LOG_DEV_FILE( f"pywin32 post-install failed: {str(e)}","WARNING")
                     # Don't fail, might still work
             
             return BootstrapResult.ok(True, {"status": "installed_and_verified"})
         
         except Exception as e:
-            WRITE_LOG_DEV_FILE(
-                f"Error installing pywin32: {traceback.format_exc()}",
-                "ERROR",
-                BootstrapErrorCode.DEPENDENCY_INSTALLATION_FAILED
-            )
-            return BootstrapResult.error(
-                BootstrapErrorCode.DEPENDENCY_INSTALLATION_FAILED,
-                f"Failed to install pywin32: {str(e)}"
-            )
+            WRITE_LOG_DEV_FILE( f"Error installing pywin32: {traceback.format_exc()}", "ERROR", BootstrapErrorCode.DEPENDENCY_INSTALLATION_FAILED)
+            return BootstrapResult.error( BootstrapErrorCode.DEPENDENCY_INSTALLATION_FAILED, f"Failed to install pywin32: {str(e)}")
     
     
     @staticmethod
@@ -1092,10 +1056,7 @@ def initialize_dependencies() -> BootstrapResult[bool]:
         ...     sys.exit(1)
     """
     try:
-        WRITE_LOG_DEV_FILE(
-            "Initializing dependencies",
-            "INFO"
-        )
+        WRITE_LOG_DEV_FILE(  "Initializing dependencies",  "INFO" )
         
         # Install pywin32 (Windows-specific)
         pywin32_result = DependencyManager.install_and_verify_pywin32()
@@ -1117,6 +1078,7 @@ def initialize_dependencies() -> BootstrapResult[bool]:
             ("tqdm", None, None, None),
             ("platformdirs", None, None, None),
             ("selenium", None, "webdriver", "4.27.1"),
+            ("colorama", None, None, None)
         ]
         
         failed_packages = []

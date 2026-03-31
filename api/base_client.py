@@ -86,8 +86,7 @@ class APIManager:
                     print(f"⚠️ [FAIL] HTTP {response.status_code} - Body preview: {response.text[:200]}")
 
             except requests.RequestException as e:
-                detailed_error  = traceback.format_exc()
-                Settings.WRITE_LOG_DEV_FILE(f"RequestException on attempt {attempt}: {detailed_error}", "ERROR")
+                Settings.WRITE_LOG_DEV_FILE(f"RequestException on attempt {attempt}: {traceback.format_exc()}", "ERROR")
                 last_exception = str(e)
                 print(f"🔥 [EXCEPTION] Try {attempt}: {last_exception}")
 
@@ -114,8 +113,7 @@ class APIManager:
                 print(f"🟥 [HANDLE ERROR] {error_msg}")
                 return failure_default
         except Exception as e:
-            detailed_error = traceback.format_exc()
-            Settings.WRITE_LOG_DEV_FILE(f"Exception in _handle_response: {detailed_error}", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(f"Exception in _handle_response: {traceback.format_exc()}", "ERROR")
 
             print(f"🔥 [HANDLE EXCEPTION] _handle_response crashed: {str(e)}")
             return failure_default
@@ -133,8 +131,7 @@ class APIManager:
             result = self.make_request(Url_Api, "GET")
             print(f"📥 Raw API response: {result}")
         except Exception as e:
-            detailed_error = traceback.format_exc()
-            Settings.WRITE_LOG_DEV_FILE(f"Exception during API request: {detailed_error}", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(f"Exception during API request: {traceback.format_exc()}", "ERROR")
             print(f"❌ Exception during API request: {e}")
             return {"session": False, "scenarios": []}
 
@@ -144,8 +141,7 @@ class APIManager:
             print(f"🔍 Final handled response: {response}")
             return response
         except Exception as e:
-            detailed_error = traceback.format_exc()
-            Settings.WRITE_LOG_DEV_FILE(f"Exception while handling response: {detailed_error}", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(f"Exception while handling response: {traceback.format_exc()}", "ERROR")
             print(f"❌ Exception while handling response: {e}")
             return {"session": False, "scenarios": []}
     # --------------------- Méthodes API ---------------------

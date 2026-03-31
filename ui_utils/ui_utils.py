@@ -1736,8 +1736,8 @@ class UIManager:
 
     
     
-    
-    
+        
+        
     @staticmethod
     def Set_Icon_For_Existing_Buttons(window):
         """Set copy icons for all copy buttons in result tabs"""
@@ -1758,12 +1758,24 @@ class UIManager:
                     if os.path.exists(icon_path):
                         button.setIcon(QIcon(icon_path))
                         button.setIconSize(QSize(20, 20))
-                        try:
-                            button.clicked.disconnect()
-                        except Exception:
-                            Settings.WRITE_LOG_DEV_FILE(f"Error disconnecting previous signals for copy button in tab {i}\n{traceback.format_exc()}", "ERROR")
-                            pass
-                        button.clicked.connect(partial(UIManager.Copy_Result_From_Tab, window , i))
+
+                    # --- Disconnect safely ---
+                    try:
+                        button.clicked.disconnect()
+                    except TypeError:
+                        # لا توجد إشارات متصلة، هذا طبيعي
+                        Settings.WRITE_LOG_DEV_FILE(
+                            f"No signals to disconnect for copy button in tab {i}", "INFO"
+                        )
+                    except Exception:
+                        # أي خطأ غير متوقع
+                        Settings.WRITE_LOG_DEV_FILE(
+                            f"Unexpected error disconnecting copy button in tab {i}:\n{traceback.format_exc()}",
+                            "ERROR"
+                        )
+
+                    # --- Connect the new signal ---
+                    button.clicked.connect(partial(UIManager.Copy_Result_From_Tab, window, i))
 
 
     

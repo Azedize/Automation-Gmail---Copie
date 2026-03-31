@@ -53,8 +53,7 @@ class EncryptionService:
 
             return plaintext_bytes.decode("utf-8")
         except Exception as e:
-            detailed_error = traceback.format_exc()
-            settings.WRITE_LOG_DEV_FILE(f"AES-CBC decryption failed: {e}\n{detailed_error}", level="ERROR")
+            settings.WRITE_LOG_DEV_FILE(f"AES-CBC decryption failed: {e}\n{traceback.format_exc()}", level="ERROR")
             raise Exception(f"AES-CBC decryption failed: {e}")
 
     # =========================
@@ -75,8 +74,7 @@ class EncryptionService:
             )
             return kdf.derive(password.encode("utf-8"))
         except Exception as e:
-            detailed_error = traceback.format_exc()
-            settings.WRITE_LOG_DEV_FILE(f"Key derivation failed: {e}\n{detailed_error}", level="ERROR")
+            settings.WRITE_LOG_DEV_FILE(f"Key derivation failed: {e}\n{traceback.format_exc()}", level="ERROR")
             raise Exception(f"Key derivation failed: {e}")
 
     # =========================
@@ -98,8 +96,7 @@ class EncryptionService:
 
             return base64.b64encode(iv + ciphertext).decode("utf-8")
         except Exception as e:
-            detailed_error = traceback.format_exc()
-            settings.WRITE_LOG_DEV_FILE(f"AES-CBC encryption failed: {e}\n{detailed_error}", level="ERROR")
+            settings.WRITE_LOG_DEV_FILE(f"AES-CBC encryption failed: {e}\n{traceback.format_exc()}", level="ERROR")
             raise Exception(f"AES-CBC encryption failed: {e}")
 
     # =========================
@@ -118,8 +115,7 @@ class EncryptionService:
             payload = salt + iv + ciphertext_and_tag
             return payload.hex()
         except Exception as e:
-            detailed_error = traceback.format_exc()
-            settings.WRITE_LOG_DEV_FILE(f"AES-GCM encryption failed: {e}\n{detailed_error}", level="ERROR")
+            settings.WRITE_LOG_DEV_FILE(f"AES-GCM encryption failed: {e}\n{traceback.format_exc()}", level="ERROR")
             raise Exception(f"AES-GCM encryption failed: {e}")
 
     # =========================
@@ -132,8 +128,7 @@ class EncryptionService:
             decrypted = fernet.decrypt(encrypted_key.encode())
             return decrypted == b"authorized"
         except Exception as e:
-            detailed_error = traceback.format_exc()
-            settings.WRITE_LOG_DEV_FILE(f"Key verification failed: {e}\n{detailed_error}", level="ERROR")
+            settings.WRITE_LOG_DEV_FILE(f"Key verification failed: {e}\n{traceback.format_exc()}", level="ERROR")
             return False
 
     # =========================

@@ -43,8 +43,7 @@ class JsonManager:
                 return random.randint(a, b)
             return int(text)
         except Exception:
-            detailed_error = traceback.format_exc()
-            Settings.WRITE_LOG_DEV_FILE(f"Error parsing random range: {text}\n{detailed_error}", level="ERROR")
+            Settings.WRITE_LOG_DEV_FILE(f"Error parsing random range: {text}\n{traceback.format_exc()}", level="ERROR")
             return 0
 
     
@@ -378,7 +377,7 @@ class JsonManager:
             else:
                 path = Settings.TEMPLATE_DIRECTORY_FAMILY_CHROME
 
-            # إنشاء المجلد إذا لم يكن موجودًا
+            # check if path exists, if not create it
             os.makedirs(path, exist_ok=True)
 
             file_path = os.path.join(path, "traitement.json")
@@ -389,10 +388,7 @@ class JsonManager:
             return "SUCCESS"
 
         except Exception as e:
-            detailed_error = traceback.format_exc()
-            #print("❌ Error while saving JSON file")
-            #print(f"❌ Exception: {e}")
-            Settings.WRITE_LOG_DEV_FILE(f"Error while saving JSON file: {e}\n{detailed_error}", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(f"Error while saving JSON file: {e}\n{traceback.format_exc()}", "ERROR")
             return "ERROR"
 
 

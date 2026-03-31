@@ -12,7 +12,6 @@ import subprocess
 import re
 import datetime
 import sys
-from sqlalchemy import true
 import urllib3
 import psutil
 from platformdirs import user_downloads_dir
