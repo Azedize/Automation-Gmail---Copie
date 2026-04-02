@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 import base64
 import os
@@ -5,8 +6,6 @@ import requests
 
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.backends import default_backend
-
 
 # =====================================================
 # 🔐 CONFIGURATION
@@ -20,52 +19,34 @@ AES_IV_LENGTH_CBC = 16
 
 KEY = bytes.fromhex(ENCRYPTION_KEY_HEX)
 
-
 # =====================================================
 # 🔐 AES-CBC ENCRYPTION
 # =====================================================
 
 def encrypt_message(plaintext: str, key_bytes: bytes) -> str:
-    """
-    Encrypt using AES-256-CBC + PKCS7
-    Return Base64(iv + ciphertext)
-    """
-
     if len(key_bytes) != AES_KEY_LENGTH:
         raise ValueError("Invalid AES key length")
 
-    # Padding PKCS7
     padder = padding.PKCS7(AES_BLOCK_SIZE).padder()
-    padded_data = padder.update(plaintext.encode("utf-8")) + padder.finalize()
+    padded_data = padder.update(plaintext.encode()) + padder.finalize()
 
-    # Generate IV
     iv = os.urandom(AES_IV_LENGTH_CBC)
 
-    # Create cipher
     cipher = Cipher(
         algorithms.AES(key_bytes),
         modes.CBC(iv),
-        backend=default_backend()
     )
 
     encryptor = cipher.encryptor()
     ciphertext = encryptor.update(padded_data) + encryptor.finalize()
 
-    # Return Base64(iv + ciphertext)
-    encrypted = base64.b64encode(iv + ciphertext).decode("utf-8")
-
-    return encrypted
-
+    return base64.b64encode(iv + ciphertext).decode()
 
 # =====================================================
-# 🔓 AES-CBC DECRYPTION (OPTIONAL DEBUG)
+# 🔓 DECRYPT (DEBUG)
 # =====================================================
 
 def decrypt_message(encrypted_b64: str, key_bytes: bytes) -> str:
-    """
-    Decrypt Base64(iv + ciphertext)
-    """
-
     raw = base64.b64decode(encrypted_b64)
 
     iv = raw[:AES_IV_LENGTH_CBC]
@@ -74,18 +55,15 @@ def decrypt_message(encrypted_b64: str, key_bytes: bytes) -> str:
     cipher = Cipher(
         algorithms.AES(key_bytes),
         modes.CBC(iv),
-        backend=default_backend()
     )
 
     decryptor = cipher.decryptor()
-    padded_plaintext = decryptor.update(ciphertext) + decryptor.finalize()
+    padded = decryptor.update(ciphertext) + decryptor.finalize()
 
-    # Remove padding
     unpadder = padding.PKCS7(AES_BLOCK_SIZE).unpadder()
-    plaintext = unpadder.update(padded_plaintext) + unpadder.finalize()
+    plaintext = unpadder.update(padded) + unpadder.finalize()
 
-    return plaintext.decode("utf-8")
-
+    return plaintext.decode()
 
 # =====================================================
 # 📦 DATA AUTH
@@ -95,7 +73,6 @@ DATA_AUTH = {
     "login": "rep.test",
     "password": "zsGEnntKD5q2Brp68yxT"
 }
-
 
 # =====================================================
 # 🚀 TEST API
@@ -107,33 +84,39 @@ def test_api():
     print("🔐 AES-256 CBC API TEST")
     print("===================================================")
 
-    # Convert to JSON
+    # JSON
     json_payload = json.dumps(DATA_AUTH)
-
     print("\n🔹 JSON original:")
     print(json_payload)
 
     # Encrypt
     encrypted_value = encrypt_message(json_payload, KEY)
-
-    print("\n🔹 Donnée chiffrée (Base64):")
+    print("\n🔹 Donnée chiffrée:")
     print(encrypted_value)
 
-    # DEBUG: Decrypt locally
-    decrypted_test = decrypt_message(encrypted_value, KEY)
+    # DEBUG decrypt
+    print("\n🔓 Décryptage test:")
+    print(decrypt_message(encrypted_value, KEY))
 
-    print("\n🔓 Vérification déchiffrement local:")
-    print(decrypted_test)
+    # Date encryption
+    try:
+        date_plain = datetime.now().strftime("%Y-%m-%d")
+        date_encrypted = encrypt_message(date_plain, KEY)
 
-    # Build URL
+    except Exception as e:
+        print("❌ Erreur encryption date:", e)
+        return
+
+    # URL
     CHECK_URL_EX3 = (
-        f"https://reporting.nrb-apps.com/APP_R/redirect.php"
-        f"?nv=1&rv4=1&event=check&type=V4&ext=Ext3&k={encrypted_value}"
+        "https://reporting.nrb-apps.com/APP_R/redirect.php?"
+        f"nv=1&rv4=1&event=check&type=V4&ext=Script&k={date_encrypted}"
     )
 
     print("\n🔹 URL finale:")
     print(CHECK_URL_EX3)
 
+    # Request
     try:
         print("\n📡 Envoi requête GET...")
 
@@ -141,24 +124,21 @@ def test_api():
 
         print("\n================ RESPONSE =================")
         print("Status Code:", response.status_code)
-        print("\nHeaders:")
-        print(response.headers)
 
         print("\nResponse Text:")
         print(response.text)
 
         try:
-            print("\nJSON décodé:")
+            print("\nJSON:")
             print(response.json())
         except:
-            print("\n⚠️ Réponse non JSON")
+            print("\n⚠️ Not JSON")
 
     except Exception as e:
         print("❌ Erreur requête:", e)
 
-
 # =====================================================
-# ▶ EXECUTION
+# ▶ RUN
 # =====================================================
 
 if __name__ == "__main__":
