@@ -1,6 +1,7 @@
 import os
 import base64
 import hashlib
+import sys
 import traceback
 from cryptography.hazmat.primitives import hashes, padding
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
@@ -9,8 +10,16 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
 from config.settings import settings
+import sys
 
-
+try:
+    from config.settings import settings
+except ImportError as e:
+    print(f"❌ Erreur d'importation : {e}")
+    sys.exit(1)  # quitte immédiatement le script avec un code d'erreur
+    
+    
+    
 # =========================================================
 # 🔒 EncryptionService (AES-CBC, AES-GCM, Fernet)
 # =========================================================

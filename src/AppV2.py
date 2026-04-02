@@ -24,10 +24,9 @@ from threading import Lock
 from pathlib import Path
 from PyQt6.QtWidgets import QInputDialog
 import base64
-from colorama import Fore, Style, init
 import requests
 import json
-from typing import List, Dict, Tuple, Union ,Any , Set
+from typing import List, Dict,Any , Set
 import traceback
 
 
@@ -53,8 +52,8 @@ try:
     from services import JsonManager
     from Update import UpdateManager
 except ImportError as e:
-    print(f"[ERROR] Import modules failed: {e}")
-    pass
+    print(f"❌ Erreur d'importation : {e}")
+    sys.exit(1)  # quitte immédiatement le script avec un code d'erreur
 
 
 
@@ -468,21 +467,33 @@ class CloseBrowserThread(QThread):
     def write_result_and_send_status(self, session_id, pid, email, status, inserted_id):
         try:
             if not os.path.exists(Settings.RESULT_FILE_PATH):
-                open(Settings.RESULT_FILE_PATH, 'w').close()
+                open(Settings.RESULT_FILE_PATH, 'w', encoding='utf-8').close()
 
+            # كتابة النتيجة في الملف
             with open(Settings.RESULT_FILE_PATH, 'a', encoding='utf-8') as f:
                 f.write(f"{session_id}:{pid}:{email}:{status}\n")
 
-            Send_Status({
+            api_data = {
                 "id": inserted_id,
                 "login": self.username,
                 "status": "✅ OK" if status.lower() == "completed" else "❌ NotOK",
                 "error": "" if status.lower() == "completed" else status
-            })
+            }
+
+            result = Send_Status(api_data)
+
+            
+            Settings.WRITE_LOG_DEV_FILE(f"Send_Status called for {email}", level="INFO",
+                                        api_data=api_data, api_response=result)
+
+            if result == -1:
+                Settings.WRITE_LOG_DEV_FILE(f"⚠️ API returned -1 for {email} → stopping script", level="ERROR")
+                raise RuntimeError(f"⚠️ API returned -1 → stopping script for email {email}")
 
         except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE(f"⚠️ [STATUS] Erreur: {e}\n{ traceback.format_exc()}", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(f"⚠️ [STATUS] Erreur: {e}", level="ERROR")
             print(f"⚠️ Status error: {e}")
+            raise SystemExit(1)
 
     # ======================================================
     def _move_screenshot(self, email, screenshots, email_folder):
@@ -578,15 +589,7 @@ class CloseBrowserThread(QThread):
 
 
 
-# ======================================================
-# 📝 FONCTIONS VALIDATION
-# ======================================================
 
-
-
-# =========================================================
-# 🔐 PORT PIPELINE (CHECK + FILTER)
-# =========================================================
 
 
 # =========================================================
@@ -795,7 +798,7 @@ def Generate_User_Input_Data(window) -> Dict[str, Any]:
 
         # 5️⃣ API Call
         # "opm74"
-        api_result = call_api(unique_ips,session_info["p_entity"])
+        api_result = call_api(unique_ips,session_info["p_entity_Nouveau"])
         if not api_result["valid"]:
             return {
                 "valid": False,
@@ -904,7 +907,7 @@ def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp 
     EXTRACTION_THREAD.progress.connect(lambda msg: print(msg))
     EXTRACTION_THREAD.stopped.connect(lambda msg: QMessageBox.warning(window, "Arrêté", msg))
     EXTRACTION_THREAD.finished.connect(lambda: QMessageBox.information(window, "Terminé", "L'extraction est terminée."))
-
+    
     EXTRACTION_THREAD.start()
 
     time.sleep(10)
@@ -1131,7 +1134,7 @@ class ExtractionThread(QThread):
                     params = {
                         'l': EncryptionService.encrypt_message(session_info["username"],Settings.KEY),
                         'login': session_info["username"],
-                        'entity': session_info["p_entity"],
+                        'entity': session_info["p_entity_Origine"],
                         'isp': self.Isp,
                         'action': json.dumps(self.output_json_final),
                         'email': email_value,
@@ -2306,7 +2309,7 @@ class MainWindow(QMainWindow):
 
         parameters = { 
             'p_owner': session_info["username"],
-            'p_entity': session_info["p_entity"],
+            'p_entity': session_info["p_entity_Origine"],
             'p_isp': self.Isp.currentText(),
             'p_action_name': json_string,  
             'p_app': 'V4',
@@ -2334,10 +2337,10 @@ class MainWindow(QMainWindow):
         # print(f"✅ Process ID obtenu: {unique_id}")
 
 
-        # with ThreadPoolExecutor(max_workers=2) as executor:
-        #     executor.submit(Start_Extraction, window, data_list , entered_number, selected_Browser, self.Isp.currentText() , unique_id , result_json, session_info["username"])
-        #     executor.submit(self.LOGS_THREAD.start)
-        # EXTRACTION_THREAD.finished.connect(lambda: self.Extraction_Finished(window))
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            executor.submit(Start_Extraction, window, data_list , entered_number, selected_Browser, self.Isp.currentText() , unique_id , result_json, session_info["username"])
+            executor.submit(self.LOGS_THREAD.start)
+        EXTRACTION_THREAD.finished.connect(lambda: self.Extraction_Finished(window))
 
 
 
@@ -2873,7 +2876,7 @@ class LoginWindow(QMainWindow):
 
     def Handle_Login(self):
         # print("🔹 Starting Handle_Login")
-
+        disable_button(self.login_button)
         # 1️⃣ Get input from UI
         username = self.login_input.text().strip() if hasattr(self.login_input, "text") else str(self.login_input).strip()
         password = self.password_input.text().strip() if hasattr(self.password_input, "text") else str(self.password_input).strip()
@@ -2901,6 +2904,7 @@ class LoginWindow(QMainWindow):
 
         # 4️⃣ Handle API error codes
         if isinstance(auth_result, int):
+            enable_button(self.login_button)
             messages = {
                 -1: "Invalid credentials. Please try again.",
                 -2: "This device is not authorized. Please contact support.",
@@ -2915,32 +2919,36 @@ class LoginWindow(QMainWindow):
             return
 
         # 5️⃣ Entity is already decrypted
-        id_user, entity = auth_result
-        print(f"✅ Authentication successful: idUser={id_user}, entity={entity}")
+        id_user, p_entity_Origine = auth_result
+        print(f"✅ Authentication successful: idUser={id_user}, entity={p_entity_Origine}")
 
         # Special case for 'rep.test' user: allow entity selection
         if username == "rep.test":
             # Define available entities (in production, fetch from API or config)
             available_entities = ["opm74" ,"opm19", "IT", "HR", "ADMIN", "SALES"]
             
-            dialog = EntitySelectionDialog(available_entities, default_entity=entity, parent=self)
+            dialog = EntitySelectionDialog(available_entities, default_entity=p_entity_Origine, parent=self)
             selected_entity = dialog.get_selected_entity()
             
             if selected_entity is None:
                 # User canceled, abort login
+                enable_button(self.login_button)
                 msg = "Entity selection canceled. Login aborted."
                 print(f"❌ {msg}")
                 self.erreur_label.setText(msg)
                 self.erreur_label.show()
                 return
             
-            entity = selected_entity
-            print(f"✅ Entity overridden to: {entity}")
+            p_entity_Nouveau = selected_entity
+            print(f"✅ Entity overridden to: {p_entity_Nouveau}")
+        else:
+            p_entity_Nouveau = p_entity_Origine
 
         # 6️⃣ Create user session
         # print("🛠️ Creating user session...")
+        
         try:
-            valid_session = SessionManager.create_session(username, password, entity , id_user)
+            valid_session = SessionManager.create_session(username, password,p_entity_Origine , p_entity_Nouveau , id_user)
             if not valid_session:
                 msg = "Failed to create user session."
                 # print(f"❌ {msg}") 
@@ -2949,6 +2957,7 @@ class LoginWindow(QMainWindow):
                 return
             # print("✅ Session created successfully")
         except Exception as e:
+            enable_button(self.login_button)
             msg = f"Exception during session creation: {str(e)}\n{traceback.format_exc()}"
             # print(f"❌ {msg}")
             self.erreur_label.setText(msg)
@@ -2964,6 +2973,7 @@ class LoginWindow(QMainWindow):
                 raise ValueError("Configuration file is empty.")
             # print("✅ JSON file loaded successfully")
         except Exception as e:
+            enable_button(self.login_button)
             msg = f"Configuration error: {str(e)}\n{traceback.format_exc()}"
             # print(f"❌ {msg}")
             self.erreur_label.setText(msg)
@@ -2972,6 +2982,7 @@ class LoginWindow(QMainWindow):
 
         # 8️⃣ Initialize and show MainWindow
         # print("🖥️ Initializing main window...")
+        enable_button(self.login_button)  # Re-enable login button before opening main window
         self.main_window = MainWindow(json_data)
         self.main_window.setFixedSize(Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT)
         self.main_window.setWindowTitle("AutoMailPro")

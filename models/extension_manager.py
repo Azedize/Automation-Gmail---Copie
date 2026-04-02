@@ -12,7 +12,8 @@ if str(ROOT_DIR) not in sys.path:
 try:
     from config import Settings
 except ImportError as e:
-    raise ImportError(f"Error importing Settings: {e}")
+    print(f"❌ Erreur d'importation : {e}")
+    sys.exit(1)  # quitte immédiatement le script avec un code d'erreur
 
 
 

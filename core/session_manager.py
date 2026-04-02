@@ -22,8 +22,8 @@ try:
     from utils.validation_utils import ValidationUtils
     from api.base_client import APIManager
 except ImportError as e:
-    # print(f"[ERROR] Import modules failed: {e}")
-    pass
+    print(f"❌ Erreur d'importation : {e}")
+    sys.exit(1)  # quitte immédiatement le script avec un code d'erreur
 
 
 class SessionManager:
@@ -102,7 +102,7 @@ class SessionManager:
         # ================================================================
     
     def check_session(self) -> Dict:
-        session_info = {"valid": False, "username": None , "password": None, "date": None, "p_entity": None, "error": None}
+        session_info = {"valid": False, "username": None , "password": None, "date": None, "p_entity_Origine": None, "p_entity_Nouveau": None, "error": None}
 
         print(f"[INFO] Chemin du fichier session : {self.session_path}")
 
@@ -133,16 +133,16 @@ class SessionManager:
                 session_info["error"] = "InvalidFormat"
                 return session_info
 
-            username,password, date_str, p_entity , Id_User = data["username"],data["password"], data["date"], data["entity"] , data["Id_User"]
+            username,password, date_str, p_p_entity_Origine , p_entity_Nouveau , Id_User = data["username"],data["password"], data["date"], data["p_entity_Origine"], data["p_entity_Nouveau"] , data["Id_User"]
 
-            print("🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​username:", username,"password : ", password , "date_str:", date_str, "p_entity:", p_entity ,"Id_User", Id_User ) 
+            print("🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​🎊​🎊​🎾​🏉​username:", username,"password : ", password , "date_str:", date_str, "p_p_entity_Origine:", p_p_entity_Origine, "p_entity_Nouveau", p_entity_Nouveau, "Id_User", Id_User ) 
 
             last_session = datetime.datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
             last_session = self.timezone.localize(last_session)
             now = datetime.datetime.now(self.timezone)
 
             if (now - last_session) < datetime.timedelta(days=2):
-                session_info.update({"valid": True, "username": username , "password": password, "date": last_session, "p_entity": p_entity , "Id_User": Id_User})
+                session_info.update({"valid": True, "username": username , "password": password, "date": last_session, "p_entity_Origine": p_p_entity_Origine, "p_entity_Nouveau": p_entity_Nouveau, "Id_User": Id_User})
             else:
                 settings.WRITE_LOG_DEV_FILE("Session expirée", "WARNING")
                 print("[INFO] Session expirée")
@@ -159,10 +159,10 @@ class SessionManager:
     
     
     # ================== Création de session ==================
-    def create_session(self, username: str,password: str, p_entity: str , Id_USER) -> bool:
+    def create_session(self, username: str,password: str, p_p_entity_Origine: str  , p_entity_New: str , Id_USER) -> bool:
         try:
             now = datetime.datetime.now(self.timezone)
-            session_data = f"{username}::{password}::{now.strftime('%Y-%m-%d %H:%M:%S')}::{p_entity}::{Id_USER}"
+            session_data = f"{username}::{password}::{now.strftime('%Y-%m-%d %H:%M:%S')}::{p_p_entity_Origine}::{p_entity_New}::{Id_USER}"
 
             encrypted = EncryptionService.encrypt_message(session_data, self.key)
 
@@ -271,7 +271,7 @@ class SessionManager:
 
         print("[SESSION] ✅ Session locale valide, vérification API...")
         settings.WRITE_LOG_DEV_FILE("Session locale valide, étape API", "INFO")
-        api_result = self.validate_session_with_api(session_info["username"], session_info["p_entity"])
+        api_result = self.validate_session_with_api(session_info["username"], session_info["p_entity_Origine"])
         #  affiche api result
         print(f"[SESSION] Résultat validation API : {api_result}")
 

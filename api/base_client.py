@@ -8,7 +8,6 @@ import sys
 import json
 import time
 import traceback
-from urllib import response
 import requests
 from typing import Dict, Any, Optional
 from requests.adapters import HTTPAdapter, Retry
@@ -20,7 +19,10 @@ if ROOT_DIR not in sys.path:
 try:
     from config import Settings
 except ImportError as e:
-    raise ImportError(f"❌ Erreur d'importation: {e}")
+    print(f"❌ Erreur d'importation : {e}")
+    sys.exit(1)  # quitte immédiatement le script avec un code d'erreur
+    
+    
 
 
 class APIManager:
@@ -159,7 +161,12 @@ class APIManager:
         return str(self._handle_response(result, ""))
 
     def send_status(self, params: Dict[str, Any]) -> str:
+        print("📤 Params envoyés:", params)
+
         result = self.make_request("_SEND_STATUS_API", "POST", json_data=params)
+
+        print("📥 Réponse brute:", result)
+
         return str(self._handle_response(result, ""))
 
 

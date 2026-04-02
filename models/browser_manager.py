@@ -27,8 +27,8 @@ try:
     from config import Settings
     from utils.validation_utils import ValidationUtils
 except ImportError as e:
-    # print(f"Error importing modules: {e}")
-    pass
+    print(f"❌ Erreur d'importation : {e}")
+    sys.exit(1)  # quitte immédiatement le script avec un code d'erreur
 
 
 class BrowserManager:

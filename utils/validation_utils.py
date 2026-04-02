@@ -10,8 +10,11 @@ from datetime import datetime
 from PyQt6.QtWidgets import QLineEdit
 from PyQt6.QtCore import QTimer
 import sys
-
-from config.settings import Settings
+try:
+    from config.settings import Settings
+except ImportError as e:
+    print(f"❌ Erreur d'importation : {e}")
+    sys.exit(1)
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT_DIR not in sys.path:
@@ -532,10 +535,10 @@ class ValidationUtils:
             return False, None
         
         parts = session_data.split("::")
-        if len(parts) != 5:
+        if len(parts) != 6:
             return False, None
         
-        username, password ,date_str , entity ,Id_User= parts
+        username, password ,date_str , entityOriginal , entityNew ,Id_User= parts
         
         try:
             datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
@@ -546,7 +549,8 @@ class ValidationUtils:
             "username": username.strip(),
             "password": password.strip(),
             "date": date_str.strip(),
-            "entity": entity.strip(),
+            "p_entity_Origine": entityOriginal.strip(),
+            "p_entity_Nouveau": entityNew.strip(),
             "Id_User":Id_User.strip()
         }
     

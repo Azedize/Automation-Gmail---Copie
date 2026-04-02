@@ -1,7 +1,6 @@
 # ui_utils.py
 import os
 import traceback
-from tracemalloc import StatisticDiff
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import QIcon, QColor
 from PyQt6.QtCore import Qt, QTimer, QSize
@@ -9,7 +8,6 @@ from PyQt6 import QtWidgets, QtGui, QtCore
 import PyQt6
 from collections import defaultdict
 from functools import partial
-
 import sys
 
 from config import settings
@@ -23,7 +21,8 @@ try:
     from config import Settings
     from utils.validation_utils import ValidationUtils
 except ImportError as e:
-    raise ImportError(f"❌ Erreur d'importation: {e}")
+    print(f"❌ Erreur d'importation : {e}")
+    sys.exit(1)  # quitte immédiatement le script avec un code d'erreur
 
 
 

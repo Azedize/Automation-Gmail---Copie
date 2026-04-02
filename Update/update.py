@@ -8,10 +8,12 @@ import tempfile
 import traceback
 import subprocess
 from typing import Optional
-from config import settings
 import requests
 import datetime
 import urllib.parse
+
+
+from config import settings
 
 # ==========================================================
 # 📁 ROOT DIR
@@ -33,8 +35,8 @@ try:
     from ui_utils import UIManager
 
 except ImportError as e:
-    # print(f"[ERROR] Import modules failed: {e}")
-    pass
+    print(f"❌ Erreur d'importation : {e}")
+    sys.exit(1)  # quitte immédiatement le script avec un code d'erreur
 
 
 
