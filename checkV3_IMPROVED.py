@@ -1250,7 +1250,7 @@ def main() -> int:
         # Launch main application
         if len(sys.argv) == 1:  # Normal launch
             WRITE_LOG_DEV_FILE("Step 5: Launching main application", "INFO")
-            script_path = SCRIPT_DIR / "src" / "AppV2.py"
+            script_path = SCRIPT_DIR / "src" / "AppV2.pyc"
             
             if not script_path.exists():
                 WRITE_LOG_DEV_FILE(

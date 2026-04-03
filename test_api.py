@@ -74,6 +74,12 @@ def test_save_scenario_api():
             verify=False,  # SSL désactivé
             timeout=30
         )
+        
+        print(json.dumps({
+            "status_code": response.status_code,
+            "headers": dict(response.headers),
+            "text": response.text
+        }, indent=2, ensure_ascii=False))
 
         print(f"➡️ [TEST] Status Code: {response.status_code}")
         print(f"📄 [TEST] Headers Response: {dict(response.headers)}")

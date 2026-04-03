@@ -483,8 +483,7 @@ class CloseBrowserThread(QThread):
             result = Send_Status(api_data)
 
             
-            Settings.WRITE_LOG_DEV_FILE(f"Send_Status called for {email}", level="INFO",
-                                        api_data=api_data, api_response=result)
+            Settings.WRITE_LOG_DEV_FILE(f"Send_Status called for {email}", level="INFO")
 
             if result == -1:
                 Settings.WRITE_LOG_DEV_FILE(f"⚠️ API returned -1 for {email} → stopping script", level="ERROR")
@@ -2248,7 +2247,8 @@ class MainWindow(QMainWindow):
         result_json = JsonManager.generate(self.scenario_layout , selected_Browser)
         # print(json.dumps(result_json, indent=2, ensure_ascii=False))
         # print("✅ Final JSON generated. Data:", json.dumps(result_json, indent=2, ensure_ascii=False))
-        Settings.WRITE_LOG_DEV_FILE(f"Final JSON generated. Data: {json.dumps(result_json, indent=2, ensure_ascii=False)}", "INFO")
+        # Settings.WRITE_LOG_DEV_FILE(f"Final JSON generated. Data: {json.dumps(result_json, indent=2, ensure_ascii=False)}", "INFO")
+        Settings.WRITE_LOG_DEV_FILE("The final JSON has been generated.", "INFO")
 
 
 
@@ -2631,21 +2631,19 @@ class MainWindow(QMainWindow):
 
 
 class EntitySelectionDialog(QDialog):
-    """
-    A modal dialog for selecting an entity from a dropdown list.
-    Used specifically for the 'rep.test' user to override the default entity.
-    """
-    def __init__(self, entities, default_entity=None, parent=None):
+    def __init__(self, pattern=None, default_entity=None, parent=None):
         super().__init__(parent)
+        # self.setObjectName("EntitySelectionDialog")
         self.setWindowTitle("Select Entity - AutoMailPro")
         self.setModal(True)
-        self.setFixedSize(400, 200)
-        self.setWindowIcon(QIcon(os.path.join(Settings.ICONS_DIR, "logo.jpg")))  # Assuming logo.jpg exists
+        self.setFixedSize(500, 320)
+        self.setWindowIcon(QIcon(os.path.join(Settings.ICONS_DIR, "logo.jpg")))
+        self.pattern = pattern  # Regex pattern for validation
 
         # Main layout with margins
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(20, 20, 20, 20)
-        main_layout.setSpacing(15)
+        main_layout.setContentsMargins(25, 25, 25, 25)
+        main_layout.setSpacing(12)
 
         # Title label
         title_label = QLabel("Entity Selection")
@@ -2658,22 +2656,33 @@ class EntitySelectionDialog(QDialog):
         main_layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignCenter)
 
         # Instruction label
-        instruction_label = QLabel("Please select the entity you want to use for this session:")
+        instruction_label = QLabel("Please enter the entity you want to use for this session:")
         instruction_label.setStyleSheet("""
             font-size: 14px;
             color: #555;
-            margin-bottom: 15px;
+            margin-bottom: 5px;
         """)
         instruction_label.setWordWrap(True)
         main_layout.addWidget(instruction_label)
 
-        # ComboBox with styling
-        self.combo_box = QComboBox()
-        self.combo_box.addItems(entities)
-        if default_entity and default_entity in entities:
-            self.combo_box.setCurrentText(default_entity)
-        self.combo_box.setStyleSheet("""
-            QComboBox {
+        # Format info label
+        if self.pattern:
+            format_info = QLabel("Format: opm followed by digits (e.g., opm74, opm19)")
+            format_info.setStyleSheet("""
+                font-size: 12px;
+                color: #859cb5;
+                margin-bottom: 10px;
+                font-style: italic;
+            """)
+            main_layout.addWidget(format_info)
+
+        # LineEdit with styling
+        self.input_field = QLineEdit()
+        self.input_field.setPlaceholderText("Enter entity (opm + number)...")
+        if default_entity:
+            self.input_field.setText(default_entity)
+        self.input_field.setStyleSheet("""
+            QLineEdit {
                 font-size: 14px;
                 padding: 8px;
                 border: 2px solid #ccc;
@@ -2681,22 +2690,31 @@ class EntitySelectionDialog(QDialog):
                 background-color: #fff;
                 min-width: 200px;
             }
-            QComboBox:hover {
+            QLineEdit:hover {
                 border-color: #0078d4;
             }
-            QComboBox::drop-down {
-                border: none;
-            }
-            QComboBox::down-arrow {
-                image: url(down_arrow.png);  /* If you have an icon */
-                width: 12px;
-                height: 12px;
+            QLineEdit:focus {
+                border: 2px solid #0078d4;
+                outline: none;
             }
         """)
-        main_layout.addWidget(self.combo_box, alignment=Qt.AlignmentFlag.AlignCenter)
+        main_layout.addWidget(self.input_field, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        # Error label
+        self.error_label = QLabel()
+        self.error_label.setStyleSheet("""
+            font-size: 12px;
+            color: #d32f2f;
+            margin-top: 8px;
+            margin-bottom: 8px;
+        """)
+        self.error_label.setWordWrap(True)
+        self.error_label.setMinimumHeight(40)
+        self.error_label.hide()
+        main_layout.addWidget(self.error_label)
 
         # Spacer
-        main_layout.addStretch()
+        main_layout.addSpacing(20)
 
         # Buttons layout
         button_layout = QHBoxLayout()
@@ -2741,8 +2759,8 @@ class EntitySelectionDialog(QDialog):
                 background-color: #005a9e;
             }
         """)
-        self.confirm_button.clicked.connect(self.accept)
-        self.confirm_button.setDefault(True)  # Makes it the default button
+        self.confirm_button.clicked.connect(self.validate_and_accept)
+        self.confirm_button.setDefault(True)
         button_layout.addWidget(self.confirm_button)
 
         main_layout.addLayout(button_layout)
@@ -2754,10 +2772,32 @@ class EntitySelectionDialog(QDialog):
             }
         """)
 
+    def validate_and_accept(self):
+        """Validate input against pattern and accept if valid."""
+        import re
+        
+        entity_text = self.input_field.text().strip()
+        
+        if not entity_text:
+            self.error_label.setText("Entity name cannot be empty.")
+            self.error_label.show()
+            return
+        
+        # Validate against pattern if provided
+        if self.pattern:
+            if not re.match(self.pattern, entity_text):
+                self.error_label.setText(f"Invalid entity format. Expected format: opm followed by digits (e.g., opm74)")
+                self.error_label.show()
+                return
+        
+        # Validation passed
+        self.error_label.hide()
+        self.accept()
+
     def get_selected_entity(self):
-        """Returns the selected entity or None if canceled."""
+        """Returns the entered entity or None if canceled."""
         if self.exec() == QDialog.DialogCode.Accepted:
-            return self.combo_box.currentText()
+            return self.input_field.text().strip()
         return None
 
 
@@ -2767,9 +2807,7 @@ class EntitySelectionDialog(QDialog):
 
 
 class LoginWindow(QMainWindow):
-
-
-
+    
     def __init__(self):
         super().__init__()
 
@@ -2777,9 +2815,8 @@ class LoginWindow(QMainWindow):
         uic.loadUi(self.ui_path, self)
         if "Auth.ui" in self.ui_path:
             self.Initialize_Login_Ui()
+            Settings.WRITE_LOG_DEV_FILE("Login UI initialized", "INFO")
         self.setWindowTitle("AutoMailPro")
-
-
 
 
     def Select_Ui_File(self) -> str:
@@ -2792,6 +2829,7 @@ class LoginWindow(QMainWindow):
         except Exception as e:
             # print(f"[SESSION ERROR] {e}")
             Settings.WRITE_LOG_DEV_FILE(f"[SESSION ERROR] {e}\n{traceback.format_exc()}", "WARNING")
+            sys.exit()
 
         return Settings.AUTH_UI
 
@@ -2806,12 +2844,15 @@ class LoginWindow(QMainWindow):
         self.erreur_label = self.findChild(QLabel, "erreur")
 
         if self.erreur_label:
+            Settings.WRITE_LOG_DEV_FILE(f"[INFO] Erreur label found: {self.erreur_label.text()}", "INFO")
             self.erreur_label.hide()
 
         if self.title:
             self.title.clicked.connect(self.Handle_Show_Session_Date)
+            Settings.WRITE_LOG_DEV_FILE(f"[INFO] Title label found: {self.title.text()}", "INFO")
         if self.login_button:
             self.login_button.clicked.connect(self.Handle_Login)
+            Settings.WRITE_LOG_DEV_FILE(f"[INFO] Login button found: {self.login_button.text()}", "INFO")
 
         right_frame = self.findChild(QWidget, "rightFrame")
         if right_frame:
@@ -2884,16 +2925,17 @@ class LoginWindow(QMainWindow):
 
         # 2️⃣ Validate username and password length
         if len(username) <= 4:
-            msg = "Username must contain more than 4 characters."
-            print(f"❌ {msg}")
-            self.erreur_label.setText(msg)
+            
+            print(f"❌ Username must contain more than 4 characters.")
+            Settings.WRITE_LOG_DEV_FILE(f"❌ Username must contain more than 4 characters.", "WARNING")
+            self.erreur_label.setText("Username must contain more than 4 characters.")
             self.erreur_label.show()
             return
 
         if len(password) <= 4:
-            msg = "Password must contain more than 4 characters."
-            print(f"❌ {msg}")
-            self.erreur_label.setText(msg)
+            print(f"❌ Password must contain more than 4 characters.")
+            Settings.WRITE_LOG_DEV_FILE(f"❌ Password must contain more than 4 characters.", "WARNING")
+            self.erreur_label.setText("Password must contain more than 4 characters.")
             self.erreur_label.show()
             return
 
@@ -2924,18 +2966,17 @@ class LoginWindow(QMainWindow):
 
         # Special case for 'rep.test' user: allow entity selection
         if username == "rep.test":
-            # Define available entities (in production, fetch from API or config)
-            available_entities = ["opm74" ,"opm19", "IT", "HR", "ADMIN", "SALES"]
+            # Entity validation pattern: "opm" followed by digits
+            entity_pattern = r"^opm\d+$"
             
-            dialog = EntitySelectionDialog(available_entities, default_entity=p_entity_Origine, parent=self)
+            dialog = EntitySelectionDialog(pattern=entity_pattern, default_entity=p_entity_Origine, parent=self)
             selected_entity = dialog.get_selected_entity()
             
             if selected_entity is None:
                 # User canceled, abort login
                 enable_button(self.login_button)
-                msg = "Entity selection canceled. Login aborted."
-                print(f"❌ {msg}")
-                self.erreur_label.setText(msg)
+                print(f"Entity selection canceled. Login aborted.")
+                self.erreur_label.setText("Entity selection is required for this user. Login aborted.")
                 self.erreur_label.show()
                 return
             
@@ -2948,19 +2989,18 @@ class LoginWindow(QMainWindow):
         # print("🛠️ Creating user session...")
         
         try:
-            valid_session = SessionManager.create_session(username, password,p_entity_Origine , p_entity_Nouveau , id_user)
+            valid_session = SessionManager.create_session(username, password, p_entity_Origine, p_entity_Nouveau, id_user)
             if not valid_session:
-                msg = "Failed to create user session."
-                # print(f"❌ {msg}") 
-                self.erreur_label.setText(msg)
+                Settings.WRITE_LOG_DEV_FILE("Failed to create user session for unknown reasons.", "ERROR")
+                self.erreur_label.setText("Failed to create user session.")
                 self.erreur_label.show()
                 return
             # print("✅ Session created successfully")
         except Exception as e:
             enable_button(self.login_button)
-            msg = f"Exception during session creation: {str(e)}\n{traceback.format_exc()}"
             # print(f"❌ {msg}")
-            self.erreur_label.setText(msg)
+            Settings.WRITE_LOG_DEV_FILE(f"Exception during session creation: {str(e)}\n{traceback.format_exc()}", "ERROR")
+            self.erreur_label.setText(f"Exception during session creation: {str(e)}\n{traceback.format_exc()}")
             self.erreur_label.show()
             return
 
@@ -2970,13 +3010,14 @@ class LoginWindow(QMainWindow):
             with open(Settings.FILE_ACTIONS_JSON, "r", encoding="utf-8") as file:
                 json_data = json.load(file)
             if not json_data:
+                Settings.WRITE_LOG_DEV_FILE("Configuration file is empty.", "ERROR")
                 raise ValueError("Configuration file is empty.")
             # print("✅ JSON file loaded successfully")
         except Exception as e:
             enable_button(self.login_button)
-            msg = f"Configuration error: {str(e)}\n{traceback.format_exc()}"
+            Settings.WRITE_LOG_DEV_FILE(f"Configuration error: {str(e)}\n{traceback.format_exc()}", "ERROR")
             # print(f"❌ {msg}")
-            self.erreur_label.setText(msg)
+            self.erreur_label.setText(f"Configuration error: {str(e)}\n{traceback.format_exc()}")
             self.erreur_label.show()
             return
 
@@ -2998,6 +3039,7 @@ class LoginWindow(QMainWindow):
         # Show main window and close login
         self.main_window.show()
         self.close()
+        Settings.WRITE_LOG_DEV_FILE("Main window displayed, login completed successfully.", "INFO")
         # print("✅ Main window displayed, login completed successfully")
 
 
@@ -3007,6 +3049,7 @@ class LoginWindow(QMainWindow):
 
     def Handle_Show_Session_Date(self):
         if not ValidationUtils.path_exists(Settings.SESSION_PATH):
+            Settings.WRITE_LOG_DEV_FILE("Session file not found at expected path.", "WARNING")
             self.erreur_label.setText("Session file not found .") 
             self.erreur_label.show()
             return
@@ -3014,8 +3057,10 @@ class LoginWindow(QMainWindow):
         is_valid, session_data = ValidationUtils.validate_session_file(Settings.SESSION_PATH)
 
         if is_valid:
+            Settings.WRITE_LOG_DEV_FILE(f"Session data retrieved: {session_data}", "INFO")
             self.erreur_label.setText(f"Session data: {session_data}") 
         else:
+            Settings.WRITE_LOG_DEV_FILE("Session file is not valid.", "WARNING")
             self.erreur_label.setText(f"Session file is not valid.")
         self.erreur_label.show()
 
@@ -3025,11 +3070,14 @@ class LoginWindow(QMainWindow):
 
 def main():
     print("\n========== [APP START] ==========\n")
+    Settings.WRITE_LOG_DEV_FILE("Application starting...", "INFO")
 
     # 1️⃣ Vérification des arguments
     print(f"[DEBUG] Arguments reçus: {sys.argv}")
+    # Settings.WRITE_LOG_DEV_FILE(f"Received arguments: {sys.argv}", "DEBUG")
 
     if len(sys.argv) < 3:
+        Settings.WRITE_LOG_DEV_FILE("Insufficient arguments provided. Expected encrypted_key and secret_key.", "ERROR")
         print("[ERROR] Arguments insuffisants.")
         print("Usage: python AppV2.py <encrypted_key> <secret_key>")
         sys.exit(1)
@@ -3039,19 +3087,23 @@ def main():
 
     print(f"[DEBUG] encrypted_key: {encrypted_key}")
     print(f"[DEBUG] secret_key: {secret_key}")
+    Settings.WRITE_LOG_DEV_FILE("Arguments parsed successfully.", "DEBUG")
 
     # 2️⃣ Vérification de la clé
     print("[DEBUG] Vérification de la clé...")
     if not EncryptionService.verify_key(encrypted_key, secret_key):
         print("[ERROR] Clé invalide. Accès refusé.")
+        Settings.WRITE_LOG_DEV_FILE("Invalid key. Access denied.", "ERROR")
         sys.exit(1)
     else:
         print("[SUCCESS] Clé valide.")
+        Settings.WRITE_LOG_DEV_FILE("Key is valid.", "INFO")
 
     # 3️⃣ Vérification session
     print("[DEBUG] Vérification de la session...")
     session_info = SessionManager.check_session_full()
     session_valid = session_info.get("valid", False)
+    # Settings.WRITE_LOG_DEV_FILE(f"Session check result: valid={session_valid}, info={session_info}", "DEBUG")
 
     print(f"[DEBUG] Session valid: {session_valid}")
     print(f"[DEBUG] Session info: {session_info}")
@@ -3059,6 +3111,7 @@ def main():
     # 4️⃣ Initialisation app Qt
     app = QApplication(sys.argv)
     print("[DEBUG] QApplication initialisée.")
+    Settings.WRITE_LOG_DEV_FILE("QApplication initialized.", "DEBUG")
 
     # 5️⃣ Icône application
     icon_path = Path(Settings.APP_ICON)
@@ -3066,6 +3119,7 @@ def main():
 
     if ValidationUtils.path_exists(icon_path):
         app.setWindowIcon(QIcon(str(icon_path)))
+        Settings.WRITE_LOG_DEV_FILE("Application icon set successfully.", "INFO")
         print("[SUCCESS] Icône appliquée.")
     else:
         print("[WARNING] Fichier d'icône introuvable.")
@@ -3075,15 +3129,17 @@ def main():
 
     if session_valid:
         print("[INFO] Session valide → tentative d'ouverture MainWindow")
-
+        Settings.WRITE_LOG_DEV_FILE("Valid session found. Attempting to open MainWindow.", "INFO")
         try:
             print(f"[DEBUG] Chargement fichier config: {Settings.FILE_ACTIONS_JSON}")
+            Settings.WRITE_LOG_DEV_FILE(f"Loading config file: {Settings.FILE_ACTIONS_JSON}", "DEBUG")
 
             with open(Settings.FILE_ACTIONS_JSON, "r", encoding='utf-8') as file:
                 json_data = json.load(file)
 
             if not json_data:
                 print("[WARNING] Fichier JSON vide.")
+                Settings.WRITE_LOG_DEV_FILE(f"Configuration file is empty: {Settings.FILE_ACTIONS_JSON}", "WARNING")
                 raise ValueError("Fichier de configuration vide")
 
             print("[SUCCESS] Configuration chargée.")
@@ -3107,6 +3163,7 @@ def main():
     # 7️⃣ Vérification sécurité
     if window is None:
         print("[CRITICAL] Aucune fenêtre créée !")
+        Settings.WRITE_LOG_DEV_FILE("Critical error: No window could be created.", "CRITICAL")
         sys.exit(1)
 
     # 8️⃣ Taille et position
@@ -3127,6 +3184,7 @@ def main():
     # 9️⃣ Connexion stop button
     if hasattr(window, "stopButton"):
         print("[DEBUG] stopButton détecté → connexion")
+        Settings.WRITE_LOG_DEV_FILE("stopButton found. Connecting to Stop_All_Processes.", "DEBUG")
         try:
             window.stopButton.clicked.connect(lambda: Stop_All_Processes(window))
             print("[SUCCESS] stopButton connecté.")
@@ -3139,10 +3197,11 @@ def main():
     # 🔟 Finalisation
     window.setWindowTitle("AutoMailPro")
     window.show()
+    Settings.WRITE_LOG_DEV_FILE("Application started successfully, window displayed.", "INFO")
 
     print("[SUCCESS] Fenêtre affichée.")
     print("\n========== [APP RUNNING] ==========\n")
-
+    Settings.WRITE_LOG_DEV_FILE("Application is now running.", "INFO")
     sys.exit(app.exec())
 
 
