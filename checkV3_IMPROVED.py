@@ -1112,26 +1112,14 @@ def initialize_dependencies() -> BootstrapResult[bool]:
             import urllib3
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         except Exception as e:
-            WRITE_LOG_DEV_FILE(
-                f"Could not disable urllib3 warnings: {str(e)}",
-                "DEBUG"
-            )
+            WRITE_LOG_DEV_FILE( f"Could not disable urllib3 warnings: {str(e)}", "DEBUG" )
         
-        WRITE_LOG_DEV_FILE(
-            "All dependencies initialized successfully",
-            "INFO"
-        )
+        WRITE_LOG_DEV_FILE( "All dependencies initialized successfully", "INFO")
         return BootstrapResult.ok(True, {"status": "all_dependencies_ready"})
     
     except Exception as e:
-        WRITE_LOG_DEV_FILE(
-            f"Unexpected error initializing dependencies: {traceback.format_exc()}",
-            "ERROR"
-        )
-        return BootstrapResult.error(
-            BootstrapErrorCode.UNKNOWN_ERROR,
-            f"Unexpected error initializing dependencies: {str(e)}"
-        )
+        WRITE_LOG_DEV_FILE( f"Unexpected error initializing dependencies: {traceback.format_exc()}", "ERROR")
+        return BootstrapResult.error(  BootstrapErrorCode.UNKNOWN_ERROR,   f"Unexpected error initializing dependencies: {str(e)}" )
 
 
 def main() -> int:

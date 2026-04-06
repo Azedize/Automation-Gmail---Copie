@@ -2115,6 +2115,9 @@ class MainWindow(QMainWindow):
 
 
         selected_Browser = self.browser.currentText()
+        
+        
+        # check sur browser if exist selected_Browser
 
         if  selected_Browser and selected_Browser.lower() == "chrome":
             if not Process_Browser(window, selected_Browser):
@@ -2125,7 +2128,30 @@ class MainWindow(QMainWindow):
                 return
 
         # print("🌐 Navigateur traité avec succès :", selected_Browser)
-
+        browser_path = (
+            BrowserManager.get_browser_path("chrome.exe") if selected_Browser.lower() == "chrome"
+            else BrowserManager.get_browser_path("firefox") if selected_Browser.lower() == "firefox"
+            else BrowserManager.get_browser_path("msedge.exe") if selected_Browser.lower() == "edge"
+            else BrowserManager.get_browser_path("dragon.exe")  
+        )
+        
+        if browser_path is None:
+            # print(f"❌ Impossible de trouver le chemin pour le navigateur : {selected_Browser}")
+            Settings.WRITE_LOG_DEV_FILE(f"Unable to find path for browser: {selected_Browser}", "ERROR")
+            UIManager.Show_Critical_Message(
+                window,
+                "Browser Not Found",
+                f"Unable to find the path for the selected browser: {selected_Browser}.\n\nPlease ensure the browser is installed and try again.",
+                message_type="critical"
+            )
+            enable_button(self.submitButton)
+            return
+        
+        
+        
+        
+        
+        
         if self.INTERFACE:
             for i in range(self.INTERFACE.count()):
                 tab_text = self.INTERFACE.tabText(i)
