@@ -191,12 +191,13 @@ def Stop_All_Processes(window):
     Handles Chrome and Firefox separately, and reactivates the Submit button.
     Shows professional warning if no processes are running.
     """
+    disable_button(window.stopButton)
+
     global EXTRACTION_THREAD, CLOSE_BROWSER_THREAD, PROCESS_PIDS, LOGS_RUNNING, SELECTED_BROWSER_GLOBAL
 
     Settings.WRITE_LOG_DEV_FILE("Stopping all processes...", "INFO")
     LOGS_RUNNING = False
     
-    disable_button(window.stopButton)
 
     # --- Stop des threads ---
     if EXTRACTION_THREAD:
@@ -1436,13 +1437,15 @@ def Process_Browser(window, selected_Browser) -> bool:
 
 def disable_button(button: QPushButton, disabled_style: str = None) -> None:
     print("🟢 [DEBUG] Désactivation bouton...")
-
+    Settings.WRITE_LOG_DEV_FILE("Attempting to disable button...", "INFO")
     if button is None:
         print("⚠️ Bouton inexistant !")
+        Settings.WRITE_LOG_DEV_FILE("Attempted to disable a non-existent button", "WARNING")
         return
 
     if not button.isEnabled():
         print("⚠️ Bouton déjà désactivé !")
+        Settings.WRITE_LOG_DEV_FILE("Attempted to disable an already disabled button", "WARNING")
         return
 
     # Sauvegarder style dans le bouton (pas de global)
@@ -1460,7 +1463,9 @@ def disable_button(button: QPushButton, disabled_style: str = None) -> None:
         )
 
     button.setStyleSheet(disabled_style)
-
+    button.repaint()
+    QApplication.processEvents()
+    Settings.WRITE_LOG_DEV_FILE(f"Button '{button.objectName()}' disabled with style: {disabled_style}", "INFO")
     print(f"🟢 [DEBUG] {button.objectName()} désactivé")
 
 
@@ -1469,8 +1474,11 @@ def disable_button(button: QPushButton, disabled_style: str = None) -> None:
 
 def enable_button(button: QPushButton) -> None:
     print("🟩 [DEBUG] Réactivation bouton...")
-
+    Settings.WRITE_LOG_DEV_FILE("Attempting to enable button...", "INFO")
+    
+    
     if button is None:
+        Settings.WRITE_LOG_DEV_FILE("Attempted to enable a non-existent button", "WARNING")
         print("⚠️ Bouton inexistant !")
         return
 
@@ -1481,9 +1489,11 @@ def enable_button(button: QPushButton) -> None:
     old_style = button.property("old_style")
 
     if old_style:
+        Settings.WRITE_LOG_DEV_FILE(f"Button '{button.objectName()}' enabled, restoring old style.", "INFO")
         button.setStyleSheet(old_style)
         print(f"🟩 [DEBUG] {button.objectName()} restauré")
     else:
+        Settings.WRITE_LOG_DEV_FILE(f"Button '{button.objectName()}' enabled, but no old style found to restore.", "WARNING")
         print("⚠️ Aucun ancien style trouvé")
 
 
@@ -1527,6 +1537,7 @@ class MainWindow(QMainWindow):
     def _find_widget(self, name, widget_type=None):
         widget = self.findChild(widget_type, name) if widget_type else self.findChild(QWidget, name)
         print(f"🔍 Recherche du widget : {name} ({widget_type})")
+        Settings.WRITE_LOG_DEV_FILE(f"Searching for widget: {name} (type: {widget_type})", "INFO")
         return widget
     
 
@@ -1939,7 +1950,7 @@ class MainWindow(QMainWindow):
             (Settings.EXTENTION_EX3, False),            
             (Settings.SECURE_PREFERENCES_TEMPLATE, True),   
             (Settings.FICHIER_LOCAL_STATE, True),           
-            (Settings.FICHIER_VARIATIONS, True), 
+            (Settings.FICHIER_VARIATIONS, True)
         ]
 
         invalid_paths = []
@@ -2271,9 +2282,9 @@ class MainWindow(QMainWindow):
         # print("📦 JSON Final:")
         Settings.WRITE_LOG_DEV_FILE("Final JSON:", "INFO")
         result_json = JsonManager.generate(self.scenario_layout , selected_Browser)
-        # print(json.dumps(result_json, indent=2, ensure_ascii=False))
-        # print("✅ Final JSON generated. Data:", json.dumps(result_json, indent=2, ensure_ascii=False))
-        # Settings.WRITE_LOG_DEV_FILE(f"Final JSON generated. Data: {json.dumps(result_json, indent=2, ensure_ascii=False)}", "INFO")
+        print(json.dumps(result_json, indent=2, ensure_ascii=False))
+        print("✅ Final JSON generated. Data:", json.dumps(result_json, indent=2, ensure_ascii=False))
+        Settings.WRITE_LOG_DEV_FILE(f"Final JSON generated. Data: {json.dumps(result_json, indent=2, ensure_ascii=False)}", "INFO")
         Settings.WRITE_LOG_DEV_FILE("The final JSON has been generated.", "INFO")
 
 
@@ -2363,10 +2374,10 @@ class MainWindow(QMainWindow):
         # print(f"✅ Process ID obtenu: {unique_id}")
 
 
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            executor.submit(Start_Extraction, window, data_list , entered_number, selected_Browser, self.Isp.currentText() , unique_id , result_json, session_info["username"])
-            executor.submit(self.LOGS_THREAD.start)
-        EXTRACTION_THREAD.finished.connect(lambda: self.Extraction_Finished(window))
+        # with ThreadPoolExecutor(max_workers=2) as executor:
+        #     executor.submit(Start_Extraction, window, data_list , entered_number, selected_Browser, self.Isp.currentText() , unique_id , result_json, session_info["username"])
+        #     executor.submit(self.LOGS_THREAD.start)
+        # EXTRACTION_THREAD.finished.connect(lambda: self.Extraction_Finished(window))
 
 
 
@@ -2756,6 +2767,7 @@ class EntitySelectionDialog(QDialog):
                 border: 1px solid #ccc;
                 border-radius: 5px;
                 color: #333;
+                text-align: center;
             }
             QPushButton:hover {
                 background-color: #e1dfdd;
@@ -2777,6 +2789,7 @@ class EntitySelectionDialog(QDialog):
                 border: none;
                 border-radius: 5px;
                 color: white;
+                text-align: center;
             }
             QPushButton:hover {
                 background-color: #106ebe;
