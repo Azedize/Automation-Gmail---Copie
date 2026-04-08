@@ -662,6 +662,13 @@ class UIManager:
     
     @staticmethod
     def Update_Logs_Display( log_entry ,log_layout):
+        # Limiter le nombre de logs affichés pour éviter les problèmes de performance
+        max_logs = 100
+        if log_layout.count() >= max_logs:
+            item = log_layout.takeAt(0)
+            if item and item.widget():
+                item.widget().deleteLater()
+        
         log_label = QLabel(log_entry)
         log_label.setStyleSheet(f"""
             QLabel {{
