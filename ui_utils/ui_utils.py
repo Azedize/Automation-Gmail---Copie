@@ -73,27 +73,110 @@ class VerticalTabBar(QtWidgets.QTabBar):
 
 
     def paintEvent(self, event):
-        super().paintEvent(event)
-
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        hovered_index = self.tabAt(self.mapFromGlobal(QtGui.QCursor.pos()))
 
         for index in range(self.count()):
             tab_rect = self.tabRect(index)
             if not tab_rect.isValid():
                 continue
 
-            # رسم النص المخصص
-            painter.save()
-            painter.setPen(QPen(Qt.GlobalColor.black))
-            painter.setFont(QFont("Segoe UI", 10))
-
-            # الحصول على النص من setTabText
+            selected = self.currentIndex() == index
+            hovered = hovered_index == index and not selected
+            tab_data = self.tabData(index)
             text = self.tabText(index)
-            if text:
-                painter.drawText(tab_rect, Qt.AlignmentFlag.AlignCenter, text)
 
-            painter.restore()
+            if isinstance(tab_data, dict) and text == "Result":
+                # Result tab remains transparent but text style adapts on hover / select
+                bg_color = QtGui.QColor(0, 0, 0, 0)
+                if selected:
+                    pen_color = QtGui.QColor("#ffffff")
+                elif hovered:
+                    pen_color = QtGui.QColor(Settings.PRIMARY_COLOR)
+                else:
+                    pen_color = QtGui.QColor("#333333")
+
+                painter.save()
+                painter.setPen(QtCore.Qt.PenStyle.NoPen)
+                painter.setBrush(QtGui.QBrush(bg_color))
+                painter.drawRect(tab_rect)
+                painter.restore()
+
+                painter.save()
+                font = QFont(Settings.FONT_FAMILY, 10)
+                painter.setFont(font)
+
+                text_rect = QtCore.QRect(
+                    tab_rect.left() + 12,
+                    tab_rect.top() + 8,
+                    tab_rect.width() - 24,
+                    tab_rect.height() - 16,
+                )
+
+                fm = painter.fontMetrics()
+                title_text = "Result "
+                completed_text = f"({tab_data['completed']} Completed"
+                separator_text = " / "
+                not_completed_text = f"{tab_data['not_completed']} Not Completed)"
+
+                x = text_rect.left()
+                y = text_rect.center().y() + fm.ascent() // 2 - 2
+
+                painter.setPen(QtGui.QPen(pen_color))
+                painter.drawText(x, y, title_text)
+                x += fm.horizontalAdvance(title_text)
+
+                painter.setPen(QtGui.QPen(QtGui.QColor("#28a745")))
+                painter.drawText(x, y, completed_text)
+                x += fm.horizontalAdvance(completed_text)
+
+                painter.setPen(QtGui.QPen(pen_color))
+                painter.drawText(x, y, separator_text)
+                x += fm.horizontalAdvance(separator_text)
+
+                painter.setPen(QtGui.QPen(QtGui.QColor("#dc3545")))
+                painter.drawText(x, y, not_completed_text)
+                painter.restore()
+            else:
+                # Default background and text for other tabs
+                if selected:
+                    bg_color = QtGui.QColor(Settings.PRIMARY_COLOR)
+                    pen_color = QtGui.QColor("#ffffff")
+                elif hovered:
+                    bg_color = QtGui.QColor(Settings.PRIMARY_COLOR).lighter(140)
+                    pen_color = QtGui.QColor("#000000")
+                else:
+                    bg_color = QtGui.QColor("#F5F5F5")
+                    pen_color = QtGui.QColor("#333333")
+
+                painter.save()
+                painter.setPen(QtCore.Qt.PenStyle.NoPen)
+                painter.setBrush(QtGui.QBrush(bg_color))
+                painter.drawRect(tab_rect)
+
+                border_pen = QtGui.QPen(QtGui.QColor(Settings.PRIMARY_COLOR))
+                border_pen.setWidth(1)
+                painter.setPen(border_pen)
+                painter.drawLine(tab_rect.bottomLeft(), tab_rect.bottomRight())
+                painter.drawLine(tab_rect.topRight(), tab_rect.bottomRight())
+                painter.restore()
+
+                painter.save()
+                font = QFont(Settings.FONT_FAMILY, 10)
+                painter.setFont(font)
+                painter.setPen(QtGui.QPen(pen_color))
+
+                text_rect = QtCore.QRect(
+                    tab_rect.left() + 12,
+                    tab_rect.top() + 8,
+                    tab_rect.width() - 24,
+                    tab_rect.height() - 16,
+                )
+
+                painter.drawText(text_rect, QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignLeft, text)
+                painter.restore()
 
         painter.end()
 
@@ -213,39 +296,167 @@ class UIManager:
     # Personnalisation d'un onglet pour afficher le nombre d'emails complétés et non complétés
     # -----------------------------
     @staticmethod
-    def Set_Custom_Colored_Tab( tab_widget, index, completed_count, not_completed_count):
+    def Build_Result_Tab_Label(completed_count, not_completed_count):
+        """Build a rich-text QLabel for the Result tab label."""
+        label = QLabel()
+        label.setTextFormat(Qt.TextFormat.RichText)
+        label.setText(
+            f"Result (<span style='color:#28a745;'>{completed_count}</span> Completed "
+            f"/ <span style='color:#dc3545;'>{not_completed_count}</span> Not Completed)"
+        )
+        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        label.setStyleSheet(
+            "background: transparent; margin: 0px; padding: 0px;"
+        )
+        label.setMinimumWidth(220)
+        label.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
+        label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        return label
+
+
+    @staticmethod
+    def Reset_Result_Tab_Label(tab_widget, index):
+        """Reset a Result tab to its default plain state before Submit starts."""
+        if tab_widget is None or index < 0 or index >= tab_widget.count():
+            return
+
+        tab_bar = tab_widget.tabBar()
+        if tab_bar is None:
+            return
+
+        tab_bar.setTabButton(index, QTabBar.ButtonPosition.LeftSide, None)
+        tab_bar.setTabButton(index, QTabBar.ButtonPosition.RightSide, None)
+        tab_widget.setTabText(index, "Result")
+
+        if isinstance(tab_bar, VerticalTabBar) and hasattr(tab_bar, "setTabData"):
+            tab_bar.setTabData(index, {
+                "completed": 0,
+                "not_completed": 0,
+            })
+
+        tab_bar.update()
+        tab_widget.update()
+
+
+    @staticmethod
+    def Log_Tab_Debug_Info(tab_widget, prefix=""):
+        """Log tab names, tabData and custom button states for debugging."""
+        if tab_widget is None:
+            return
+
+        tab_bar = tab_widget.tabBar()
+        if tab_bar is None:
+            return
+
+        tab_count = tab_widget.count()
+        message = [f"{prefix} tabs={tab_count}"]
+
+        for i in range(tab_count):
+            tab_text = tab_widget.tabText(i)
+            tab_data = tab_bar.tabData(i) if hasattr(tab_bar, "tabData") else None
+            left_button = tab_bar.tabButton(i, QTabBar.ButtonPosition.LeftSide)
+            right_button = tab_bar.tabButton(i, QTabBar.ButtonPosition.RightSide)
+            message.append(
+                f"index={i} text={tab_text!r} data={tab_data!r} "
+                f"left={type(left_button).__name__} right={type(right_button).__name__}"
+            )
+
+        log_text = " | ".join(message)
+        print(f"[UI TRACE] {log_text}")
+        try:
+            Settings.WRITE_LOG_DEV_FILE(f"[UI TRACE] {log_text}", "DEBUG")
+        except Exception:
+            pass
+
+
+    @staticmethod
+    def Is_Result_Tab(tab_widget, index):
+        """Return True when the tab at index is the Result tab.
+
+        This uses tabData when available to support custom rendered tab labels.
+        """
+        if tab_widget is None or index < 0 or index >= tab_widget.count():
+            return False
+
+        tab_bar = tab_widget.tabBar()
+        if tab_bar is not None and hasattr(tab_bar, "tabData"):
+            tab_data = tab_bar.tabData(index)
+            if isinstance(tab_data, dict) and "completed" in tab_data and "not_completed" in tab_data:
+                return True
+
+        tab_text = tab_widget.tabText(index)
+        return isinstance(tab_text, str) and tab_text.startswith("Result")
+
+
+    @staticmethod
+    def Set_Custom_Colored_Tab(tab_widget, index, completed_count, not_completed_count):
+        main_color = Settings.PRIMARY_COLOR or "#669bbc"
+        accent_color = Settings.ACCENT_COLOR or "#dc3545"
+
+        # النص HTML داخل التبويب
         html_text = (
-            f'<div style="text-align:center;margin:0;padding:0;">'
-            f'<span style="font-family:\'Segoe UI\', sans-serif; font-size:14px;">Result ('
+            f'<div style="text-align:center; margin:0; padding:0;">'
+            f'<span style="font-family:\'Times\', \'Times New Roman\', serif; font-size:14px;">Result ('
             f'<span style="color:#008000;">{completed_count} completed</span> / '
-            f'<span style="color:{Settings.ACCENT_COLOR};">{not_completed_count} not completed</span>)</span>'
+            f'<span style="color:{accent_color};">{not_completed_count} not completed</span>)</span>'
             f'</div>'
         )
 
-        # إزالة النص الافتراضي
+        # إزالة النص الافتراضي للتبويب
         tab_widget.setTabText(index, "")
 
-        # إنشاء QLabel
+        # إنشاء QLabel لعرض النص
         label = QLabel()
         label.setTextFormat(Qt.TextFormat.RichText)
         label.setText(html_text)
-        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        label.setAlignment(Qt.AlignmentFlag.AlignCenter)  # توسيط النص
+        label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        
+        # ضبط الألوان والخط مع hover آمن
+        label.setStyleSheet(
+            f"""
+            QLabel {{
+                background: transparent;
+                color: {main_color};
+                font-family: 'Times', 'Times New Roman', serif;
+                font-size: 14px;
+            }}
+            QLabel:hover {{
+                color: #ffffff;   /* لون النص عند المرور بالماوس */
+            }}
+            """
+        )
 
-        # لف QLabel داخل QWidget لتوسيطه
+        # إنشاء الحاوية (wrapper)
         wrapper = QWidget()
+        wrapper.setStyleSheet("QWidget { background: transparent; border: none; }")
+        wrapper.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        wrapper.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
+        wrapper.setMouseTracking(True)
+
+        # layout للتوسيط بدون أي padding أو stretch
         layout = QHBoxLayout(wrapper)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         layout.addWidget(label)
 
-        # إزالة أي أزرار جانبية موجودة
-        tab_widget.tabBar().setTabButton(index, QTabBar.ButtonPosition.LeftSide, None)
-        tab_widget.tabBar().setTabButton(index, QTabBar.ButtonPosition.RightSide, None)
+        wrapper.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
 
-        # إضافة الـ wrapper كزر التبويب (محاذاة مركزية)
-        tab_widget.tabBar().setTabButton(index, QTabBar.ButtonPosition.LeftSide, wrapper)
+        # ضبط حجم wrapper حسب حجم التبويب
+        tab_rect = tab_widget.tabBar().tabRect(index)
+        if tab_rect.isValid():
+            wrapper.setMinimumWidth(tab_rect.width())
+            wrapper.setFixedHeight(tab_rect.height())
 
+        # إزالة أي أزرار موجودة ووضع wrapper على التبويب
+        tab_bar = tab_widget.tabBar()
+        tab_bar.setTabButton(index, QTabBar.ButtonPosition.LeftSide, None)
+        tab_bar.setTabButton(index, QTabBar.ButtonPosition.RightSide, None)
+        tab_bar.setTabButton(index, QTabBar.ButtonPosition.LeftSide, wrapper)
+
+        # === Debug: التحقق من النصوص والألوان ===
+        print(f"[DEBUG] Tab {index} set with text: Result ({completed_count} completed / {not_completed_count} not completed)")
+        print(f"[DEBUG] Main color: {main_color}, Hover color: #ffffff")
 
 
 
@@ -330,13 +541,27 @@ class UIManager:
             interface_tab_widget = window.findChild(QTabWidget, "interface_2")
             if interface_tab_widget:
                 # print(f"📌 [UI] Mise à jour du tab principal")
+                UIManager.Log_Tab_Debug_Info(interface_tab_widget, prefix="Before Result update")
+                found = False
                 for i in range(interface_tab_widget.count()):
-                    tab_name = interface_tab_widget.tabText(i)
-                    # print(f"   - Vérification tab {i}: {tab_name}")
-                    if tab_name.startswith("Result"):
+                    if UIManager.Is_Result_Tab(interface_tab_widget, i):
+                        found = True
                         UIManager.Set_Custom_Colored_Tab(interface_tab_widget, i, completed_count, no_completed_count)
-                        # print(f"✅ [UI] Tab principal mis à jour avec completed={completed_count}, non-completed={no_completed_count}")
                         break
+
+                if not found:
+                    print("[UI WARNING] Result tab non trouvé dans interface_2")
+                    try:
+                        Settings.WRITE_LOG_DEV_FILE("[UI WARNING] Result tab non trouvé dans interface_2", "WARNING")
+                        UIManager.Log_Tab_Debug_Info(interface_tab_widget, prefix="Result tab non trouvé")
+                    except Exception:
+                        pass
+            else:
+                print("[UI WARNING] interface_2 introuvable pour la mise à jour du tab Result")
+                try:
+                    Settings.WRITE_LOG_DEV_FILE("[UI WARNING] interface_2 introuvable pour la mise à jour du tab Result", "WARNING")
+                except Exception:
+                    pass
 
             # 🔹 Mise à jour des tabs secondaires
             result_tab_widget = window.findChild(QTabWidget, "tabWidgetResult")
@@ -1316,7 +1541,7 @@ class UIManager:
                 return None
             return content
         except Exception:
-            settings.WRITE_LOG_DEV_FILE(f"Error reading file content: {file_path}\n{traceback.format_exc()}", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(f"Error reading file content: {file_path}\n{traceback.format_exc()}", "ERROR")
             return None
 
 
@@ -1440,7 +1665,7 @@ class UIManager:
             button.clicked.connect(callback)
             print(f"[DEBUG] Callback connecté pour '{button_name}'")
         except Exception as e:
-            settings.WRITE_LOG_DEV_FILE(f"Error connecting callback: {button_name}\n{traceback.format_exc()}", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(f"Error connecting callback: {button_name}\n{traceback.format_exc()}", "ERROR")
             print(f"[ERROR] Erreur connexion callback: {e}")
 
         # 5️⃣ Taille du bouton
@@ -1504,7 +1729,7 @@ class UIManager:
             button.clicked.connect(callback)
             print(f"[SUCCESS] Callback connecté pour '{widget_name}'")
         except Exception as e:
-            settings.WRITE_LOG_DEV_FILE(f"Error connecting callback: {widget_name}\n{traceback.format_exc()}", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(f"Error connecting callback: {widget_name}\n{traceback.format_exc()}", "ERROR")
             print(f"[ERROR] Erreur lors de la connexion du callback: {e}")
 
         return button
@@ -1537,7 +1762,7 @@ class UIManager:
             UIManager._apply_combobox_style(window, window.browser)
             print("[DEBUG] Style appliqué au QComboBox.")
         except Exception as e:
-            settings.WRITE_LOG_DEV_FILE(f"Error applying style to browsers combobox\n{traceback.format_exc()}", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(f"Error applying style to browsers combobox\n{traceback.format_exc()}", "ERROR")
             print(f"[ERROR] Erreur application style: {e}")
 
         # 3️⃣ Nettoyage (éviter doublons)
@@ -1877,8 +2102,7 @@ class UIManager:
 
         # Chercher le tab commençant par "Result" et ajouter un frame
         for i in range(window.INTERFACE.count()):
-            tab_text = window.INTERFACE.tabText(i)
-            if tab_text.startswith("Result"):
+            if UIManager.Is_Result_Tab(window.INTERFACE, i):
                 tab_widget = window.INTERFACE.widget(i)
                 if tab_widget is None:
                     continue

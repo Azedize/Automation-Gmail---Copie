@@ -477,10 +477,13 @@ class CloseBrowserThread(QThread):
             with open(Settings.RESULT_FILE_PATH, 'a', encoding='utf-8') as f:
                 f.write(f"{session_id}:{pid}:{email}:{status}\n")
 
+            # Afficher l'email avec le statut via print
+            print(f"Saved: {email} - {status}")
+
             api_data = {
                 "id": inserted_id,
                 "login": self.username,
-                "status": "✅ OK" if status.lower() == "completed" else "❌ NotOK",
+                "status": "OK" if status.lower() == "completed" else "NotOK",
                 "error": "" if status.lower() == "completed" else status
             }
 
@@ -1163,17 +1166,21 @@ class ExtractionThread(QThread):
                     # except Exception:
                     #     pass
 
-                    logs_subdirs = [os.path.join(Settings.LOGS_DIRECTORY, d) for d in os.listdir(Settings.LOGS_DIRECTORY) if os.path.isdir(os.path.join(Settings.LOGS_DIRECTORY, d))]
-                    logs_subdirs.sort(key=os.path.getctime)
+                    try:
+                        os.makedirs(Settings.LOGS_DIRECTORY, exist_ok=True)
+                        logs_subdirs = [os.path.join(Settings.LOGS_DIRECTORY, d) for d in os.listdir(Settings.LOGS_DIRECTORY) if os.path.isdir(os.path.join(Settings.LOGS_DIRECTORY, d))]
+                        logs_subdirs.sort(key=os.path.getctime)
 
-                    if len(logs_subdirs) > 4:
-                        to_delete = logs_subdirs[:4]
-                        for dir_to_delete in to_delete:
-                            try:
-                                shutil.rmtree(dir_to_delete)
-                            except Exception as e:
-                                # log_message(f"[INFO]  Error while deleting {dir_to_delete} : {e}")
-                                Settings.WRITE_LOG_DEV_FILE(f"Error while deleting {dir_to_delete} : {e}\n{traceback.format_exc()}", "ERROR")
+                        if len(logs_subdirs) > 4:
+                            to_delete = logs_subdirs[:4]
+                            for dir_to_delete in to_delete:
+                                try:
+                                    shutil.rmtree(dir_to_delete)
+                                except Exception as e:
+                                    Settings.WRITE_LOG_DEV_FILE(f"Error while deleting {dir_to_delete} : {e}\n{traceback.format_exc()}", "ERROR")
+                    except Exception as e:
+                        Settings.WRITE_LOG_DEV_FILE(f"Error accessing or creating log directory {Settings.LOGS_DIRECTORY} : {e}\n{traceback.format_exc()}", "ERROR")
+                        logs_subdirs = []
 
                   
                     if self.selected_Browser.lower() == "firefox":
@@ -2191,11 +2198,8 @@ class MainWindow(QMainWindow):
         
         if self.INTERFACE:
             for i in range(self.INTERFACE.count()):
-                tab_text = self.INTERFACE.tabText(i)
-                if tab_text.startswith("Result"):
-                    self.INTERFACE.setTabText(i, "Result")
-                    break
-        
+                if UIManager.Is_Result_Tab(self.INTERFACE, i):
+                    UIManager.Reset_Result_Tab_Label(self.INTERFACE, i)
         LOGS_RUNNING = True
 
       
