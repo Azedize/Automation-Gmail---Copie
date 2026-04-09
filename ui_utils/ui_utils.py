@@ -292,26 +292,6 @@ class CustomTextDialog(QDialog):
 
 class UIManager:
     
-    # -------------------------
-    # Personnalisation d'un onglet pour afficher le nombre d'emails complétés et non complétés
-    # -----------------------------
-    @staticmethod
-    def Build_Result_Tab_Label(completed_count, not_completed_count):
-        """Build a rich-text QLabel for the Result tab label."""
-        label = QLabel()
-        label.setTextFormat(Qt.TextFormat.RichText)
-        label.setText(
-            f"Result (<span style='color:#28a745;'>{completed_count}</span> Completed "
-            f"/ <span style='color:#dc3545;'>{not_completed_count}</span> Not Completed)"
-        )
-        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        label.setStyleSheet(
-            "background: transparent; margin: 0px; padding: 0px;"
-        )
-        label.setMinimumWidth(220)
-        label.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
-        label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
-        return label
 
 
     @staticmethod
@@ -324,15 +304,25 @@ class UIManager:
         if tab_bar is None:
             return
 
-        tab_bar.setTabButton(index, QTabBar.ButtonPosition.LeftSide, None)
-        tab_bar.setTabButton(index, QTabBar.ButtonPosition.RightSide, None)
+        # Remove any custom tab widgets or badges previously attached to this tab.
+        left_button = tab_bar.tabButton(index, QTabBar.ButtonPosition.LeftSide)
+        right_button = tab_bar.tabButton(index, QTabBar.ButtonPosition.RightSide)
+        if left_button is not None:
+            left_button.deleteLater()
+            tab_bar.setTabButton(index, QTabBar.ButtonPosition.LeftSide, None)
+        if right_button is not None:
+            right_button.deleteLater()
+            tab_bar.setTabButton(index, QTabBar.ButtonPosition.RightSide, None)
+
         tab_widget.setTabText(index, "Result")
 
-        if isinstance(tab_bar, VerticalTabBar) and hasattr(tab_bar, "setTabData"):
-            tab_bar.setTabData(index, {
-                "completed": 0,
-                "not_completed": 0,
-            })
+        # Clear any custom tab data so the tab renders in the default plain style.
+        if hasattr(tab_bar, "setTabData"):
+            try:
+                tab_bar.setTabData(index, None)
+            except Exception:
+                # Some QTabBar implementations may reject None; ignore if so.
+                pass
 
         tab_bar.update()
         tab_widget.update()
@@ -453,6 +443,15 @@ class UIManager:
         tab_bar.setTabButton(index, QTabBar.ButtonPosition.LeftSide, None)
         tab_bar.setTabButton(index, QTabBar.ButtonPosition.RightSide, None)
         tab_bar.setTabButton(index, QTabBar.ButtonPosition.LeftSide, wrapper)
+
+        if hasattr(tab_bar, "setTabData"):
+            try:
+                tab_bar.setTabData(index, {
+                    "completed": completed_count,
+                    "not_completed": not_completed_count,
+                })
+            except Exception:
+                pass
 
         # === Debug: التحقق من النصوص والألوان ===
         print(f"[DEBUG] Tab {index} set with text: Result ({completed_count} completed / {not_completed_count} not completed)")
