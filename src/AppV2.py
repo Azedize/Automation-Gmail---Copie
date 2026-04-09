@@ -908,8 +908,7 @@ def Start_Extraction(window, data_list, entered_number , selected_Browser , Isp 
     )
     
 
-    # EXTRACTION_THREAD.finished.connect(lambda: window.Extraction_Finished(window))
-    
+    EXTRACTION_THREAD.finished.connect(lambda: window.Extraction_Finished(window))
     EXTRACTION_THREAD.progress.connect(lambda msg: print(msg))
     EXTRACTION_THREAD.stopped.connect(lambda msg: QMessageBox.warning(window, "Arrêté", msg))
     EXTRACTION_THREAD.finished.connect(lambda: QMessageBox.information(window, "Terminé", "L'extraction est terminée."))
