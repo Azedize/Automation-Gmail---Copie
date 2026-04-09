@@ -95,6 +95,8 @@ class VerticalTabBar(QtWidgets.QTabBar):
 
             painter.restore()
 
+        painter.end()
+
 
 
 
