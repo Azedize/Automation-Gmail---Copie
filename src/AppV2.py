@@ -2,7 +2,7 @@ import os
 import json
 from concurrent.futures import ThreadPoolExecutor
 from PyQt6.QtWidgets import *
-from PyQt6.QtGui import QIcon , QCursor,QColor, QPixmap , QGuiApplication
+from PyQt6.QtGui import QIcon , QCursor,QColor, QPixmap , QGuiApplication, QTextCursor
 from PyQt6.QtCore import Qt , QTimer , QThread, pyqtSignal 
 from PyQt6 import  uic 
 import shutil
@@ -38,6 +38,9 @@ BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
+
+
+# test
 
 
 try:
@@ -1595,14 +1598,14 @@ class MainWindow(QMainWindow):
 
 
     def _setup_icon_button(self, button_name, icon_file, callback, icon_size=None, button_size=None):
-        UIManager._setup_icon_button(self, button_name, icon_file, callback, icon_size, button_size)
+        return UIManager._setup_icon_button(self, button_name, icon_file, callback, icon_size, button_size)
 
 
 
 
 
     def _setup_button(self, widget_name, callback):
-        UIManager._setup_button(self, widget_name, callback)
+        return UIManager._setup_button(self, widget_name, callback)
 
 
 
@@ -1649,13 +1652,36 @@ class MainWindow(QMainWindow):
         # Chercher le container des logs
         self.log_container = self._find_widget("log", QWidget)
         if self.log_container is not None:
-            # Créer un layout vertical
-            self.log_layout = QVBoxLayout(self.log_container)
-            self.log_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+            # Créer un QPlainTextEdit au lieu de QVBoxLayout
+            self.log_text_edit = QPlainTextEdit(self.log_container)
+            self.log_text_edit.setReadOnly(True)  # Lecture seule pour les logs
+            self.log_text_edit.setStyleSheet("""
+                QPlainTextEdit {
+                    background-color: #161a1d;
+                    color: #ffffff;
+                    font-size: 14px;
+                    font-family: 'Segoe UI';
+                    border: none;
+                    padding: 8px;
+                }
+            """)
+            self.log_text_edit.setFrameShape(QFrame.Shape.NoFrame)
+            self.log_text_edit.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+            self.log_text_edit.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+            self.log_text_edit.document().setMaximumBlockCount(1000)
 
-            # Ajuster la taille du container
-            self.log_container.adjustSize()
-            self.log_container.setFixedWidth(1627)
+            # Positionner le champ de logs sous les boutons Clear / Copy existants
+            rect = self.log_container.rect()
+            width = rect.width() if rect.width() > 0 else 1600
+            height = rect.height() if rect.height() > 0 else 9000
+            margin_top = 60
+            margin_side = 10
+            self.log_text_edit.setGeometry(
+                margin_side,
+                margin_top,
+                max(0, width - 2 * margin_side),
+                max(0, height - margin_top - margin_side)
+            )
 
         # Créer le thread de logs et connecter le signal
         self.LOGS_THREAD = LogsDisplayThread(LOGS)
@@ -1928,7 +1954,7 @@ class MainWindow(QMainWindow):
 
 
     def Update_Logs_Display(self, log_entry):
-        UIManager.Update_Logs_Display( log_entry, self.log_layout)
+        UIManager.Update_Logs_Display( log_entry, self.log_text_edit)
 
 
 
@@ -2286,6 +2312,7 @@ class MainWindow(QMainWindow):
         print("✅ Final JSON generated. Data:", json.dumps(result_json, indent=2, ensure_ascii=False))
         Settings.WRITE_LOG_DEV_FILE(f"Final JSON generated. Data: {json.dumps(result_json, indent=2, ensure_ascii=False)}", "INFO")
         Settings.WRITE_LOG_DEV_FILE("The final JSON has been generated.", "INFO")
+        QApplication.processEvents()  # Traite les événements UI en attente pour garder l'interface réactive
 
 
 
@@ -2517,11 +2544,7 @@ class MainWindow(QMainWindow):
 
 
     def Clear_Button_Clicked(self):
-        while self.log_layout.count():
-            item = self.log_layout.takeAt(0)
-            widget = item.widget()
-            if widget is not None:
-                widget.deleteLater()
+        self.log_text_edit.clear()  # Effacer tout le texte
         global LOGS
         LOGS = []
 

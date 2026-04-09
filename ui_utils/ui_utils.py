@@ -1,17 +1,18 @@
 # ui_utils.py
 import os
 import traceback
+import datetime
 from PyQt6.QtWidgets import *
-from PyQt6.QtGui import QIcon, QColor
+from PyQt6.QtGui import QFont, QIcon, QColor
 from PyQt6.QtCore import Qt, QTimer, QSize
 from PyQt6 import QtWidgets, QtGui, QtCore
 import PyQt6
 from collections import defaultdict
 from functools import partial
 import sys
-
-from config import settings
-
+from PyQt6.QtGui import QTextCursor
+from PyQt6.QtGui import QPainter
+from PyQt6.QtGui import QPen
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT_DIR not in sys.path:
@@ -27,7 +28,7 @@ except ImportError as e:
 
 # test
 
-
+# test
 
 
 
@@ -39,10 +40,22 @@ class VerticalTabBar(QtWidgets.QTabBar):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setShape(QtWidgets.QTabBar.Shape.RoundedWest)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.setMouseTracking(True)
 
         self.tab_margin = 0
         self.left_margin = 0
         self.right_margin = 0
+
+
+    def mousePressEvent(self, event):
+        super().mousePressEvent(event)
+        self.update()
+
+
+    def mouseReleaseEvent(self, event):
+        super().mouseReleaseEvent(event)
+        self.update()
 
 
     def tabSizeHint(self, index):
@@ -60,49 +73,28 @@ class VerticalTabBar(QtWidgets.QTabBar):
 
 
     def paintEvent(self, event):
-        painter = QtGui.QPainter(self)
-        painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
+        super().paintEvent(event)
 
-        for i in range(self.count()):
-            rect = self.tabRect(i)
-            text = self.tabText(i)
-            icon = self.tabIcon(i)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
+        for index in range(self.count()):
+            tab_rect = self.tabRect(index)
+            if not tab_rect.isValid():
+                continue
+
+            # رسم النص المخصص
             painter.save()
-            if self.currentIndex() == i:
-                painter.setBrush(QtGui.QBrush(QtGui.QColor(Settings.PRIMARY_COLOR)))
-            else:
-                painter.setBrush(QtGui.QBrush(QtGui.QColor("#F5F5F5")))
-            painter.setPen(QtCore.Qt.PenStyle.NoPen)
-            painter.drawRect(rect)  
-            border_pen = QtGui.QPen(QtGui.QColor(Settings.PRIMARY_COLOR))
-            border_pen.setWidth(1)
-            painter.setPen(border_pen)
-            painter.drawLine(rect.bottomLeft(), rect.bottomRight())
-            painter.drawLine(rect.topRight(), rect.bottomRight())
+            painter.setPen(QPen(Qt.GlobalColor.black))
+            painter.setFont(QFont("Segoe UI", 10))
+
+            # الحصول على النص من setTabText
+            text = self.tabText(index)
+            if text:
+                painter.drawText(tab_rect, Qt.AlignmentFlag.AlignCenter, text)
+
             painter.restore()
-            painter.save()
 
-            if not icon.isNull():
-                pixmap = icon.pixmap(24, 24)
-                icon_pos = QtCore.QPoint(rect.left() + 8, rect.top() + 15)
-                painter.drawPixmap(icon_pos, pixmap)
-
-            painter.setPen(QtGui.QPen(QtGui.QColor("#333")))
-            font = painter.font()
-            font.setPointSize(10)
-            font.setFamily(Settings.FONT_FAMILY)
-            painter.setFont(font)
-
-            text_rect = QtCore.QRect(
-                rect.left() + 44,
-                rect.top(),
-                rect.width() - 45,
-                rect.height() - 8
-            )
-            painter.drawText(text_rect, QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignLeft, text)
-            painter.restore()
-        painter.end()   
 
 
 
@@ -661,25 +653,11 @@ class UIManager:
     
     
     @staticmethod
-    def Update_Logs_Display( log_entry ,log_layout):
-        # Limiter le nombre de logs affichés pour éviter les problèmes de performance
-        max_logs = 100
-        if log_layout.count() >= max_logs:
-            item = log_layout.takeAt(0)
-            if item and item.widget():
-                item.widget().deleteLater()
-        
-        log_label = QLabel(log_entry)
-        log_label.setStyleSheet(f"""
-            QLabel {{
-                color: #ffffff;
-                font-size: 14px;
-                background-color: transparent;
-                font-family: {Settings.FONT_FAMILY};
-                padding: 2px;
-            }}
-        """)
-        log_layout.addWidget(log_label)
+    def Update_Logs_Display( log_entry ,log_text_edit):
+        timestamp = datetime.datetime.now().strftime('%H:%M:%S')
+        formatted_entry = f"[{timestamp}] {log_entry}"
+        log_text_edit.appendPlainText(formatted_entry)
+        log_text_edit.moveCursor(QtGui.QTextCursor.MoveOperation.End)
 
     
 
@@ -1469,7 +1447,7 @@ class UIManager:
             button.setFixedSize(*button_size)
 
         # 6️⃣ Style spécifique pour certains boutons
-        if button_name in ("ClearButton", "copyButton"):
+        if button_name in ("ClearButton", "CopyButton"):
             print(f"[DEBUG] Application style spécial pour: {button_name}")
             button.setText("")
             button.setStyleSheet("""
@@ -1733,11 +1711,42 @@ class UIManager:
         # Set tab icons
         UIManager._set_tab_icons(window, window.tabWidgetResult)
 
+        # Connect clicks to ensure tabs are active when the user clicks them
+        try:
+            window.tabWidgetResult.tabBar().tabBarClicked.connect(
+                lambda index: UIManager._on_result_tab_clicked(window, index)
+            )
+        except Exception:
+            pass
+
+        window.tabWidgetResult.currentChanged.connect(
+            lambda index: UIManager._on_result_tab_changed(window, index)
+        )
+
         # Convert to vertical tab widget
         UIManager._convert_to_vertical_tabs(window)
         
         # Set icons for existing buttons in tabs
         UIManager.Set_Icon_For_Existing_Buttons(window)
+
+
+    @staticmethod
+    def _on_result_tab_clicked(window, index):
+        if not hasattr(window, 'tabWidgetResult') or window.tabWidgetResult is None:
+            return
+        if index < 0 or index >= window.tabWidgetResult.count():
+            return
+        window.tabWidgetResult.setCurrentIndex(index)
+
+
+    @staticmethod
+    def _on_result_tab_changed(window, index):
+        if not hasattr(window, 'tabWidgetResult') or window.tabWidgetResult is None:
+            return
+        if index < 0 or index >= window.tabWidgetResult.count():
+            return
+        tab_text = window.tabWidgetResult.tabText(index)
+        Settings.WRITE_LOG_DEV_FILE(f"Result tab switched to: {tab_text}", "INFO")
 
 
     
@@ -1837,6 +1846,12 @@ class UIManager:
         vertical_tab_widget.show()
 
         window.tabWidgetResult = vertical_tab_widget
+        window.tabWidgetResult.tabBar().setCursor(Qt.CursorShape.PointingHandCursor)
+        try:
+            window.tabWidgetResult.tabBar().tabBarClicked.connect( lambda index: UIManager._on_result_tab_clicked(window, index) )
+        except Exception:
+            pass
+        window.tabWidgetResult.currentChanged.connect(  lambda index: UIManager._on_result_tab_changed(window, index) )
 
     
 
