@@ -412,7 +412,7 @@ class UIManager:
                 font-size: 14px;
             }}
             QLabel:hover {{
-                color: #ffffff;   /* لون النص عند المرور بالماوس */
+                color:#2c3e50;  
             }}
             """
         )
@@ -507,6 +507,7 @@ class UIManager:
                 lines = [line.strip() for line in f if line.strip()]
 
             # print(f"📄 [FILE] {Settings.RESULT_FILE_PATH} lu avec {len(lines)} lignes")
+            QApplication.processEvents()  # تحديث الواجهة بعد قراءة الملف
 
             # 🔹 Vérification si le fichier est vide
             if not lines:
@@ -535,6 +536,7 @@ class UIManager:
 
             errors_dict["all"] = all_emails
             # print(f"🟢 [SUMMARY] Total emails={len(all_emails)} | completed={completed_count} | non-completed={no_completed_count}")
+            QApplication.processEvents()  # تحديث الواجهة بعد تحليل البيانات
 
             # 🔹 Mise à jour du tab principal
             interface_tab_widget = window.findChild(QTabWidget, "interface_2")
@@ -561,6 +563,7 @@ class UIManager:
                     Settings.WRITE_LOG_DEV_FILE("[UI WARNING] interface_2 introuvable pour la mise à jour du tab Result", "WARNING")
                 except Exception:
                     pass
+            QApplication.processEvents()  # تحديث الواجهة بعد تحديث التبويب الرئيسي
 
             # 🔹 Mise à jour des tabs secondaires
             result_tab_widget = window.findChild(QTabWidget, "tabWidgetResult")
@@ -599,6 +602,7 @@ class UIManager:
                     # print(f"⚠️ [UI] Aucun email pour le tab '{status}', message affiché")
 
             # print("🎉 [END] Mise à jour des résultats terminée")
+            QApplication.processEvents()  # تحديث الواجهة بعد تحديث جميع التبويبات
 
         except Exception as e:
             # print(f"❌ [ERROR] Une erreur est survenue: {type(e).__name__} : {e}")
