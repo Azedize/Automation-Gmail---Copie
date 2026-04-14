@@ -74,6 +74,11 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 # ==========================================================
 
 def generate_encrypted_key():
+    """_summary_
+
+    Returns:
+        _type_: _description_
+    """    
     from cryptography.fernet import Fernet
     secret_key = Fernet.generate_key()
     fernet = Fernet(secret_key)
@@ -89,6 +94,12 @@ def generate_encrypted_key():
 # ==========================================================
 
 def WRITE_LOG_DEV_FILE( message: str, level: str = "INFO"):
+    """_summary_
+
+    Args:
+        message (str): _description_
+        level (str, optional): _description_. Defaults to "INFO".
+    """    
     try:
         # Génération de la date et heure actuelle pour le timestamp
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
