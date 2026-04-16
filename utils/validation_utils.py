@@ -291,7 +291,7 @@ class ValidationUtils:
         - Valid IP address format
         - Suspicious port patterns
         
-        Returns a dictionary with validation results and any filtered data. tset
+        Returns a dictionary with validation results and any filtered data.
         """
         try:
             if not data_list:
