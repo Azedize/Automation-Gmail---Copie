@@ -282,16 +282,16 @@ class ValidationUtils:
     @staticmethod
     def process_ports(data_list: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
-        Processes and validates port and IP address data from a list of accounts.
-        
-        Validates each account for:
-        - Valid data structure
-        - Presence of port
-        - Authorized port values
-        - Valid IP address format
-        - Suspicious port patterns
-        
-        Returns a dictionary with validation results and any filtered data.
+            Processes and validates port and IP address data from a list of accounts.
+            
+            Validates each account for:
+            - Valid data structure
+            - Presence of port
+            - Authorized port values
+            - Valid IP address format
+            - Suspicious port patterns
+            
+            Returns a dictionary with validation results and any filtered data.
         """
         try:
             if not data_list:
