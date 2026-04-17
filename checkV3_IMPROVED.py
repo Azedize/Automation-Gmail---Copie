@@ -874,7 +874,9 @@ class UpdateManager:
                 f"Unexpected error downloading/extracting: {str(e)}"
             )
 
-    
+
+
+
     @staticmethod
     def check_and_update() -> BootstrapResult[bool]:
         try:
