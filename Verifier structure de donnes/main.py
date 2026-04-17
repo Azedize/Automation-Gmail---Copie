@@ -48,6 +48,8 @@ def validate_line(line):
     return errors
 
 
+
+
 def validate_file(file_path):
     invalid_lines = []
     total_lines = 0
@@ -97,7 +99,7 @@ def validate_file(file_path):
 
 
 if __name__ == "__main__":
-    file_path = "input.txt"  # 🔹 Remplace par le nom de ton fichier
+    file_path = "input.txt"  
     validate_file(file_path)
 
 

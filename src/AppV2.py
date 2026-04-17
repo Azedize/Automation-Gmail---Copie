@@ -796,6 +796,7 @@ def call_api(unique_ips: Set[str], entity_v: str) -> Dict[str, Any]:
                 print(f"✅ Réponse reçue (status): {response.status_code}")
                 response_text = response.text
                 print(f"📦 Contenu brut réponse: {response_text[:200]}...")  # limiter taille
+                Settings.WRITE_LOG_DEV_FILE(f"Full API response: {response_text}", "INFO")
                 break
 
             except requests.RequestException as e:
@@ -812,6 +813,7 @@ def call_api(unique_ips: Set[str], entity_v: str) -> Dict[str, Any]:
         # 🔐 Decrypt
         print("🔐 Décryptage en cours...")
         decrypted = EncryptionService.decrypt_message(response_text, Settings.API_KEY_PROXY)
+        Settings.WRITE_LOG_DEV_FILE(f"Decrypted API response: {decrypted}", "INFO")
         print(f"🔓 Décrypté (brut): {decrypted[:200]}...")
 
         decrypted = re.sub(r'[^\x20-\x7E]', '', decrypted)
@@ -828,8 +830,15 @@ def call_api(unique_ips: Set[str], entity_v: str) -> Dict[str, Any]:
         print(f"⚠️ IPs manquantes: {missing}")
 
         if missing:
-            Settings.WRITE_LOG_DEV_FILE(f"Missing IPs: {missing}", "ERROR")
-            return {"valid": False, "data": data, "error": f"Missing IPs: {missing}"}
+            Settings.WRITE_LOG_DEV_FILE(
+                f"API proxy response incomplete: expected IP addresses missing from response data. Missing IPs: {missing}. Response key count={len(data)}.",
+                "ERROR"
+            )
+            return {
+                "valid": False,
+                "data": data,
+                "error": "La réponse du service est incomplète : certaines adresses IP attendues n'ont pas été reçues. Veuillez réessayer ou contacter le support si le problème persiste."
+            }
         
         print("✅ Toutes les IPs sont présentes")
         Settings.WRITE_LOG_DEV_FILE(f"API returned data for all IPs", "INFO")
