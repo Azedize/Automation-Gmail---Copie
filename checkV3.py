@@ -395,10 +395,10 @@ class UpdateManager:
             raise
 
 
+
     # =========================================================
     # 🔹 FUNCTION CHECK AND UPDATE
     # ==========================================================
-
     @staticmethod
     def check_and_update():
         WRITE_LOG_DEV_FILE("Checking for updates", "INFO")
