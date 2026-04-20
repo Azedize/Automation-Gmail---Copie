@@ -316,7 +316,8 @@ class BrowserManager:
                     current_path = f"{path_trace}/{k}" if path_trace else k
                     if k in search_keys:
                         results.append({k: v})
-                        #print(f"🔑 Clé trouvée : {current_path} ➜ Valeur : {v}")
+                        Settings.WRITE_LOG_DEV_FILE(f"Found JSON key: {k} at {current_path} -> {v}", "INFO")
+                        print(f"🔑 Clé trouvée : {current_path} ➜ Valeur : {v}")
                     BrowserManager.Search_Keys(v, search_keys, results, current_path)
             elif isinstance(data, list):
                 for idx, item in enumerate(data):
