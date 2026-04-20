@@ -756,7 +756,7 @@ def extract_unique_ips(data_list: List[Dict[str, Any]]) -> Dict[str, Any]:
 # =========================================================
 # 📡 API CALL using APIManager (User-friendly messages)
 # =========================================================
-def call_api(unique_ips: Set[str], entity_v: str) -> Dict[str, Any]:
+def call_api(unique_ips: Set[str], entity_New: str) -> Dict[str, Any]:
     try:
         print("🔹 Début call_api")
         print(f"IPs reçues: {unique_ips}")
@@ -767,7 +767,7 @@ def call_api(unique_ips: Set[str], entity_v: str) -> Dict[str, Any]:
             return {"valid": False, "data": None, "error": "No IPs provided"}
 
         headers = {'User-Agent': 'Mozilla/5.0'}
-        k_proxy = ','.join(unique_ips) + "---" + "opm74"
+        k_proxy = ','.join(unique_ips) + "---" + entity_New
 
         print(f"🔹 k_proxy construit: {k_proxy}")
 

@@ -143,6 +143,9 @@ class ValidationUtils:
 
             header = [k.strip() for k in lines[0].split(";")]
             data_lines = lines[1:]
+            Settings.WRITE_LOG_DEV_FILE(
+                f"Input validation started: header={header}, total_rows={len(data_lines)}", "INFO"
+            )
 
             # --------------------
             # 3️⃣ Validate required keys
@@ -160,6 +163,10 @@ class ValidationUtils:
             all_valid_keys = set(k for pat in mandatory_patterns + optional_patterns for k in pat)
 
             if not any(set(pat).issubset(header) for pat in mandatory_patterns):
+                Settings.WRITE_LOG_DEV_FILE(
+                    f"Header validation failed: mandatory columns missing. header={header}",
+                    "ERROR"
+                )
                 result.update({
                     "error_title": "Column Validation Failed",
                     "error_message": "Mandatory columns are missing from the input data. Please ensure the header includes all required fields in one of the supported formats."
@@ -168,6 +175,10 @@ class ValidationUtils:
 
             invalid_keys = [k for k in header if k not in all_valid_keys]
             if invalid_keys:
+                Settings.WRITE_LOG_DEV_FILE(
+                    f"Header validation failed: invalid columns found={invalid_keys}. header={header}",
+                    "ERROR"
+                )
                 result.update({
                     "error_title": "Column Validation Failed",
                     "error_message": f"The following columns are not recognized: {', '.join(invalid_keys)}. Please verify and correct the header format."
@@ -181,6 +192,10 @@ class ValidationUtils:
             for index, line in enumerate(data_lines, start=1):
                 values = [v.strip() for v in line.split(";")]
                 if len(values) != len(header):
+                    Settings.WRITE_LOG_DEV_FILE(
+                        f"Data format error at row {index}: expected {len(header)} columns, got {len(values)}. header={header} row={line}",
+                        "ERROR"
+                    )
                     result.update({
                         "error_title": "Data Format Error",
                         "error_message": f"Row {index} does not match the expected column count. Please ensure all rows have the correct number of columns."
