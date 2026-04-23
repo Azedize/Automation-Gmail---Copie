@@ -1351,7 +1351,6 @@ class ExtractionThread(QThread):
         # 🔹 Vérification si RESULTATS_EX est vide
 
         while remaining_emails or PROCESS_PIDS:
-
             if self.stop_flag:  
                 LOGS_RUNNING=False 
                 log_message("[INFO] Processing interrupted by user.")
@@ -1587,7 +1586,7 @@ def Process_Browser(window, selected_Browser) -> bool:
     config_profile = Settings.CONFIG_PROFILE
     if not os.path.exists(config_profile):
         Settings.WRITE_LOG_DEV_FILE(f"Configuration folder not found: {config_profile}", "WARNING")
-        # print(f"❌ Dossier de configuration introuvable : {config_profile}")
+        print(f"❌ Dossier de configuration introuvable : {config_profile}")
         return False
     # print(f"✅ Dossier de configuration trouvé : {config_profile}")
 
