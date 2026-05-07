@@ -56,7 +56,8 @@ try:
     from Update import UpdateManager
 except ImportError as e:
     print(f"❌ Erreur d'importation : {e}")
-    sys.exit(1)  # quitte immédiatement le script avec un code d'erreur
+    sys.exit(1)  
+
 
 
 
