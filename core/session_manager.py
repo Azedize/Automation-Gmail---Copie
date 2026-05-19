@@ -295,16 +295,14 @@ class SessionManager:
 
             # Validation username
             valid_user, msg_user = ValidationUtils.validate_qlineedit_text(username, validator_type="text", min_length=5)
-            print(f"[DEBUG] Validation username: valid={valid_user}, message='{msg_user}'")
             if not valid_user:
-                settings.WRITE_LOG_DEV_FILE(f"❌ Username invalide: {msg_user}", "ERROR")
+                settings.WRITE_LOG_DEV_FILE(f"\u274c Username invalide: {msg_user}", "ERROR")
                 return -1
 
             # Validation password
             valid_pass, msg_pass = ValidationUtils.validate_qlineedit_text(password, min_length=6)
-            print(f"[DEBUG] Validation password: valid={valid_pass}, message='{msg_pass}'")
             if not valid_pass:
-                settings.WRITE_LOG_DEV_FILE(f"❌ Password invalide: {msg_pass}", "ERROR")
+                settings.WRITE_LOG_DEV_FILE(f"\u274c Password invalide: {msg_pass}", "ERROR")
                 return -1
 
             settings.WRITE_LOG_DEV_FILE("Validation des inputs réussie", "DEBUG")

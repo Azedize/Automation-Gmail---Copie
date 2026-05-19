@@ -55,15 +55,15 @@ class EncryptionService:
         elif isinstance(key, bytes):
             key_bytes = key
         else:
-            error_msg = f"❌ ERREUR DÉCRYPTAGE: La clé doit être str ou bytes. Type reçu: {type(key)}\nTraceback complet: {traceback.format_exc()}"
-            settings.WRITE_LOG_DEV_FILE(error_msg, level="ERROR")
-            print(error_msg)
+            msg = f"❌ ERREUR DÉCRYPTAGE: La clé doit être str ou bytes. Type reçu: {type(key)}\nTraceback complet: {traceback.format_exc()}"
+            settings.WRITE_LOG_DEV_FILE(msg, level="ERROR")
+            print(msg)
             sys.exit(1)
 
         if len(key_bytes) != settings.AES_KEY_LENGTH:
-            error_msg = f"❌ ERREUR DÉCRYPTAGE: Longueur de clé AES invalide. Attendu: {settings.AES_KEY_LENGTH}, Reçu: {len(key_bytes)}\nTraceback complet: {traceback.format_exc()}"
-            settings.WRITE_LOG_DEV_FILE(error_msg, level="ERROR")
-            print(error_msg)
+            msg = f"❌ ERREUR DÉCRYPTAGE: Longueur de clé AES invalide. Attendu: {settings.AES_KEY_LENGTH}, Reçu: {len(key_bytes)}\nTraceback complet: {traceback.format_exc()}"
+            settings.WRITE_LOG_DEV_FILE(msg, level="ERROR")
+            print(msg)
             sys.exit(1)
 
         try:

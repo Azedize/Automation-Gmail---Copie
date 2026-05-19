@@ -111,8 +111,7 @@ class APIManager:
                 print(f"🟩 [HANDLE SUCCESS] Data => {data}")
                 return data
             else:
-                error_msg = result.get("error", "Unknown error")
-                print(f"🟥 [HANDLE ERROR] {error_msg}")
+                print(f"🟥 [HANDLE ERROR] {result.get('error', 'Unknown error')}")
                 return failure_default
         except Exception as e:
             Settings.WRITE_LOG_DEV_FILE(f"Exception in _handle_response: {traceback.format_exc()}", "ERROR")
