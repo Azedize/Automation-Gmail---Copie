@@ -30,11 +30,7 @@ class ExtensionManager:
 
         # 1️⃣ Choix du template
         normalized_browser = selected_browser.strip().lower()
-        template_directory = (
-            Settings.TEMPLATE_DIRECTORY_FIREFOX
-            if normalized_browser == "firefox"
-            else Settings.TEMPLATE_DIRECTORY_FAMILY_CHROME
-        )
+        template_directory = ( Settings.TEMPLATE_DIRECTORY_FIREFOX  if normalized_browser == "firefox"  else Settings.TEMPLATE_DIRECTORY_FAMILY_CHROME)
 
         base_directory = (
             Settings.FOLDER_EXTENTIONS_FIREFOX

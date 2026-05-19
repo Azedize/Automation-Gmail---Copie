@@ -210,18 +210,9 @@ def Stop_All_Processes(window):
     # --- Vérification sécurisée du navigateur sélectionné ---
     if not SELECTED_BROWSER_GLOBAL:
         print("⚠️ No browser selected or no processes running.")
-        Settings.WRITE_LOG_DEV_FILE(
-            "Stop failed: No browser selected or no processes running.", "WARNING"
-        )
-
+        Settings.WRITE_LOG_DEV_FILE(  "Stop failed: No browser selected or no processes running.", "WARNING" )
         # Affichage alerte professionnelle : uniquement sur les processus
-        UIManager.Show_Critical_Message(
-            window,
-            "No Processes Running",
-            "No processes are currently running.",
-            message_type="warning",
-        )
-
+        UIManager.Show_Critical_Message( window, "No Processes Running", "No processes are currently running.", message_type="warning",)
         # Réactivation du bouton Submit pour éviter blocage UI
         enable_button(window.stopButton)
         return  # Sortir de la fonction
@@ -233,9 +224,7 @@ def Stop_All_Processes(window):
     if browser_name != "firefox":
         for pid in PROCESS_PIDS[:]:
             try:
-                Settings.WRITE_LOG_DEV_FILE(
-                    f"Attempting to terminate process with PID {pid}...", "INFO"
-                )
+                Settings.WRITE_LOG_DEV_FILE(  f"Attempting to terminate process with PID {pid}...", "INFO" )
                 process = psutil.Process(pid)
                 process.terminate()
                 process.wait(timeout=5)
@@ -284,7 +273,6 @@ class CloseBrowserThread(QThread):
         self.stop_flag = False
         self.downloads_folder = user_downloads_dir()
         self.CURRENT_DATETIME = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-
         self.BASE_LOG_DIR = Settings.LOGS_DIRECTORY
         self.SESSION_DIR = os.path.join(self.BASE_LOG_DIR, f"{self.CURRENT_DATETIME}")
         os.makedirs(self.SESSION_DIR, exist_ok=True)
@@ -293,9 +281,7 @@ class CloseBrowserThread(QThread):
         self.completed_emails = set()
         self.lock = threading.Lock()
 
-        Settings.WRITE_LOG_DEV_FILE(
-            f"Thread created | Browser={selected_Browser} | User={username}", "INFO"
-        )
+        Settings.WRITE_LOG_DEV_FILE( f"Thread created | Browser={selected_Browser} | User={username}", "INFO" )
 
     # ======================================================
     # 🔁 THREAD PRINCIPAL
