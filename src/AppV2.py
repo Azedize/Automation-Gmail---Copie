@@ -716,9 +716,7 @@ class CloseBrowserThread(QThread):
                 proc.terminate()
                 proc.wait(timeout=wait_force)
             except:
-                Settings.WRITE_LOG_DEV_FILE(
-                    f"Error force-closing Firefox: {traceback.format_exc()}", "ERROR"
-                )
+                Settings.WRITE_LOG_DEV_FILE(  f"Error force-closing Firefox: {traceback.format_exc()}", "ERROR")
                 pass
 
 
