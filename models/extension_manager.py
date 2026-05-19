@@ -16,23 +16,33 @@ except ImportError as e:
     sys.exit(1)  # quitte immédiatement le script avec un code d'erreur
 
 
-
 class ExtensionManager:
 
     # =========================
     # PUBLIC API
     # =========================
     @staticmethod
-    def create_extension_for_email( email, password, host, port, user, passwordP, recovry,  new_password, new_recovry, IDL, selected_browser ):
+    def create_extension_for_email(  email,  password,  host,  port,  user,  passwordP,  recovry,  new_password, new_recovry,  IDL,  selected_browser ):
         # print("🚀 [START] create_extension_for_email")
         # print(f"🌐 Browser sélectionné : {selected_browser}")
         # print(f"📧 Email : {email}")
         # print(f"🆔 IDL : {IDL}")
 
         # 1️⃣ Choix du template
-        template_directory = (Settings.TEMPLATE_DIRECTORY_FIREFOX if selected_browser.lower() == "firefox" else Settings.TEMPLATE_DIRECTORY_FAMILY_CHROME )
+        normalized_browser = selected_browser.strip().lower()
+        template_directory = (
+            Settings.TEMPLATE_DIRECTORY_FIREFOX
+            if normalized_browser == "firefox"
+            else Settings.TEMPLATE_DIRECTORY_FAMILY_CHROME
+        )
 
-        base_directory = ( Settings.FOLDER_EXTENTIONS_FIREFOX if selected_browser.lower() == "firefox" else Settings.FOLDER_EXTENTIONS_FAMILY_CHROME)
+        base_directory = (
+            Settings.FOLDER_EXTENTIONS_FIREFOX
+            if normalized_browser == "firefox"
+            else Settings.CHROMIUM_BROWSER_PATHS.get(normalized_browser, {}).get(
+                "extensions", Settings.FOLDER_EXTENTIONS_FAMILY_CHROME
+            )
+        )
 
         # print(f"📁 Template directory : {template_directory}")
         # print(f"📁 Base directory : {base_directory}")
@@ -67,7 +77,9 @@ class ExtensionManager:
                     # print(f"📄 Copied file : {item}")
             except Exception as e:
                 print(f"💥 Exception lors de la copie de {item} : {e}\n{traceback.format_exc()}")
-                Settings.WRITE_LOG_DEV_FILE(f"Exception lors de la copie de {item}: {e}\n{traceback.format_exc()}", "ERROR")
+                Settings.WRITE_LOG_DEV_FILE(
+                    f"Exception lors de la copie de {item}: {e}\n{traceback.format_exc()}", "ERROR"
+                )
                 # print(f"❌ Erreur copie {item} : {e}")
                 pass
 
@@ -76,10 +88,14 @@ class ExtensionManager:
         ExtensionManager._replace_actions_js(email_folder, IDL, email)
 
         # print("✏️ Remplacement background.js")
-        ExtensionManager._replace_background_js( email_folder, host, port, user, passwordP, IDL, email )
+        ExtensionManager._replace_background_js(
+            email_folder, host, port, user, passwordP, IDL, email
+        )
 
         # print("✏️ Remplacement gmail_process.js")
-        ExtensionManager._replace_gmail_process_js(email_folder, email, password, recovry, new_password, new_recovry)
+        ExtensionManager._replace_gmail_process_js(
+            email_folder, email, password, recovry, new_password, new_recovry
+        )
 
         # print("✏️ Remplacement ReportingActions.js")
         ExtensionManager._replace_reporting_actions_js(email_folder, IDL, email)
@@ -113,10 +129,6 @@ class ExtensionManager:
 
         # print("✅ actions.js modifié")
 
-    
-    
-    
-    
     @staticmethod
     def _replace_background_js(email_folder, host, port, user, passwordP, IDL, email):
         path = os.path.join(email_folder, "background.js")
@@ -143,12 +155,10 @@ class ExtensionManager:
 
         # print("✅ background.js modifié")
 
-    
-    
-    
-    
     @staticmethod
-    def _replace_gmail_process_js(email_folder, email, password, recovry, new_password, new_recovry):
+    def _replace_gmail_process_js(
+        email_folder, email, password, recovry, new_password, new_recovry
+    ):
         path = os.path.join(email_folder, "gmail_process.js")
         # print(f"🔎 gmail_process.js : {path}")
 
@@ -172,10 +182,6 @@ class ExtensionManager:
 
         # print("✅ gmail_process.js modifié")
 
-    
-    
-    
-    
     @staticmethod
     def _replace_reporting_actions_js(email_folder, IDL, email):
         path = os.path.join(email_folder, "ReportingActions.js")
@@ -195,19 +201,10 @@ class ExtensionManager:
 
         # print("✅ ReportingActions.js modifié")
 
-    
-    
-    
-    
     # =========================
     # TRAITEMENT JSON
     # =========================
 
-    
-    
-    
-    
-    
     @staticmethod
     def modifier_extension_par_traitement(email_folder):
         traitement_path = os.path.join(email_folder, "traitement.json")
@@ -263,8 +260,6 @@ class ExtensionManager:
 
         # print("💾 gmail_process.js sauvegardé avec succès")
 
-    
-    
     @staticmethod
     def extraire_bloc_complet(content, process_key):
         marker = f'"{process_key}": ['
@@ -281,12 +276,10 @@ class ExtensionManager:
             elif content[index] == "]":
                 depth -= 1
                 if depth == 0:
-                    return content[start:index + 1]
+                    return content[start : index + 1]
             index += 1
 
         return None
-
-
 
 
 extension_manager = ExtensionManager()

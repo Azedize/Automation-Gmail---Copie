@@ -4,12 +4,22 @@
         "sleep": 1
     },
     {
-        "process": "CheckLoginYoutube",
+        "process": "open_inbox",
         "sleep": 1
     },
     {
-        "process": "youtube_charts",
-        "limit": 2,
-        "sleep": 1
+        "process": "loop",
+        "check": "is_empty_folder",
+        "limit_loop": 2,
+        "start": 1,
+        "sub_process": [
+            {
+                "process": "OPEN_MESSAGE_ONE_BY_ONE",
+                "sleep": 1
+            },
+            {
+                "process": "return_back"
+            }
+        ]
     }
 ]
