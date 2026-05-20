@@ -1372,8 +1372,7 @@ class ExtractionThread(QThread):
                             browser_paths = Settings.CHROMIUM_BROWSER_PATHS["icedragon"]
                         else:
                             browser_paths = Settings.CHROMIUM_BROWSER_PATHS["comodo"]
-                            # le programme is runing dans une une interface logique et capable de ren
-
+                            
                         profile_dir = browser_paths["profiles"]
                         extension_dir = browser_paths["extensions"]
 
