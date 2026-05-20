@@ -53,7 +53,8 @@ try:
     from services import JsonManager
     from Update import UpdateManager
 except ImportError as e:
-    print(f"❌ Erreur d'importation : {e}")
+    # print(f"❌ Erreur d'importation : {e}")
+    settings.WRITE_LOG_DEV_FILE(f"Import error: {e}\n{traceback.format_exc()}", "ERROR")
     sys.exit(1)
 
 
@@ -87,9 +88,7 @@ def ensure_node_installed():
         return True
 
     # print("❌ Node.js n'est pas installé. Tentative d'installation via Chocolatey...")
-    Settings.WRITE_LOG_DEV_FILE(
-        "Node.js not installed. Trying to install via Chocolatey...", "INFO"
-    )
+    Settings.WRITE_LOG_DEV_FILE(  "Node.js not installed. Trying to install via Chocolatey...", "INFO"  )
 
     if shutil.which("choco") is None:
         # print("🔍 Chocolatey non trouvé. Installation...")
@@ -110,14 +109,14 @@ def ensure_node_installed():
                 check=True,
             )
         except subprocess.CalledProcessError:
-            Settings.WRITE_LOG_DEV_FILE("Error installing Chocolatey", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(f"Error installing Chocolatey{traceback.format_exc()}", "ERROR")
             return False
 
     try:
         subprocess.run(["choco", "install", "nodejs-lts", "-y"], check=True)
         return True
-    except subprocess.CalledProcessError:
-        Settings.WRITE_LOG_DEV_FILE("Error installing Node.js via Chocolatey", "ERROR")
+    except subprocess.CalledProcessError as e:
+        Settings.WRITE_LOG_DEV_FILE(f"Error installing Node.js via Chocolatey: {e}\n{traceback.format_exc()}", "ERROR")
         return False
 
 
@@ -156,8 +155,8 @@ def ensure_web_ext_installed():
 
     try:
         subprocess.run("npm install --global web-ext", check=True, shell=True)
-    except subprocess.CalledProcessError:
-        Settings.WRITE_LOG_DEV_FILE("Error installing web-ext via npm", "ERROR")
+    except subprocess.CalledProcessError as e:
+        Settings.WRITE_LOG_DEV_FILE(f"Error installing web-ext via npm: {e}\n{traceback.format_exc()}", "ERROR")
         # print("❌ Échec de l'installation de 'web-ext' via npm.")
 
 
@@ -209,7 +208,7 @@ def Stop_All_Processes(window):
 
     # --- Vérification sécurisée du navigateur sélectionné ---
     if not SELECTED_BROWSER_GLOBAL:
-        print("⚠️ No browser selected or no processes running.")
+        # print("⚠️ No browser selected or no processes running.")
         Settings.WRITE_LOG_DEV_FILE(  "Stop failed: No browser selected or no processes running.", "WARNING" )
         # Affichage alerte professionnelle : uniquement sur les processus
         UIManager.Show_Critical_Message( window, "No Processes Running", "No processes are currently running.", message_type="warning",)
@@ -340,10 +339,14 @@ class CloseBrowserThread(QThread):
                 ]
 
                 current_time = time.strftime("%H:%M:%S", time.localtime())
-                print(
-                    f"\n🔄 [LOOP] {current_time} | stop_flag={self.stop_flag} | "
-                    f"PROCESS_PIDS={len(PROCESS_PIDS)} | REMAINING_EMAILS={REMAINING_EMAILS} | "
-                    f"session_files={len(session_files)} | log_files={len(log_files)} | empty_counter={empty_counter}"
+                # print(
+                #     f"\n🔄 [LOOP] {current_time} | stop_flag={self.stop_flag} | "
+                #     f"PROCESS_PIDS={len(PROCESS_PIDS)} | REMAINING_EMAILS={REMAINING_EMAILS} | "
+                #     f"session_files={len(session_files)} | log_files={len(log_files)} | empty_counter={empty_counter}"
+                # )
+                settings.WRITE_LOG_DEV_FILE(
+                    f"Loop iteration | stop_flag={self.stop_flag} | PROCESS_PIDS={len(PROCESS_PIDS)} | REMAINING_EMAILS={REMAINING_EMAILS} | session_files={len(session_files)} | log_files={len(log_files)} | empty_counter={empty_counter}",
+                    "DEBUG",
                 )
 
                 if PROCESS_PIDS:
@@ -351,42 +354,35 @@ class CloseBrowserThread(QThread):
 
                     # 🔹 logs
                     if log_files:
-                        print(f"\n  🔄 TRAITEMENT LOG_FILES: {len(log_files)} fichier(s)")
+                        settings.WRITE_LOG_DEV_FILE(f"Processing log files: {len(log_files)} file(s)", "DEBUG")
                         with ThreadPoolExecutor(max_workers=4) as executor:
                             executor.map(self.process_log_file, log_files)
-                        print(f"  ✅ TRAITEMENT LOG_FILES: Terminé")
+                        settings.WRITE_LOG_DEV_FILE("Finished processing log files", "DEBUG")
 
                     # 🔹 sessions
                     if session_files:
-                        print(f"\n  🔄 TRAITEMENT SESSION_FILES: {len(session_files)} fichier(s)")
+                        settings.WRITE_LOG_DEV_FILE(f"Processing session files: {len(session_files)} file(s)", "DEBUG")
                         with ThreadPoolExecutor(max_workers=4) as executor:
                             executor.map(
                                 lambda f: self.process_session_file(f, screenshots), session_files
                             )
-                        print(f"  ✅ TRAITEMENT SESSION_FILES: Terminé")
+                        settings.WRITE_LOG_DEV_FILE("Finished processing session files", "DEBUG")
 
                     # 📊 État après traitement
-                    print(
-                        f"\n  📊 PROCESS_PIDS restants: {len(PROCESS_PIDS)} | REMAINING_EMAILS: {REMAINING_EMAILS}"
-                    )
+                    settings.WRITE_LOG_DEV_FILE(f"PROCESS_PIDS restants: {len(PROCESS_PIDS)} | REMAINING_EMAILS: {REMAINING_EMAILS}", "DEBUG")
 
                 else:
                     if REMAINING_EMAILS == 0 and not log_files and not session_files:
-                        print(
-                            "🛑 Aucun PID actif et aucun email restant → arrêt immédiat du thread"
-                        )
+                        settings.WRITE_LOG_DEV_FILE("🛑 Aucun PID actif et aucun email restant → arrêt immédiat du thread", "DEBUG")
                         break
 
                     empty_counter += 1
                     if empty_counter >= 15:
-                        print("🛑 PROCESS_PIDS vide → arrêt du thread après attente")
+                        settings.WRITE_LOG_DEV_FILE("🛑 PROCESS_PIDS vide → arrêt du thread après attente", "DEBUG")
                         break
 
                 # 📊 Résumé fin d'itération
-                print(
-                    f"\n📊 Files traités: logs={len(log_files)}, sessions={len(session_files)}, screenshots={len(screenshots)}"
-                )
-                print(f"  ⏳ Prochaine itération dans 1 seconde...")
+                settings.WRITE_LOG_DEV_FILE(  f"📊 Files traités: logs={len(log_files)}, sessions={len(session_files)}, screenshots={len(screenshots)}",  "DEBUG"  )
 
                 # Boucle d'attente rapide avec vérification stop_flag
                 start_sleep = time.time()
@@ -394,37 +390,36 @@ class CloseBrowserThread(QThread):
                     time.sleep(0.1)
 
             except Exception as e:
-                Settings.WRITE_LOG_DEV_FILE(
-                    f"❌ [THREAD] Erreur: {e}\n{ traceback.format_exc()}", "ERROR"
-                )
-                print(f"❌ [THREAD] Erreur: {e}")
+                Settings.WRITE_LOG_DEV_FILE(  f"❌ [THREAD] Erreur: {e}\n{ traceback.format_exc()}", "ERROR" )
+                # print(f"❌ [THREAD] Erreur: {e}")
 
         end_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        print(f"\n🛑 [THREAD] CloseBrowserThread TERMINÉ")
-        print(f"  ⏰ Fin: {end_time}")
-        print(f"  📊 PROCESS_PIDS: {PROCESS_PIDS} | REMAINING_EMAILS: {REMAINING_EMAILS}")
+        # print(f"\n🛑 [THREAD] CloseBrowserThread TERMINÉ")
+        # print(f"  ⏰ Fin: {end_time}")
+        # print(f"  📊 PROCESS_PIDS: {PROCESS_PIDS} | REMAINING_EMAILS: {REMAINING_EMAILS}")
+        settings.WRITE_LOG_DEV_FILE(  f"Thread finished | End time: {end_time} | PROCESS_PIDS: {len(PROCESS_PIDS)} | REMAINING_EMAILS: {REMAINING_EMAILS}",  "INFO"  )
 
     # ======================================================
     # 📄 LOG FILE
     # ======================================================
     def process_log_file(self, log_file):
-        print(f"📄 [LOG] Traitement: {log_file}")
+        # print(f"📄 [LOG] Traitement: {log_file}")
         if self.stop_flag:
-            print("🛑 [LOG] Arrêt demandé")
+            # print("🛑 [LOG] Arrêt demandé")
             return
 
         try:
             full_path = os.path.join(self.downloads_folder, log_file)
             email = ValidationUtils.get_email_from_log_file(full_path)
-            print(f"📧 [LOG] Email: {email}")
+            # print(f"📧 [LOG] Email: {email}")
 
             if not email:
-                print("❌ [LOG] Aucun email trouvé")
+                # print("❌ [LOG] Aucun email trouvé")
                 return
 
             with self.lock:
                 if email in self.completed_emails:
-                    print(f"✅ [LOG] Email {email} déjà traité")
+                    # print(f"✅ [LOG] Email {email} déjà traité")
                     return
 
             email_folder = os.path.join(self.SESSION_DIR, email)
@@ -438,25 +433,25 @@ class CloseBrowserThread(QThread):
                 tf.write(content + "\n")
 
             os.remove(full_path)
-            print(f"✅ [LOG] Terminé: {email}")
+            # print(f"✅ [LOG] Terminé: {email}")
 
         except Exception as e:
             Settings.WRITE_LOG_DEV_FILE(f"❌ [LOG] Erreur: {e}\n{ traceback.format_exc()}", "ERROR")
-            print(f"❌ [LOG] Erreur: {e}")
+            # print(f"❌ [LOG] Erreur: {e}")
 
     # 📄 SESSION FILE
     # ======================================================
     def process_session_file(self, file_name, screenshots):
-        print(f"\n📄 [SESSION] Traitement: {file_name}")
+        # print(f"\n📄 [SESSION] Traitement: {file_name}")
         if self.stop_flag:
-            print("🛑 [SESSION] Arrêt demandé")
+            # print("🛑 [SESSION] Arrêt demandé")
             return
 
         profile_data_file = None
         session_path = os.path.join(self.downloads_folder, file_name)
 
         if not os.path.exists(session_path):
-            print(f"❌ [SESSION] Fichier introuvable: {session_path}")
+            # print(f"❌ [SESSION] Fichier introuvable: {session_path}")
             return
 
         try:
@@ -474,7 +469,8 @@ class CloseBrowserThread(QThread):
                 match = re.search(regex, content)
 
             if not match:
-                print("❌ [SESSION] Parsing échoué")
+                # print("❌ [SESSION] Parsing échoué")
+                settings.WRITE_LOG_DEV_FILE("❌ [SESSION] Parsing failed", "ERROR")
                 return
 
             if (
@@ -514,11 +510,13 @@ class CloseBrowserThread(QThread):
                 pid = int(pid)
                 inserted_id = None
 
-            print(f"📋 [SESSION] {email} | Status: {status} | PID: {pid}")
+            # print(f"📋 [SESSION] {email} | Status: {status} | PID: {pid}")
+            settings.WRITE_LOG_DEV_FILE(f"Session found | Email: {email} | Status: {status} | PID: {pid}", "DEBUG")
 
             # ✅ LIGHT FLOW (completed / bad_proxy)
             if status.lower() in ("completed", "bad_proxy"):
-                print(f"✅ LIGHT FLOW | {email}")
+                # print(f"✅ LIGHT FLOW | {email}")
+                settings.WRITE_LOG_DEV_FILE(f"✅ LIGHT FLOW | {email}", "DEBUG")
 
                 with self.lock:
                     self.completed_emails.add(email)
@@ -527,14 +525,18 @@ class CloseBrowserThread(QThread):
 
                 if pid:
                     self._close_browser_process(pid, email, self.selected_Browser)
-                    print(f"🔒 [SESSION] Processus {pid} fermé pour {email}")
+                    # print(f"🔒 [SESSION] Processus {pid} fermé pour {email}")
+                    settings.WRITE_LOG_DEV_FILE(f"Process {pid} closed for {email}", "INFO")
                 else:
-                    print(f"⚠️ [SESSION] Aucun PID pour {email}")
+                    # print(f"⚠️ [SESSION] Aucun PID pour {email}")
+                    settings.WRITE_LOG_DEV_FILE(f"No PID for {email}", "WARNING")
+
 
                 return
 
             # ❌ ERROR FLOW
-            print(f"❌ ERROR FLOW | {email}")
+            # print(f"❌ ERROR FLOW | {email}")
+            settings.WRITE_LOG_DEV_FILE(f"❌ ERROR FLOW | {email}", "DEBUG")
             email_folder = os.path.join(self.SESSION_DIR, email)
             os.makedirs(email_folder, exist_ok=True)
 
@@ -544,15 +546,15 @@ class CloseBrowserThread(QThread):
 
             if pid:
                 self._close_browser_process(pid, email, self.selected_Browser)
-                print(f"🔒 [SESSION] Processus {pid} fermé pour {email} (error)")
+                # print(f"🔒 [SESSION] Processus {pid} fermé pour {email} (error)")
+                settings.WRITE_LOG_DEV_FILE(f"Process {pid} closed for {email} (error)", "INFO")
             else:
-                print(f"⚠️ [SESSION] Aucun PID pour {email} (error)")
+                # print(f"⚠️ [SESSION] Aucun PID pour {email} (error)")
+                settings.WRITE_LOG_DEV_FILE(f"No PID for {email} (error)", "WARNING")
 
         except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE(
-                f"❌ [SESSION] Erreur: {e}\n{ traceback.format_exc()}", "ERROR"
-            )
-            print(f"❌ [SESSION] Erreur: {e}")
+            Settings.WRITE_LOG_DEV_FILE(  f"❌ [SESSION] Erreur: {e}\n{ traceback.format_exc()}", "ERROR"  )
+            # print(f"❌ [SESSION] Erreur: {e}")
 
         finally:
             # ✅ Nettoyage
@@ -562,45 +564,40 @@ class CloseBrowserThread(QThread):
                 if profile_data_file and os.path.exists(profile_data_file):
                     os.remove(profile_data_file)
             except Exception as e:
-                Settings.WRITE_LOG_DEV_FILE(
-                    f"❌ [CLEANUP] Erreur: {e}\n{ traceback.format_exc()}", "ERROR"
-                )
+                Settings.WRITE_LOG_DEV_FILE( f"❌ [CLEANUP] Erreur: {e}\n{ traceback.format_exc()}", "ERROR"  )
 
     def write_result_and_send_status(self, session_id, pid, email, status, inserted_id):
         """Écrire le résultat et envoyer l'état"""
-        print(f"\n📝 [RESULT] {email} | Status: {status}")
+        # print(f"\n📝 [RESULT] {email} | Status: {status}")
 
         if self.stop_flag:
-            print("🛑 [RESULT] Arrêt demandé")
+            # print("🛑 [RESULT] Arrêt demandé")
+            settings.WRITE_LOG_DEV_FILE("🛑 [RESULT] Stop requested", "INFO")
             return
 
         try:
             result_line = f"{session_id}:{pid}:{email}:{status}"
             with open(Settings.RESULT_FILE_PATH, "a", encoding="utf-8") as f:
                 f.write(f"{result_line}\n")
-            print(f"💾 [RESULT] Résultat écrit: {result_line}")
+            settings.WRITE_LOG_DEV_FILE(f"💾 [RESULT] Résultat écrit: {result_line}", "INFO")
 
-            api_data = {
-                "id": inserted_id,
-                "login": self.username,
-                "status": "OK" if status.lower() == "completed" else "NotOK",
-                "error": "" if status.lower() == "completed" else status,
-            }
+            api_data = { "id": inserted_id,  "login": self.username, "status": "OK" if status.lower() == "completed" else "NotOK",   "error": "" if status.lower() == "completed" else status }
 
             result = Send_Status(api_data)
-            print(f"📡 [RESULT] API result: {result}")
+            # print(f"📡 [RESULT] API result: {result}")
+            settings.WRITE_LOG_DEV_FILE(f"API result: {result}", "INFO")
 
             if result == -1:
                 
                 Settings.WRITE_LOG_DEV_FILE(f"API returned -1 for {email}", level="ERROR")
-                print(f"❌ [RESULT] API returned -1 for {email}")
+                # print(f"❌ [RESULT] API returned -1 for {email}")
                 raise RuntimeError(f"API returned -1 for {email}")
 
-            print(f"✅ [RESULT] Terminé pour {email}")
+            # print(f"✅ [RESULT] Terminé pour {email}")
 
         except Exception as e:
             Settings.WRITE_LOG_DEV_FILE(f"❌ [RESULT] Erreur: {e}", "ERROR")
-            print(f"❌ [RESULT] Erreur: {e}")
+            # print(f"❌ [RESULT] Erreur: {e}")
             raise SystemExit(1)
 
     # ======================================================
@@ -615,17 +612,17 @@ class CloseBrowserThread(QThread):
                     break
         except Exception as e:
             Settings.WRITE_LOG_DEV_FILE(  f"⚠️ [SCREENSHOT] Erreur: {e}\n{ traceback.format_exc()}", "ERROR" )
-            print(f"⚠️ Screenshot error: {e}")
+            # print(f"⚠️ Screenshot error: {e}")
 
     # ======================================================
     def _close_browser_process(self, pid, email, browser):
         """Fermer le processus du navigateur"""
-        print(f"\n🔒 [CLOSE] Fermeture {browser} PID={pid} pour {email}")
+        # print(f"\n🔒 [CLOSE] Fermeture {browser} PID={pid} pour {email}")
 
         try:
             pid = int(pid)
             if not psutil.pid_exists(pid):
-                print(f"⚠️ [CLOSE] PID {pid} n'existe pas")
+                # print(f"⚠️ [CLOSE] PID {pid} n'existe pas")
                 if pid in PROCESS_PIDS:
                     PROCESS_PIDS.remove(pid)
                 return
@@ -634,13 +631,15 @@ class CloseBrowserThread(QThread):
                 try:
                     self.find_firefox_window(email)
                     self.wait_then_close(email)
-                    print(f"✅ [CLOSE] Firefox fermé via fenêtre")
+                    # print(f"✅ [CLOSE] Firefox fermé via fenêtre")
                 except Exception as e_ff:
                     try:
                         os.kill(pid, signal.SIGTERM)
-                        print(f"✅ [CLOSE] Firefox fermé via SIGTERM")
+                        # print(f"✅ [CLOSE] Firefox fermé via SIGTERM")
+                        settings.WRITE_LOG_DEV_FILE(f"Firefox closed via SIGTERM for PID {pid}", "INFO")
                     except Exception as e_kill:
-                        print(f"❌ [CLOSE] Erreur fermeture Firefox: {e_kill}")
+                        # print(f"❌ [CLOSE] Erreur fermeture Firefox: {e_kill}")
+                        Settings.WRITE_LOG_DEV_FILE(  f"Error closing Firefox PID {pid}: {e_kill}\n{traceback.format_exc()}", "ERROR"  )
 
             else:  # CHROME
                 try:
@@ -650,25 +649,24 @@ class CloseBrowserThread(QThread):
                         p = psutil.Process(pid)
                         p.terminate()
                         p.wait(timeout=3)
-                        print(f"✅ [CLOSE] Chrome fermé via terminate()")
+                        # print(f"✅ [CLOSE] Chrome fermé via terminate()")
+                        settings.WRITE_LOG_DEV_FILE(f"Chrome closed via terminate() for PID {pid}", "INFO")
                     else:
-                        print(f"✅ [CLOSE] Chrome fermé via SIGTERM")
+                        # print(f"✅ [CLOSE] Chrome fermé via SIGTERM")
+                        settings.WRITE_LOG_DEV_FILE(f"Chrome closed via SIGTERM for PID {pid}", "INFO")
                 except Exception as e_chrome:
-                    print(f"❌ [CLOSE] Erreur fermeture Chrome: {e_chrome}")
-                    Settings.WRITE_LOG_DEV_FILE(
-                        f"Error closing Chrome PID {pid}: {e_chrome}\n{traceback.format_exc()}",
-                        "ERROR",
-                    )
+                    # print(f"❌ [CLOSE] Erreur fermeture Chrome: {e_chrome}")
+                    Settings.WRITE_LOG_DEV_FILE(  f"Error closing Chrome PID {pid}: {e_chrome}\n{traceback.format_exc()}",  "ERROR" )
+                    # Settings.WRITE_LOG_DEV_FILE(   f"Error closing Chrome PID {pid}: {e_chrome}\n{traceback.format_exc()}",  "ERROR")
 
             if pid in PROCESS_PIDS:
                 PROCESS_PIDS.remove(pid)
-                print(f"✅ [CLOSE] PID {pid} retiré de PROCESS_PIDS")
+                # print(f"✅ [CLOSE] PID {pid} retiré de PROCESS_PIDS")
+                settings.WRITE_LOG_DEV_FILE(f"PID {pid} removed from PROCESS_PIDS", "INFO")
 
         except Exception as e:
-            print(f"❌ [CLOSE] Exception générale: {e}")
-            Settings.WRITE_LOG_DEV_FILE(
-                f"❌ [CLOSE] Erreur: {e}\n{ traceback.format_exc()}", "ERROR"
-            )
+            # print(f"❌ [CLOSE] Exception générale: {e}")
+            Settings.WRITE_LOG_DEV_FILE( f"❌ [CLOSE] Erreur: {e}\n{ traceback.format_exc()}", "ERROR")
 
     def find_firefox_window(self, profile_email, timeout=30):
         entry = next((e for e in FIREFOX_LAUNCH if e["profile"] == profile_email), None)
@@ -785,19 +783,14 @@ def call_api(unique_ips: Set[str], entity_New: str) -> Dict[str, Any]:
                 # print(f"🔁 Tentative API #{retries + 1}")
                 Settings.WRITE_LOG_DEV_FILE(  f"API attempt #{retries + 1}/12 - Connecting to API...", "INFO" )
 
-                response = requests.post(
-                    Settings.API_ENDPOINTS["__GET_PROXY_INFO__"],
-                    headers=headers,
-                    verify=False,
-                    data=params,
-                    timeout=30,
-                )
+                response = requests.post(  Settings.API_ENDPOINTS["__GET_PROXY_INFO__"], headers=headers, verify=False,   data=params,   timeout=30)
 
-                print(f"✅ Réponse reçue (status): {response.status_code}")
+                # print(f"✅ Réponse reçue (status): {response.status_code}")
+                Settings.WRITE_LOG_DEV_FILE(f"API response status: {response.status_code}", "INFO")
                 response_text = response.text
                 response_size = len(response_text)
-                print(f"📦 Taille réponse brute: {response_size} bytes")
-                print(f"📦 Contenu brut réponse (200 premiers chars): {response_text[:200]}...")
+                # print(f"📦 Taille réponse brute: {response_size} bytes")
+                Settings.WRITE_LOG_DEV_FILE(f"API response size: {response_size} bytes", "INFO")
                 Settings.WRITE_LOG_DEV_FILE(f"API status: {response.status_code}", "INFO")
                 Settings.WRITE_LOG_DEV_FILE(f"API response size: {response_size} bytes", "INFO")
                 Settings.WRITE_LOG_DEV_FILE(f"Full API response: {response_text}", "INFO")
@@ -808,17 +801,13 @@ def call_api(unique_ips: Set[str], entity_New: str) -> Dict[str, Any]:
             except requests.Timeout as e:
                 last_error = str(e)
                 # print(f"⏱️ Timeout requête (tentative {retries + 1}): {e}")
-                Settings.WRITE_LOG_DEV_FILE(
-                    f"API Timeout error (attempt {retries + 1}): {e}", "WARNING"
-                )
+                Settings.WRITE_LOG_DEV_FILE(  f"API Timeout error (attempt {retries + 1}): {e}", "WARNING")
                 retries += 1
                 time.sleep(5)
             except requests.RequestException as e:
                 last_error = str(e)
                 # print(f"❌ Erreur requête (tentative {retries + 1}): {e}")
-                Settings.WRITE_LOG_DEV_FILE(
-                    f"❌ [API] Erreur: {e}\n{traceback.format_exc()}", "ERROR"
-                )
+                Settings.WRITE_LOG_DEV_FILE( f"❌ [API] Erreur: {e}\n{traceback.format_exc()}", "ERROR" )
                 retries += 1
                 time.sleep(5)
 
@@ -829,42 +818,32 @@ def call_api(unique_ips: Set[str], entity_New: str) -> Dict[str, Any]:
             return {"valid": False, "data": None, "error": "API failed after retries"}
 
         # 🔐 Decrypt
-        print("🔐 Décryptage en cours...")
+        # print("🔐 Décryptage en cours...")
         Settings.WRITE_LOG_DEV_FILE("Decrypting API response", "INFO")
         try:
             decrypted = EncryptionService.decrypt_message(response_text, Settings.API_KEY_PROXY)
             Settings.WRITE_LOG_DEV_FILE(f"Decryption successful - size: {len(decrypted)}", "INFO")
             Settings.WRITE_LOG_DEV_FILE(f"Decrypted API response: {decrypted}", "INFO")
-            print(f"🔓 Décrypté (brut): {decrypted[:200]}...")
+            # print(f"🔓 Décrypté (brut): {decrypted[:200]}...")
         except Exception as decrypt_error:
             # print(f"❌ Erreur décryptage: {decrypt_error}")
-            Settings.WRITE_LOG_DEV_FILE(
-                f"Decryption failed: {decrypt_error}\n{traceback.format_exc()}", "ERROR"
-            )
+            Settings.WRITE_LOG_DEV_FILE(  f"Decryption failed: {decrypt_error}\n{traceback.format_exc()}", "ERROR" )
             Settings.WRITE_LOG_DEV_FILE("=== API CALL FAILED (DECRYPTION) ===", "ERROR")
-            return {
-                "valid": False,
-                "data": None,
-                "error": f"Decryption error: {str(decrypt_error)}",
-            }
+            return {  "valid": False,  "data": None,  "error": f"Decryption error: {str(decrypt_error)}" }
 
         decrypted = re.sub(r"[^\x20-\x7E]", "", decrypted)
-        print(f"🧹 Décrypté nettoyé: {decrypted[:200]}...")
+        # print(f"🧹 Décrypté nettoyé: {decrypted[:200]}...")
         Settings.WRITE_LOG_DEV_FILE(f"Decrypted cleaned response: {decrypted}", "INFO")
 
         try:
             data = json.loads(decrypted)
-            print(f"📊 JSON chargé - Total clés: {len(data)}")
-            print(f"📊 Premières clés: {list(data.keys())[:10]}")
-            Settings.WRITE_LOG_DEV_FILE(
-                f"JSON parsed successfully - total keys: {len(data)}", "INFO"
-            )
+            # print(f"📊 JSON chargé - Total clés: {len(data)}")
+            # print(f"📊 Premières clés: {list(data.keys())[:10]}")
+            Settings.WRITE_LOG_DEV_FILE( f"JSON parsed successfully - total keys: {len(data)}", "INFO" )
             Settings.WRITE_LOG_DEV_FILE(f"JSON keys sample: {list(data.keys())[:10]}", "INFO")
         except json.JSONDecodeError as json_error:
             # print(f"❌ Erreur parsing JSON: {json_error}")
-            Settings.WRITE_LOG_DEV_FILE(
-                f"JSON parsing failed: {json_error}\n{traceback.format_exc()}", "ERROR"
-            )
+            Settings.WRITE_LOG_DEV_FILE( f"JSON parsing failed: {json_error}\n{traceback.format_exc()}", "ERROR")
             Settings.WRITE_LOG_DEV_FILE(f"Raw decrypted response: {decrypted[:500]}", "ERROR")
             Settings.WRITE_LOG_DEV_FILE("=== API CALL FAILED (JSON PARSE) ===", "ERROR")
             return {"valid": False, "data": None, "error": f"JSON parsing error: {str(json_error)}"}
@@ -872,20 +851,15 @@ def call_api(unique_ips: Set[str], entity_New: str) -> Dict[str, Any]:
         api_ips = set(k.split("#")[0] for k in data.keys())
         missing = unique_ips - api_ips
         extra = api_ips - unique_ips
-        print(f"🌐 IPs retournées API: {sorted(api_ips)}")
-        print(f"⚠️ IPs manquantes: {missing}")
-        print(f"⚠️ IPs supplémentaires: {extra}")
-        Settings.WRITE_LOG_DEV_FILE(
-            f"IPs expected: {len(unique_ips)}, IPs returned: {len(api_ips)}", "INFO"
-        )
+        # print(f"🌐 IPs retournées API: {sorted(api_ips)}")
+        # print(f"⚠️ IPs manquantes: {missing}")
+        # print(f"⚠️ IPs supplémentaires: {extra}")
+        Settings.WRITE_LOG_DEV_FILE( f"IPs expected: {len(unique_ips)}, IPs returned: {len(api_ips)}", "INFO")
         Settings.WRITE_LOG_DEV_FILE(f"Missing IPs: {missing if missing else 'NONE'}", "INFO")
         Settings.WRITE_LOG_DEV_FILE(f"Extra IPs: {extra if extra else 'NONE'}", "INFO")
 
         if missing:
-            Settings.WRITE_LOG_DEV_FILE(
-                f"API proxy response incomplete: expected IP addresses missing from response data. Missing IPs: {missing}. Response key count={len(data)}.",
-                "ERROR",
-            )
+            Settings.WRITE_LOG_DEV_FILE(  f"API proxy response incomplete: expected IP addresses missing from response data. Missing IPs: {missing}. Response key count={len(data)}.",  "ERROR")
             Settings.WRITE_LOG_DEV_FILE("=== API CALL FAILED (MISSING IPS) ===", "ERROR")
             return {
                 "valid": False,
@@ -893,13 +867,13 @@ def call_api(unique_ips: Set[str], entity_New: str) -> Dict[str, Any]:
                 "error": "La réponse du service est incomplète : certaines adresses IP attendues n'ont pas été reçues. Veuillez réessayer ou contacter le support si le problème persiste.",
             }
 
-        print("✅ Toutes les IPs sont présentes")
+        # print("✅ Toutes les IPs sont présentes")
         Settings.WRITE_LOG_DEV_FILE("API returned data for all IPs", "INFO")
         Settings.WRITE_LOG_DEV_FILE("=== API CALL COMPLETED SUCCESSFULLY ===", "INFO")
         return {"valid": True, "data": data, "error": None}
 
     except Exception as e:
-        print(f"💥 Exception globale: {e}\n{ traceback.format_exc()}")
+        # print(f"💥 Exception globale: {e}\n{ traceback.format_exc()}")
         Settings.WRITE_LOG_DEV_FILE(f"Error calling API: {e}\n{traceback.format_exc()}", "ERROR")
         Settings.WRITE_LOG_DEV_FILE("=== API CALL FAILED (CRITICAL) ===", "ERROR")
         return {"valid": False, "data": None, "error": str(e)}
@@ -910,36 +884,36 @@ def call_api(unique_ips: Set[str], entity_New: str) -> Dict[str, Any]:
 # =========================================================
 def Generate_User_Input_Data(window) -> Dict[str, Any]:
     try:
-        print("\n🚀 START Generate_User_Input_Data")
+        # print("\n🚀 START Generate_User_Input_Data")
         Settings.WRITE_LOG_DEV_FILE("========== NEW REQUEST ==========", "INFO")
 
         input_data = window.textEdit_3.toPlainText().strip()
         entered_number_text = window.textEdit_4.toPlainText().strip()
 
-        print(f"📥 Input Data preview: {input_data[:100]}...")
-        print(f"🔢 Entered Number: {entered_number_text}")
+        # print(f"📥 Input Data preview: {input_data[:100]}...")
+        # print(f"🔢 Entered Number: {entered_number_text}")
         Settings.WRITE_LOG_DEV_FILE(f"Input data preview: {input_data[:200]}", "INFO")
         Settings.WRITE_LOG_DEV_FILE(f"Entered number: {entered_number_text}", "INFO")
 
         # 1️⃣ Validation
-        print("1️⃣ Validation des données...")
+        # print("1️⃣ Validation des données...")
         validation = ValidationUtils.process_user_input(input_data, entered_number_text)
         if not validation["success"]:
-            print(f"❌ Validation failed: {validation['error_message']}")
+            # print(f"❌ Validation failed: {validation['error_message']}")
             Settings.WRITE_LOG_DEV_FILE(f"Validation failed: {validation['error_message']}", "ERROR")
             return { "valid": False, "data": None, "entered_number": None, "error": f"{validation['error_title']}:{validation['error_message']}", }
 
         data_list = validation["data_list"]
         entered_number = validation["entered_number"]
-        print(f"✅ Validation OK - rows: {len(data_list)}, entered_number: {entered_number}")
+        # print(f"✅ Validation OK - rows: {len(data_list)}, entered_number: {entered_number}")
         Settings.WRITE_LOG_DEV_FILE( f"Validation OK - rows: {len(data_list)}, entered_number: {entered_number}", "INFO")
         Settings.WRITE_LOG_DEV_FILE( f"First record sample: {str(data_list[0]) if data_list else 'NO DATA'}", "INFO")
 
         # 2️⃣ Ports pipeline
-        print("2️⃣ Traitement des ports...")
+        # print("2️⃣ Traitement des ports...")
         ports_result = ValidationUtils.process_ports(data_list)
         if not ports_result["valid"]:
-            print(f"❌ Ports processing failed: {ports_result['error_message']}")
+            # print(f"❌ Ports processing failed: {ports_result['error_message']}")
             Settings.WRITE_LOG_DEV_FILE(f"Ports processing failed: {ports_result['error_message']}", "ERROR")
             Settings.WRITE_LOG_DEV_FILE(f"Ports result: {ports_result}", "ERROR")
             return { "valid": False,  "data": ports_result.get("data"),  "entered_number": entered_number,  "error": f"{ports_result['error_title']}:{ports_result['error_message']}" }
@@ -949,7 +923,7 @@ def Generate_User_Input_Data(window) -> Dict[str, Any]:
         Settings.WRITE_LOG_DEV_FILE( f"Ports processed - filtered count: {len(filtered_accounts)}", "INFO")
 
         # 3️⃣ Extract IPs
-        print("3️⃣ Extraction des IPs uniques...")
+        # print("3️⃣ Extraction des IPs uniques...")
         ip_result = extract_unique_ips(filtered_accounts)
         if not ip_result["valid"]:
             # print(f"❌ IP extraction failed: {ip_result["error"]}")
@@ -977,7 +951,7 @@ def Generate_User_Input_Data(window) -> Dict[str, Any]:
         Settings.WRITE_LOG_DEV_FILE(f"Session info: {session_info}", "INFO")
 
         # 5️⃣ API Call
-        print("5️⃣ Appel API...")
+        # print("5️⃣ Appel API...")
         api_result = call_api(unique_ips, entity_used)
         if not api_result["valid"]:
             api_error = api_result.get("error", "Unknown API error")
@@ -990,7 +964,7 @@ def Generate_User_Input_Data(window) -> Dict[str, Any]:
         Settings.WRITE_LOG_DEV_FILE( f"API call success - returned entries: {len(api_result['data']) if api_result.get('data') else 0}", "INFO" )
 
         # 6️⃣ Merge
-        print("6️⃣ Fusion des données...")
+        # print("6️⃣ Fusion des données...")
         merge_result = ValidationUtils.merge_data(api_result["data"], data_list)
         if not merge_result["valid"]:
             merge_error = merge_result["error"]
@@ -1002,9 +976,7 @@ def Generate_User_Input_Data(window) -> Dict[str, Any]:
         final_data = merge_result["data"]
         # print(f"✅ Merge success - final records: {len(final_data)}")
         Settings.WRITE_LOG_DEV_FILE(f"Merge success - final records: {len(final_data)}", "INFO")
-        Settings.WRITE_LOG_DEV_FILE(
-            f"Final data sample: {str(final_data[0]) if final_data else 'NO DATA'}", "INFO"
-        )
+        Settings.WRITE_LOG_DEV_FILE( f"Final data sample: {str(final_data[0]) if final_data else 'NO DATA'}", "INFO" )
         Settings.WRITE_LOG_DEV_FILE("========== REQUEST COMPLETED SUCCESSFULLY ==========", "INFO")
 
         return {"valid": True, "data": final_data, "entered_number": entered_number, "error": None}
@@ -1090,7 +1062,6 @@ def Start_Extraction(  window, data_list, entered_number, selected_Browser, Isp,
     EXTRACTION_THREAD.progress.connect(lambda msg: print(msg))
     EXTRACTION_THREAD.stopped.connect(lambda msg: QMessageBox.warning(window, "Arrêté", msg))
     EXTRACTION_THREAD.finished.connect(  lambda: QMessageBox.information(window, "Terminé", "L'extraction est terminée.") )
-
     EXTRACTION_THREAD.start()
 
     time.sleep(10)
@@ -1159,23 +1130,26 @@ def store_browser_session_info( pid: str, Path_DiR: str, email: str, SESSION_ID:
         target_path.write_text(f"{content}\n", encoding="utf-8")
         actual = target_path.read_text(encoding="utf-8").strip()
         print(f"📄 [{label}] Contenu actuel de {target_path}: '{actual}'")
+        settings.WRITE_LOG_DEV_FILE(f"Content of {target_path} after write: '{actual}'", "INFO")
         if actual != content.strip():
             print(f"❌ [{label}] ERREUR: Contenu attendu '{content.strip()}', mais lu '{actual}'")
+            Settings.WRITE_LOG_DEV_FILE( f"❌ [{label}] ERREUR: Contenu attendu '{content.strip()}', mais lu '{actual}'", "ERROR" )
 
     try:
         browser_key = browser.strip().lower()
         chrome_family = Settings.CHROME_FAMILY_BROWSERS
 
-        print(f"📌 [START] store_browser_session_info pour {email} sur {browser_key}")
-        print(f"🧭 [INPUT] PID={pid} | SESSION_ID={SESSION_ID} | inserted_id={inserted_id}")
-        print(f"📁 [INPUT] Path_DiR={Path_DiR}")
+        # print(f"📌 [START] store_browser_session_info pour {email} sur {browser_key}")
+        # print(f"🧭 [INPUT] PID={pid} | SESSION_ID={SESSION_ID} | inserted_id={inserted_id}")
+        # print(f"📁 [INPUT] Path_DiR={Path_DiR}")
+        settings.WRITE_LOG_DEV_FILE( f"store_browser_session_info called with PID={pid}, email={email}, SESSION_ID={SESSION_ID}, browser={browser_key}, inserted_id={inserted_id}", "INFO" )
 
         session_entry = f"{pid}:{email}:{SESSION_ID}:{inserted_id}"
         session_file = Path(Path_DiR) / email / "data.txt"
 
         if browser_key in chrome_family:
             browser_label = browser_key.upper()
-            print(f"🌐 [{browser_label}] Navigateur Chromium family détecté")
+            # print(f"🌐 [{browser_label}] Navigateur Chromium family détecté")
             Settings.WRITE_LOG_DEV_FILE(f"{browser_label} browser detected", "INFO")
 
             extension_file = Path(Settings.EXTENTION_EX3) / "data.txt"
@@ -1185,28 +1159,32 @@ def store_browser_session_info( pid: str, Path_DiR: str, email: str, SESSION_ID:
                 else None
             )
             if existing_content is not None:
-                print(f"📄 [{browser_label}] Contenu AVANT écriture: '{existing_content}'")
+                # print(f"📄 [{browser_label}] Contenu AVANT écriture: '{existing_content}'")
+                Settings.WRITE_LOG_DEV_FILE(f"Content of {extension_file} before write: '{existing_content}'", "INFO")
             else:
-                print(f"📄 [{browser_label}] Fichier non existant encore: {extension_file}")
+                # print(f"📄 [{browser_label}] Fichier non existant encore: {extension_file}")
+                settings.WRITE_LOG_DEV_FILE(f"{extension_file} does not exist yet", "INFO")
 
-            print(f"✍️ [{browser_label}] Écriture SESSION_ID={SESSION_ID} dans {extension_file}")
+            # print(f"✍️ [{browser_label}] Écriture SESSION_ID={SESSION_ID} dans {extension_file}")
+            settings.WRITE_LOG_DEV_FILE(f"Writing SESSION_ID={SESSION_ID} to {extension_file}", "INFO")
             _write_and_verify(extension_file, SESSION_ID, browser_label)
 
-            print(f"✍️ [{browser_label}] Écriture session dans {session_file}")
+            # print(f"✍️ [{browser_label}] Écriture session dans {session_file}")
+            settings.WRITE_LOG_DEV_FILE(f"Writing session to {session_file}", "INFO")
             _write_and_verify(session_file, session_entry, browser_label)
         else:
-            print(f"🗂️ [OTHER] Navigateur non-Chrome détecté: {browser_key}")
-            print(f"✍️ [OTHER] Écriture session dans {session_file}")
+            # print(f"🗂️ [OTHER] Navigateur non-Chrome détecté: {browser_key}")
+            settings.WRITE_LOG_DEV_FILE(f"Other browser detected: {browser_key}", "INFO")
+            # print(f"✍️ [OTHER] Écriture session dans {session_file}")
+            settings.WRITE_LOG_DEV_FILE(f"Writing session to {session_file}", "INFO")
             _write_and_verify(session_file, session_entry, "OTHER")
 
         print("🎉 [SUCCESS] Données session enregistrées avec succès\n")
         Settings.WRITE_LOG_DEV_FILE("Session data stored successfully", "INFO")
 
     except Exception as e:
-        Settings.WRITE_LOG_DEV_FILE(
-            f"Error in store_browser_session_info: {e}\n{traceback.format_exc()}", "ERROR"
-        )
-        print(f"❌ [ERROR] {type(e).__name__} : {e}")
+        Settings.WRITE_LOG_DEV_FILE( f"Error in store_browser_session_info: {e}\n{traceback.format_exc()}", "ERROR" )
+        # print(f"❌ [ERROR] {type(e).__name__} : {e}")
 
 
 # =====================================================
@@ -1256,11 +1234,11 @@ class ExtractionThread(QThread):
 
             # 🔹 Vérification si RESULTATS_EX est None
             if Settings.RESULTATS_EX is None:
-                error_msg = "An issue occurred while copying the JSON file to the template profile ➡ Please contact support."
-                UIManager.Show_Critical_Message(self.window, error_msg, message_type="critical")
-                self.stopped.emit(error_msg)
+                err_desc = "An issue occurred while copying the JSON file to the template profile ➡ Please contact support."
+                UIManager.Show_Critical_Message(self.window, err_desc, message_type="critical")
+                self.stopped.emit(err_desc)
                 self.stop_flag = True
-                Settings.WRITE_LOG_DEV_FILE(error_msg, "ERROR")
+                Settings.WRITE_LOG_DEV_FILE(err_desc, "ERROR")
                 return  # arrête complètement la méthode run
 
         # 🔹 Vérification si RESULTATS_EX est vide
@@ -1394,6 +1372,7 @@ class ExtractionThread(QThread):
                             browser_paths = Settings.CHROMIUM_BROWSER_PATHS["icedragon"]
                         else:
                             browser_paths = Settings.CHROMIUM_BROWSER_PATHS["comodo"]
+                            # le programme is runing dans une une interface logique et capable de ren
 
                         profile_dir = browser_paths["profiles"]
                         extension_dir = browser_paths["extensions"]
