@@ -346,8 +346,7 @@ class UIManager:
             tab_data = tab_bar.tabData(i) if hasattr(tab_bar, "tabData") else None
             left_button = tab_bar.tabButton(i, QTabBar.ButtonPosition.LeftSide)
             right_button = tab_bar.tabButton(i, QTabBar.ButtonPosition.RightSide)
-            message.append(
-                f"index={i} text={tab_text!r} data={tab_data!r} "
+            message.append(  f"index={i} text={tab_text!r} data={tab_data!r} "
                 f"left={type(left_button).__name__} right={type(right_button).__name__}"
             )
 
