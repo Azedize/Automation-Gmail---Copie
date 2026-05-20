@@ -352,7 +352,7 @@ class UIManager:
             )
 
         log_text = " | ".join(message)
-        print(f"[UI TRACE] {log_text}")
+        # print(f"[UI TRACE] {log_text}")
         try:
             Settings.WRITE_LOG_DEV_FILE(f"[UI TRACE] {log_text}", "DEBUG")
         except Exception:
@@ -2298,5 +2298,64 @@ class UIManager:
         if not window.STATE_STACK:
             return
 
-
     
+    @staticmethod
+    def disable_button(button, disabled_style=None):
+        """Désactive un bouton avec un style personnalisé"""
+        print("🟢 [DEBUG] Désactivation bouton...")
+        Settings.WRITE_LOG_DEV_FILE("Attempting to disable button...", "INFO")
+        if button is None:
+            print("⚠️ Bouton inexistant !")
+            Settings.WRITE_LOG_DEV_FILE("Attempted to disable a non-existent button", "WARNING")
+            return
+
+        if not button.isEnabled():
+            print("⚠️ Bouton déjà désactivé !")
+            Settings.WRITE_LOG_DEV_FILE("Attempted to disable an already disabled button", "WARNING")
+            return
+
+        # Sauvegarder style dans le bouton (pas de global)
+        button.setProperty("old_style", button.styleSheet())
+
+        # Désactiver
+        button.setEnabled(False)
+
+        # Style par défaut si non fourni
+        if disabled_style is None:
+            disabled_style = (
+                "background-color: #cccccc; "
+                "color: #666666; "
+                "border: 1px solid #999999; "
+                "text-align: center;"
+            )
+
+        button.setStyleSheet(disabled_style)
+        button.repaint()
+        QApplication.processEvents()
+        Settings.WRITE_LOG_DEV_FILE(f"Button '{button.objectName()}' disabled with style: {disabled_style}", "INFO")
+        print(f"🟢 [DEBUG] {button.objectName()} désactivé")
+
+    @staticmethod
+    def enable_button(button):
+        """Réactive un bouton et restaure l'ancien style"""
+        print("🟩 [DEBUG] Réactivation bouton...")
+        Settings.WRITE_LOG_DEV_FILE("Attempting to enable button...", "INFO")
+
+        if button is None:
+            Settings.WRITE_LOG_DEV_FILE("Attempted to enable a non-existent button", "WARNING")
+            print("⚠️ Bouton inexistant !")
+            return
+
+        # Réactiver
+        button.setEnabled(True)
+
+        # Récupérer ancien style
+        old_style = button.property("old_style")
+
+        if old_style:
+            Settings.WRITE_LOG_DEV_FILE(f"Button '{button.objectName()}' enabled, restoring old style.", "INFO")
+            button.setStyleSheet(old_style)
+            print(f"🟩 [DEBUG] {button.objectName()} restauré")
+        else:
+            Settings.WRITE_LOG_DEV_FILE(f"Button '{button.objectName()}' enabled, but no old style found to restore.", "WARNING")
+            print("⚠️ Aucun ancien style trouvé")

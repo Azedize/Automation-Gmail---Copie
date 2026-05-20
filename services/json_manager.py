@@ -375,7 +375,7 @@ class JsonManager:
             elif browser_lower == "chrome":
                 path = Settings.EXTENTION_EX3
             else:
-                path = Settings.TEMPLATE_DIRECTORY_FAMILY_CHROME
+                path = Settings.TEMPLATE_DIRECTORY_CHROMIUM
 
             # check if path exists, if not create it
             os.makedirs(path, exist_ok=True)

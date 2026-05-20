@@ -82,41 +82,49 @@ class Settings:
     PROFILES_DIR = TOOLS_DIR / "Profiles"
     CHROME_PROFILES = PROFILES_DIR / "chrome"
     FIREFOX_PROFILES = PROFILES_DIR / "firefox"
-    CHROME_FAMILY_BASE = TOOLS_DIR / "ChromeFamily"
-    FAMILY_CHROME_DIR_PROFILES = CHROME_FAMILY_BASE / "profiles"
-    FAMILY_CHROME_DIR_PROFILES_EDGE = FAMILY_CHROME_DIR_PROFILES / "edge"
-    FAMILY_CHROME_DIR_PROFILES_ICEDRAGON = FAMILY_CHROME_DIR_PROFILES / "icedragon"
-    FAMILY_CHROME_DIR_PROFILES_COMODO = FAMILY_CHROME_DIR_PROFILES / "comodo"
+    EDGE_PROFILES = PROFILES_DIR / "edge"
+    ICEDRAGON_PROFILES = PROFILES_DIR / "icedragon"
+    COMODO_PROFILES = PROFILES_DIR / "comodo"
+
+  
 
     VERSION_LOCAL_EXT = os.path.join(EXTENSIONS_DIR_TEMPLETE, "version.txt")
     VERSION_LOCAL_PROGRAMM = os.path.join(BASE_DIR, "config", "version.txt")
 
     EXTENTIONS_DIR_FIREFOX_TEMPLETE = EXTENSIONS_DIR_TEMPLETE / "ExtensionTemplateFirefox"
-    EXTENSIONS_DIR_FAMILY_CHROME_TEMPLETE = EXTENSIONS_DIR_TEMPLETE / "Extention_Family_Chrome"
+    EXTENSIONS_DIR_CHROMIUM_TEMPLETE = EXTENSIONS_DIR_TEMPLETE / "Extention_Family_Chrome"
 
     FOLDER_EXTENSIONS_DIR = TOOLS_DIR / "extensions"
-    FOLDER_EXTENTIONS_FIREFOX = os.path.join(FOLDER_EXTENSIONS_DIR, "ExtensionTemplateFirefox")
-    FOLDER_EXTENTIONS_FAMILY_CHROME = CHROME_FAMILY_BASE / "extensions"
-    FOLDER_EXTENTIONS_FAMILY_CHROME_EDGE = FOLDER_EXTENTIONS_FAMILY_CHROME / "edge"
-    FOLDER_EXTENTIONS_FAMILY_CHROME_ICEDRAGON = FOLDER_EXTENTIONS_FAMILY_CHROME / "icedragon"
-    FOLDER_EXTENTIONS_FAMILY_CHROME_COMODO = FOLDER_EXTENTIONS_FAMILY_CHROME / "comodo"
+    FOLDER_EXTENTIONS_FIREFOX = FOLDER_EXTENSIONS_DIR / "firefox"
+    FOLDER_EXTENTIONS_CHROME = FOLDER_EXTENSIONS_DIR / "chrome"
+    FOLDER_EXTENTIONS_EDGE = FOLDER_EXTENSIONS_DIR / "edge"
+    FOLDER_EXTENTIONS_ICEDRAGON = FOLDER_EXTENSIONS_DIR / "icedragon"
+    FOLDER_EXTENTIONS_COMODO = FOLDER_EXTENSIONS_DIR / "comodo"
 
     CHROMIUM_BROWSER_PATHS = {
         "edge": {
-            "profiles": FAMILY_CHROME_DIR_PROFILES_EDGE,
-            "extensions": FOLDER_EXTENTIONS_FAMILY_CHROME_EDGE,
+            "profiles": EDGE_PROFILES,
+            "extensions": FOLDER_EXTENTIONS_EDGE,
         },
         "icedragon": {
-            "profiles": FAMILY_CHROME_DIR_PROFILES_ICEDRAGON,
-            "extensions": FOLDER_EXTENTIONS_FAMILY_CHROME_ICEDRAGON,
+            "profiles": ICEDRAGON_PROFILES,
+            "extensions": FOLDER_EXTENTIONS_ICEDRAGON,
         },
         "comodo": {
-            "profiles": FAMILY_CHROME_DIR_PROFILES_COMODO,
-            "extensions": FOLDER_EXTENTIONS_FAMILY_CHROME_COMODO,
+            "profiles": COMODO_PROFILES,
+            "extensions": FOLDER_EXTENTIONS_COMODO,
         },
     }
 
     CHROME_FAMILY_BROWSERS = {"chrome", "edge", "icedragon", "comodo"}
+
+    BROWSER_PROFILE_PATHS = {
+        "chrome": CHROME_PROFILES,
+        "firefox": FIREFOX_PROFILES,
+        "edge": EDGE_PROFILES,
+        "icedragon": ICEDRAGON_PROFILES,
+        "comodo": COMODO_PROFILES,
+    }
 
     ICONS_DIR = BASE_DIR / "resources" / "icons"
     FILE_ISP = os.path.join(BASE_DIR, "config", "Isp.txt")
@@ -137,7 +145,7 @@ class Settings:
     TEMPLATE_DIRECTORY_FIREFOX = os.path.join(
         TOOLS_DIR, "extensions Templete", "ExtensionTemplateFirefox"
     )
-    TEMPLATE_DIRECTORY_FAMILY_CHROME = os.path.join(
+    TEMPLATE_DIRECTORY_CHROMIUM = os.path.join(
         TOOLS_DIR, "extensions Templete", "Extention_Family_Chrome"
     )
 
@@ -247,7 +255,7 @@ class Settings:
 
         except Exception as e:
 
-            # print(f"❌ [LOG] Erreur lors de l'écriture du log: {e}")
+            print(f"❌ [LOG] Erreur lors de l'écriture du log: {e}")
             pass
 
     @classmethod
@@ -262,10 +270,7 @@ class Settings:
             #     print(f"⚠️ [LOG] Fichier log inexistant: {cls.LOG_DEV_FILE}")
 
         except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE(
-                f"Exception while clearing log: {traceback.format_exc()}", "ERROR"
-            )
-
+            Settings.WRITE_LOG_DEV_FILE(   f"Exception while clearing log: {traceback.format_exc()}", "ERROR"  )
             # print(f"❌ [LOG] Erreur lors de la suppression du fichier log: {e}")
             pass
 
@@ -273,25 +278,20 @@ class Settings:
     def ensure_directories(cls):
         """Créer les dossiers nécessaires s’ils n’existent pas"""
         directories = [
-            cls.CHROME_FAMILY_BASE,
             cls.DATA_DIR,
             cls.PROFILES_DIR,
             cls.LOGS_DIRECTORY,
             cls.CHROME_PROFILES,
             cls.FIREFOX_PROFILES,
-            cls.FAMILY_CHROME_DIR_PROFILES,
-            cls.FAMILY_CHROME_DIR_PROFILES_EDGE,
-            cls.FAMILY_CHROME_DIR_PROFILES_ICEDRAGON,
-            cls.FAMILY_CHROME_DIR_PROFILES_COMODO,
-            cls.EXTENSIONS_DIR_TEMPLETE,
-            cls.EXTENTIONS_DIR_FIREFOX_TEMPLETE,
-            cls.EXTENSIONS_DIR_FAMILY_CHROME_TEMPLETE,
+            cls.EDGE_PROFILES,
+            cls.ICEDRAGON_PROFILES,
+            cls.COMODO_PROFILES,
             cls.FOLDER_EXTENSIONS_DIR,
             cls.FOLDER_EXTENTIONS_FIREFOX,
-            cls.FOLDER_EXTENTIONS_FAMILY_CHROME,
-            cls.FOLDER_EXTENTIONS_FAMILY_CHROME_EDGE,
-            cls.FOLDER_EXTENTIONS_FAMILY_CHROME_ICEDRAGON,
-            cls.FOLDER_EXTENTIONS_FAMILY_CHROME_COMODO,
+            cls.FOLDER_EXTENTIONS_CHROME,
+            cls.FOLDER_EXTENTIONS_EDGE,
+            cls.FOLDER_EXTENTIONS_ICEDRAGON,
+            cls.FOLDER_EXTENTIONS_COMODO,
         ]
 
         for directory in directories:
@@ -301,10 +301,7 @@ class Settings:
                     path.mkdir(parents=True, exist_ok=True)
                     # print(f"✅ Dossier créé: {path}")
                 except Exception as e:
-                    Settings.WRITE_LOG_DEV_FILE(
-                        f"Exception while creating directory {path}: {traceback.format_exc()}",
-                        "ERROR",
-                    )
+                    Settings.WRITE_LOG_DEV_FILE(  f"Exception while creating directory {path}: {traceback.format_exc()}",   "ERROR" )
                     print(f"💥 Erreur lors de la création du dossier {path}: {e}")
 
             # else:

@@ -186,7 +186,7 @@ def Stop_All_Processes(window):
     # start_time = time.time()
     # print( f"🕒 [STOP] Début Stop_All_Processes à {time.strftime('%H:%M:%S', time.localtime(start_time))}")
 
-    disable_button(window.stopButton)
+    UIManager.disable_button(window.stopButton)
 
     global EXTRACTION_THREAD, CLOSE_BROWSER_THREAD, PROCESS_PIDS, LOGS_RUNNING, SELECTED_BROWSER_GLOBAL
 
@@ -213,7 +213,7 @@ def Stop_All_Processes(window):
         # Affichage alerte professionnelle : uniquement sur les processus
         UIManager.Show_Critical_Message( window, "No Processes Running", "No processes are currently running.", message_type="warning",)
         # Réactivation du bouton Submit pour éviter blocage UI
-        enable_button(window.stopButton)
+        UIManager.enable_button(window.stopButton)
         return  # Sortir de la fonction
 
     browser_name = SELECTED_BROWSER_GLOBAL.lower()
@@ -254,8 +254,8 @@ def Stop_All_Processes(window):
     # end_time = time.time()
     # duration = end_time - start_time
     # print( f"🕒 [STOP] Fin Stop_All_Processes à {time.strftime('%H:%M:%S', time.localtime(end_time))} - Durée: {duration:.2f}s")
-    enable_button(window.submitButton)
-    enable_button(window.stopButton)
+    UIManager.enable_button(window.submitButton)
+    UIManager.enable_button(window.stopButton)
 
 
 class CloseBrowserThread(QThread):
@@ -406,6 +406,7 @@ class CloseBrowserThread(QThread):
         # print(f"📄 [LOG] Traitement: {log_file}")
         if self.stop_flag:
             # print("🛑 [LOG] Arrêt demandé")
+            settings.WRITE_LOG_DEV_FILE("🛑 [LOG] Stop requested", "INFO")
             return
 
         try:
@@ -415,14 +416,16 @@ class CloseBrowserThread(QThread):
 
             if not email:
                 # print("❌ [LOG] Aucun email trouvé")
+                settings.WRITE_LOG_DEV_FILE("No email found in log file", "ERROR")
                 return
 
             with self.lock:
                 if email in self.completed_emails:
                     # print(f"✅ [LOG] Email {email} déjà traité")
+                    settings.WRITE_LOG_DEV_FILE(f"Email {email} already processed", "INFO")
                     return
 
-            email_folder = os.path.join(self.SESSION_DIR, email)
+            email_folder = os.path.join(self.SESSION_DIR, self.selected_Browser, email)
             os.makedirs(email_folder, exist_ok=True)
 
             target_log = os.path.join(email_folder, f"{email}_{self.CURRENT_DATETIME}.txt")
@@ -445,6 +448,7 @@ class CloseBrowserThread(QThread):
         # print(f"\n📄 [SESSION] Traitement: {file_name}")
         if self.stop_flag:
             # print("🛑 [SESSION] Arrêt demandé")
+            settings.WRITE_LOG_DEV_FILE("🛑 [SESSION] Stop requested", "INFO")
             return
 
         profile_data_file = None
@@ -452,6 +456,7 @@ class CloseBrowserThread(QThread):
 
         if not os.path.exists(session_path):
             # print(f"❌ [SESSION] Fichier introuvable: {session_path}")
+            settings.WRITE_LOG_DEV_FILE(f"Session file not found: {session_path}", "ERROR")
             return
 
         try:
@@ -473,10 +478,7 @@ class CloseBrowserThread(QThread):
                 settings.WRITE_LOG_DEV_FILE("❌ [SESSION] Parsing failed", "ERROR")
                 return
 
-            if (
-                self.selected_Browser.lower() == "chrome"
-                or self.selected_Browser.lower() in Settings.CHROME_FAMILY_BROWSERS
-            ):
+            if (  self.selected_Browser.lower() == "chrome" or self.selected_Browser.lower() in Settings.CHROME_FAMILY_BROWSERS  ):
                 session_id, email, status = match.groups()
                 pid = None
                 inserted_id = None
@@ -499,9 +501,7 @@ class CloseBrowserThread(QThread):
                         pid, email_chk, session_id_chk, inserted_id = profile_line.split(":")[:4]
                     except ValueError:
                         # add log error
-                        Settings.WRITE_LOG_DEV_FILE(
-                            f"🚨 Erreur proc ({pid}): {traceback.format_exc()}", "ERROR"
-                        )
+                        Settings.WRITE_LOG_DEV_FILE( f"🚨 Erreur proc ({pid}): {traceback.format_exc()}", "ERROR" )
                         Settings.WRITE_LOG_DEV_FILE("Profil introuvable.", "ERROR")
                         pass
 
@@ -537,7 +537,7 @@ class CloseBrowserThread(QThread):
             # ❌ ERROR FLOW
             # print(f"❌ ERROR FLOW | {email}")
             settings.WRITE_LOG_DEV_FILE(f"❌ ERROR FLOW | {email}", "DEBUG")
-            email_folder = os.path.join(self.SESSION_DIR, email)
+            email_folder = os.path.join(self.SESSION_DIR, self.selected_Browser, email)
             os.makedirs(email_folder, exist_ok=True)
 
             self._move_screenshot(email, screenshots, email_folder)
@@ -605,10 +605,7 @@ class CloseBrowserThread(QThread):
         try:
             for img in screenshots:
                 if email.lower() in img.lower():
-                    shutil.move(
-                        os.path.join(self.downloads_folder, img),
-                        os.path.join(email_folder, f"{email}.png"),
-                    )
+                    shutil.move( os.path.join(self.downloads_folder, img),   os.path.join(email_folder, f"{email}.png")  )
                     break
         except Exception as e:
             Settings.WRITE_LOG_DEV_FILE(  f"⚠️ [SCREENSHOT] Erreur: {e}\n{ traceback.format_exc()}", "ERROR" )
@@ -618,7 +615,6 @@ class CloseBrowserThread(QThread):
     def _close_browser_process(self, pid, email, browser):
         """Fermer le processus du navigateur"""
         # print(f"\n🔒 [CLOSE] Fermeture {browser} PID={pid} pour {email}")
-
         try:
             pid = int(pid)
             if not psutil.pid_exists(pid):
@@ -1229,7 +1225,7 @@ class ExtractionThread(QThread):
             Settings.WRITE_LOG_DEV_FILE("Invalid session. Please reconnect.", "ERROR")
             return
 
-        if self.selected_Browser.lower() == "chrome":
+        if self.selected_Browser.lower() == "chrome" or self.selected_Browser.lower() in Settings.CHROME_FAMILY_BROWSERS:
             Settings.RESULTATS_EX = BrowserManager.Upload_EXTENSION_PROXY( "default", Settings.CLES_RECHERCHE, Settings.RESULTATS )
 
             # 🔹 Vérification si RESULTATS_EX est None
@@ -1372,8 +1368,9 @@ class ExtractionThread(QThread):
                             browser_paths = Settings.CHROMIUM_BROWSER_PATHS["icedragon"]
                         else:
                             browser_paths = Settings.CHROMIUM_BROWSER_PATHS["comodo"]
-                            
+
                         profile_dir = browser_paths["profiles"]
+                        ValidationUtils.ensure_path_exists(profile_dir, is_file=False)
                         extension_dir = browser_paths["extensions"]
 
                         command = [
@@ -1487,10 +1484,15 @@ class ExtractionThread(QThread):
         REMAINING_EMAILS = 0
         log_message("[INFO] Processing finished for all emails.")
         Settings.WRITE_LOG_DEV_FILE("Processing finished for all emails.", "INFO")
-        enable_button(self.window.submitButton)
+        UIManager.enable_button(self.window.submitButton)
         time.sleep(3)
         LOGS_RUNNING = False
         self.finished.emit()
+
+
+
+
+
 
 
 def Process_Browser(window, selected_Browser) -> bool:
@@ -1625,63 +1627,7 @@ def Process_Browser(window, selected_Browser) -> bool:
     return True
 
 
-def disable_button(button: QPushButton, disabled_style: str = None) -> None:
-    print("🟢 [DEBUG] Désactivation bouton...")
-    Settings.WRITE_LOG_DEV_FILE("Attempting to disable button...", "INFO")
-    if button is None:
-        print("⚠️ Bouton inexistant !")
-        Settings.WRITE_LOG_DEV_FILE("Attempted to disable a non-existent button", "WARNING")
-        return
 
-    if not button.isEnabled():
-        print("⚠️ Bouton déjà désactivé !")
-        Settings.WRITE_LOG_DEV_FILE("Attempted to disable an already disabled button", "WARNING")
-        return
-
-    # Sauvegarder style dans le bouton (pas de global)
-    button.setProperty("old_style", button.styleSheet())
-
-    # Désactiver
-    button.setEnabled(False)
-
-    # Style par défaut si non fourni
-    if disabled_style is None:
-        disabled_style = (
-            "background-color: #cccccc; "
-            "color: #666666; "
-            "border: 1px solid #999999; "
-            "text-align: center;"
-        )
-
-    button.setStyleSheet(disabled_style)
-    button.repaint()
-    QApplication.processEvents()
-    Settings.WRITE_LOG_DEV_FILE( f"Button '{button.objectName()}' disabled with style: {disabled_style}", "INFO" )
-    print(f"🟢 [DEBUG] {button.objectName()} désactivé")
-
-
-def enable_button(button: QPushButton) -> None:
-    print("🟩 [DEBUG] Réactivation bouton...")
-    Settings.WRITE_LOG_DEV_FILE("Attempting to enable button...", "INFO")
-
-    if button is None:
-        Settings.WRITE_LOG_DEV_FILE("Attempted to enable a non-existent button", "WARNING")
-        print("⚠️ Bouton inexistant !")
-        return
-
-    # Réactiver
-    button.setEnabled(True)
-
-    # Récupérer ancien style
-    old_style = button.property("old_style")
-
-    if old_style:
-        Settings.WRITE_LOG_DEV_FILE( f"Button '{button.objectName()}' enabled, restoring old style.", "INFO" )
-        button.setStyleSheet(old_style)
-        print(f"🟩 [DEBUG] {button.objectName()} restauré")
-    else:
-        Settings.WRITE_LOG_DEV_FILE(  f"Button '{button.objectName()}' enabled, but no old style found to restore.", "WARNING")
-        print("⚠️ Aucun ancien style trouvé")
 
 
 class MainWindow(QMainWindow):
@@ -2112,7 +2058,7 @@ class MainWindow(QMainWindow):
     def Submit_Button_Clicked(self, window):
         global LOGS_RUNNING, NOTIFICATION_BADGES
 
-        disable_button(self.submitButton)
+        UIManager.disable_button(self.submitButton)
 
         # Vérification de session
         session_info = SessionManager.check_session()
@@ -2135,7 +2081,7 @@ class MainWindow(QMainWindow):
             except Exception as e:
                 print(f"[ERREUR NETTOYAGE SESSION] ❌ {e}")
                 Settings.WRITE_LOG_DEV_FILE(  f"An error occurred while cleaning the session: {str(e)}\n{traceback.format_exc()}", "ERROR")
-            enable_button(self.submitButton)
+            UIManager.enable_button(self.submitButton)
             return
 
         auth_result = SessionManager.check_api_credentials( session_info.get("username"), session_info.get("password"))
@@ -2155,7 +2101,7 @@ class MainWindow(QMainWindow):
             #     f"Authentication failed (code {auth_result}): {msg}",
             #     "ERROR"
             # )
-            enable_button(self.submitButton)
+            UIManager.enable_button(self.submitButton)
             return
         else:
             Settings.WRITE_LOG_DEV_FILE("Authentication successful", "INFO")
@@ -2178,7 +2124,7 @@ class MainWindow(QMainWindow):
                 message_type="critical",
             )
 
-            enable_button(self.submitButton)
+            UIManager.enable_button(self.submitButton)
             return
 
         try:
@@ -2215,7 +2161,7 @@ class MainWindow(QMainWindow):
         except Exception as e:
             # print(f"❌ [BADGES ERROR] Erreur pendant la suppression des badges: {type(e).__name__} : {e}")
             Settings.WRITE_LOG_DEV_FILE(  f"An error occurred while removing badges: {str(e)}\n{traceback.format_exc()}", "ERROR" )
-            enable_button(self.submitButton)
+            UIManager.enable_button(self.submitButton)
             return
 
         # 🔹 Vérification complète des mises à jour du programme
@@ -2227,14 +2173,14 @@ class MainWindow(QMainWindow):
             if not update_ok:
                 # S'il y a une erreur ou si la mise à jour a échoué → arrêter le traitement immédiatement
                 print("❌ Update failed or application not up-to-date, exiting process.")
-                enable_button(self.submitButton)
+                UIManager.enable_button(self.submitButton)
                 Settings.WRITE_LOG_DEV_FILE( "Update failed or application not up-to-date, exiting process.", "ERROR"  )
 
                 return
 
         except SystemExit:
             Settings.WRITE_LOG_DEV_FILE("Application update triggered, exiting for update.", "INFO")
-            enable_button(self.submitButton)
+            UIManager.enable_button(self.submitButton)
             # Si la fonction check_and_update a fait sys.exit (update programme)
             return
 
@@ -2242,7 +2188,7 @@ class MainWindow(QMainWindow):
             # Tous les autres erreurs critiques
             print(f"[UPDATE ERROR] {e}")
             Settings.WRITE_LOG_DEV_FILE(  f"An error occurred while checking for updates: {str(e)}\n{traceback.format_exc()}",  "ERROR" )
-            enable_button(self.submitButton)
+            UIManager.enable_button(self.submitButton)
             return
 
         selected_Browser = self.browser.currentText()
@@ -2253,7 +2199,7 @@ class MainWindow(QMainWindow):
             if not Process_Browser(window, selected_Browser):
                 # print("❌ Navigateur non traité :", selected_Browser)
                 Settings.WRITE_LOG_DEV_FILE(f"Browser not processed: {selected_Browser}", "WARNING")
-                enable_button(self.submitButton)
+                UIManager.enable_button(self.submitButton)
 
                 return
         QApplication.processEvents()  # Traite les événements UI après vérification du navigateur
@@ -2282,7 +2228,7 @@ class MainWindow(QMainWindow):
                 f"Unable to find the path for the selected browser: {selected_Browser}.\n\nPlease ensure the browser is installed and try again.",
                 message_type="critical",
             )
-            enable_button(self.submitButton)
+            UIManager.enable_button(self.submitButton)
             return
 
         if self.INTERFACE:
@@ -2299,7 +2245,7 @@ class MainWindow(QMainWindow):
                 "No actions have been added. Please add actions before submitting.",
                 message_type="warning",
             )
-            enable_button(self.submitButton)
+            UIManager.enable_button(self.submitButton)
 
             Settings.WRITE_LOG_DEV_FILE( "No actions have been added. Please add actions before submitting.", "WARNING")
             return
@@ -2312,7 +2258,7 @@ class MainWindow(QMainWindow):
             # =======================
             if not isinstance(result, dict):
                 Settings.WRITE_LOG_DEV_FILE(  "Invalid result format returned from Generate_User_Input_Data", "ERROR" )
-                enable_button(self.submitButton)
+                UIManager.enable_button(self.submitButton)
                 return
 
             if not result.get("valid"):
@@ -2346,7 +2292,7 @@ class MainWindow(QMainWindow):
                     message_type="warning",
                 )
 
-                enable_button(self.submitButton)
+                UIManager.enable_button(self.submitButton)
                 return
             # =======================
             # 🟢 Extract data safely
@@ -2357,7 +2303,7 @@ class MainWindow(QMainWindow):
             # Protection supplémentaire
             if not isinstance(data_list, list):
                 Settings.WRITE_LOG_DEV_FILE("Data list is not a list", "ERROR")
-                enable_button(self.submitButton)
+                UIManager.enable_button(self.submitButton)
                 return
 
             # =======================
@@ -2381,7 +2327,7 @@ class MainWindow(QMainWindow):
                 message_type="critical",
             )
 
-            enable_button(self.submitButton)
+            UIManager.enable_button(self.submitButton)
             return
 
         # current_time = datetime.datetime.now()
@@ -2408,7 +2354,7 @@ class MainWindow(QMainWindow):
                 message_type="critical",
             )
             Settings.WRITE_LOG_DEV_FILE( "No valid actions could be generated or an error occurred while saving the configuration file.",  "ERROR" )
-            enable_button(self.submitButton)
+            UIManager.enable_button(self.submitButton)
 
             return
 
@@ -2424,7 +2370,7 @@ class MainWindow(QMainWindow):
                     message_type="critical",
                 )
                 Settings.WRITE_LOG_DEV_FILE(  "An error occurred while saving the configuration file.", "ERROR"  )
-                enable_button(self.submitButton)
+                UIManager.enable_button(self.submitButton)
                 return
             # else:
             #     print("✅ JSON file saved with status:", save_status)
@@ -2438,7 +2384,7 @@ class MainWindow(QMainWindow):
                 message_type="critical",
             )
             Settings.WRITE_LOG_DEV_FILE( f"An error occurred while saving the configuration file: {e} \n{traceback.format_exc()}", "ERROR")
-            enable_button(self.submitButton)
+            UIManager.enable_button(self.submitButton)
             return
         QApplication.processEvents()  # Traite les événements UI après sauvegarde du JSON
 
@@ -2446,7 +2392,7 @@ class MainWindow(QMainWindow):
             with open(Settings.FILE_ISP, "w", encoding="utf-8") as f:
                 f.write(self.Isp.currentText().strip())
         except Exception as e:
-            enable_button(self.submitButton)
+            UIManager.enable_button(self.submitButton)
 
             # print("❌ Error writing to Isp.txt:", e)
             # print(f"❌ Erreur lors de l'écriture dans Isp.txt : {e}")
@@ -2478,7 +2424,7 @@ class MainWindow(QMainWindow):
                 message_type="critical",
             )
             Settings.WRITE_LOG_DEV_FILE("Failed to save the process in the database.", "ERROR")
-            enable_button(self.submitButton)
+            UIManager.enable_button(self.submitButton)
 
             return
         # print("✅ Obtained Process ID:", unique_id)
@@ -3011,7 +2957,7 @@ class LoginWindow(QMainWindow):
 
     def Handle_Login(self):
         # print("🔹 Starting Handle_Login")
-        disable_button(self.login_button)
+        UIManager.disable_button(self.login_button)
         # 1️⃣ Get input from UI
         username = ( self.login_input.text().strip()  if hasattr(self.login_input, "text")  else str(self.login_input).strip())
         password = ( self.password_input.text().strip()  if hasattr(self.password_input, "text")  else str(self.password_input).strip() )
@@ -3041,7 +2987,7 @@ class LoginWindow(QMainWindow):
         # 4️⃣ Handle API error codes
         # 4️⃣ Handle API error codes
         if isinstance(auth_result, int):
-            enable_button(self.login_button)
+            UIManager.enable_button(self.login_button)
 
             messages = {
                 -1: "Invalid credentials. Please try again.",
@@ -3074,7 +3020,7 @@ class LoginWindow(QMainWindow):
 
             if selected_entity is None:
                 # User canceled, abort login
-                enable_button(self.login_button)
+                UIManager.enable_button(self.login_button)
                 print(f"Entity selection canceled. Login aborted.")
                 self.erreur_label.setText(  "Entity selection is required for this user. Login aborted."  )
                 self.erreur_label.show()
@@ -3097,7 +3043,7 @@ class LoginWindow(QMainWindow):
                 return
             # print("✅ Session created successfully")
         except Exception as e:
-            enable_button(self.login_button)
+            UIManager.enable_button(self.login_button)
             # print(f"❌ {msg}")
             Settings.WRITE_LOG_DEV_FILE( f"Exception during session creation: {str(e)}\n{traceback.format_exc()}", "ERROR"  )
             self.erreur_label.setText( f"Exception during session creation: {str(e)}\n{traceback.format_exc()}" )
@@ -3114,7 +3060,7 @@ class LoginWindow(QMainWindow):
                 raise ValueError("Configuration file is empty.")
             # print("✅ JSON file loaded successfully")
         except Exception as e:
-            enable_button(self.login_button)
+            UIManager.enable_button(self.login_button)
             Settings.WRITE_LOG_DEV_FILE(f"Configuration error: {str(e)}\n{traceback.format_exc()}", "ERROR" )
             # print(f"❌ {msg}")
             self.erreur_label.setText(f"Configuration error: {str(e)}\n{traceback.format_exc()}")
@@ -3123,7 +3069,7 @@ class LoginWindow(QMainWindow):
 
         # 8️⃣ Initialize and show MainWindow
         # print("🖥️ Initializing main window...")
-        enable_button(self.login_button)  # Re-enable login button before opening main window
+        UIManager.enable_button(self.login_button)  # Re-enable login button before opening main window
         self.main_window = MainWindow(json_data)
         self.main_window.setFixedSize(Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT)
         self.main_window.setWindowTitle("AutoMailPro")
@@ -3299,3 +3245,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
