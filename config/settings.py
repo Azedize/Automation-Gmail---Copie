@@ -266,9 +266,9 @@ class Settings:
                 # Ouvre le fichier en mode "write" pour effacer tout son contenu
                 open(log_path, "w", encoding="utf-8").close()
                 # print(f"✅ [LOG] Fichier log vidé: {cls.LOG_DEV_FILE}")
-            # else:
-            #     print(f"⚠️ [LOG] Fichier log inexistant: {cls.LOG_DEV_FILE}")
-
+            else:
+                #print(f"⚠️ [LOG] Fichier log inexistant: {cls.LOG_DEV_FILE}")
+                settings.WRITE_LOG_DEV_FILE("Fichier log inexistant", "WARNING")
         except Exception as e:
             Settings.WRITE_LOG_DEV_FILE(   f"Exception while clearing log: {traceback.format_exc()}", "ERROR"  )
             # print(f"❌ [LOG] Erreur lors de la suppression du fichier log: {e}")
@@ -293,7 +293,6 @@ class Settings:
             cls.FOLDER_EXTENTIONS_ICEDRAGON,
             cls.FOLDER_EXTENTIONS_COMODO,
         ]
-
         for directory in directories:
             path = Path(directory)
             if not path.exists():
@@ -303,7 +302,6 @@ class Settings:
                 except Exception as e:
                     Settings.WRITE_LOG_DEV_FILE(  f"Exception while creating directory {path}: {traceback.format_exc()}",   "ERROR" )
                     # print(f"💥 Erreur lors de la création du dossier {path}: {e}")
-
             # else:
             #     print(f"ℹ️ Dossier déjà existant: {path}")
 
@@ -317,12 +315,10 @@ class Settings:
         candidate = os.path.join(base_dir, "pythonw.exe")
         if os.path.isfile(candidate):
             return candidate
-
         for path in os.environ.get("PATH", "").split(os.pathsep):
             candidate = os.path.join(path.strip('"'), "pythonw.exe")
             if os.path.isfile(candidate):
                 return candidate
-
         return None
 
 
