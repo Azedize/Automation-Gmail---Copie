@@ -302,7 +302,7 @@ class Settings:
                     # print(f"✅ Dossier créé: {path}")
                 except Exception as e:
                     Settings.WRITE_LOG_DEV_FILE(  f"Exception while creating directory {path}: {traceback.format_exc()}",   "ERROR" )
-                    print(f"💥 Erreur lors de la création du dossier {path}: {e}")
+                    # print(f"💥 Erreur lors de la création du dossier {path}: {e}")
 
             # else:
             #     print(f"ℹ️ Dossier déjà existant: {path}")
