@@ -142,16 +142,13 @@ def ensure_web_ext_installed():
         # print("⚠️ Impossible de continuer sans Node.js.")
         Settings.WRITE_LOG_DEV_FILE("Unable to continue without Node.js.", "WARNING")
         return
-
     if shutil.which("npm") is None:
         # print("❌ npm n'est pas installé.")
         Settings.WRITE_LOG_DEV_FILE("npm is not installed.", "ERROR")
         return
-
     if shutil.which("web-ext") is not None:
         Settings.WRITE_LOG_DEV_FILE("web-ext already installed", "INFO")
         return
-
     try:
         subprocess.run("npm install --global web-ext", check=True, shell=True)
     except subprocess.CalledProcessError as e:
@@ -180,7 +177,6 @@ def Stop_All_Processes(window):
     """Stop all running threads and processes safely."""
 
     UIManager.disable_button(window.stopButton)
-
     global EXTRACTION_THREAD, CLOSE_BROWSER_THREAD
     global PROCESS_PIDS, LOGS_RUNNING
     global SELECTED_BROWSER_GLOBAL
@@ -200,7 +196,6 @@ def Stop_All_Processes(window):
             Settings.WRITE_LOG_DEV_FILE("Extraction thread stopped successfully.", "INFO")
     except Exception as e:
         Settings.WRITE_LOG_DEV_FILE(f"Error stopping extraction thread: {e}\n{traceback.format_exc()}", "ERROR")
-
     try:
         if CLOSE_BROWSER_THREAD:
             Settings.WRITE_LOG_DEV_FILE("Stopping close browser thread...", "INFO")
@@ -210,7 +205,6 @@ def Stop_All_Processes(window):
             Settings.WRITE_LOG_DEV_FILE("Close browser thread stopped successfully.", "INFO")
     except Exception as e:
         Settings.WRITE_LOG_DEV_FILE(f"Error stopping close browser thread: {e}\n{traceback.format_exc()}", "ERROR")
-
     # ==========================================================
     # 🔹 CHECK SELECTED BROWSER
     # ==========================================================
@@ -220,69 +214,53 @@ def Stop_All_Processes(window):
         UIManager.enable_button(window.submitButton)
         UIManager.enable_button(window.stopButton)
         return
-
     browser_name = SELECTED_BROWSER_GLOBAL.lower()
 
     # ==========================================================
     # 🔹 CHROME / CHROMIUM / EDGE
     # ==========================================================
     if browser_name != "firefox":
-
         for pid in PROCESS_PIDS[:]:
-
             try:
                 Settings.WRITE_LOG_DEV_FILE(f"Attempting to terminate process with PID {pid}...", "INFO")
-
                 process = psutil.Process(pid)
-
                 # --------------------------------------------------
                 # NORMAL TERMINATION
                 # --------------------------------------------------
                 process.terminate()
-
                 try:
                     process.wait(timeout=5)
                     Settings.WRITE_LOG_DEV_FILE(f"Process {pid} terminated successfully.", "INFO")
-
                 # --------------------------------------------------
                 # FORCE KILL
                 # --------------------------------------------------
                 except psutil.TimeoutExpired:
                     Settings.WRITE_LOG_DEV_FILE(f"Timeout for PID {pid}, forcing kill...", "WARNING")
-
                     process.kill()
-
                     try:
                         process.wait(timeout=3)
                         Settings.WRITE_LOG_DEV_FILE(f"Process {pid} killed successfully.", "INFO")
-
                     except psutil.NoSuchProcess:
                         Settings.WRITE_LOG_DEV_FILE(f"Process {pid} already closed after kill.", "INFO")
-
                     except psutil.TimeoutExpired:
                         Settings.WRITE_LOG_DEV_FILE(f"Failed to kill PID {pid} after timeout.", "ERROR")
-
                 except psutil.NoSuchProcess:
                     Settings.WRITE_LOG_DEV_FILE(f"Process {pid} already terminated.", "INFO")
-
             # ======================================================
             # NO SUCH PROCESS
             # ======================================================
             except psutil.NoSuchProcess:
                 Settings.WRITE_LOG_DEV_FILE(f"Process {pid} no longer exists.", "INFO")
-
             # ======================================================
             # ACCESS DENIED
             # ======================================================
             except psutil.AccessDenied:
                 Settings.WRITE_LOG_DEV_FILE(f"Permission denied for PID {pid}.", "WARNING")
-
             # ======================================================
             # UNKNOWN ERROR
             # ======================================================
             except Exception as e:
                 Settings.WRITE_LOG_DEV_FILE(f"Unexpected error terminating PID {pid}: {e}\n{traceback.format_exc()}", "ERROR")
-
             # ======================================================
             # CLEAN LIST
             # ======================================================
@@ -290,31 +268,25 @@ def Stop_All_Processes(window):
                 if pid in PROCESS_PIDS:
                     PROCESS_PIDS.remove(pid)
                     Settings.WRITE_LOG_DEV_FILE(f"PID {pid} removed from process list.", "INFO")
-
     # ==========================================================
     # 🔹 FIREFOX
     # ==========================================================
     else:
-
         try:
             Settings.WRITE_LOG_DEV_FILE("Closing Firefox profiles...", "INFO")
             BrowserManager.Close_Windows_By_Profiles(FIREFOX_LAUNCH)
             Settings.WRITE_LOG_DEV_FILE("Firefox profiles closed successfully.", "INFO")
-
         except Exception as e:
             Settings.WRITE_LOG_DEV_FILE(f"Error closing Firefox profiles: {e}\n{traceback.format_exc()}", "WARNING")
-
         finally:
             for pid in PROCESS_PIDS[:]:
                 PROCESS_PIDS.remove(pid)
                 Settings.WRITE_LOG_DEV_FILE(f"PID {pid} removed from process list.", "INFO")
-
     # ==========================================================
     # 🔹 ENABLE BUTTONS
     # ==========================================================
     UIManager.enable_button(window.submitButton)
     UIManager.enable_button(window.stopButton)
-
     Settings.WRITE_LOG_DEV_FILE("All stop operations completed.", "INFO")
 
 
@@ -630,6 +602,7 @@ class CloseBrowserThread(QThread):
             except Exception as e:
                 Settings.WRITE_LOG_DEV_FILE( f"❌ [CLEANUP] Erreur: {e}\n{ traceback.format_exc()}", "ERROR"  )
 
+
     def write_result_and_send_status(self, session_id, pid, email, status, inserted_id):
         """Écrire le résultat et envoyer l'état"""
         # print(f"\n📝 [RESULT] {email} | Status: {status}")
@@ -728,6 +701,7 @@ class CloseBrowserThread(QThread):
             # print(f"❌ [CLOSE] Exception générale: {e}")
             Settings.WRITE_LOG_DEV_FILE( f"❌ [CLOSE] Erreur: {e}\n{ traceback.format_exc()}", "ERROR")
 
+    
     def find_firefox_window(self, profile_email, timeout=30):
         entry = next((e for e in FIREFOX_LAUNCH if e["profile"] == profile_email), None)
         if not entry:
@@ -757,11 +731,13 @@ class CloseBrowserThread(QThread):
             time.sleep(2)
         raise TimeoutError("Fenêtre Firefox introuvable")
 
+    
     def wait_then_close(self, profile_email):
         entry = next((e for e in FIREFOX_LAUNCH if e["profile"] == profile_email), None)
         if entry and entry.get("hwnd"):
             self.close_window_by_hwnd(entry["hwnd"], entry["proc"])
 
+    
     def close_window_by_hwnd(self, hwnd, proc, wait_grace=2, wait_force=3):
         win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
         time.sleep(wait_grace)
@@ -2798,6 +2774,7 @@ class MainWindow(QMainWindow):
 
 
 class EntitySelectionDialog(QDialog):
+    
     def __init__(self, pattern=None, default_entity=None, parent=None):
         super().__init__(parent)
         # self.setObjectName("EntitySelectionDialog")
