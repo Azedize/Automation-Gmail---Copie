@@ -1,0 +1,12 @@
+[2026-05-21T16:41:46.907Z] ▶️ [ACTION STARTED] check_if_exist | xpath: //a[starts-with(@href,'https://accounts.google.com/AccountChooser')] | //input[@id='identifierId'] | //div[@id='gbwa'] | //div[@id='main-message'] | wait: 96 | type: N/A | sub_actions: 6
+[2026-05-21T16:41:46.909Z] ✅ [TROUVÉ] Élément trouvé : //a[starts-with(@href,'https://accounts.google.com/AccountChooser')] | //input[@id='identifierId'] | //div[@id='gbwa'] | //div[@id='main-message']
+[2026-05-21T16:41:46.909Z] ▶️ [ACTION STARTED] check_if_exist | xpath: //a[starts-with(@href,'https://accounts.google.com/AccountChooser')] | wait: 3 | type: N/A | sub_actions: 1
+[2026-05-21T16:41:49.936Z] ▶️ [ACTION STARTED] check_if_exist | xpath: //input[@id='identifierId'] | wait: 3 | type: N/A | sub_actions: 5
+[2026-05-21T16:41:49.937Z] ✅ [TROUVÉ] Élément trouvé : //input[@id='identifierId']
+[2026-05-21T16:41:49.938Z] ▶️ [ACTION STARTED] send_keys | xpath: //input[@id='identifierId'] | wait: 1 | type: N/A | sub_actions: 0
+[2026-05-21T16:41:50.945Z] ▶️ [ACTION STARTED] press_keys | xpath: //button[.//span[text()='Suivant']] | //button[.//span[text()='Next']] | wait: 1 | type: N/A | sub_actions: 1
+[2026-05-21T16:41:51.060Z] ▶️ [ACTION STARTED] check_if_exist | xpath: //main/div[2]/div/div/div/span/section[1]/div/div/div[contains(text(), 'robot')] | (//a[@aria-label='Try to restore' or @aria-label='Essayer de restaurer'])  | //div[span and (text()[contains(., 'Impossible de trouver votre compte Google')] or .//font[contains(text(), 'Unable to find your Google account')])] | wait: 4 | type: N/A | sub_actions: 3
+[2026-05-21T16:41:52.076Z] ✅ [TROUVÉ] Élément trouvé : //main/div[2]/div/div/div/span/section[1]/div/div/div[contains(text(), 'robot')] | (//a[@aria-label='Try to restore' or @aria-label='Essayer de restaurer'])  | //div[span and (text()[contains(., 'Impossible de trouver votre compte Google')] or .//font[contains(text(), 'Unable to find your Google account')])]
+[2026-05-21T16:41:52.077Z] ▶️ [ACTION STARTED] check_if_exist | xpath: //a[@aria-label='Try to restore' or @aria-label='Essayer de restaurer'] | wait: 2 | type: N/A | sub_actions: 1
+[2026-05-21T16:41:54.100Z] ▶️ [ACTION STARTED] check_if_exist | xpath: //main/div[2]/div/div/div/span/section[1]/div/div/div[contains(text(), 'robot')] | wait: 4 | type: validation_capcha | sub_actions: 1
+[2026-05-21T16:41:54.102Z] ✅ [TROUVÉ] Élément trouvé : //main/div[2]/div/div/div/span/section[1]/div/div/div[contains(text(), 'robot')]

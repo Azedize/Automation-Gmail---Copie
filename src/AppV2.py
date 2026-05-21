@@ -600,7 +600,7 @@ class CloseBrowserThread(QThread):
 
             # ❌ ERROR FLOW
             # print(f"❌ ERROR FLOW | {email}")
-            Settings.WRITE_LOG_DEV_FILE(f"❌ ERROR FLOW | {email}", "DEBUG")
+            Settings.WRITE_LOG_DEV_FILE(f"ERROR FLOW detected for session {session_id} email={email} status={status}", "DEBUG")
             email_folder = os.path.join(self.SESSION_DIR, self.selected_Browser, email)
             os.makedirs(email_folder, exist_ok=True)
 
