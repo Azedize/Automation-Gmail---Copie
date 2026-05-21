@@ -177,84 +177,151 @@ SESSION_ID = ValidationUtils.generate_session_id()
 # 🔹 FUNCTION STOP ALL PROCESSES
 # ==========================================================
 def Stop_All_Processes(window):
-    """
-    Stop all running threads and processes safely.
-    Handles Chrome and Firefox separately, and reactivates the Submit button.
-    Shows professional warning if no processes are running.
-    """
-    # start_time = time.time()
-    # print( f"🕒 [STOP] Début Stop_All_Processes à {time.strftime('%H:%M:%S', time.localtime(start_time))}")
+    """Stop all running threads and processes safely."""
 
     UIManager.disable_button(window.stopButton)
 
-    global EXTRACTION_THREAD, CLOSE_BROWSER_THREAD, PROCESS_PIDS, LOGS_RUNNING, SELECTED_BROWSER_GLOBAL
+    global EXTRACTION_THREAD, CLOSE_BROWSER_THREAD
+    global PROCESS_PIDS, LOGS_RUNNING
+    global SELECTED_BROWSER_GLOBAL
 
     Settings.WRITE_LOG_DEV_FILE("Stopping all processes...", "INFO")
     LOGS_RUNNING = False
 
-    # --- Stop des threads ---
-    if EXTRACTION_THREAD:
-        EXTRACTION_THREAD.stop_flag = True
-        EXTRACTION_THREAD.wait()
-        EXTRACTION_THREAD = None
-        Settings.WRITE_LOG_DEV_FILE("Extraction thread stopped.", "INFO")
+    # ==========================================================
+    # 🔹 STOP THREADS
+    # ==========================================================
+    try:
+        if EXTRACTION_THREAD:
+            Settings.WRITE_LOG_DEV_FILE("Stopping extraction thread...", "INFO")
+            EXTRACTION_THREAD.stop_flag = True
+            EXTRACTION_THREAD.wait()
+            EXTRACTION_THREAD = None
+            Settings.WRITE_LOG_DEV_FILE("Extraction thread stopped successfully.", "INFO")
+    except Exception as e:
+        Settings.WRITE_LOG_DEV_FILE(f"Error stopping extraction thread: {e}\n{traceback.format_exc()}", "ERROR")
 
-    if CLOSE_BROWSER_THREAD:
-        CLOSE_BROWSER_THREAD.stop_flag = True
-        CLOSE_BROWSER_THREAD.wait()
-        CLOSE_BROWSER_THREAD = None
-        Settings.WRITE_LOG_DEV_FILE("Close browser thread stopped.", "INFO")
+    try:
+        if CLOSE_BROWSER_THREAD:
+            Settings.WRITE_LOG_DEV_FILE("Stopping close browser thread...", "INFO")
+            CLOSE_BROWSER_THREAD.stop_flag = True
+            CLOSE_BROWSER_THREAD.wait()
+            CLOSE_BROWSER_THREAD = None
+            Settings.WRITE_LOG_DEV_FILE("Close browser thread stopped successfully.", "INFO")
+    except Exception as e:
+        Settings.WRITE_LOG_DEV_FILE(f"Error stopping close browser thread: {e}\n{traceback.format_exc()}", "ERROR")
 
-    # --- Vérification sécurisée du navigateur sélectionné ---
+    # ==========================================================
+    # 🔹 CHECK SELECTED BROWSER
+    # ==========================================================
     if not SELECTED_BROWSER_GLOBAL:
-        # print("⚠️ No browser selected or no processes running.")
-        Settings.WRITE_LOG_DEV_FILE(  "Stop failed: No browser selected or no processes running.", "WARNING" )
-        # Affichage alerte professionnelle : uniquement sur les processus
-        UIManager.Show_Critical_Message( window, "No Processes Running", "No processes are currently running.", message_type="warning",)
-        # Réactivation du bouton Submit pour éviter blocage UI
+        Settings.WRITE_LOG_DEV_FILE("Stop failed: No browser selected or no processes running.", "WARNING")
+        UIManager.Show_Critical_Message(window, "No Processes Running", "No processes are currently running.", message_type="warning")
+        UIManager.enable_button(window.submitButton)
         UIManager.enable_button(window.stopButton)
-        return  # Sortir de la fonction
+        return
 
     browser_name = SELECTED_BROWSER_GLOBAL.lower()
 
-    # --- Stop des processus selon le navigateur ---
-
+    # ==========================================================
+    # 🔹 CHROME / CHROMIUM / EDGE
+    # ==========================================================
     if browser_name != "firefox":
+
         for pid in PROCESS_PIDS[:]:
+
             try:
-                Settings.WRITE_LOG_DEV_FILE(  f"Attempting to terminate process with PID {pid}...", "INFO" )
+                Settings.WRITE_LOG_DEV_FILE(f"Attempting to terminate process with PID {pid}...", "INFO")
+
                 process = psutil.Process(pid)
+
+                # --------------------------------------------------
+                # NORMAL TERMINATION
+                # --------------------------------------------------
                 process.terminate()
-                process.wait(timeout=5)
-                Settings.WRITE_LOG_DEV_FILE(f"Process {pid} terminated successfully.", "INFO")
+
+                try:
+                    process.wait(timeout=5)
+                    Settings.WRITE_LOG_DEV_FILE(f"Process {pid} terminated successfully.", "INFO")
+
+                # --------------------------------------------------
+                # FORCE KILL
+                # --------------------------------------------------
+                except psutil.TimeoutExpired:
+                    Settings.WRITE_LOG_DEV_FILE(f"Timeout for PID {pid}, forcing kill...", "WARNING")
+
+                    process.kill()
+
+                    try:
+                        process.wait(timeout=3)
+                        Settings.WRITE_LOG_DEV_FILE(f"Process {pid} killed successfully.", "INFO")
+
+                    except psutil.NoSuchProcess:
+                        Settings.WRITE_LOG_DEV_FILE(f"Process {pid} already closed after kill.", "INFO")
+
+                    except psutil.TimeoutExpired:
+                        Settings.WRITE_LOG_DEV_FILE(f"Failed to kill PID {pid} after timeout.", "ERROR")
+
+                except psutil.NoSuchProcess:
+                    Settings.WRITE_LOG_DEV_FILE(f"Process {pid} already terminated.", "INFO")
+
+            # ======================================================
+            # NO SUCH PROCESS
+            # ======================================================
             except psutil.NoSuchProcess:
                 Settings.WRITE_LOG_DEV_FILE(f"Process {pid} no longer exists.", "INFO")
+
+            # ======================================================
+            # ACCESS DENIED
+            # ======================================================
             except psutil.AccessDenied:
                 Settings.WRITE_LOG_DEV_FILE(f"Permission denied for PID {pid}.", "WARNING")
+
+            # ======================================================
+            # UNKNOWN ERROR
+            # ======================================================
             except Exception as e:
                 Settings.WRITE_LOG_DEV_FILE(f"Unexpected error terminating PID {pid}: {e}\n{traceback.format_exc()}", "ERROR")
+
+            # ======================================================
+            # CLEAN LIST
+            # ======================================================
             finally:
                 if pid in PROCESS_PIDS:
                     PROCESS_PIDS.remove(pid)
                     Settings.WRITE_LOG_DEV_FILE(f"PID {pid} removed from process list.", "INFO")
 
+    # ==========================================================
+    # 🔹 FIREFOX
+    # ==========================================================
     else:
+
         try:
+            Settings.WRITE_LOG_DEV_FILE("Closing Firefox profiles...", "INFO")
             BrowserManager.Close_Windows_By_Profiles(FIREFOX_LAUNCH)
             Settings.WRITE_LOG_DEV_FILE("Firefox profiles closed successfully.", "INFO")
+
         except Exception as e:
             Settings.WRITE_LOG_DEV_FILE(f"Error closing Firefox profiles: {e}\n{traceback.format_exc()}", "WARNING")
+
         finally:
             for pid in PROCESS_PIDS[:]:
                 PROCESS_PIDS.remove(pid)
                 Settings.WRITE_LOG_DEV_FILE(f"PID {pid} removed from process list.", "INFO")
 
-    # --- Toujours réactiver le bouton Submit et Stop à la fin ---
-    # end_time = time.time()
-    # duration = end_time - start_time
-    # print( f"🕒 [STOP] Fin Stop_All_Processes à {time.strftime('%H:%M:%S', time.localtime(end_time))} - Durée: {duration:.2f}s")
+    # ==========================================================
+    # 🔹 ENABLE BUTTONS
+    # ==========================================================
     UIManager.enable_button(window.submitButton)
     UIManager.enable_button(window.stopButton)
+
+    Settings.WRITE_LOG_DEV_FILE("All stop operations completed.", "INFO")
+
+
+
+
+
+
 
 
 class CloseBrowserThread(QThread):
