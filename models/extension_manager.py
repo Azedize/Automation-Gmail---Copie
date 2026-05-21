@@ -72,10 +72,8 @@ class ExtensionManager:
                     shutil.copy2(src, dst)
                     # print(f"📄 Copied file : {item}")
             except Exception as e:
-                print(f"💥 Exception lors de la copie de {item} : {e}\n{traceback.format_exc()}")
-                Settings.WRITE_LOG_DEV_FILE(
-                    f"Exception lors de la copie de {item}: {e}\n{traceback.format_exc()}", "ERROR"
-                )
+                # print(f"💥 Exception lors de la copie de {item} : {e}\n{traceback.format_exc()}")
+                Settings.WRITE_LOG_DEV_FILE( f"Exception lors de la copie de {item}: {e}\n{traceback.format_exc()}", "ERROR" )
                 # print(f"❌ Erreur copie {item} : {e}")
                 pass
 
@@ -84,14 +82,10 @@ class ExtensionManager:
         ExtensionManager._replace_actions_js(email_folder, IDL, email)
 
         # print("✏️ Remplacement background.js")
-        ExtensionManager._replace_background_js(
-            email_folder, host, port, user, passwordP, IDL, email
-        )
+        ExtensionManager._replace_background_js(  email_folder, host, port, user, passwordP, IDL, email )
 
         # print("✏️ Remplacement gmail_process.js")
-        ExtensionManager._replace_gmail_process_js(
-            email_folder, email, password, recovry, new_password, new_recovry
-        )
+        ExtensionManager._replace_gmail_process_js( email_folder, email, password, recovry, new_password, new_recovry )
 
         # print("✏️ Remplacement ReportingActions.js")
         ExtensionManager._replace_reporting_actions_js(email_folder, IDL, email)
@@ -152,9 +146,7 @@ class ExtensionManager:
         # print("✅ background.js modifié")
 
     @staticmethod
-    def _replace_gmail_process_js(
-        email_folder, email, password, recovry, new_password, new_recovry
-    ):
+    def _replace_gmail_process_js(  email_folder, email, password, recovry, new_password, new_recovry ):
         path = os.path.join(email_folder, "gmail_process.js")
         # print(f"🔎 gmail_process.js : {path}")
 

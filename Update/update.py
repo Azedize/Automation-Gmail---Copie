@@ -236,7 +236,7 @@ class UpdateManager:
         # ================================================
         SESSION_INFO = SessionManager.check_session()
         if not SESSION_INFO.get("valid"):
-            print("[SESSION] ❌ Session invalide. Impossible de continuer.")
+            # print("[SESSION] ❌ Session invalide. Impossible de continuer.")
             Settings.WRITE_LOG_DEV_FILE("Session invalide. Impossible de continuer.", "ERROR")
             return False
 
@@ -245,15 +245,15 @@ class UpdateManager:
         # ================================================
         session_dt = SESSION_INFO.get("date")
         if not isinstance(session_dt, datetime.datetime):
-            Settings.WRITE_LOG_DEV_FILE(
-                f"SESSION date type incorrect: {type(session_dt)}", "ERROR"
-            )
-            print(f"❌ SESSION_INFO['date'] type incorrect: {type(session_dt)}")
+            Settings.WRITE_LOG_DEV_FILE( f"SESSION date type incorrect: {type(session_dt)}", "ERROR" )
+            # print(f"❌ SESSION_INFO['date'] type incorrect: {type(session_dt)}")
             return False
 
         session_date_plain = session_dt.strftime("%Y-%m-%d")
-        print("🟢 SESSION_INFO['date'] est déjà datetime.datetime")
-        print("➤ Date session (YYYY-MM-DD) :", session_date_plain)
+        # print("🟢 SESSION_INFO['date'] est déjà datetime.datetime")
+        # print("➤ Date session (YYYY-MM-DD) :", session_date_plain)
+        settings.WRITE_LOG_DEV_FILE(f"Date de session formatée pour update: {session_date_plain}", "INFO")
+        settings.WRITE_LOG_DEV_FILE("Session date is valid datetime", "INFO")
 
         # ================================================
         # 3️⃣ Chiffrement de la date
@@ -266,10 +266,11 @@ class UpdateManager:
                 raise Exception("Encryption failed")
 
             encrypted_safe = urllib.parse.quote(date_encrypted)
-            print("🔐 Date encryptée :", encrypted_safe)
+            # print("🔐 Date encryptée :", encrypted_safe)
+            settings.WRITE_LOG_DEV_FILE(f"Date encryptée: {encrypted_safe}", "INFO")
 
         except Exception as e:
-            print(f"❌ Échec du chiffrement : {e}")
+            # print(f"❌ Échec du chiffrement : {e}")
             Settings.WRITE_LOG_DEV_FILE( f"Échec du chiffrement : {e}\n{traceback.format_exc()}", "ERROR")
             traceback.print_exc()
             return False
@@ -289,25 +290,30 @@ class UpdateManager:
         SERVER_ZIP_URL_PROGRAM = "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip"
         
 
-        print("\n🌍 URL finale pour API :", CHECK_URL_PROGRAMM)
+        # print("\n🌍 URL finale pour API :", CHECK_URL_PROGRAMM)
+        settings.WRITE_LOG_DEV_FILE(f"URL finale pour API: {CHECK_URL_PROGRAMM}", "INFO")
 
         # ================================================
         # 5️⃣ Requête GET
         # ================================================
         try:
-            print("\n🔍 CHECK UPDATE")
+            # print("\n🔍 CHECK UPDATE")
+            settings.WRITE_LOG_DEV_FILE("Vérification de mise à jour en cours...", "INFO")
             response = APIManager.make_request(
                 CHECK_URL_PROGRAMM,
                 method="GET",
                 timeout=10
             )
 
-            print("\n=== RAW RESPONSE ===")
-            print(response)
+            # print("\n=== RAW RESPONSE ===")
+            # print(response)
+            settings.WRITE_LOG_DEV_FILE(f"Réponse brute de l'API: {response}", "DEBUG")
+            settings.WRITE_LOG_DEV_FILE(f"Type de la réponse: {type(response)}", "DEBUG")
 
             # 🔴 Vérification réponse serveur
             if not isinstance(response, dict) or response.get("status_code") != 200:
-                print("⚠️ Serveur indisponible → Continuer sans update")
+                # print("⚠️ Serveur indisponible → Continuer sans update")
+                settings.WRITE_LOG_DEV_FILE( "Serveur indisponible → Continuer sans update",  "WARNING" )
                 return False
 
             data = response.get("data")
@@ -316,18 +322,16 @@ class UpdateManager:
             # 🚨 INVALID TOKEN DETECTION
             # ================================================
             if isinstance(data, str) and "Invalid token" in data:
-                print("🚨 INVALID TOKEN DETECTED")
-                Settings.WRITE_LOG_DEV_FILE(
-                    "Invalid token detected - clearing session",
-                    "ERROR"
-                )
+                # print("🚨 INVALID TOKEN DETECTED")
+                Settings.WRITE_LOG_DEV_FILE( "Invalid token detected - clearing session",  "ERROR"  )
 
                 try:
                     SessionManager.clear_session()
-                    print("🗑️ Session supprimée")
+                    # print("🗑️ Session supprimée")
+                    settings.WRITE_LOG_DEV_FILE("Session cleared due to invalid token detection", "INFO")
                 except Exception as e:
                     Settings.WRITE_LOG_DEV_FILE(f"Error clearing session after invalid token detection\n{traceback.format_exc()}", "ERROR")
-                    print("❌ Erreur suppression session :", e)
+                    # print("❌ Erreur suppression session :", e)
 
                 # ⛔ Arrêt immédiat du programme
                 os._exit(1)
@@ -336,15 +340,17 @@ class UpdateManager:
             # Vérification structure JSON
             # ================================================
             if not isinstance(data, dict):
-                print("❌ Réponse serveur invalide :", data)
+                # print("❌ Réponse serveur invalide :", data)
+                Settings.WRITE_LOG_DEV_FILE(f"Réponse serveur invalide: {data}", "ERROR")
                 return False
 
             server_program = data.get("version")
             server_tools = data.get("version_Extention")
 
-            print("\n=== Versions serveur ===")
-            print("server_program :", server_program)
-            print("server_tools   :", server_tools)
+            # print("\n=== Versions serveur ===")
+            # print("server_program :", server_program)
+            # print("server_tools   :", server_tools)
+            settings.WRITE_LOG_DEV_FILE(f"Versions serveur - Programme: {server_program}, Outils: {server_tools}", "INFO")
 
             local_program = UpdateManager._read_local_version(
                 Settings.VERSION_LOCAL_PROGRAMM
@@ -353,16 +359,19 @@ class UpdateManager:
                 Settings.VERSION_LOCAL_EXT
             )
 
-            print("\n=== Versions locales ===")
-            print("local_program :", local_program)
-            print("local_tools   :", local_tools)
+            # print("\n=== Versions locales ===")
+            # print("local_program :", local_program)
+            # print("local_tools   :", local_tools)
+            settings.WRITE_LOG_DEV_FILE(f"Versions locales - Programme: {local_program}, Outils: {local_tools}", "INFO")
 
             # 🔴 Update Programme
             if not local_program or local_program != server_program:
-                print("🔴 UPDATE PROGRAMME NECESSAIRE")
+                # print("🔴 UPDATE PROGRAMME NECESSAIRE")
+                Settings.WRITE_LOG_DEV_FILE("Mise à jour du programme nécessaire", "INFO")
 
                 if window and hasattr(window, "close"):
-                    print("[DEBUG] Fermeture fenêtre")
+                    # print("[DEBUG] Fermeture fenêtre")
+                    settings.WRITE_LOG_DEV_FILE("Fermeture fenêtre", "DEBUG")
                     window.close()
 
                 UpdateManager.launch_new_window()
@@ -370,7 +379,8 @@ class UpdateManager:
 
             # 🟡 Update Tools
             if not local_tools or local_tools != server_tools:
-                print("🟡 UPDATE TOOLS NECESSAIRE")
+                # print("🟡 UPDATE TOOLS NECESSAIRE")
+                Settings.WRITE_LOG_DEV_FILE("Mise à jour des outils nécessaires", "INFO")
 
                 os.makedirs(Settings.TOOLS_DIR, exist_ok=True)
 
@@ -382,24 +392,24 @@ class UpdateManager:
                 )
 
                 if success:
-                    print("✅ Tools mis à jour")
+                    # print("✅ Tools mis à jour")
+                    Settings.WRITE_LOG_DEV_FILE("Outils mis à jour avec succès", "INFO")
                 else:
-                    print("❌ Échec mise à jour tools")
+                    # print("❌ Échec mise à jour tools")
+                    Settings.WRITE_LOG_DEV_FILE("Échec de la mise à jour des outils", "ERROR")
                     return False
 
-            print("🟢 Application à jour")
+            # print("🟢 Application à jour")
+            Settings.WRITE_LOG_DEV_FILE("Application à jour", "INFO")
             return True
 
         except ImportError:
-            print("⚠️ APIManager non disponible → Continuer")
-            Settings.WRITE_LOG_DEV_FILE(
-                "APIManager non disponible",
-                "INFO"
-            )
+            # print("⚠️ APIManager non disponible → Continuer")
+            Settings.WRITE_LOG_DEV_FILE( "APIManager non disponible",  "INFO"  )
             return False
 
         except Exception as e:
-            print("🔥 ERREUR CRITIQUE :", e)
+            # print("🔥 ERREUR CRITIQUE :", e)
             Settings.WRITE_LOG_DEV_FILE( f"Erreur critique lors de la vérification de mise à jour: {e}\n{traceback.format_exc()}",  "ERROR"  )
             traceback.print_exc()
             return False
@@ -509,7 +519,8 @@ class UpdateManager:
         # ================================================
         SESSION_INFO = SessionManager.check_session()
         if not SESSION_INFO.get("valid"):
-            print("[SESSION] ❌ Session invalide. Impossible de continuer l’extraction.")
+            # print("[SESSION] ❌ Session invalide. Impossible de continuer l’extraction.")
+            Settings.WRITE_LOG_DEV_FILE("Session invalide. Impossible de continuer l’extraction.", "ERROR")
             sys.exit()
             return False
 
@@ -520,22 +531,27 @@ class UpdateManager:
         # ================================================
         session_dt = SESSION_INFO.get('date')
         if not isinstance(session_dt, datetime.datetime):
-            print(f"❌ SESSION_INFO['date'] type incorrect: {type(session_dt)}")
+            # print(f"❌ SESSION_INFO['date'] type incorrect: {type(session_dt)}")
+            settings.WRITE_LOG_DEV_FILE(f"SESSION date type incorrect: {type(session_dt)}", "ERROR")
             return False
-        print("🟢 SESSION_INFO['date'] est déjà datetime.datetime")
+        # print("🟢 SESSION_INFO['date'] est déjà datetime.datetime")
+        settings.WRITE_LOG_DEV_FILE("Session date is valid datetime", "INFO")
 
         session_date_plain = session_dt.strftime("%Y-%m-%d")
-        print("➤ Date session (format YYYY-MM-DD) :", session_date_plain)
+        # print("➤ Date session (format YYYY-MM-DD) :", session_date_plain)
+        settings.WRITE_LOG_DEV_FILE(f"Session date (format YYYY-MM-DD): {session_date_plain}", "INFO")
 
         # ================================================
         # 🔹 Chiffrement
         # ================================================
         try:
             date_encrypted = EncryptionService.encrypt_message(session_date_plain, Settings.KEY)
-            print(f"🔐 Date encryptée : {date_encrypted}")
+            # print(f"🔐 Date encryptée : {date_encrypted}")
+            settings.WRITE_LOG_DEV_FILE(f"Encrypted date: {date_encrypted}", "INFO")
         except Exception as e:
             settings.WRITE_LOG_DEV_FILE(f"Encryption failed: {e}\n{traceback.format_exc()}", level="ERROR")
-            print(f"❌ Encryption failed: {e}")
+            # print(f"❌ Encryption failed: {e}")
+
             traceback.print_exc()
             return False
 
@@ -559,24 +575,27 @@ class UpdateManager:
             except json.JSONDecodeError:
                 try:
                     data = json.loads(response.text)
-                    print("⚠️ Content-Type incorrect, mais JSON parsé avec succès")
+                    # print("⚠️ Content-Type incorrect, mais JSON parsé avec succès")
+                    settings.WRITE_LOG_DEV_FILE("Content-Type incorrect, but JSON parsed successfully", "WARNING")
                 except Exception as e:
                     settings.WRITE_LOG_DEV_FILE(f"Failed to parse JSON response: {e}\n{traceback.format_exc()}", level="ERROR")
-                    print("❌ Impossible de parser la réponse JSON :", e)
-                    print("Raw response:", response.text)
+                    # print("❌ Impossible de parser la réponse JSON :", e)
+                    # print("Raw response:", response.text)
                     return False
 
             remote_version = data.get("version_Extention")
             remote_manifest_version = data.get("manifest_version")
 
-            print("\n=== JSON Response ===")
-            print(json.dumps(data, indent=4, ensure_ascii=False))
-            print(f"➤ version_Extention : {remote_version}")
-            print(f"➤ manifest_version  : {remote_manifest_version}")
+            # print("\n=== JSON Response ===")
+            # print(json.dumps(data, indent=4, ensure_ascii=False))
+            # print(f"➤ version_Extention : {remote_version}")
+            # print(f"➤ manifest_version  : {remote_manifest_version}")
+
+            se
 
         except Exception as e:
             settings.WRITE_LOG_DEV_FILE(f"Failed to get remote version: {e}\n{traceback.format_exc()}", level="ERROR")
-            print(f"❌ Impossible de récupérer la version distante: {e}")
+            # print(f"❌ Impossible de récupérer la version distante: {e}")
             traceback.print_exc()
             if window:
                 UIManager.Show_Critical_Message(
@@ -591,10 +610,12 @@ class UpdateManager:
         # 🔹 Vérification fichiers locaux
         # ================================================
         if not os.path.exists(Settings.MANIFEST_PATH_EX3):
-            print("❌ Fichier manifest.json local introuvable")
+            # print("❌ Fichier manifest.json local introuvable")
+            settings.WRITE_LOG_DEV_FILE("Fichier manifest.json local introuvable", "ERROR")
             return False
         if not os.path.exists(Settings.VERSION_LOCAL_EX3):
-            print("❌ Fichier version locale introuvable")
+            # print("❌ Fichier version locale introuvable")
+            settings.WRITE_LOG_DEV_FILE("Fichier version locale introuvable", "ERROR")
             return False
 
         with open(Settings.MANIFEST_PATH_EX3, "r", encoding="utf-8") as f:
@@ -602,14 +623,17 @@ class UpdateManager:
         local_manifest_version = manifest_data.get("version")
         local_version = UpdateManager._read_local_version(Settings.VERSION_LOCAL_EX3)
 
-        print(f"📄 Version locale : {local_version}")
-        print(f"📄 Manifest local : {local_manifest_version}")
+        # print(f"📄 Version locale : {local_version}")
+        # print(f"📄 Manifest local : {local_manifest_version}")
+
+        settings.WRITE_LOG_DEV_FILE(f"Version locale: {local_version}, Manifest local version: {local_manifest_version}", "INFO")
 
         # ================================================
         # 🔹 Compatibilité manifest
         # ================================================
         if str(local_manifest_version) != str(remote_manifest_version):
-            print("⚠️ Manifest incompatible, mise à jour automatique impossible")
+            # print("⚠️ Manifest incompatible, mise à jour automatique impossible")
+            settings.WRITE_LOG_DEV_FILE("Manifest incompatible, mise à jour automatique impossible", "WARNING")
             if window:
                 UIManager.Show_Critical_Message(
                     window,
@@ -623,12 +647,12 @@ class UpdateManager:
         # 🔹 Différence de version
         # ================================================
         if local_version != remote_version:
-            print(f"🔄 Mise à jour requise (nouvelle version: {remote_version})")
+            # print(f"🔄 Mise à jour requise (nouvelle version: {remote_version})")
             settings.WRITE_LOG_DEV_FILE(f"Extension update required - new version: {remote_version}", "INFO")
             return remote_version
         else:
             settings.WRITE_LOG_DEV_FILE(f"Extension up-to-date", "INFO")
-            print("✅ Extension locale à jour")
+            # print("✅ Extension locale à jour")
             return True
 
 
@@ -688,20 +712,22 @@ class UpdateManager:
                 zip_path = os.path.join(tmpdir, "Ext3.zip")
 
                 # Téléchargement
-                print("📥 Téléchargement de la dernière version...")
+                # print("📥 Téléchargement de la dernière version...")
+                settings.WRITE_LOG_DEV_FILE("Downloading latest extension version...", "INFO")
                 if not UpdateManager._download_file(SERVEUR_ZIP_URL_EX3, zip_path):
-                    print("❌ Échec du téléchargement")
+                    # print("❌ Échec du téléchargement")
                     Settings.WRITE_LOG_DEV_FILE("Échec du téléchargement", "ERROR")
                     return False
 
                 # Suppression ancienne version
                 if os.path.exists(Settings.EXTENTION_EX3):
-                    print(f"🗑️ Suppression ancien dossier {Settings.EXTENTION_EX3}")
+                    # print(f"🗑️ Suppression ancien dossier {Settings.EXTENTION_EX3}")
                     Settings.WRITE_LOG_DEV_FILE(f"Suppression de l'ancienne extension avant mise à jour", "INFO")
                     shutil.rmtree(Settings.EXTENTION_EX3, onerror=UpdateManager._remove_readonly)
 
                 # Extraction
-                print("📂 Extraction du fichier ZIP...")
+                # print("📂 Extraction du fichier ZIP...")
+                settings.WRITE_LOG_DEV_FILE("Extracting ZIP file...", "INFO")
                 with zipfile.ZipFile(zip_path, 'r') as zip_ref:
                     zip_ref.extractall(tmpdir)
 
@@ -714,13 +740,13 @@ class UpdateManager:
                         break
 
                 if extracted_dir is None:
-                    print("❌ Dossier extrait introuvable")
+                    # print("❌ Dossier extrait introuvable")
                     Settings.WRITE_LOG_DEV_FILE("Dossier extrait introuvable", "ERROR")
                     return False
 
                 # Déplacement vers destination finale
                 shutil.move(extracted_dir, Settings.EXTENTION_EX3)
-                print(f"✅ Mise à jour réussie : {Settings.EXTENTION_EX3}")
+                # print(f"✅ Mise à jour réussie : {Settings.EXTENTION_EX3}")
                 Settings.WRITE_LOG_DEV_FILE(f"Extension mise à jour vers la version {remote_version}", "INFO")
 
                 return True

@@ -104,7 +104,8 @@ class SessionManager:
     def check_session(self) -> Dict:
         session_info = {"valid": False, "username": None , "password": None, "date": None, "p_entity_Origine": None, "p_entity_Nouveau": None, "error": None}
 
-        print(f"[INFO] Chemin du fichier session : {self.session_path}")
+        # print(f"[INFO] Chemin du fichier session : {self.session_path}")
+        settings.WRITE_LOG_DEV_FILE(f"Chemin du fichier session : {self.session_path}", "INFO")
 
         if not ValidationUtils.path_exists(self.session_path):
             # print("[WARNING] ❌ Le fichier session.txt n'existe pas")
@@ -308,7 +309,8 @@ class SessionManager:
 
             # Préparation payload API
             payload = { "rID": "1",  "u": username,  "p": password,  "k" : "mP5QXYrK9E67Y" , "l": "1"  }
-            print(f"[DEBUG] Payload API préparé: {payload}")
+            # print(f"[DEBUG] Payload API préparé: {payload}")
+            settings.WRITE_LOG_DEV_FILE(f"Payload API préparé: {payload}", "DEBUG")
 
             resp = None
             for attempt in range(1, 6):

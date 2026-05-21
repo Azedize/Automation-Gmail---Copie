@@ -317,7 +317,7 @@ class BrowserManager:
                     if k in search_keys:
                         results.append({k: v})
                         Settings.WRITE_LOG_DEV_FILE(f"Found JSON key: {k} at {current_path} -> {v}", "INFO")
-                        print(f"🔑 Clé trouvée : {current_path} ➜ Valeur : {v}")
+                        # print(f"🔑 Clé trouvée : {current_path} ➜ Valeur : {v}")
                     BrowserManager.Search_Keys(v, search_keys, results, current_path)
             elif isinstance(data, list):
                 for idx, item in enumerate(data):
@@ -325,7 +325,7 @@ class BrowserManager:
                     BrowserManager.Search_Keys(item, search_keys, results, current_path)
         except Exception as e:
             Settings.WRITE_LOG_DEV_FILE(f"Erreur lors de la recherche des clés à {path_trace} : {e}\n{traceback.format_exc()}", "ERROR")
-            Settings.WRITE_LOG_DEV_FILE(f"Erreur lors de la recherche des clés à {path_trace} : {e}", "ERROR")
+            # Settings.WRITE_LOG_DEV_FILE(f"Erreur lors de la recherche des clés à {path_trace} : {e}", "ERROR")
             
 
 
@@ -340,51 +340,51 @@ class BrowserManager:
     @staticmethod
     def Upload_EXTENSION_PROXY(profile_name: str, search_keys: List[str], results: List[Dict[str, Any]]) -> Optional[List[Dict[str, Any]]]:
         path_file = os.path.join(Settings.CONFIG_PROFILE, profile_name, "Secure Preferences")
-        print(f"[DEBUG] Vérification du fichier Secure Preferences : {path_file}")
+        # print(f"[DEBUG] Vérification du fichier Secure Preferences : {path_file}")
+        settings.WRITE_LOG_DEV_FILE(f"Verification du fichier Secure Preferences : {path_file}", "INFO")
 
         if not ValidationUtils.path_exists(path_file):
-            print(f"[ERROR] Fichier introuvable pour le profil {profile_name}")
+            # print(f"[ERROR] Fichier introuvable pour le profil {profile_name}")
             Settings.WRITE_LOG_DEV_FILE(f"Fichier introuvable pour le profil {profile_name}", "ERROR")
             return None
 
         try:
-            print(f"[DEBUG] Lecture du fichier JSON en cours pour le profil {profile_name}...")
+            # print(f"[DEBUG] Lecture du fichier JSON en cours pour le profil {profile_name}...")
             with open(path_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            print("[DEBUG] Lecture réussie du fichier JSON.")
+            # print("[DEBUG] Lecture réussie du fichier JSON.")
 
             results.clear()
-            print(f"[DEBUG] Début de la recherche des clés : {search_keys}")
+            # print(f"[DEBUG] Début de la recherche des clés : {search_keys}")
             BrowserManager.Search_Keys(data, search_keys, results)
 
             if results:
-                print(f"[INFO] Résultats trouvés pour {profile_name}:")
-                for idx, item in enumerate(results, start=1):
-                    print(f"   {idx}. {item}")
+                # print(f"[INFO] Résultats trouvés pour {profile_name}:")
+                # for idx, item in enumerate(results, start=1):
+                #     print(f"   {idx}. {item}")
+                settings.WRITE_LOG_DEV_FILE(f"Résultats trouvés pour {profile_name}: {results}", "INFO")
                 return results  # retourne la liste si des résultats trouvés
             else:
-                print(f"[WARNING] Aucun résultat trouvé pour les clés spécifiées pour {profile_name}")
+                # print(f"[WARNING] Aucun résultat trouvé pour les clés spécifiées pour {profile_name}")
+                settings.WRITE_LOG_DEV_FILE(f"Aucun résultat trouvé pour les clés spécifiées pour {profile_name}", "WARNING")
                 return None  # retourne None si aucun résultat
 
         except json.JSONDecodeError as e:
-            error_msg = f"JSONDecodeError: impossible de décoder le fichier {path_file} : {e}\n{traceback.format_exc()}"
-            print(f"[ERROR] {error_msg}")
-            Settings.WRITE_LOG_DEV_FILE(error_msg, "ERROR")
+            # print(f"[ERROR] {error_msg}")
+            Settings.WRITE_LOG_DEV_FILE( f"JSONDecodeError: impossible de décoder le fichier {path_file} : {e}\n{traceback.format_exc()}", "ERROR")
 
         except PermissionError as e:
-            error_msg = f"PermissionError: Permission refusée pour lire le fichier {path_file} : {e}\n{traceback.format_exc()}"
-            print(f"[ERROR] {error_msg}")
-            Settings.WRITE_LOG_DEV_FILE(error_msg, "ERROR")
+            # print(f"[ERROR] {error_msg}")
+            Settings.WRITE_LOG_DEV_FILE(f"PermissionError: Permission refusée pour lire le fichier {path_file} : {e}\n{traceback.format_exc()}", "ERROR")
 
         except FileNotFoundError as e:
-            error_msg = f"FileNotFoundError: Fichier non trouvé : {path_file} : {e}\n{traceback.format_exc()}"
-            print(f"[ERROR] {error_msg}")
-            Settings.WRITE_LOG_DEV_FILE(error_msg, "ERROR")
+            
+            # print(f"[ERROR] {error_msg}")
+            Settings.WRITE_LOG_DEV_FILE(f"FileNotFoundError: Fichier non trouvé : {path_file} : {e}\n{traceback.format_exc()}", "ERROR")
 
         except Exception as e:
-            error_msg = f"UnexpectedError: Erreur inattendue lors du traitement de {path_file} : {e}\n{traceback.format_exc()}"
-            print(f"[ERROR] {error_msg}")
-            Settings.WRITE_LOG_DEV_FILE(error_msg, "ERROR")
+            # print(f"[ERROR] {error_msg}")
+            Settings.WRITE_LOG_DEV_FILE(f"UnexpectedError: Erreur inattendue lors du traitement de {path_file} : {e}\n{traceback.format_exc()}", "ERROR")
 
         return None  
 
@@ -404,44 +404,51 @@ class BrowserManager:
             local_state_path = os.path.join(profile_dir, "Local State")
             variations_path = os.path.join(profile_dir, "Variations")
 
-            print(f"[DEBUG] Profil cible : {profile_dir}")
-            print(f"[DEBUG] Secure Preferences : {secure_preferences_path}")
-            print(f"[DEBUG] Local State : {local_state_path}")
-            print(f"[DEBUG] Variations : {variations_path}")
+            # print(f"[DEBUG] Profil cible : {profile_dir}")
+            # print(f"[DEBUG] Secure Preferences : {secure_preferences_path}")
+            # print(f"[DEBUG] Local State : {local_state_path}")
+            # print(f"[DEBUG] Variations : {variations_path}")
+
+            settings.WRITE_LOG_DEV_FILE(f"Profil cible : {profile_dir}", "DEBUG")
+            settings.WRITE_LOG_DEV_FILE(f"Secure Preferences : {secure_preferences_path}", "DEBUG")
+            settings.WRITE_LOG_DEV_FILE(f"Local State : {local_state_path}", "DEBUG")
+            settings.WRITE_LOG_DEV_FILE(f"Variations : {variations_path}", "DEBUG")
 
             # 🔹 Supprimer fichiers existants si présents
             for path in [secure_preferences_path, local_state_path, variations_path]:
                 if os.path.exists(path):
                     try:
-                        print(f"[DEBUG] Suppression du fichier existant : {path}")
+                        settings.WRITE_LOG_DEV_FILE(f"Suppression du fichier existant : {path}", "DEBUG")
                         os.remove(path)
                     except Exception as e:
-                        print(f"[ERROR] Erreur suppression fichier {path} : {e}")
-                        Settings.WRITE_LOG_DEV_FILE(f"Erreur suppression fichier {path} : {e}", "ERROR")
+                        settings.WRITE_LOG_DEV_FILE(f"Erreur suppression fichier {path} : {e}", "ERROR")
 
             # 🔹 Vérifier que les fichiers templates existent avant copie
             for template_path, name in [ (Settings.SECURE_PREFERENCES_TEMPLATE, "Secure Preferences"), (Settings.FICHIER_LOCAL_STATE, "Local State"), (Settings.FICHIER_VARIATIONS, "Variations")]:
                 if not os.path.isfile(template_path):
-                    print(f"[ERROR] Template {name} introuvable ou pas un fichier : {template_path}")
-                    Settings.WRITE_LOG_DEV_FILE(f"Template {name} introuvable ou pas un fichier : {template_path}", "ERROR")
+                    # print(f"[ERROR] Template {name} introuvable ou pas un fichier : {template_path}")
+                    settings.WRITE_LOG_DEV_FILE(f"Template {name} introuvable ou pas un fichier : {template_path}", "ERROR")
                     raise FileNotFoundError(f"Template {name} introuvable ou pas un fichier : {template_path}")
 
             # 🔹 Copier fichiers templates
-            print(f"[DEBUG] Copie de SECURE_PREFERENCES_TEMPLATE vers {secure_preferences_path}")
+            # print(f"[DEBUG] Copie de SECURE_PREFERENCES_TEMPLATE vers {secure_preferences_path}")
+            settings.WRITE_LOG_DEV_FILE(f"Copie de SECURE_PREFERENCES_TEMPLATE vers {secure_preferences_path}", "DEBUG")
             shutil.copy2(Settings.SECURE_PREFERENCES_TEMPLATE, secure_preferences_path)
 
-            print(f"[DEBUG] Copie de FICHIER_LOCAL_STATE vers {local_state_path}")
+            # print(f"[DEBUG] Copie de FICHIER_LOCAL_STATE vers {local_state_path}")
+            settings.WRITE_LOG_DEV_FILE(f"Copie de FICHIER_LOCAL_STATE vers {local_state_path}", "DEBUG")
             shutil.copy2(Settings.FICHIER_LOCAL_STATE, local_state_path)
 
-            print(f"[DEBUG] Copie de FICHIER_VARIATIONS vers {variations_path}")
+            # print(f"[DEBUG] Copie de FICHIER_VARIATIONS vers {variations_path}")
+            settings.WRITE_LOG_DEV_FILE(f"Copie de FICHIER_VARIATIONS vers {variations_path}", "DEBUG")
             shutil.copy2(Settings.FICHIER_VARIATIONS, variations_path)
 
-            print(f"[INFO] Mise à jour du profil {profile_name} effectuée avec succès.")
-            Settings.WRITE_LOG_DEV_FILE(f"Mise à jour du profil {profile_name} effectuée avec succès.", "INFO")
+            # print(f"[INFO] Mise à jour du profil {profile_name} effectuée avec succès.")
+            settings.WRITE_LOG_DEV_FILE(f"Mise à jour du profil {profile_name} effectuée avec succès.", "INFO")
             return True
 
         except Exception as e:
-            print(f"[ERROR] Erreur lors de la mise à jour du profil {profile_name} : {e}")
+            # print(f"[ERROR] Erreur lors de la mise à jour du profil {profile_name} : {e}")
             Settings.WRITE_LOG_DEV_FILE(f"Erreur lors de la mise à jour du profil {profile_name} : {e}\n{traceback.format_exc()}", "ERROR")
             return False
 

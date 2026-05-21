@@ -90,7 +90,8 @@ class ValidationUtils:
             - error_message (str): Detailed message
             - error_type (str): 'critical' for errors, 'success' for success
         """
-        print("🔵 [START] process_user_input")
+        # print("🔵 [START] process_user_input")
+        Settings.WRITE_LOG_DEV_FILE("========== NEW REQUEST ==========", "INFO")
 
         # Default result structure
         result: Dict[str, Any] = {
@@ -127,7 +128,8 @@ class ValidationUtils:
             return result
 
         entered_number = int(entered_number_text)
-        print(f"✅ Entered number is valid: {entered_number}")
+        # print(f"✅ Entered number is valid: {entered_number}")
+        Settings.WRITE_LOG_DEV_FILE(f"✅ Entered number is valid: {entered_number}", "INFO")
 
         # --------------------
         # 2️⃣ Parse input lines
@@ -232,7 +234,8 @@ class ValidationUtils:
                 "error_message": "An unexpected error occurred during data processing. Please verify your input and try again. If the issue persists, contact technical support."
             })
 
-        print("🔵 [END] process_user_input")
+        # print("🔵 [END] process_user_input")
+        Settings.WRITE_LOG_DEV_FILE("========== REQUEST COMPLETED ==========", "INFO")
         return result
 
 
@@ -470,64 +473,77 @@ class ValidationUtils:
     
     @staticmethod
     def validate_path(path: str, must_exist: bool = True, is_file: bool = False) -> bool:
-        print(f"[DEBUG] Checking path: {path}")
+        # print(f"[DEBUG] Checking path: {path}")
+        settings.WRITE_LOG_DEV_FILE(f"Validating path: {path}", "INFO")
 
         if not path or not isinstance(path, str):
-            print("[ERROR] Path is invalid or not a string")
+            # print("[ERROR] Path is invalid or not a string")
+            settings.WRITE_LOG_DEV_FILE("Path is invalid or not a string", "ERROR")
             return False
 
         if must_exist and not os.path.exists(path):
-            print(f"[ERROR] Path does not exist: {path}")
+            # print(f"[ERROR] Path does not exist: {path}")
+            settings.WRITE_LOG_DEV_FILE(f"Path does not exist: {path}", "ERROR")
             return False
 
         try:
             if must_exist:
                 if is_file and not os.path.isfile(path):
-                    print(f"[ERROR] Path is not a file: {path}")
+                    # print(f"[ERROR] Path is not a file: {path}")
+                    settings.WRITE_LOG_DEV_FILE(f"Path is not a file: {path}", "ERROR")
                     return False
                 elif not is_file and not os.path.isdir(path):
-                    print(f"[ERROR] Path is not a directory: {path}")
+                    # print(f"[ERROR] Path is not a directory: {path}")
+                    settings.WRITE_LOG_DEV_FILE(f"Path is not a directory: {path}", "ERROR")
                     return False
 
-            print(f"[DEBUG] Normalized path: {os.path.normpath(path)}")
+            # print(f"[DEBUG] Normalized path: {os.path.normpath(path)}")
+            settings.WRITE_LOG_DEV_FILE(f"Normalized path: {os.path.normpath(path)}", "INFO")
             return True
 
         except Exception as e:
-            print(f"[EXCEPTION] validate_path error: {e}\n{traceback.format_exc()}")
+            # print(f"[EXCEPTION] validate_path error: {e}\n{traceback.format_exc()}")
             Settings.WRITE_LOG_DEV_FILE(f"Exception in validate_path: {e}\n{traceback.format_exc()}", "ERROR")
             return False
         
 
     @staticmethod
     def ensure_path_exists(path: str, is_file: bool = True) -> bool:
-        print(f"[DEBUG] Ensuring path exists: {path}")
+        # print(f"[DEBUG] Ensuring path exists: {path}")
+        settings.WRITE_LOG_DEV_FILE(f"Ensuring path exists: {path}", "INFO")
 
         try:
             if is_file:
                 directory = os.path.dirname(path)
 
                 if directory and not os.path.exists(directory):
-                    print(f"[DEBUG] Creating directory: {directory}")
+                    # print(f"[DEBUG] Creating directory: {directory}")
+                    settings.WRITE_LOG_DEV_FILE(f"Creating directory: {directory}", "INFO")
                     os.makedirs(directory, exist_ok=True)
 
                 if not os.path.exists(path):
-                    print(f"[DEBUG] Creating file: {path}")
+                    # print(f"[DEBUG] Creating file: {path}")
+                    settings.WRITE_LOG_DEV_FILE(f"Creating file: {path}", "INFO")
                     open(path, "a", encoding="utf-8").close()
                 else:
-                    print(f"[DEBUG] File already exists: {path}")
+                    # print(f"[DEBUG] File already exists: {path}")
+                    settings.WRITE_LOG_DEV_FILE(f"File already exists: {path}", "INFO")
 
             else:
                 if not os.path.exists(path):
-                    print(f"[DEBUG] Creating directory: {path}")
+                    # print(f"[DEBUG] Creating directory: {path}")
+                    settings.WRITE_LOG_DEV_FILE(f"Creating directory: {path}", "INFO")
                     os.makedirs(path, exist_ok=True)
                 else:
-                    print(f"[DEBUG] Directory already exists: {path}")
+                    # print(f"[DEBUG] Directory already exists: {path}")
+                    settings.WRITE_LOG_DEV_FILE(f"Directory already exists: {path}", "INFO")
 
             return True
 
         except Exception as e:
             Settings.WRITE_LOG_DEV_FILE(f"Exception in ensure_path_exists: {e}\n{traceback.format_exc()}", "ERROR")
-            print(f"[EXCEPTION] ensure_path_exists error: {e}")
+            # print(f"[EXCEPTION] ensure_path_exists error: {e}")
+            settings.WRITE_LOG_DEV_FILE(f"Exception in ensure_path_exists: {e}\n{traceback.format_exc()}", "ERROR")
             return False
 
 
@@ -536,7 +552,8 @@ class ValidationUtils:
     @staticmethod
     def path_exists(path: str) -> bool:
         exists = os.path.exists(path)
-        print(f"[DEBUG] Path exists check: {path} -> {exists}")
+        # print(f"[DEBUG] Path exists check: {path} -> {exists}")
+        settings.WRITE_LOG_DEV_FILE(f"Path exists check: {path} -> {exists}", "INFO")
         return exists
     
 
