@@ -11,9 +11,9 @@ from PyQt6.QtWidgets import QLineEdit
 from PyQt6.QtCore import QTimer
 import sys
 try:
-    from config.settings import Settings
+    from config import Settings
 except ImportError as e:
-    print(f"❌ Erreur d'importation : {e}")
+    print(f"❌ Erreur d'importation  dans file {__file__}: {e}")
     sys.exit(1)
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -381,7 +381,7 @@ class ValidationUtils:
 
             # ❌ Stop if invalid accounts exist
             if invalid_accounts:
-                msg = f"Security and validation policy violation: {len(invalid_accounts)} account(s) contain invalid IP addresses or unauthorized port numbers. Please verify all configurations against approved settings."
+                msg = f"Security and validation policy violation: {len(invalid_accounts)} account(s) contain invalid IP addresses or unauthorized port numbers. Please verify all configurations against approved Settings."
                 Settings.WRITE_LOG_DEV_FILE(f"Validation failed: {len(invalid_accounts)} invalid accounts", "ERROR")
                 return {
                     "valid": False,
@@ -474,31 +474,31 @@ class ValidationUtils:
     @staticmethod
     def validate_path(path: str, must_exist: bool = True, is_file: bool = False) -> bool:
         # print(f"[DEBUG] Checking path: {path}")
-        settings.WRITE_LOG_DEV_FILE(f"Validating path: {path}", "INFO")
+        Settings.WRITE_LOG_DEV_FILE(f"Validating path: {path}", "INFO")
 
         if not path or not isinstance(path, str):
             # print("[ERROR] Path is invalid or not a string")
-            settings.WRITE_LOG_DEV_FILE("Path is invalid or not a string", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE("Path is invalid or not a string", "ERROR")
             return False
 
         if must_exist and not os.path.exists(path):
             # print(f"[ERROR] Path does not exist: {path}")
-            settings.WRITE_LOG_DEV_FILE(f"Path does not exist: {path}", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(f"Path does not exist: {path}", "ERROR")
             return False
 
         try:
             if must_exist:
                 if is_file and not os.path.isfile(path):
                     # print(f"[ERROR] Path is not a file: {path}")
-                    settings.WRITE_LOG_DEV_FILE(f"Path is not a file: {path}", "ERROR")
+                    Settings.WRITE_LOG_DEV_FILE(f"Path is not a file: {path}", "ERROR")
                     return False
                 elif not is_file and not os.path.isdir(path):
                     # print(f"[ERROR] Path is not a directory: {path}")
-                    settings.WRITE_LOG_DEV_FILE(f"Path is not a directory: {path}", "ERROR")
+                    Settings.WRITE_LOG_DEV_FILE(f"Path is not a directory: {path}", "ERROR")
                     return False
 
             # print(f"[DEBUG] Normalized path: {os.path.normpath(path)}")
-            settings.WRITE_LOG_DEV_FILE(f"Normalized path: {os.path.normpath(path)}", "INFO")
+            Settings.WRITE_LOG_DEV_FILE(f"Normalized path: {os.path.normpath(path)}", "INFO")
             return True
 
         except Exception as e:
@@ -510,7 +510,7 @@ class ValidationUtils:
     @staticmethod
     def ensure_path_exists(path: str, is_file: bool = True) -> bool:
         # print(f"[DEBUG] Ensuring path exists: {path}")
-        settings.WRITE_LOG_DEV_FILE(f"Ensuring path exists: {path}", "INFO")
+        Settings.WRITE_LOG_DEV_FILE(f"Ensuring path exists: {path}", "INFO")
 
         try:
             if is_file:
@@ -518,32 +518,32 @@ class ValidationUtils:
 
                 if directory and not os.path.exists(directory):
                     # print(f"[DEBUG] Creating directory: {directory}")
-                    settings.WRITE_LOG_DEV_FILE(f"Creating directory: {directory}", "INFO")
+                    Settings.WRITE_LOG_DEV_FILE(f"Creating directory: {directory}", "INFO")
                     os.makedirs(directory, exist_ok=True)
 
                 if not os.path.exists(path):
                     # print(f"[DEBUG] Creating file: {path}")
-                    settings.WRITE_LOG_DEV_FILE(f"Creating file: {path}", "INFO")
+                    Settings.WRITE_LOG_DEV_FILE(f"Creating file: {path}", "INFO")
                     open(path, "a", encoding="utf-8").close()
                 else:
                     # print(f"[DEBUG] File already exists: {path}")
-                    settings.WRITE_LOG_DEV_FILE(f"File already exists: {path}", "INFO")
+                    Settings.WRITE_LOG_DEV_FILE(f"File already exists: {path}", "INFO")
 
             else:
                 if not os.path.exists(path):
                     # print(f"[DEBUG] Creating directory: {path}")
-                    settings.WRITE_LOG_DEV_FILE(f"Creating directory: {path}", "INFO")
+                    Settings.WRITE_LOG_DEV_FILE(f"Creating directory: {path}", "INFO")
                     os.makedirs(path, exist_ok=True)
                 else:
                     # print(f"[DEBUG] Directory already exists: {path}")
-                    settings.WRITE_LOG_DEV_FILE(f"Directory already exists: {path}", "INFO")
+                    Settings.WRITE_LOG_DEV_FILE(f"Directory already exists: {path}", "INFO")
 
             return True
 
         except Exception as e:
             Settings.WRITE_LOG_DEV_FILE(f"Exception in ensure_path_exists: {e}\n{traceback.format_exc()}", "ERROR")
             # print(f"[EXCEPTION] ensure_path_exists error: {e}")
-            settings.WRITE_LOG_DEV_FILE(f"Exception in ensure_path_exists: {e}\n{traceback.format_exc()}", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(f"Exception in ensure_path_exists: {e}\n{traceback.format_exc()}", "ERROR")
             return False
 
 
@@ -553,7 +553,7 @@ class ValidationUtils:
     def path_exists(path: str) -> bool:
         exists = os.path.exists(path)
         # print(f"[DEBUG] Path exists check: {path} -> {exists}")
-        settings.WRITE_LOG_DEV_FILE(f"Path exists check: {path} -> {exists}", "INFO")
+        Settings.WRITE_LOG_DEV_FILE(f"Path exists check: {path} -> {exists}", "INFO")
         return exists
     
 

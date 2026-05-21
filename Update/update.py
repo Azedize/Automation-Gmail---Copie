@@ -35,7 +35,7 @@ try:
     from ui_utils import UIManager
 
 except ImportError as e:
-    print(f"❌ Erreur d'importation : {e}")
+    print(f"❌ Erreur d'importation dans file {__file__} : {e}")
     sys.exit(1)  # quitte immédiatement le script avec un code d'erreur
 
 
@@ -591,7 +591,6 @@ class UpdateManager:
             # print(f"➤ version_Extention : {remote_version}")
             # print(f"➤ manifest_version  : {remote_manifest_version}")
 
-            se
 
         except Exception as e:
             settings.WRITE_LOG_DEV_FILE(f"Failed to get remote version: {e}\n{traceback.format_exc()}", level="ERROR")

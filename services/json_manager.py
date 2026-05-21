@@ -12,7 +12,7 @@ if ROOT_DIR not in sys.path:
 try:
     from config import Settings
 except ImportError as e:
-    print(f"❌ Erreur d'importation : {e}")
+    print(f"❌ Erreur d'importation dans file {__file__}: {e}")
     sys.exit(1)  # quitte immédiatement le script avec un code d'erreur
 
 

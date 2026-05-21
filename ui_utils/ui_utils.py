@@ -22,7 +22,7 @@ try:
     from config import Settings
     from utils.validation_utils import ValidationUtils
 except ImportError as e:
-    print(f"❌ Erreur d'importation : {e}")
+    print(f"❌ Erreur d'importation dans file {__file__}: {e}")
     sys.exit(1)  # quitte immédiatement le script avec un code d'erreur
 
 
@@ -472,7 +472,7 @@ class UIManager:
                     f.write("")  # Effacer le contenu actuel
 
             # print(f"🗑️ Le fichier {Settings.RESULT_FILE_PATH} a été vidé avec succès")
-            settings.WRITE_LOG_DEV_FILE(f"Le fichier {Settings.RESULT_FILE_PATH} a été vidé avec succès", "INFO")
+            Settings.WRITE_LOG_DEV_FILE(f"Le fichier {Settings.RESULT_FILE_PATH} a été vidé avec succès", "INFO")
 
         except Exception as e:
             Settings.WRITE_LOG_DEV_FILE(f"Error clearing result file: {e}\n{traceback.format_exc()}", "ERROR")
@@ -576,13 +576,13 @@ class UIManager:
                 tab_widget = result_tab_widget.findChild(QWidget, status)
                 if not tab_widget:
                     # print(f"⚠️ [UI] Tab pour le statut '{status}' introuvable, ignoré")
-                    settings.WRITE_LOG_DEV_FILE(f"Tab pour le statut '{status}' introuvable dans tabWidgetResult", "WARNING")
+                    Settings.WRITE_LOG_DEV_FILE(f"Tab pour le statut '{status}' introuvable dans tabWidgetResult", "WARNING")
                     continue
 
                 list_widgets = tab_widget.findChildren(QListWidget)
                 if not list_widgets:
                     # print(f"⚠️ [UI] QListWidget introuvable dans le tab '{status}', ignoré")
-                    settings.WRITE_LOG_DEV_FILE(f"QListWidget introuvable dans le tab '{status}'", "WARNING")
+                    Settings.WRITE_LOG_DEV_FILE(f"QListWidget introuvable dans le tab '{status}'", "WARNING")
                     continue
 
                 list_widget = list_widgets[0]
@@ -594,7 +594,7 @@ class UIManager:
                     list_widget.scrollToBottom()
                     UIManager.Add_Notification_Badge(result_tab_widget, result_tab_widget.indexOf(tab_widget), len(emails), NOTIFICATION_BADGES)
                     # print(f"🟢 [UI] {len(emails)} emails ajoutés au tab '{status}'")
-                    settings.WRITE_LOG_DEV_FILE(f"{len(emails)} emails ajoutés au tab '{status}'", "INFO")
+                    Settings.WRITE_LOG_DEV_FILE(f"{len(emails)} emails ajoutés au tab '{status}'", "INFO")
                     # Supprimer le message "no data" si présent
                     message_label = tab_widget.findChild(QLabel, "no_data_message")
                     if message_label:
@@ -1646,37 +1646,37 @@ class UIManager:
         button = UIManager._find_widget(window, button_name, QPushButton)
         if not button:
             # print(f"[ERROR] Bouton '{button_name}' introuvable.")
-            settings.WRITE_LOG_DEV_FILE(f"Bouton '{button_name}' introuvable.", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(f"Bouton '{button_name}' introuvable.", "ERROR")
             return None
         else:
             # print(f"[DEBUG] Bouton '{button_name}' trouvé.")
-            settings.WRITE_LOG_DEV_FILE(f"Bouton '{button_name}' trouvé.", "DEBUG")
+            Settings.WRITE_LOG_DEV_FILE(f"Bouton '{button_name}' trouvé.", "DEBUG")
 
         # 2️⃣ Construction du chemin de l'icône
         icon_path = os.path.join(Settings.ICONS_DIR, icon_file).replace("\\", "/")
         # print(f"[DEBUG] Chemin icône: {icon_path}")
-        settings.WRITE_LOG_DEV_FILE(f"Chemin icône pour '{button_name}': {icon_path}", "DEBUG")
+        Settings.WRITE_LOG_DEV_FILE(f"Chemin icône pour '{button_name}': {icon_path}", "DEBUG")
 
         # 3️⃣ Vérification et application de l'icône
         if ValidationUtils.path_exists(icon_path):
             # print(f"[DEBUG] Icône trouvée.")
-            settings.WRITE_LOG_DEV_FILE(f"Icône trouvée pour '{button_name}': {icon_path}", "DEBUG")
+            Settings.WRITE_LOG_DEV_FILE(f"Icône trouvée pour '{button_name}': {icon_path}", "DEBUG")
             icon = QIcon(icon_path)
 
             if icon_size:
                 # print(f"[DEBUG] Taille icône: {icon_size}")
-                settings.WRITE_LOG_DEV_FILE(f"Taille icône pour '{button_name}': {icon_size}", "DEBUG")
+                Settings.WRITE_LOG_DEV_FILE(f"Taille icône pour '{button_name}': {icon_size}", "DEBUG")
                 button.setIconSize(QSize(*icon_size))
 
             button.setIcon(icon)
         else:
             # print(f"[WARNING] Icône introuvable: {icon_path}")
-            settings.WRITE_LOG_DEV_FILE(f"Icône introuvable pour '{button_name}': {icon_path}", "WARNING")
+            Settings.WRITE_LOG_DEV_FILE(f"Icône introuvable pour '{button_name}': {icon_path}", "WARNING")
 
         # 4️⃣ Connexion du callback
         try:
             button.clicked.connect(callback)
-            settings.WRITE_LOG_DEV_FILE(f"Callback connecté pour '{button_name}'", "INFO")
+            Settings.WRITE_LOG_DEV_FILE(f"Callback connecté pour '{button_name}'", "INFO")
             # print(f"[DEBUG] Callback connecté pour '{button_name}'")
         except Exception as e:
             Settings.WRITE_LOG_DEV_FILE(f"Error connecting callback: {button_name}\n{traceback.format_exc()}", "ERROR")
@@ -1685,13 +1685,13 @@ class UIManager:
         # 5️⃣ Taille du bouton
         if button_size:
             # print(f"[DEBUG] Taille bouton: {button_size}")
-            settings.WRITE_LOG_DEV_FILE(f"Taille bouton pour '{button_name}': {button_size}", "DEBUG")
+            Settings.WRITE_LOG_DEV_FILE(f"Taille bouton pour '{button_name}': {button_size}", "DEBUG")
             button.setFixedSize(*button_size)
 
         # 6️⃣ Style spécifique pour certains boutons
         if button_name in ("ClearButton", "CopyButton"):
             # print(f"[DEBUG] Application style spécial pour: {button_name}")
-            settings.WRITE_LOG_DEV_FILE(f"Application style spéciale pour '{button_name}'", "DEBUG")
+            Settings.WRITE_LOG_DEV_FILE(f"Application style spéciale pour '{button_name}'", "DEBUG")
             button.setText("")
             button.setStyleSheet("""
                 QPushButton {
@@ -1706,7 +1706,7 @@ class UIManager:
             """)
 
         # print(f"[SUCCESS] Bouton '{button_name}' configuré avec succès.\n")
-        settings.WRITE_LOG_DEV_FILE(f"Bouton '{button_name}' configuré avec succès.", "SUCCESS")
+        Settings.WRITE_LOG_DEV_FILE(f"Bouton '{button_name}' configuré avec succès.", "SUCCESS")
 
         return button
 
@@ -1732,23 +1732,23 @@ class UIManager:
 
         if not button:
             # print(f"[ERROR] Bouton '{widget_name}' introuvable.")
-            settings.WRITE_LOG_DEV_FILE(f"Bouton '{widget_name}' introuvable.", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(f"Bouton '{widget_name}' introuvable.", "ERROR")
             return None
         else:
             # print(f"[DEBUG] Bouton '{widget_name}' trouvé.")
-            settings.WRITE_LOG_DEV_FILE(f"Bouton '{widget_name}' trouvé.", "DEBUG")
+            Settings.WRITE_LOG_DEV_FILE(f"Bouton '{widget_name}' trouvé.", "DEBUG")
 
         # 2️⃣ Vérifier callback
         if not callback:
             # print(f"[WARNING] Aucun callback fourni pour '{widget_name}'")
-            settings.WRITE_LOG_DEV_FILE(f"Aucun callback fourni pour '{widget_name}'", "WARNING")
+            Settings.WRITE_LOG_DEV_FILE(f"Aucun callback fourni pour '{widget_name}'", "WARNING")
             return button
 
         # 3️⃣ Connecter le signal
         try:
             button.clicked.connect(callback)
             # print(f"[SUCCESS] Callback connecté pour '{widget_name}'")
-            settings.WRITE_LOG_DEV_FILE(f"Callback connecté pour '{widget_name}'", "SUCCESS")
+            Settings.WRITE_LOG_DEV_FILE(f"Callback connecté pour '{widget_name}'", "SUCCESS")
         except Exception as e:
             Settings.WRITE_LOG_DEV_FILE(f"Error connecting callback: {widget_name}\n{traceback.format_exc()}", "ERROR")
             # print(f"[ERROR] Erreur lors de la connexion du callback: {e}")
@@ -1768,31 +1768,31 @@ class UIManager:
         """Setup browser selection combobox with debug"""
 
         # print("[DEBUG] Initialisation du QComboBox 'browsers'")
-        settings.WRITE_LOG_DEV_FILE("Initialisation du QComboBox 'browsers'", "DEBUG")
+        Settings.WRITE_LOG_DEV_FILE("Initialisation du QComboBox 'browsers'", "DEBUG")
 
         # 1️⃣ Trouver le combobox
         window.browser = UIManager._find_widget(window, "browsers", QComboBox)
 
         if window.browser is None:
             # print("[ERROR] QComboBox 'browsers' introuvable.")
-            settings.WRITE_LOG_DEV_FILE("QComboBox 'browsers' introuvable.", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE("QComboBox 'browsers' introuvable.", "ERROR")
             return
         else:
             # print("[DEBUG] QComboBox trouvé.")
-            settings.WRITE_LOG_DEV_FILE("QComboBox trouvé.", "DEBUG")
+            Settings.WRITE_LOG_DEV_FILE("QComboBox trouvé.", "DEBUG")
 
         # 2️⃣ Appliquer style
         try:
             UIManager._apply_combobox_style(window, window.browser)
             # print("[DEBUG] Style appliqué au QComboBox.")
-            settings.WRITE_LOG_DEV_FILE("Style appliqué au QComboBox.", "DEBUG")
+            Settings.WRITE_LOG_DEV_FILE("Style appliqué au QComboBox.", "DEBUG")
         except Exception as e:
             Settings.WRITE_LOG_DEV_FILE(f"Error applying style to browsers combobox\n{traceback.format_exc()}", "ERROR")
             # print(f"[ERROR] Erreur application style: {e}")
 
         # 3️⃣ Nettoyage (éviter doublons)
         # print("[DEBUG] Nettoyage des anciens éléments...")
-        settings.WRITE_LOG_DEV_FILE("[DEBUG] Nettoyage des anciens éléments...", "DEBUG")
+        Settings.WRITE_LOG_DEV_FILE("[DEBUG] Nettoyage des anciens éléments...", "DEBUG")
         window.browser.clear()
 
         # 4️⃣ Liste des navigateurs
@@ -1804,25 +1804,25 @@ class UIManager:
         ]
 
         # print(f"[DEBUG] Nombre de navigateurs à ajouter: {len(browsers)}")
-        settings.WRITE_LOG_DEV_FILE(f"Nombre de navigateurs à ajouter: {len(browsers)}", "DEBUG")
+        Settings.WRITE_LOG_DEV_FILE(f"Nombre de navigateurs à ajouter: {len(browsers)}", "DEBUG")
         # 5️⃣ Ajout des items
         for name, icon_file in browsers:
             icon_path = os.path.join(Settings.ICONS_DIR, icon_file).replace("\\", "/")
             # print(f"[DEBUG] Traitement: {name} | Icône: {icon_path}")
-            settings.WRITE_LOG_DEV_FILE(f"Traitement: {name} | Icône: {icon_path}", "DEBUG")
+            Settings.WRITE_LOG_DEV_FILE(f"Traitement: {name} | Icône: {icon_path}", "DEBUG")
 
             if ValidationUtils.path_exists(icon_path):
                 # print(f"[DEBUG] Icône trouvée pour {name}")
                 window.browser.addItem(QIcon(icon_path), name)
             else:
                 # print(f"[WARNING] Icône introuvable pour {name}")
-                settings.WRITE_LOG_DEV_FILE(f"Icône introuvable pour {name}: {icon_path}", "WARNING")
+                Settings.WRITE_LOG_DEV_FILE(f"Icône introuvable pour {name}: {icon_path}", "WARNING")
                 window.browser.addItem(name)
 
         # 6️⃣ Vérification finale
         count = window.browser.count()
         # print(f"[SUCCESS] QComboBox configuré avec {count} éléments.\n")
-        settings.WRITE_LOG_DEV_FILE(f"QComboBox configuré avec {count} éléments.", "SUCCESS")
+        Settings.WRITE_LOG_DEV_FILE(f"QComboBox configuré avec {count} éléments.", "SUCCESS")
         
         
         
@@ -1918,10 +1918,10 @@ class UIManager:
         window.saveSanario = UIManager._find_widget(window , "saveSanario", QComboBox)
         if  window.saveSanario is  None:
             # print("🔧 [DEBUG] Le save scenario not found")
-            settings.WRITE_LOG_DEV_FILE("🔧 [DEBUG] Le save scenario not found", "DEBUG")
+            Settings.WRITE_LOG_DEV_FILE("🔧 [DEBUG] Le save scenario not found", "DEBUG")
             return
         # print("🔧 [DEBUG] Le save scenario  found ")
-        settings.WRITE_LOG_DEV_FILE("🔧 [DEBUG] Le save scenario  found ", "DEBUG")
+        Settings.WRITE_LOG_DEV_FILE("🔧 [DEBUG] Le save scenario  found ", "DEBUG")
 
         UIManager._apply_combobox_style(window ,window.saveSanario)
         window.saveSanario.currentTextChanged.connect(window.Scenario_Changed)

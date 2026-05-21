@@ -22,7 +22,7 @@ try:
     from utils.validation_utils import ValidationUtils
     from api.base_client import APIManager
 except ImportError as e:
-    print(f"❌ Erreur d'importation : {e}")
+    print(f"❌ Erreur d'importation dans file {__file__}: {e}")
     sys.exit(1)  # quitte immédiatement le script avec un code d'erreur
 
 

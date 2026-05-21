@@ -22,7 +22,7 @@ import sys
 try:
     from config.settings import settings
 except ImportError as e:
-    print(f"❌ Erreur d'importation : {e}")
+    print(f"❌ Erreur d'importation dans file {__file__}: {e}")
     sys.exit(1) 
     
 
