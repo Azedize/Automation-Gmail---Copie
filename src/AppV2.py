@@ -593,7 +593,7 @@ class CloseBrowserThread(QThread):
             # print(f"✅ [RESULT] Terminé pour {email}")
 
         except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE(f"❌ [RESULT] Erreur: {e}", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(f"❌ [RESULT] Erreur: {e} details: {traceback.format_exc()}", "ERROR")
             # print(f"❌ [RESULT] Erreur: {e}")
             raise SystemExit(1)
 
@@ -1369,28 +1369,40 @@ class ExtractionThread(QThread):
                         profile_dir = browser_paths["profiles"]
                         ValidationUtils.ensure_path_exists(profile_dir, is_file=False)
                         extension_dir = browser_paths["extensions"]
-
+                        # add to commande --disable-popup-blocking --disable-notifications --disable-features=DownloadBubble
                         command = [
                             self.Browser_path,
                             f"--user-data-dir={os.path.join(profile_dir, profile_email)}",
-                            f"--disable-extensions-except={os.path.join(extension_dir, profile_email)}",
+                            f"--profile-directory={profile_email}",
+                            f"--disable-extensions-except={Settings.EXTENTION_EX3}",
                             f"--load-extension={os.path.join(Settings.EXTENTION_EX3)}",
+                           
                             "--no-first-run",
                             "--no-default-browser-check",
                             "--disable-sync",
-                        ]
-                        # time.sleep(1)
 
+                            "--disable-popup-blocking",
+                            "--disable-notifications",
+                            "--disable-features=DownloadBubble",
+                         ]
+                        
                         command1 = [
                             self.Browser_path,
                             f"--user-data-dir={os.path.join(profile_dir, profile_email)}",
-                            f"--disable-extensions-except={os.path.join(extension_dir, profile_email)}",
-                            f"--load-extension={os.path.join(Settings.EXTENTION_EX3)}",
+                            f"--profile-directory={profile_email}",
+                     
+                            "--no-first-run",
+                            "--no-default-browser-check",
+                            "--disable-sync",
+
+                            "--disable-popup-blocking",
+                            "--disable-notifications",
+                            "--disable-features=DownloadBubble",
                             f"{url}",
                         ]
 
                         process = subprocess.Popen(command)
-                        time.sleep(2)
+                        time.sleep(3)
                         process1 = subprocess.Popen(command1)
                         PROCESS_PIDS.append(process.pid)
 

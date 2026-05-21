@@ -194,7 +194,7 @@ class APIManager:
         result = self.make_request("_SEND_STATUS_API", "POST", json_data=params)
 
         # print("📥 Réponse brute:", result)
-        Settings.WRITE_LOG_DEV_file(f"📥 Réponse brute: {result}", "INFO")
+        Settings.WRITE_LOG_DEV_FILE(f"📥 Réponse brute: {result}", "INFO")
 
         return str(self._handle_response(result, ""))
 

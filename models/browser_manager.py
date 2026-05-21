@@ -341,7 +341,7 @@ class BrowserManager:
     def Upload_EXTENSION_PROXY(profile_name: str, search_keys: List[str], results: List[Dict[str, Any]]) -> Optional[List[Dict[str, Any]]]:
         path_file = os.path.join(Settings.CONFIG_PROFILE, profile_name, "Secure Preferences")
         # print(f"[DEBUG] Vérification du fichier Secure Preferences : {path_file}")
-        settings.WRITE_LOG_DEV_FILE(f"Verification du fichier Secure Preferences : {path_file}", "INFO")
+        Settings.WRITE_LOG_DEV_FILE(f"Verification du fichier Secure Preferences : {path_file}", "INFO")
 
         if not ValidationUtils.path_exists(path_file):
             # print(f"[ERROR] Fichier introuvable pour le profil {profile_name}")
@@ -362,11 +362,11 @@ class BrowserManager:
                 # print(f"[INFO] Résultats trouvés pour {profile_name}:")
                 # for idx, item in enumerate(results, start=1):
                 #     print(f"   {idx}. {item}")
-                settings.WRITE_LOG_DEV_FILE(f"Résultats trouvés pour {profile_name}: {results}", "INFO")
+                Settings.WRITE_LOG_DEV_FILE(f"Résultats trouvés pour {profile_name}: {results}", "INFO")
                 return results  # retourne la liste si des résultats trouvés
             else:
                 # print(f"[WARNING] Aucun résultat trouvé pour les clés spécifiées pour {profile_name}")
-                settings.WRITE_LOG_DEV_FILE(f"Aucun résultat trouvé pour les clés spécifiées pour {profile_name}", "WARNING")
+                Settings.WRITE_LOG_DEV_FILE(f"Aucun résultat trouvé pour les clés spécifiées pour {profile_name}", "WARNING")
                 return None  # retourne None si aucun résultat
 
         except json.JSONDecodeError as e:
@@ -409,42 +409,42 @@ class BrowserManager:
             # print(f"[DEBUG] Local State : {local_state_path}")
             # print(f"[DEBUG] Variations : {variations_path}")
 
-            settings.WRITE_LOG_DEV_FILE(f"Profil cible : {profile_dir}", "DEBUG")
-            settings.WRITE_LOG_DEV_FILE(f"Secure Preferences : {secure_preferences_path}", "DEBUG")
-            settings.WRITE_LOG_DEV_FILE(f"Local State : {local_state_path}", "DEBUG")
-            settings.WRITE_LOG_DEV_FILE(f"Variations : {variations_path}", "DEBUG")
+            Settings.WRITE_LOG_DEV_FILE(f"Profil cible : {profile_dir}", "DEBUG")
+            Settings.WRITE_LOG_DEV_FILE(f"Secure Preferences : {secure_preferences_path}", "DEBUG")
+            Settings.WRITE_LOG_DEV_FILE(f"Local State : {local_state_path}", "DEBUG")
+            Settings.WRITE_LOG_DEV_FILE(f"Variations : {variations_path}", "DEBUG")
 
             # 🔹 Supprimer fichiers existants si présents
             for path in [secure_preferences_path, local_state_path, variations_path]:
                 if os.path.exists(path):
                     try:
-                        settings.WRITE_LOG_DEV_FILE(f"Suppression du fichier existant : {path}", "DEBUG")
+                        Settings.WRITE_LOG_DEV_FILE(f"Suppression du fichier existant : {path}", "DEBUG")
                         os.remove(path)
                     except Exception as e:
-                        settings.WRITE_LOG_DEV_FILE(f"Erreur suppression fichier {path} : {e}", "ERROR")
+                        Settings.WRITE_LOG_DEV_FILE(f"Erreur suppression fichier {path} : {e}", "ERROR")
 
             # 🔹 Vérifier que les fichiers templates existent avant copie
             for template_path, name in [ (Settings.SECURE_PREFERENCES_TEMPLATE, "Secure Preferences"), (Settings.FICHIER_LOCAL_STATE, "Local State"), (Settings.FICHIER_VARIATIONS, "Variations")]:
                 if not os.path.isfile(template_path):
                     # print(f"[ERROR] Template {name} introuvable ou pas un fichier : {template_path}")
-                    settings.WRITE_LOG_DEV_FILE(f"Template {name} introuvable ou pas un fichier : {template_path}", "ERROR")
+                    Settings.WRITE_LOG_DEV_FILE(f"Template {name} introuvable ou pas un fichier : {template_path}", "ERROR")
                     raise FileNotFoundError(f"Template {name} introuvable ou pas un fichier : {template_path}")
 
             # 🔹 Copier fichiers templates
             # print(f"[DEBUG] Copie de SECURE_PREFERENCES_TEMPLATE vers {secure_preferences_path}")
-            settings.WRITE_LOG_DEV_FILE(f"Copie de SECURE_PREFERENCES_TEMPLATE vers {secure_preferences_path}", "DEBUG")
+            Settings.WRITE_LOG_DEV_FILE(f"Copie de SECURE_PREFERENCES_TEMPLATE vers {secure_preferences_path}", "DEBUG")
             shutil.copy2(Settings.SECURE_PREFERENCES_TEMPLATE, secure_preferences_path)
 
             # print(f"[DEBUG] Copie de FICHIER_LOCAL_STATE vers {local_state_path}")
-            settings.WRITE_LOG_DEV_FILE(f"Copie de FICHIER_LOCAL_STATE vers {local_state_path}", "DEBUG")
+            Settings.WRITE_LOG_DEV_FILE(f"Copie de FICHIER_LOCAL_STATE vers {local_state_path}", "DEBUG")
             shutil.copy2(Settings.FICHIER_LOCAL_STATE, local_state_path)
 
             # print(f"[DEBUG] Copie de FICHIER_VARIATIONS vers {variations_path}")
-            settings.WRITE_LOG_DEV_FILE(f"Copie de FICHIER_VARIATIONS vers {variations_path}", "DEBUG")
+            Settings.WRITE_LOG_DEV_FILE(f"Copie de FICHIER_VARIATIONS vers {variations_path}", "DEBUG")
             shutil.copy2(Settings.FICHIER_VARIATIONS, variations_path)
 
             # print(f"[INFO] Mise à jour du profil {profile_name} effectuée avec succès.")
-            settings.WRITE_LOG_DEV_FILE(f"Mise à jour du profil {profile_name} effectuée avec succès.", "INFO")
+            Settings.WRITE_LOG_DEV_FILE(f"Mise à jour du profil {profile_name} effectuée avec succès.", "INFO")
             return True
 
         except Exception as e:

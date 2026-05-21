@@ -591,7 +591,7 @@ class UpdateManager:
             # print(f"➤ version_Extention : {remote_version}")
             # print(f"➤ manifest_version  : {remote_manifest_version}")
 
-
+            # stray token removed (previously 'se')
         except Exception as e:
             settings.WRITE_LOG_DEV_FILE(f"Failed to get remote version: {e}\n{traceback.format_exc()}", level="ERROR")
             # print(f"❌ Impossible de récupérer la version distante: {e}")

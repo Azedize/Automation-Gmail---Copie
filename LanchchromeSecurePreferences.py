@@ -1,105 +1,121 @@
 import os
+import time
 import subprocess
-import winreg
-from typing import Optional
 
+# =========================
+# CONFIG
+# =========================
 
-# ==========================================================
-# 🔍 Recherche du chemin de Google Chrome
-# ==========================================================
+BROWSER_PATH = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
 
-def get_chrome_path() -> Optional[str]:
-    exe_name = "chrome.exe"
+profile_dir = r"C:\Profiles"
+profile_email = "Profile 1"
 
-    registry_hives = [
-        (winreg.HKEY_LOCAL_MACHINE, winreg.KEY_READ | winreg.KEY_WOW64_64KEY),
-        (winreg.HKEY_LOCAL_MACHINE, winreg.KEY_READ | winreg.KEY_WOW64_32KEY),
-        (winreg.HKEY_CURRENT_USER, winreg.KEY_READ),
-    ]
+EXTENTION_EX3 = r"C:\RepProxy\Ext3"
 
-    key_path = rf"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\{exe_name}"
+url = "https://accounts.google.com"
 
-    # 🔹 Recherche via registre
-    for hive, access in registry_hives:
-        try:
-            with winreg.OpenKey(hive, key_path, 0, access) as key:
-                chrome_path, _ = winreg.QueryValueEx(key, None)
-                if chrome_path and os.path.exists(chrome_path):
-                    return chrome_path
-        except FileNotFoundError:
-            pass
-        except Exception as e:
-            print(f"[REGISTRY ERROR] {e}")
+# =========================
+# COMMAND 1
+# OPEN EDGE WITH EXTENSION
+# =========================
 
-    # 🔹 Fallback : chemins standards
-    fallback_paths = [
-        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
-        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
-    ]
+command = [
+    BROWSER_PATH,
 
-    for path in fallback_paths:
-        if os.path.exists(path):
-            return path
+    f"--user-data-dir={profile_dir}",
+    f"--profile-directory={profile_email}",
 
-    return None
+    f"--disable-extensions-except={EXTENTION_EX3}",
+    f"--load-extension={EXTENTION_EX3}",
 
+    "--no-first-run",
+    "--no-default-browser-check",
+    "--disable-sync",
 
+    "--disable-popup-blocking",
+    "--disable-notifications",
+    "--disable-features=DownloadBubble",
+]
 
+# =========================
+# COMMAND 2
+# OPEN URL
+# =========================
 
-# ==========================================================
-# 📁 Création du dossier de profil Chrome
-# ==========================================================
+command1 = [
+    BROWSER_PATH,
 
-def ensure_chrome_profile(base_dir: str, profile_name: str) -> str:
-    os.makedirs(base_dir, exist_ok=True)
+    f"--user-data-dir={profile_dir}",
+    f"--profile-directory={profile_email}",
 
-    profile_path = os.path.join(base_dir, profile_name)
-    os.makedirs(profile_path, exist_ok=True)
+    "--no-first-run",
+    "--no-default-browser-check",
+    "--disable-sync",
 
-    return profile_path
+    "--disable-popup-blocking",
+    "--disable-notifications",
+    "--disable-features=DownloadBubble",
 
+    url,
+]
 
+# =========================
+# START EDGE
+# =========================
 
-# ==========================================================
-# 🚀 Lancer Chrome avec un profil spécifique
-# ==========================================================
+print("START EDGE WITH EXTENSION")
 
-def launch_chrome_with_profile(profile_name: str):
-    chrome_path = get_chrome_path()
+process = subprocess.Popen(command)
 
-    if not chrome_path:
-        raise FileNotFoundError("❌ Google Chrome introuvable sur le système")
+print("PID 1 =", process.pid)
 
+# WAIT 3s
+time.sleep(3)
 
-    CHROME_PROFILES_DIR = r"C:\ChromeProfiles\Profile1"
+print("OPEN URL")
 
-    ensure_chrome_profile(CHROME_PROFILES_DIR, profile_name)
+process1 = subprocess.Popen(command1)
 
-    command = [
-        chrome_path,
-        f"--user-data-dir={CHROME_PROFILES_DIR}",  
-        f"--profile-directory={profile_name}",     
-        "--lang=en-US",
-        "--no-first-run",
-        "--start-maximized",
-    ]
+print("PID 2 =", process1.pid)
 
-    print("🚀 Lancement Chrome avec la commande :")
-    print(" ".join(command))
-    
-    subprocess.Popen(
-        command,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        creationflags=subprocess.DETACHED_PROCESS
+# =========================
+# WAIT 15s
+# =========================
+
+print("WAIT 15 SECONDS...")
+time.sleep(15)
+time.sleep(15)
+time.sleep(15)
+time.sleep(15)
+time.sleep(15)
+time.sleep(15)
+time.sleep(15)
+time.sleep(15)
+time.sleep(15)
+time.sleep(15)
+time.sleep(15)
+
+# =========================
+# CLOSE WINDOWS
+# =========================
+
+print("CLOSE EDGE")
+
+try:
+    subprocess.call(
+        f'taskkill /F /PID {process.pid} /T',
+        shell=True
     )
-    
+except:
+    pass
 
+# try:
+#     subprocess.call(
+#         f'taskkill /F /PID {process1.pid} /T',
+#         shell=True
+#     )
+# except:
+#     pass
 
-
-
-if __name__ == "__main__":
-    profile_name = "Profile1"
-    launch_chrome_with_profile(profile_name)
-
-
+print("DONE")

@@ -9,7 +9,6 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
-from config.settings import settings
 import sys
 
 
@@ -22,7 +21,7 @@ import sys
 try:
     from config.settings import settings
 except ImportError as e:
-    print(f"❌ Erreur d'importation dans file {__file__}: {e}")
+    print(f"❌ Erreur d'importation dans file {__file__} : {e}")
     sys.exit(1) 
     
 
