@@ -241,7 +241,6 @@ class LogsDisplayThread(QThread):
 
 
 
-
 class CloseBrowserThread(QThread):
 
     progress = pyqtSignal(str)
