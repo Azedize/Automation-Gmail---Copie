@@ -38,7 +38,7 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
 
-# test
+# test le programme is runing 
 
 
 try:
@@ -74,86 +74,9 @@ LOGS_RUNNING = True
 SELECTED_BROWSER_GLOBAL = None
 REMAINING_EMAILS = 0
 
+# 🧪 Exemple de génération d'un ID de session
+SESSION_ID = ValidationUtils.generate_session_id()
 
-# ==========================================================
-# 🔹 FUNCTION INSTALLED NODE
-# ==========================================================
-
-
-def ensure_node_installed():
-    if shutil.which("node") is not None:
-        # print("✅ Node.js est déjà installé.")
-        Settings.WRITE_LOG_DEV_FILE("Node.js already installed", "INFO")
-        return True
-
-    # print("❌ Node.js n'est pas installé. Tentative d'installation via Chocolatey...")
-    Settings.WRITE_LOG_DEV_FILE(  "Node.js not installed. Trying to install via Chocolatey...", "INFO"  )
-
-    if shutil.which("choco") is None:
-        # print("🔍 Chocolatey non trouvé. Installation...")
-        Settings.WRITE_LOG_DEV_FILE("Chocolatey not found. Installing...", "INFO")
-        try:
-            subprocess.run(
-                [
-                    "powershell",
-                    "-NoProfile",
-                    "-ExecutionPolicy",
-                    "Bypass",
-                    "-Command",
-                    "Set-ExecutionPolicy Bypass -Scope Process -Force; "
-                    "[System.Net.ServicePointManager]::SecurityProtocol = "
-                    "[System.Net.ServicePointManager]::SecurityProtocol -bor 3072; "
-                    "iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))",
-                ],
-                check=True,
-            )
-        except subprocess.CalledProcessError:
-            Settings.WRITE_LOG_DEV_FILE(f"Error installing Chocolatey{traceback.format_exc()}", "ERROR")
-            return False
-
-    try:
-        subprocess.run(["choco", "install", "nodejs-lts", "-y"], check=True)
-        return True
-    except subprocess.CalledProcessError as e:
-        Settings.WRITE_LOG_DEV_FILE(f"Error installing Node.js via Chocolatey: {e}\n{traceback.format_exc()}", "ERROR")
-        return False
-
-
-# ==========================================================
-# 🔹 FUNCTION GET PATH WEB-EXT
-# ==========================================================
-
-
-def get_web_ext_path():
-    path = shutil.which("web-ext")
-    if path:
-        return path
-    else:
-        return None
-
-
-# ==========================================================
-# 🔹 FUNCTION INSTALLED WEB-EXT
-# ==========================================================
-
-
-def ensure_web_ext_installed():
-    if not ensure_node_installed():
-        # print("⚠️ Impossible de continuer sans Node.js.")
-        Settings.WRITE_LOG_DEV_FILE("Unable to continue without Node.js.", "WARNING")
-        return
-    if shutil.which("npm") is None:
-        # print("❌ npm n'est pas installé.")
-        Settings.WRITE_LOG_DEV_FILE("npm is not installed.", "ERROR")
-        return
-    if shutil.which("web-ext") is not None:
-        Settings.WRITE_LOG_DEV_FILE("web-ext already installed", "INFO")
-        return
-    try:
-        subprocess.run("npm install --global web-ext", check=True, shell=True)
-    except subprocess.CalledProcessError as e:
-        Settings.WRITE_LOG_DEV_FILE(f"Error installing web-ext via npm: {e}\n{traceback.format_exc()}", "ERROR")
-        # print("❌ Échec de l'installation de 'web-ext' via npm.")
 
 
 # ==========================================================
@@ -166,8 +89,7 @@ def log_message(text):
     LOGS.append(text)
 
 
-# 🧪 Exemple de génération d'un ID de session
-SESSION_ID = ValidationUtils.generate_session_id()
+
 
 
 # ==========================================================
@@ -292,6 +214,30 @@ def Stop_All_Processes(window):
 
 
 
+class LogsDisplayThread(QThread):
+
+    log_signal = pyqtSignal(str)
+
+    def __init__(self, LOGS, parent=None):
+        super().__init__(parent)
+        self.LOGS = LOGS
+        self.stop_flag = False
+
+    # =====================================================
+    # 🔁 THREAD PRINCIPAL
+    # =====================================================
+    def run(self):
+        global LOGS_RUNNING
+        while LOGS_RUNNING:
+            if self.LOGS:
+                log_entry = self.LOGS.pop(0)
+                self.log_signal.emit(log_entry)
+            else:
+                time.sleep(1)
+
+    def stop(self):
+        self.stop_flag = True
+        self.wait()
 
 
 
@@ -620,7 +566,7 @@ class CloseBrowserThread(QThread):
 
             api_data = { "id": inserted_id,  "login": self.username, "status": "OK" if status.lower() == "completed" else "NotOK",   "error": "" if status.lower() == "completed" else status }
 
-            result = Send_Status(api_data)
+            result = str(APIManager.send_status(api_data))
             # print(f"📡 [RESULT] API result: {result}")
             Settings.WRITE_LOG_DEV_FILE(f"API result: {result}", "INFO")
 
@@ -751,281 +697,116 @@ class CloseBrowserThread(QThread):
 
 
 # =========================================================
-# 🌐 IP EXTRACTION
+#  MAIN PIPELINE (User-friendly messages)
 # =========================================================
+# def Generate_User_Input_Data(window) -> Dict[str, Any]:
+#     try:
+#         # print("\n🚀 START Generate_User_Input_Data")
+#         Settings.WRITE_LOG_DEV_FILE("========== NEW REQUEST ==========", "INFO")
 
+#         input_data = window.textEdit_3.toPlainText().strip()
+#         entered_number_text = window.textEdit_4.toPlainText().strip()
 
-def extract_unique_ips(data_list: List[Dict[str, Any]]) -> Dict[str, Any]:
-    try:
-        if not data_list:
-            Settings.WRITE_LOG_DEV_FILE("No data provided to extract unique IPs", "WARNING")
-            return { "valid": True,   "data": set(),   "error": None,  "error_title": "No Data",     "error_message": "No account entries were provided for IP extraction." }
+#         # print(f"📥 Input Data preview: {input_data[:100]}...")
+#         # print(f"🔢 Entered Number: {entered_number_text}")
+#         Settings.WRITE_LOG_DEV_FILE(f"Input data preview: {input_data[:200]}", "INFO")
+#         Settings.WRITE_LOG_DEV_FILE(f"Entered number: {entered_number_text}", "INFO")
 
-        unique_ips: Set[str] = set()
+#         # 1️⃣ Validation
+#         # print("1️⃣ Validation des données...")
+#         validation = ValidationUtils.process_user_input(input_data, entered_number_text)
+#         if not validation["success"]:
+#             # print(f"❌ Validation failed: {validation['error_message']}")
+#             Settings.WRITE_LOG_DEV_FILE(f"Validation failed: {validation['error_message']}", "ERROR")
+#             return { "valid": False, "data": None, "entered_number": None, "error": f"{validation['error_title']}:{validation['error_message']}", }
 
-        for index, item in enumerate(data_list):
-            ip = ValidationUtils.safe_get(item, "ipAddress")
+#         data_list = validation["data_list"]
+#         entered_number = validation["entered_number"]
+#         # print(f"✅ Validation OK - rows: {len(data_list)}, entered_number: {entered_number}")
+#         Settings.WRITE_LOG_DEV_FILE( f"Validation OK - rows: {len(data_list)}, entered_number: {entered_number}", "INFO")
+#         Settings.WRITE_LOG_DEV_FILE( f"First record sample: {str(data_list[0]) if data_list else 'NO DATA'}", "INFO")
 
-            if ip:
-                unique_ips.add(str(ip))
-            else:
-                Settings.WRITE_LOG_DEV_FILE(f"Missing ipAddress at index {index}", "WARNING")
+#         # 2️⃣ Ports pipeline
+#         # print("2️⃣ Traitement des ports...")
+#         ports_result = ValidationUtils.process_ports(data_list)
+#         if not ports_result["valid"]:
+#             # print(f"❌ Ports processing failed: {ports_result['error_message']}")
+#             Settings.WRITE_LOG_DEV_FILE(f"Ports processing failed: {ports_result['error_message']}", "ERROR")
+#             Settings.WRITE_LOG_DEV_FILE(f"Ports result: {ports_result}", "ERROR")
+#             return { "valid": False,  "data": ports_result.get("data"),  "entered_number": entered_number,  "error": f"{ports_result['error_title']}:{ports_result['error_message']}" }
 
-        Settings.WRITE_LOG_DEV_FILE(f"Unique IPs count: {len(unique_ips)}", "INFO")
+#         filtered_accounts = ports_result["data"]["filtered"]
+#         # print(f"✅ Ports processed - filtered count: {len(filtered_accounts)}")
+#         Settings.WRITE_LOG_DEV_FILE( f"Ports processed - filtered count: {len(filtered_accounts)}", "INFO")
 
-        return { "valid": True,  "data": unique_ips,   "error": None,   "error_title": "IP Extraction Successful",  "error_message": f"Extracted {len(unique_ips)} unique IP(s) from provided data." }
+#         # 3️⃣ Extract IPs
+#         # print("3️⃣ Extraction des IPs uniques...")
+#         ip_result = ValidationUtils.collect_unique_proxy_addresses(filtered_accounts)
+#         if not ip_result["valid"]:
+#             # print(f"❌ IP extraction failed: {ip_result["error"]}")
+#             Settings.WRITE_LOG_DEV_FILE(f"IP extraction failed: {ip_result['error']}", "ERROR")
+#             return { "valid": False,  "data": None,   "entered_number": entered_number,  "error": f"{ip_result['error_title']}:{ip_result['error_message']}" }
 
-    except Exception as e:
-        Settings.WRITE_LOG_DEV_FILE( f"Error extracting unique IPs: {e}\n{traceback.format_exc()}", "ERROR")
-        return { "valid": False, "data": None, "error": str(e), "error_title": "IP Extraction Error",  "error_message": "An error occurred while extracting IP addresses. Please check data format and retry."}
+#         unique_ips = ip_result["data"]
+#         # print(f"✅ IPs extracted: {len(unique_ips)} => {sorted(unique_ips)}")
+#         Settings.WRITE_LOG_DEV_FILE(f"Unique IPs extracted: {len(unique_ips)}", "INFO")
+#         Settings.WRITE_LOG_DEV_FILE(f"Unique IPs list: {sorted(unique_ips)}", "INFO")
 
+#         # 4️⃣ Session check
+#         # print("4️⃣ Vérification de session...")
+#         session_info = SessionManager.check_session()
+#         if not session_info["valid"]:
+#             # session_error = session_info.get("error", "Unknown error")
+#             # print(f"❌ Invalid session: {session_error}")
+#             Settings.WRITE_LOG_DEV_FILE(f"Invalid session: {session_info.get('error', 'Unknown error')}", "ERROR")
+#             Settings.WRITE_LOG_DEV_FILE(f"Session info: {session_info.get('error', 'Unknown error')}", "ERROR")
+#             return { "valid": False, "data": None, "entered_number": entered_number, "error": "Your session is invalid. Please log in again.",}
 
-# =========================================================
-# 📡 API CALL using APIManager (User-friendly messages)
-# =========================================================
-def call_api(unique_ips: Set[str], entity_New: str) -> Dict[str, Any]:
-    try:
-        # print("🔹 Début call_api")
-        # print(f"IPs reçues: {unique_ips}")
-        # print(f"🔐 Entity utilisée: {entity_New}")
-        Settings.WRITE_LOG_DEV_FILE("=== API CALL START ===", "INFO")
-        Settings.WRITE_LOG_DEV_FILE(f"Entity utilisée: {entity_New}", "INFO")
-        Settings.WRITE_LOG_DEV_FILE(f"IP count: {len(unique_ips)}", "INFO")
+#         entity_used = session_info.get("p_entity_Nouveau", "UNKNOWN")
+#         # print(f"✅ Session valide - Entity: {entity_used}")
+#         Settings.WRITE_LOG_DEV_FILE(f"Session valide - Entity: {entity_used}", "INFO")
+#         Settings.WRITE_LOG_DEV_FILE(f"Session info: {session_info}", "INFO")
 
-        if not unique_ips:
-            # print("❌ Aucune IP fournie")
-            Settings.WRITE_LOG_DEV_FILE("No IPs provided", "ERROR")
-            return {"valid": False, "data": None, "error": "No IPs provided"}
+#         # 5️⃣ API Call
+#         # print("5️⃣ Appel API...")
+#         api_result = APIManager.fetch_proxy_configuration(unique_ips, entity_used)
+#         if not api_result["valid"]:
+#             api_error = api_result.get("error", "Unknown API error")
+#             # print(f"❌ API call failed: {api_error}")
+#             Settings.WRITE_LOG_DEV_FILE(f"API call failed: {api_error}", "ERROR")
+#             Settings.WRITE_LOG_DEV_FILE(f"API result: {api_result}", "ERROR")
+#             return {"valid": False, "data": None, "entered_number": entered_number, "error": api_error}
 
-        headers = {"User-Agent": "Mozilla/5.0"}
-        k_proxy = ",".join(unique_ips) + "---" + entity_New
+#         # print(  f"✅ API call success - entries: {len(api_result['data']) if api_result.get('data') else 0}")
+#         Settings.WRITE_LOG_DEV_FILE( f"API call success - returned entries: {len(api_result['data']) if api_result.get('data') else 0}", "INFO" )
 
-        # print(f"🔹 k_proxy construit: {k_proxy}")
-        Settings.WRITE_LOG_DEV_FILE(f"k_proxy length: {len(k_proxy)}", "INFO")
+#         # 6️⃣ Merge
+#         # print("6️⃣ Fusion des données...")
+#         merge_result = ValidationUtils.merge_data(api_result["data"], data_list)
+#         if not merge_result["valid"]:
+#             merge_error = merge_result["error"]
+#             # print(f"❌ Merge failed: {merge_error}")
+#             Settings.WRITE_LOG_DEV_FILE(f"Merge failed: {merge_error}", "ERROR")
+#             Settings.WRITE_LOG_DEV_FILE(f"Merge details: {merge_result}", "ERROR")
+#             return { "valid": False,   "data": None, "entered_number": entered_number,  "error": merge_error}
 
-        params = {"m": "5454542z15szsdz4jklhjhdfz", "k": k_proxy}
+#         final_data = merge_result["data"]
+#         # print(f"✅ Merge success - final records: {len(final_data)}")
+#         Settings.WRITE_LOG_DEV_FILE(f"Merge success - final records: {len(final_data)}", "INFO")
+#         Settings.WRITE_LOG_DEV_FILE( f"Final data sample: {str(final_data[0]) if final_data else 'NO DATA'}", "INFO" )
+#         Settings.WRITE_LOG_DEV_FILE("========== REQUEST COMPLETED SUCCESSFULLY ==========", "INFO")
 
-        # print(f"🔹 Params envoyés: {params}")
-        Settings.WRITE_LOG_DEV_FILE( f"API Endpoint: {Settings.API_ENDPOINTS.get('__GET_PROXY_INFO__', 'UNKNOWN')}", "INFO")
-        Settings.WRITE_LOG_DEV_FILE(f"Request headers: {headers}", "INFO")
-        Settings.WRITE_LOG_DEV_FILE(f"Request params: {params}", "INFO")
+#         return {"valid": True, "data": final_data, "entered_number": entered_number, "error": None}
 
-        retries = 0
-        response_text = None
-        last_error = None
+#     except Exception as e:
+#         # print(f"💥 Unexpected error: {error_msg}\n{traceback.format_exc()}")
+#         Settings.WRITE_LOG_DEV_FILE( f"Unexpected error in Generate_User_Input_Data: {str(e)}\n{traceback.format_exc()}",  "ERROR")
+#         Settings.WRITE_LOG_DEV_FILE("========== REQUEST FAILED WITH EXCEPTION ==========", "ERROR")
+#         return {"valid": False,  "data": None,  "entered_number": None,  "error": "An unexpected error occurred. Please try again later."}
 
-        while retries < 12:
-            try:
-                # print(f"🔁 Tentative API #{retries + 1}")
-                Settings.WRITE_LOG_DEV_FILE(  f"API attempt #{retries + 1}/12 - Connecting to API...", "INFO" )
-
-                response = requests.post(  Settings.API_ENDPOINTS["__GET_PROXY_INFO__"], headers=headers, verify=False,   data=params,   timeout=30)
-
-                # print(f"✅ Réponse reçue (status): {response.status_code}")
-                Settings.WRITE_LOG_DEV_FILE(f"API response status: {response.status_code}", "INFO")
-                response_text = response.text
-                response_size = len(response_text)
-                # print(f"📦 Taille réponse brute: {response_size} bytes")
-                Settings.WRITE_LOG_DEV_FILE(f"API response size: {response_size} bytes", "INFO")
-                Settings.WRITE_LOG_DEV_FILE(f"API status: {response.status_code}", "INFO")
-                Settings.WRITE_LOG_DEV_FILE(f"API response size: {response_size} bytes", "INFO")
-                Settings.WRITE_LOG_DEV_FILE(f"Full API response: {response_text}", "INFO")
-                if response.status_code != 200:
-                    Settings.WRITE_LOG_DEV_FILE( f"API returned non-200 status: {response.status_code}", "WARNING" )
-                break
-
-            except requests.Timeout as e:
-                last_error = str(e)
-                # print(f"⏱️ Timeout requête (tentative {retries + 1}): {e}")
-                Settings.WRITE_LOG_DEV_FILE(  f"API Timeout error (attempt {retries + 1}): {e}", "WARNING")
-                retries += 1
-                time.sleep(5)
-            except requests.RequestException as e:
-                last_error = str(e)
-                # print(f"❌ Erreur requête (tentative {retries + 1}): {e}")
-                Settings.WRITE_LOG_DEV_FILE( f"❌ [API] Erreur: {e}\n{traceback.format_exc()}", "ERROR" )
-                retries += 1
-                time.sleep(5)
-
-        if not response_text:
-            # print("❌ Échec API après retries")
-            Settings.WRITE_LOG_DEV_FILE( f"API failed after 12 retries. Last error: {last_error}", "ERROR")
-            Settings.WRITE_LOG_DEV_FILE("=== API CALL FAILED ===", "ERROR")
-            return {"valid": False, "data": None, "error": "API failed after retries"}
-
-        # 🔐 Decrypt
-        # print("🔐 Décryptage en cours...")
-        Settings.WRITE_LOG_DEV_FILE("Decrypting API response", "INFO")
-        try:
-            decrypted = EncryptionService.decrypt_message(response_text, Settings.API_KEY_PROXY)
-            Settings.WRITE_LOG_DEV_FILE(f"Decryption successful - size: {len(decrypted)}", "INFO")
-            Settings.WRITE_LOG_DEV_FILE(f"Decrypted API response: {decrypted}", "INFO")
-            # print(f"🔓 Décrypté (brut): {decrypted[:200]}...")
-        except Exception as decrypt_error:
-            # print(f"❌ Erreur décryptage: {decrypt_error}")
-            Settings.WRITE_LOG_DEV_FILE(  f"Decryption failed: {decrypt_error}\n{traceback.format_exc()}", "ERROR" )
-            Settings.WRITE_LOG_DEV_FILE("=== API CALL FAILED (DECRYPTION) ===", "ERROR")
-            return {  "valid": False,  "data": None,  "error": f"Decryption error: {str(decrypt_error)}" }
-
-        decrypted = re.sub(r"[^\x20-\x7E]", "", decrypted)
-        # print(f"🧹 Décrypté nettoyé: {decrypted[:200]}...")
-        Settings.WRITE_LOG_DEV_FILE(f"Decrypted cleaned response: {decrypted}", "INFO")
-
-        try:
-            data = json.loads(decrypted)
-            # print(f"📊 JSON chargé - Total clés: {len(data)}")
-            # print(f"📊 Premières clés: {list(data.keys())[:10]}")
-            Settings.WRITE_LOG_DEV_FILE( f"JSON parsed successfully - total keys: {len(data)}", "INFO" )
-            Settings.WRITE_LOG_DEV_FILE(f"JSON keys sample: {list(data.keys())[:10]}", "INFO")
-        except json.JSONDecodeError as json_error:
-            # print(f"❌ Erreur parsing JSON: {json_error}")
-            Settings.WRITE_LOG_DEV_FILE( f"JSON parsing failed: {json_error}\n{traceback.format_exc()}", "ERROR")
-            Settings.WRITE_LOG_DEV_FILE(f"Raw decrypted response: {decrypted[:500]}", "ERROR")
-            Settings.WRITE_LOG_DEV_FILE("=== API CALL FAILED (JSON PARSE) ===", "ERROR")
-            return {"valid": False, "data": None, "error": f"JSON parsing error: {str(json_error)}"}
-
-        api_ips = set(k.split("#")[0] for k in data.keys())
-        missing = unique_ips - api_ips
-        extra = api_ips - unique_ips
-        # print(f"🌐 IPs retournées API: {sorted(api_ips)}")
-        # print(f"⚠️ IPs manquantes: {missing}")
-        # print(f"⚠️ IPs supplémentaires: {extra}")
-        Settings.WRITE_LOG_DEV_FILE( f"IPs expected: {len(unique_ips)}, IPs returned: {len(api_ips)}", "INFO")
-        Settings.WRITE_LOG_DEV_FILE(f"Missing IPs: {missing if missing else 'NONE'}", "INFO")
-        Settings.WRITE_LOG_DEV_FILE(f"Extra IPs: {extra if extra else 'NONE'}", "INFO")
-
-        if missing:
-            Settings.WRITE_LOG_DEV_FILE(  f"API proxy response incomplete: expected IP addresses missing from response data. Missing IPs: {missing}. Response key count={len(data)}.",  "ERROR")
-            Settings.WRITE_LOG_DEV_FILE("=== API CALL FAILED (MISSING IPS) ===", "ERROR")
-            return {
-                "valid": False,
-                "data": data,
-                "error": "La réponse du service est incomplète : certaines adresses IP attendues n'ont pas été reçues. Veuillez réessayer ou contacter le support si le problème persiste.",
-            }
-
-        # print("✅ Toutes les IPs sont présentes")
-        Settings.WRITE_LOG_DEV_FILE("API returned data for all IPs", "INFO")
-        Settings.WRITE_LOG_DEV_FILE("=== API CALL COMPLETED SUCCESSFULLY ===", "INFO")
-        return {"valid": True, "data": data, "error": None}
-
-    except Exception as e:
-        # print(f"💥 Exception globale: {e}\n{ traceback.format_exc()}")
-        Settings.WRITE_LOG_DEV_FILE(f"Error calling API: {e}\n{traceback.format_exc()}", "ERROR")
-        Settings.WRITE_LOG_DEV_FILE("=== API CALL FAILED (CRITICAL) ===", "ERROR")
-        return {"valid": False, "data": None, "error": str(e)}
-
-
-# =========================================================
-# 🚀 MAIN PIPELINE (User-friendly messages)
-# =========================================================
-def Generate_User_Input_Data(window) -> Dict[str, Any]:
-    try:
-        # print("\n🚀 START Generate_User_Input_Data")
-        Settings.WRITE_LOG_DEV_FILE("========== NEW REQUEST ==========", "INFO")
-
-        input_data = window.textEdit_3.toPlainText().strip()
-        entered_number_text = window.textEdit_4.toPlainText().strip()
-
-        # print(f"📥 Input Data preview: {input_data[:100]}...")
-        # print(f"🔢 Entered Number: {entered_number_text}")
-        Settings.WRITE_LOG_DEV_FILE(f"Input data preview: {input_data[:200]}", "INFO")
-        Settings.WRITE_LOG_DEV_FILE(f"Entered number: {entered_number_text}", "INFO")
-
-        # 1️⃣ Validation
-        # print("1️⃣ Validation des données...")
-        validation = ValidationUtils.process_user_input(input_data, entered_number_text)
-        if not validation["success"]:
-            # print(f"❌ Validation failed: {validation['error_message']}")
-            Settings.WRITE_LOG_DEV_FILE(f"Validation failed: {validation['error_message']}", "ERROR")
-            return { "valid": False, "data": None, "entered_number": None, "error": f"{validation['error_title']}:{validation['error_message']}", }
-
-        data_list = validation["data_list"]
-        entered_number = validation["entered_number"]
-        # print(f"✅ Validation OK - rows: {len(data_list)}, entered_number: {entered_number}")
-        Settings.WRITE_LOG_DEV_FILE( f"Validation OK - rows: {len(data_list)}, entered_number: {entered_number}", "INFO")
-        Settings.WRITE_LOG_DEV_FILE( f"First record sample: {str(data_list[0]) if data_list else 'NO DATA'}", "INFO")
-
-        # 2️⃣ Ports pipeline
-        # print("2️⃣ Traitement des ports...")
-        ports_result = ValidationUtils.process_ports(data_list)
-        if not ports_result["valid"]:
-            # print(f"❌ Ports processing failed: {ports_result['error_message']}")
-            Settings.WRITE_LOG_DEV_FILE(f"Ports processing failed: {ports_result['error_message']}", "ERROR")
-            Settings.WRITE_LOG_DEV_FILE(f"Ports result: {ports_result}", "ERROR")
-            return { "valid": False,  "data": ports_result.get("data"),  "entered_number": entered_number,  "error": f"{ports_result['error_title']}:{ports_result['error_message']}" }
-
-        filtered_accounts = ports_result["data"]["filtered"]
-        # print(f"✅ Ports processed - filtered count: {len(filtered_accounts)}")
-        Settings.WRITE_LOG_DEV_FILE( f"Ports processed - filtered count: {len(filtered_accounts)}", "INFO")
-
-        # 3️⃣ Extract IPs
-        # print("3️⃣ Extraction des IPs uniques...")
-        ip_result = extract_unique_ips(filtered_accounts)
-        if not ip_result["valid"]:
-            # print(f"❌ IP extraction failed: {ip_result["error"]}")
-            Settings.WRITE_LOG_DEV_FILE(f"IP extraction failed: {ip_result['error']}", "ERROR")
-            return { "valid": False,  "data": None,   "entered_number": entered_number,  "error": f"{ip_result['error_title']}:{ip_result['error_message']}" }
-
-        unique_ips = ip_result["data"]
-        # print(f"✅ IPs extracted: {len(unique_ips)} => {sorted(unique_ips)}")
-        Settings.WRITE_LOG_DEV_FILE(f"Unique IPs extracted: {len(unique_ips)}", "INFO")
-        Settings.WRITE_LOG_DEV_FILE(f"Unique IPs list: {sorted(unique_ips)}", "INFO")
-
-        # 4️⃣ Session check
-        # print("4️⃣ Vérification de session...")
-        session_info = SessionManager.check_session()
-        if not session_info["valid"]:
-            # session_error = session_info.get("error", "Unknown error")
-            # print(f"❌ Invalid session: {session_error}")
-            Settings.WRITE_LOG_DEV_FILE(f"Invalid session: {session_info.get('error', 'Unknown error')}", "ERROR")
-            Settings.WRITE_LOG_DEV_FILE(f"Session info: {session_info.get('error', 'Unknown error')}", "ERROR")
-            return { "valid": False, "data": None, "entered_number": entered_number, "error": "Your session is invalid. Please log in again.",}
-
-        entity_used = session_info.get("p_entity_Nouveau", "UNKNOWN")
-        # print(f"✅ Session valide - Entity: {entity_used}")
-        Settings.WRITE_LOG_DEV_FILE(f"Session valide - Entity: {entity_used}", "INFO")
-        Settings.WRITE_LOG_DEV_FILE(f"Session info: {session_info}", "INFO")
-
-        # 5️⃣ API Call
-        # print("5️⃣ Appel API...")
-        api_result = call_api(unique_ips, entity_used)
-        if not api_result["valid"]:
-            api_error = api_result.get("error", "Unknown API error")
-            # print(f"❌ API call failed: {api_error}")
-            Settings.WRITE_LOG_DEV_FILE(f"API call failed: {api_error}", "ERROR")
-            Settings.WRITE_LOG_DEV_FILE(f"API result: {api_result}", "ERROR")
-            return {"valid": False, "data": None, "entered_number": entered_number, "error": api_error}
-
-        # print(  f"✅ API call success - entries: {len(api_result['data']) if api_result.get('data') else 0}")
-        Settings.WRITE_LOG_DEV_FILE( f"API call success - returned entries: {len(api_result['data']) if api_result.get('data') else 0}", "INFO" )
-
-        # 6️⃣ Merge
-        # print("6️⃣ Fusion des données...")
-        merge_result = ValidationUtils.merge_data(api_result["data"], data_list)
-        if not merge_result["valid"]:
-            merge_error = merge_result["error"]
-            # print(f"❌ Merge failed: {merge_error}")
-            Settings.WRITE_LOG_DEV_FILE(f"Merge failed: {merge_error}", "ERROR")
-            Settings.WRITE_LOG_DEV_FILE(f"Merge details: {merge_result}", "ERROR")
-            return { "valid": False,   "data": None, "entered_number": entered_number,  "error": merge_error}
-
-        final_data = merge_result["data"]
-        # print(f"✅ Merge success - final records: {len(final_data)}")
-        Settings.WRITE_LOG_DEV_FILE(f"Merge success - final records: {len(final_data)}", "INFO")
-        Settings.WRITE_LOG_DEV_FILE( f"Final data sample: {str(final_data[0]) if final_data else 'NO DATA'}", "INFO" )
-        Settings.WRITE_LOG_DEV_FILE("========== REQUEST COMPLETED SUCCESSFULLY ==========", "INFO")
-
-        return {"valid": True, "data": final_data, "entered_number": entered_number, "error": None}
-
-    except Exception as e:
-        # print(f"💥 Unexpected error: {error_msg}\n{traceback.format_exc()}")
-        Settings.WRITE_LOG_DEV_FILE( f"Unexpected error in Generate_User_Input_Data: {str(e)}\n{traceback.format_exc()}",  "ERROR")
-        Settings.WRITE_LOG_DEV_FILE("========== REQUEST FAILED WITH EXCEPTION ==========", "ERROR")
-        return {"valid": False,  "data": None,  "entered_number": None,  "error": "An unexpected error occurred. Please try again later."}
-
-    except Exception as e:
-        Settings.WRITE_LOG_DEV_FILE(f"Unexpected error: {e}\n{traceback.format_exc()}", "ERROR")
-        return { "valid": False,  "data": None,  "entered_number": None, "error": "An unexpected error occurred. Please try again later." }
+#     except Exception as e:
+#         Settings.WRITE_LOG_DEV_FILE(f"Unexpected error: {e}\n{traceback.format_exc()}", "ERROR")
+#         return { "valid": False,  "data": None,  "entered_number": None, "error": "An unexpected error occurred. Please try again later." }
 
 
 # ======================================================
@@ -1087,7 +868,7 @@ def Start_Extraction(  window, data_list, entered_number, selected_Browser, Isp,
     # le programme is run dans une interface logique et capable
 
     if selected_Browser.lower() == "firefox":
-        ensure_web_ext_installed()
+        Settings.ensure_web_ext_installed()
 
     # print("browser path   :",   browser_path    or "Non trouvé")
     # print("✅ browser path   :",   browser_path    or "Non trouvé")
@@ -1108,124 +889,6 @@ def Start_Extraction(  window, data_list, entered_number, selected_Browser, Isp,
     CLOSE_BROWSER_THREAD.start()
 
 
-# =====================================================
-# 🚀 FONCTION SAVE EMAIL
-# =====================================================
-def Save_Email(params):
-    return str(APIManager.save_email(params))
-
-
-# =====================================================
-# 🚀 FONCTION SEND STATUS
-# ======================================================
-
-
-def Send_Status(params):
-    return str(APIManager.send_status(params))
-
-
-# =====================================================
-# 🚀 FONCTION SEND STATUS
-# ======================================================
-
-
-class LogsDisplayThread(QThread):
-
-    log_signal = pyqtSignal(str)
-
-    def __init__(self, LOGS, parent=None):
-        super().__init__(parent)
-        self.LOGS = LOGS
-        self.stop_flag = False
-
-    # =====================================================
-    # 🔁 THREAD PRINCIPAL
-    # =====================================================
-    def run(self):
-        global LOGS_RUNNING
-        while LOGS_RUNNING:
-            if self.LOGS:
-                log_entry = self.LOGS.pop(0)
-                self.log_signal.emit(log_entry)
-            else:
-                time.sleep(1)
-
-    def stop(self):
-        self.stop_flag = True
-        self.wait()
-
-
-# =====================================================
-# 🚀 FONCTION STORE BROWSER SESSION INFO
-# =====================================================
-
-
-def store_browser_session_info( pid: str, Path_DiR: str, email: str, SESSION_ID: str, browser: str, inserted_id: str):
-    def _write_and_verify(target_path: Path, content: str, label: str):
-        target_path.parent.mkdir(parents=True, exist_ok=True)
-        target_path.write_text(f"{content}\n", encoding="utf-8")
-        actual = target_path.read_text(encoding="utf-8").strip()
-        # print(f"📄 [{label}] Contenu actuel de {target_path}: '{actual}'")
-        Settings.WRITE_LOG_DEV_FILE(f"Content of {target_path} after write: '{actual}'", "INFO")
-        if actual != content.strip():
-            # print(f"❌ [{label}] ERREUR: Contenu attendu '{content.strip()}', mais lu '{actual}'")
-            Settings.WRITE_LOG_DEV_FILE( f"❌ [{label}] ERREUR: Contenu attendu '{content.strip()}', mais lu '{actual}'", "ERROR" )
-
-    try:
-        browser_key = browser.strip().lower()
-        chrome_family = Settings.CHROME_FAMILY_BROWSERS
-
-        # print(f"📌 [START] store_browser_session_info pour {email} sur {browser_key}")
-        # print(f"🧭 [INPUT] PID={pid} | SESSION_ID={SESSION_ID} | inserted_id={inserted_id}")
-        # print(f"📁 [INPUT] Path_DiR={Path_DiR}")
-        Settings.WRITE_LOG_DEV_FILE( f"store_browser_session_info called with PID={pid}, email={email}, SESSION_ID={SESSION_ID}, browser={browser_key}, inserted_id={inserted_id}", "INFO" )
-
-        session_entry = f"{pid}:{email}:{SESSION_ID}:{inserted_id}"
-        session_file = Path(Path_DiR) / email / "data.txt"
-
-        if browser_key in chrome_family:
-            browser_label = browser_key.upper()
-            # print(f"🌐 [{browser_label}] Navigateur Chromium family détecté")
-            Settings.WRITE_LOG_DEV_FILE(f"{browser_label} browser detected", "INFO")
-
-            extension_file = Path(Settings.EXTENTION_EX3) / "data.txt"
-            existing_content = (
-                extension_file.read_text(encoding="utf-8").strip()
-                if extension_file.exists()
-                else None
-            )
-            if existing_content is not None:
-                # print(f"📄 [{browser_label}] Contenu AVANT écriture: '{existing_content}'")
-                Settings.WRITE_LOG_DEV_FILE(f"Content of {extension_file} before write: '{existing_content}'", "INFO")
-            else:
-                # print(f"📄 [{browser_label}] Fichier non existant encore: {extension_file}")
-                Settings.WRITE_LOG_DEV_FILE(f"{extension_file} does not exist yet", "INFO")
-
-            # print(f"✍️ [{browser_label}] Écriture SESSION_ID={SESSION_ID} dans {extension_file}")
-            Settings.WRITE_LOG_DEV_FILE(f"Writing SESSION_ID={SESSION_ID} to {extension_file}", "INFO")
-            _write_and_verify(extension_file, SESSION_ID, browser_label)
-
-            # print(f"✍️ [{browser_label}] Écriture session dans {session_file}")
-            Settings.WRITE_LOG_DEV_FILE(f"Writing session to {session_file}", "INFO")
-            _write_and_verify(session_file, session_entry, browser_label)
-        else:
-            # print(f"🗂️ [OTHER] Navigateur non-Chrome détecté: {browser_key}")
-            Settings.WRITE_LOG_DEV_FILE(f"Other browser detected: {browser_key}", "INFO")
-            # print(f"✍️ [OTHER] Écriture session dans {session_file}")
-            Settings.WRITE_LOG_DEV_FILE(f"Writing session to {session_file}", "INFO")
-            _write_and_verify(session_file, session_entry, "OTHER")
-
-        # print("🎉 [SUCCESS] Données session enregistrées avec succès\n")
-        Settings.WRITE_LOG_DEV_FILE("Session data stored successfully", "INFO")
-
-    except Exception as e:
-        Settings.WRITE_LOG_DEV_FILE( f"Error in store_browser_session_info: {e}\n{traceback.format_exc()}", "ERROR" )
-        # print(f"❌ [ERROR] {type(e).__name__} : {e}")
-
-
-# =====================================================
-# 🚀 FONCTION CHECK SESSION
-# =====================================================
 
 
 class ExtractionThread(QThread):
@@ -1319,7 +982,7 @@ class ExtractionThread(QThread):
                         "e_pid": self.unique_id,
                     }
 
-                    inserted_id = Save_Email(params)
+                    inserted_id = str(APIManager.save_email(params))
                     new_password = ValidationUtils.generate_secure_password(16)
 
                     try:
@@ -1348,7 +1011,7 @@ class ExtractionThread(QThread):
 
                         BrowserManager.create_firefox_profile(profile_email)
 
-                        eb_ext_path = get_web_ext_path()
+                        eb_ext_path = Settings.get_web_ext_path()
 
                         command = [
                             eb_ext_path,
@@ -1373,7 +1036,7 @@ class ExtractionThread(QThread):
                             }
                         )
 
-                        store_browser_session_info(
+                        BrowserManager.store_browser_session_info(
                             process.pid,
                             Settings.FOLDER_EXTENTIONS_FIREFOX,
                             profile_email,
@@ -1449,7 +1112,7 @@ class ExtractionThread(QThread):
                         process1 = subprocess.Popen(command1)
                         PROCESS_PIDS.append(process.pid)
 
-                        store_browser_session_info(
+                        BrowserManager.store_browser_session_info(
                             process.pid,
                             profile_dir,
                             profile_email,
@@ -1526,7 +1189,7 @@ class ExtractionThread(QThread):
                             process = subprocess.Popen(command)
                             PROCESS_PIDS.append(process.pid)
 
-                        store_browser_session_info( process.pid,  Settings.CHROME_PROFILES, profile_email,  self.session_id, self.selected_Browser.lower(),  inserted_id  )
+                        BrowserManager.store_browser_session_info( process.pid,  Settings.CHROME_PROFILES, profile_email,  self.session_id, self.selected_Browser.lower(),  inserted_id  )
                     self.emails_processed += 1
 
                 except Exception as e:
@@ -1546,6 +1209,11 @@ class ExtractionThread(QThread):
 
 
 
+
+
+# =====================================================
+# 🚀 FONCTION CHECK SESSION
+# =====================================================
 
 
 
@@ -2288,8 +1956,7 @@ class MainWindow(QMainWindow):
         # check sur browser if exist selected_Browser
 
         if selected_Browser and selected_Browser.lower() == "chrome":
-            if not Process_Browser(window, selected_Browser):
-                # print("❌ Navigateur non traité :", selected_Browser)
+            if not BrowserManager.validate_and_setup_browser(self, selected_Browser):
                 Settings.WRITE_LOG_DEV_FILE(f"Browser not processed: {selected_Browser}", "WARNING")
                 UIManager.enable_button(self.submitButton)
 
@@ -2343,13 +2010,13 @@ class MainWindow(QMainWindow):
             return
 
         try:
-            result = Generate_User_Input_Data(window)
+            result = ValidationUtils.generate_user_input_data(window)
 
             # =======================
             # 🔴 Check result structure
             # =======================
             if not isinstance(result, dict):
-                Settings.WRITE_LOG_DEV_FILE(  "Invalid result format returned from Generate_User_Input_Data", "ERROR" )
+                Settings.WRITE_LOG_DEV_FILE(  "Invalid result format returned from ValidationUtils.generate_user_input_data", "ERROR" )
                 UIManager.enable_button(self.submitButton)
                 return
 
@@ -2774,7 +2441,7 @@ class MainWindow(QMainWindow):
 
 
 class EntitySelectionDialog(QDialog):
-    
+
     def __init__(self, pattern=None, default_entity=None, parent=None):
         super().__init__(parent)
         # self.setObjectName("EntitySelectionDialog")

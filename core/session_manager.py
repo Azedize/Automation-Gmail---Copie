@@ -28,6 +28,8 @@ except ImportError as e:
 
 class SessionManager:
 
+    
+    
     def __init__(self):
         self.session_path = settings.SESSION_PATH
         self.key = settings.KEY
@@ -100,6 +102,9 @@ class SessionManager:
         #         • code erreur si invalide
         #
         # ================================================================
+    
+    
+    
     
     def check_session(self) -> Dict:
         session_info = {"valid": False, "username": None , "password": None, "date": None, "p_entity_Origine": None, "p_entity_Nouveau": None, "error": None}
@@ -179,6 +184,8 @@ class SessionManager:
             # print(f"[ERROR] Création session échouée : {e}")
             return False
 
+    
+    
     # ================== Suppression de session ==================
     def clear_session(self):
         if ValidationUtils.path_exists(self.session_path):
@@ -195,9 +202,9 @@ class SessionManager:
             # print("[INFO] Aucun fichier de session à supprimer")
             settings.WRITE_LOG_DEV_FILE("Aucun fichier de session à supprimer", "INFO")
 
+    
+    
     # ================== Validation via API ==================
-
-
     def validate_session_with_api(self, username: str, p_entity: str) -> Dict:
         try:
             params = { "k": "mP5QXYrK9E67Y",  "rID": "4",  "u": username,  "entity": p_entity,  "rv4": "1"  }
@@ -260,6 +267,7 @@ class SessionManager:
             return {"valid": False, "error": str(e_api)}
 
 
+    
     # ================== Vérification complète ==================
     def check_session_full(self) -> Dict:
         session_info = self.check_session()
@@ -285,6 +293,8 @@ class SessionManager:
         settings.WRITE_LOG_DEV_FILE("Session validée (LOCAL + API)", "INFO")
         return session_info
 
+    
+    
     # ================== Vérification credentials API ==================
     def check_api_credentials(self, username: str, password: str) -> Union[tuple, int]:
 

@@ -46,19 +46,11 @@ class JsonManager:
             Settings.WRITE_LOG_DEV_FILE(f"Error parsing random range: {text}\n{traceback.format_exc()}", level="ERROR")
             return 0
 
-    
-    
-    
+
     
     @staticmethod
     def get_children(widget, cls):
         return [c for c in widget.children() if isinstance(c, cls)]
-
-
-
-
-
-
 
 
     # ==============================
@@ -231,11 +223,6 @@ class JsonManager:
         return output_json
 
     
-    
-    
-    
-    # Data Science: Productivity Tools
-    
     # ==============================
     # SPLIT JSON
     # ==============================
@@ -276,18 +263,6 @@ class JsonManager:
 
     
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     # ==============================
     # HANDLE LAST ELEMENT
     # ==============================
@@ -320,17 +295,6 @@ class JsonManager:
 
     
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     # ==============================
     # MODIFY JSON
     # ==============================
@@ -349,22 +313,9 @@ class JsonManager:
         return output
 
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     # ==============================
     # SAVE FILE
     # ==============================
-
     @staticmethod
     def save_json_to_file(json_data, browser):
         try:

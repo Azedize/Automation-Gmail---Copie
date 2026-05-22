@@ -9,6 +9,7 @@ import json
 import time
 import traceback
 import requests
+import re
 from typing import Dict, Any, Optional
 from requests.adapters import HTTPAdapter, Retry
 
@@ -18,6 +19,7 @@ if ROOT_DIR not in sys.path:
 
 try:
     from config import Settings
+    from core import EncryptionService
 except ImportError as e:
     print(f"❌ Erreur d'importation dans file {__file__}: {e}")
     sys.exit(1)  # quitte immédiatement le script avec un code d'erreur
@@ -26,6 +28,7 @@ except ImportError as e:
 
 
 class APIManager:
+
     def __init__(self):
         self.session = requests.Session()
         self.session.verify = False  # ⚠️ SSL désactivé volontairement
@@ -40,6 +43,7 @@ class APIManager:
         Settings.WRITE_LOG_DEV_FILE("=== INIT ===", "INFO")  # print(f"🟢 [INIT] Headers globaux appliqués : {self.session.headers}")  Settings.WRITE_LOG_DEV_FILE(f"Headers globaux appliqués : {self.session.headers}", "INFO")
 
     # --------------------- Requête HTTP ---------------------
+    
     def make_request( self, endpoint: str, method: str = "POST",  data: Optional[Dict] = None, json_data: Optional[Dict] = None,  params: Optional[Dict] = None,  headers: Optional[Dict] = None, timeout: int = 30) -> Dict[str, Any]:
         url = Settings.API_ENDPOINTS.get(endpoint, endpoint) if endpoint.startswith('_') else endpoint
         # 🔹 Fusionner headers globaux مع headers spécifiques
@@ -119,6 +123,7 @@ class APIManager:
 
 
     # --------------------- Gestion de réponse ---------------------
+    
     def _handle_response(self, result: Dict[str, Any], success_default: Any = None, failure_default: Any = None):
         try:
             status = result.get("status")
@@ -171,7 +176,11 @@ class APIManager:
             # print(f"❌ Exception while handling response: {e}")
             Settings.WRITE_LOG_DEV_FILE(f"❌ Exception while handling response: {e}", "ERROR")
             return {"session": False, "scenarios": []}
+    
+    
     # --------------------- Méthodes API ---------------------
+    
+    
     def save_process(self, params: Dict[str, Any]) -> int:
         result = self.make_request("_SAVE_PROCESS_API", "POST", json_data=params)
         # print(f"🔍 [DEBUG] Raw result: {result}")
@@ -183,10 +192,12 @@ class APIManager:
             return data.get("inserted_id", -1)
         return -1
 
+    
     def save_email(self, params: Dict[str, Any]) -> str:
         result = self.make_request("_SAVE_EMAIL_API", "POST", json_data=params)
         return str(self._handle_response(result, ""))
 
+    
     def send_status(self, params: Dict[str, Any]) -> str:
         # print("📤 Params envoyés:", params)
         Settings.WRITE_LOG_DEV_FILE(f"📤 Params envoyés: {params}", "INFO")
@@ -199,6 +210,7 @@ class APIManager:
         return str(self._handle_response(result, ""))
 
 
+    
     def handle_save_scenario(self, payload: Dict[str, Any], Url_Api) -> Dict[str, Any]:
         # print("🚀 [HANDLE_SAVE_SCENARIO] Starting handle_save_scenario function")
         # print(f"📋 [HANDLE_SAVE_SCENARIO] Payload: {json.dumps(payload, indent=2, ensure_ascii=False)}")
@@ -220,6 +232,91 @@ class APIManager:
         # print("🏁 [HANDLE_SAVE_SCENARIO] handle_save_scenario completed")
         Settings.WRITE_LOG_DEV_FILE("🏁 handle_save_scenario completed", "INFO")
         return response
+
+    
+    def fetch_proxy_configuration(self, unique_ips: set, entity_New: str) -> Dict[str, Any]:
+        try:
+            Settings.WRITE_LOG_DEV_FILE("=== PROXY CONFIGURATION FETCH START ===", "INFO")
+            Settings.WRITE_LOG_DEV_FILE(f"Entity utilisée: {entity_New}", "INFO")
+            Settings.WRITE_LOG_DEV_FILE(f"IP count: {len(unique_ips)}", "INFO")
+
+            if not unique_ips:
+                Settings.WRITE_LOG_DEV_FILE("No IPs provided", "ERROR")
+                return {"valid": False, "data": None, "error": "No IPs provided"}
+
+            k_proxy = ",".join(unique_ips) + "---" + entity_New
+            Settings.WRITE_LOG_DEV_FILE(f"k_proxy length: {len(k_proxy)}", "INFO")
+
+            params = {"m": "5454542z15szsdz4jklhjhdfz", "k": k_proxy}
+            Settings.WRITE_LOG_DEV_FILE(f"API Endpoint: {Settings.API_ENDPOINTS.get('__GET_PROXY_INFO__', 'UNKNOWN')}", "INFO")
+            Settings.WRITE_LOG_DEV_FILE(f"Request params: {params}", "INFO")
+
+            headers = {"User-Agent": "Mozilla/5.0"}
+
+            result = self.make_request(
+                Settings.API_ENDPOINTS["__GET_PROXY_INFO__"],
+                method="POST",
+                data=params,
+                headers=headers,
+                timeout=30
+            )
+
+            Settings.WRITE_LOG_DEV_FILE(f"API response status: {result.get('status_code')}", "INFO")
+            Settings.WRITE_LOG_DEV_FILE(f"Full API result: {result}", "INFO")
+
+            if result.get("status") != "success":
+                Settings.WRITE_LOG_DEV_FILE(f"API failed: {result.get('error')}", "ERROR")
+                Settings.WRITE_LOG_DEV_FILE("=== PROXY CONFIGURATION FETCH FAILED ===", "ERROR")
+                return {"valid": False, "data": None, "error": result.get("error")}
+
+            response_text = result.get("data", "")
+            response_size = len(response_text) if isinstance(response_text, str) else 0
+            Settings.WRITE_LOG_DEV_FILE(f"API response size: {response_size} bytes", "INFO")
+
+            # 🔐 Decrypt
+            Settings.WRITE_LOG_DEV_FILE("Decrypting API response", "INFO")
+            try:
+                decrypted = EncryptionService.decrypt_message(response_text, Settings.API_KEY_PROXY)
+                Settings.WRITE_LOG_DEV_FILE(f"Decryption successful - size: {len(decrypted)}", "INFO")
+            except Exception as decrypt_error:
+                Settings.WRITE_LOG_DEV_FILE(f"Decryption failed: {decrypt_error}\n{traceback.format_exc()}", "ERROR")
+                Settings.WRITE_LOG_DEV_FILE("=== PROXY CONFIGURATION FETCH FAILED (DECRYPTION) ===", "ERROR")
+                return {"valid": False, "data": None, "error": f"Decryption error: {str(decrypt_error)}"}
+
+            decrypted = re.sub(r"[^\x20-\x7E]", "", decrypted)
+            Settings.WRITE_LOG_DEV_FILE(f"Decrypted cleaned response: {decrypted}", "INFO")
+
+            try:
+                data = json.loads(decrypted)
+                Settings.WRITE_LOG_DEV_FILE(f"JSON parsed successfully - total keys: {len(data)}", "INFO")
+                Settings.WRITE_LOG_DEV_FILE(f"JSON keys sample: {list(data.keys())[:10]}", "INFO")
+            except json.JSONDecodeError as json_error:
+                Settings.WRITE_LOG_DEV_FILE(f"JSON parsing failed: {json_error}\n{traceback.format_exc()}", "ERROR")
+                Settings.WRITE_LOG_DEV_FILE(f"Raw decrypted response: {decrypted[:500]}", "ERROR")
+                Settings.WRITE_LOG_DEV_FILE("=== PROXY CONFIGURATION FETCH FAILED (JSON PARSE) ===", "ERROR")
+                return {"valid": False, "data": None, "error": f"JSON parsing error: {str(json_error)}"}
+
+            api_ips = set(k.split("#")[0] for k in data.keys())
+            missing = unique_ips - api_ips
+            extra = api_ips - unique_ips
+
+            Settings.WRITE_LOG_DEV_FILE(f"IPs expected: {len(unique_ips)}, IPs returned: {len(api_ips)}", "INFO")
+            Settings.WRITE_LOG_DEV_FILE(f"Missing IPs: {missing if missing else 'NONE'}", "INFO")
+            Settings.WRITE_LOG_DEV_FILE(f"Extra IPs: {extra if extra else 'NONE'}", "INFO")
+
+            if missing:
+                Settings.WRITE_LOG_DEV_FILE(f"Proxy configuration incomplete: Missing IPs: {missing}. Response key count={len(data)}.", "ERROR")
+                Settings.WRITE_LOG_DEV_FILE("=== PROXY CONFIGURATION FETCH FAILED (MISSING IPS) ===", "ERROR")
+                return {"valid": False, "data": data, "error": "La réponse du service est incomplète : certaines adresses IP attendues n'ont pas été reçues. Veuillez réessayer ou contacter le support si le problème persiste."}
+
+            Settings.WRITE_LOG_DEV_FILE("Proxy data retrieved for all IPs", "INFO")
+            Settings.WRITE_LOG_DEV_FILE("=== PROXY CONFIGURATION FETCH COMPLETED SUCCESSFULLY ===", "INFO")
+            return {"valid": True, "data": data, "error": None}
+
+        except Exception as e:
+            Settings.WRITE_LOG_DEV_FILE(f"Error fetching proxy configuration: {e}\n{traceback.format_exc()}", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE("=== PROXY CONFIGURATION FETCH FAILED (CRITICAL) ===", "ERROR")
+            return {"valid": False, "data": None, "error": str(e)}
 
 
 

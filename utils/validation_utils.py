@@ -10,6 +10,8 @@ from datetime import datetime
 from PyQt6.QtWidgets import QLineEdit
 from PyQt6.QtCore import QTimer
 import sys
+
+
 try:
     from config import Settings
 except ImportError as e:
@@ -39,6 +41,8 @@ class ValidationUtils:
             return False
         return ValidationUtils._PATTERN_EMAIL.match(email) is not None
     
+
+
     @staticmethod
     def validate_ip(ip: str) -> bool:
         if not ip or not isinstance(ip, str):
@@ -237,6 +241,92 @@ class ValidationUtils:
         # print("🔵 [END] process_user_input")
         Settings.WRITE_LOG_DEV_FILE("========== REQUEST COMPLETED ==========", "INFO")
         return result
+
+    
+    
+    
+    
+    
+    @staticmethod
+    def generate_user_input_data(window) -> Dict[str, Any]:
+        """Parse, validate and prepare user input from the main UI window."""
+        try:
+            Settings.WRITE_LOG_DEV_FILE("========== NEW REQUEST ==========", "INFO")
+
+            input_data = window.textEdit_3.toPlainText().strip()
+            entered_number_text = window.textEdit_4.toPlainText().strip()
+
+            Settings.WRITE_LOG_DEV_FILE(f"Input data preview: {input_data[:200]}", "INFO")
+            Settings.WRITE_LOG_DEV_FILE(f"Entered number: {entered_number_text}", "INFO")
+
+            validation = ValidationUtils.process_user_input(input_data, entered_number_text)
+            if not validation["success"]:
+                Settings.WRITE_LOG_DEV_FILE(f"Validation failed: {validation['error_message']}", "ERROR")
+                return {"valid": False, "data": None, "entered_number": None, "error": f"{validation['error_title']}:{validation['error_message']}"}
+
+            data_list = validation["data_list"]
+            entered_number = validation["entered_number"]
+            Settings.WRITE_LOG_DEV_FILE(f"Validation OK - rows: {len(data_list)}, entered_number: {entered_number}", "INFO")
+            Settings.WRITE_LOG_DEV_FILE(f"First record sample: {str(data_list[0]) if data_list else 'NO DATA'}", "INFO")
+
+            ports_result = ValidationUtils.process_ports(data_list)
+            if not ports_result["valid"]:
+                Settings.WRITE_LOG_DEV_FILE(f"Ports processing failed: {ports_result['error_message']}", "ERROR")
+                Settings.WRITE_LOG_DEV_FILE(f"Ports result: {ports_result}", "ERROR")
+                return {"valid": False, "data": ports_result.get("data"), "entered_number": entered_number, "error": f"{ports_result['error_title']}:{ports_result['error_message']}"}
+
+            filtered_accounts = ports_result["data"]["filtered"]
+            Settings.WRITE_LOG_DEV_FILE(f"Ports processed - filtered count: {len(filtered_accounts)}", "INFO")
+
+            ip_result = ValidationUtils.collect_unique_proxy_addresses(filtered_accounts)
+            if not ip_result["valid"]:
+                Settings.WRITE_LOG_DEV_FILE(f"IP extraction failed: {ip_result['error']}", "ERROR")
+                return {"valid": False, "data": None, "entered_number": entered_number, "error": f"{ip_result['error_title']}:{ip_result['error_message']}"}
+
+            unique_ips = ip_result["data"]
+            Settings.WRITE_LOG_DEV_FILE(f"Unique IPs extracted: {len(unique_ips)}", "INFO")
+            Settings.WRITE_LOG_DEV_FILE(f"Unique IPs list: {sorted(unique_ips)}", "INFO")
+
+            from core import SessionManager
+            from api import APIManager
+
+            session_info = SessionManager.check_session()
+            if not session_info["valid"]:
+                Settings.WRITE_LOG_DEV_FILE(f"Invalid session: {session_info.get('error', 'Unknown error')}", "ERROR")
+                Settings.WRITE_LOG_DEV_FILE(f"Session info: {session_info}", "ERROR")
+                return {"valid": False, "data": None, "entered_number": entered_number, "error": "Your session is invalid. Please log in again."}
+
+            entity_used = session_info.get("p_entity_Nouveau", "UNKNOWN")
+            Settings.WRITE_LOG_DEV_FILE(f"Session valide - Entity: {entity_used}", "INFO")
+            Settings.WRITE_LOG_DEV_FILE(f"Session info: {session_info}", "INFO")
+
+            api_result = APIManager.fetch_proxy_configuration(unique_ips, entity_used)
+            if not api_result["valid"]:
+                api_error = api_result.get("error", "Unknown API error")
+                Settings.WRITE_LOG_DEV_FILE(f"API call failed: {api_error}", "ERROR")
+                Settings.WRITE_LOG_DEV_FILE(f"API result: {api_result}", "ERROR")
+                return {"valid": False, "data": None, "entered_number": entered_number, "error": api_error}
+
+            Settings.WRITE_LOG_DEV_FILE(f"API call success - returned entries: {len(api_result['data']) if api_result.get('data') else 0}", "INFO")
+
+            merge_result = ValidationUtils.merge_data(api_result["data"], data_list)
+            if not merge_result["valid"]:
+                merge_error = merge_result["error"]
+                Settings.WRITE_LOG_DEV_FILE(f"Merge failed: {merge_error}", "ERROR")
+                Settings.WRITE_LOG_DEV_FILE(f"Merge details: {merge_result}", "ERROR")
+                return {"valid": False, "data": None, "entered_number": entered_number, "error": merge_error}
+
+            final_data = merge_result["data"]
+            Settings.WRITE_LOG_DEV_FILE(f"Merge success - final records: {len(final_data)}", "INFO")
+            Settings.WRITE_LOG_DEV_FILE(f"Final data sample: {str(final_data[0]) if final_data else 'NO DATA'}", "INFO")
+            Settings.WRITE_LOG_DEV_FILE("========== REQUEST COMPLETED SUCCESSFULLY ==========", "INFO")
+
+            return {"valid": True, "data": final_data, "entered_number": entered_number, "error": None}
+
+        except Exception as e:
+            Settings.WRITE_LOG_DEV_FILE(f"Unexpected error in generate_user_input_data: {str(e)}\n{traceback.format_exc()}", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE("========== REQUEST FAILED WITH EXCEPTION ==========", "ERROR")
+            return {"valid": False, "data": None, "entered_number": None, "error": "An unexpected error occurred. Please try again later."}
 
 
 
@@ -688,7 +778,7 @@ class ValidationUtils:
 
 
     @staticmethod
-    def validate_qlineedit_with_range(  qlineedit: QLineEdit,   default_value: str = "50,50",  callback: Optional[Callable] = None ) -> Tuple[bool, Optional[Tuple[int, int]]]:
+    def validate_qlineedit_with_range(qlineedit: QLineEdit,   default_value: str = "50,50",  callback: Optional[Callable] = None ) -> Tuple[bool, Optional[Tuple[int, int]]]:
  
         
         # Utilise la méthode validate_and_correct_qlineedit pour la validation
@@ -789,12 +879,6 @@ class ValidationUtils:
 
 
     
-
-
-
-
-
-    
     # ==================== UTILITAIRES DE DÉBOGAGE ====================
 
     
@@ -826,6 +910,39 @@ class ValidationUtils:
             #print(f"[Email Extraction] Aucun email trouvé dans {file_name}")
             return None
 
+    
+    
+    
+    @staticmethod
+    def collect_unique_proxy_addresses(data_list: List[Dict[str, Any]]) -> Dict[str, Any]:
+        try:
+            if not data_list:
+                Settings.WRITE_LOG_DEV_FILE("No account data provided for proxy address collection", "WARNING")
+                return {"valid": True, "data": set(), "error": None, "error_title": "No Data", "error_message": "No account entries were provided for proxy address collection."}
+
+            unique_ips: set = set()
+
+            for index, item in enumerate(data_list):
+                ip = ValidationUtils.safe_get(item, "ipAddress")
+
+                if ip:
+                    unique_ips.add(str(ip))
+                else:
+                    Settings.WRITE_LOG_DEV_FILE(f"Missing ipAddress at index {index}", "WARNING")
+
+            Settings.WRITE_LOG_DEV_FILE(f"Proxy addresses collected - total: {len(unique_ips)}", "INFO")
+
+            return {"valid": True, "data": unique_ips, "error": None, "error_title": "Proxy Address Collection Successful", "error_message": f"Collected {len(unique_ips)} unique proxy address(es) from provided account data."}
+
+        except Exception as e:
+            Settings.WRITE_LOG_DEV_FILE(f"Error collecting unique proxy addresses: {e}\n{traceback.format_exc()}", "ERROR")
+            return {"valid": False, "data": None, "error": str(e), "error_title": "Proxy Address Collection Error", "error_message": "An error occurred while collecting proxy addresses. Please verify data format and retry."}
+
+
+
+
+
 
 # Instance globale pour une utilisation facile
 ValidationUtils = ValidationUtils()
+

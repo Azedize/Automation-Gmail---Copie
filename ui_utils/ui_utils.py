@@ -622,8 +622,6 @@ class UIManager:
 
 
 
-
-
     # -----------------------------
     # Gestion des badges de notification sur les onglets
     # -----------------------------
@@ -1489,14 +1487,6 @@ class UIManager:
                     reset_options_layout.removeWidget(widget)
 
 
-
-    
-    
-    
-    
-    
-    
-    
     
     
     @staticmethod
@@ -1533,9 +1523,6 @@ class UIManager:
 
     
     
-    
-    
-    
     @staticmethod
     def read_file_content(file_path):
         if not ValidationUtils.path_exists(file_path):
@@ -1551,14 +1538,6 @@ class UIManager:
             Settings.WRITE_LOG_DEV_FILE(f"Error reading file content: {file_path}\n{traceback.format_exc()}", "ERROR")
             return None
 
-
-
-
-
-
-    
-    
-    
     
     
     @staticmethod
@@ -1567,14 +1546,7 @@ class UIManager:
         return window.findChild(widget_type, name) if widget_type else window.findChild(QWidget, name)
 
 
-    
-    
-    
-    
-    
-    
-    
-    
+
     
     
     
@@ -1596,16 +1568,6 @@ class UIManager:
 
 
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     @staticmethod
     def _setup_template_widgets(window):
         templates = {
@@ -1625,14 +1587,6 @@ class UIManager:
                 widget.hide()
 
 
-
-
-    
-    
-    
-    
-    
-    
     
     
     
@@ -1713,14 +1667,6 @@ class UIManager:
 
     
     
-    
-    
-    
-    
-    
-    
-    
-    
     @staticmethod
     def _setup_button(window, widget_name, callback):
         """Setup simple button with connection + debug"""
@@ -1755,13 +1701,7 @@ class UIManager:
 
         return button
 
-    
-    
 
-
-
-    
-        
         
     @staticmethod
     def _setup_browser_combobox(window):
@@ -1952,10 +1892,7 @@ class UIManager:
         return button
 
 
-    
-    
-    
-    
+
     
     @staticmethod
     def _setup_result_tab_widget(window):
@@ -2007,8 +1944,7 @@ class UIManager:
         Settings.WRITE_LOG_DEV_FILE(f"Result tab switched to: {tab_text}", "INFO")
 
 
-    
-    
+
         
         
     @staticmethod
@@ -2048,8 +1984,6 @@ class UIManager:
 
     
     
-    
-    
     @staticmethod
     def _set_tab_icons(window, tab_widget):
         """Set icons for tabs based on tab text"""
@@ -2070,9 +2004,7 @@ class UIManager:
                 tab_widget.setTabIcon(i, QIcon(icon_pixmap))
 
 
-    
-    
-    
+
     
     @staticmethod
     def _convert_to_vertical_tabs(window):
@@ -2107,8 +2039,6 @@ class UIManager:
         window.tabWidgetResult.currentChanged.connect(  lambda index: UIManager._on_result_tab_changed(window, index) )
 
     
-
-
 
     
     
@@ -2310,8 +2240,6 @@ class UIManager:
                 lineedit.hide()
 
 
-    
-    
     
     
     @staticmethod

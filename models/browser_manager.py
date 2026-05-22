@@ -16,6 +16,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import time
 import shutil
+from pathlib import Path
 from typing import List, Dict, Any, Optional
 
 
@@ -32,6 +33,137 @@ except ImportError as e:
 
 
 class BrowserManager:
+    
+    # ═══════════════════════════════════════════════════════════
+    # 🌐 validate_and_setup_browser (from AppV2.Process_Browser)
+    # ═══════════════════════════════════════════════════════════
+    @staticmethod
+    def validate_and_setup_browser(window, selected_browser: str) -> bool:
+        """
+        Valide et configure le navigateur avant extraction.
+        
+        Effectue les vérifications suivantes:
+        1️⃣ Vérification du navigateur supporté (Chrome uniquement actuellement)
+        2️⃣ Vérification du dossier de configuration
+        3️⃣ Vérification et chargement du fichier secure_preferences
+        4️⃣ Validation des clés JSON requises
+        5️⃣ Vérification et mise à jour de l'extension
+        
+        Args:
+            window: Fenêtre principale (pour les messages d'erreur UI)
+            selected_browser: Nom du navigateur sélectionné
+            
+        Returns:
+            bool: True si succès, False sinon
+        """
+        from Update import UpdateManager
+        from ui_utils import UIManager
+        
+        # 1️⃣ Vérification du navigateur
+        if selected_browser.lower() != "chrome":
+            Settings.WRITE_LOG_DEV_FILE(f"Unsupported browser: {selected_browser}", "WARNING")
+            return False
+
+        # 2️⃣ Vérification du dossier de configuration
+        config_profile = Settings.CONFIG_PROFILE
+        if not os.path.exists(config_profile):
+            Settings.WRITE_LOG_DEV_FILE(f"Configuration folder not found: {config_profile}", "WARNING")
+            return False
+
+        # 3️⃣ Vérification du fichier secure_preferences
+        secure_prefs = Settings.SECURE_PREFERENCES_TEMPLATE
+        if not os.path.exists(secure_prefs):
+            Settings.WRITE_LOG_DEV_FILE(f"Secure preferences file not found: {secure_prefs}", "WARNING")
+            return False
+
+        # Lecture du fichier JSON
+        try:
+            with open(secure_prefs, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            Settings.WRITE_LOG_DEV_FILE(f"Secure preferences file loaded successfully: {secure_prefs}", "INFO")
+        except Exception as e:
+            Settings.WRITE_LOG_DEV_FILE(f"Error reading JSON file: {e}\n{traceback.format_exc()}", "ERROR")
+            return False
+
+        # 4️⃣ Vérification des clés JSON
+        required_keys = Settings.CLES_RECHERCHE
+        results_keys = []
+        Settings.WRITE_LOG_DEV_FILE(f"Searching JSON for required keys: {required_keys}", "INFO")
+        BrowserManager.Search_Keys(data, required_keys, results_keys)
+
+        found_keys = [list(d.keys())[0] for d in results_keys]
+        found_key_details = [
+            (
+                f"{list(d.keys())[0]} at {next(iter(d.values()))['path']}"
+                if isinstance(next(iter(d.values())), dict) and "path" in next(iter(d.values()))
+                else str(list(d.keys())[0])
+            )
+            for d in results_keys
+        ]
+        missing_keys = [key for key in required_keys if key not in found_keys]
+
+        Settings.WRITE_LOG_DEV_FILE(f"Found keys: {found_keys}", "INFO")
+        Settings.WRITE_LOG_DEV_FILE(f"Found key details: {found_key_details}", "INFO")
+        Settings.WRITE_LOG_DEV_FILE(f"Total keys found: {len(found_keys)}", "INFO")
+
+        if missing_keys:
+            detailed_error = f"Missing keys in secure_preferences JSON file:\n"
+            detailed_error += f"  - Required keys: {', '.join(required_keys)}\n"
+            detailed_error += f"  - Found keys: {', '.join(found_keys) if found_keys else 'NONE'}\n"
+            detailed_error += f"  - Missing keys: {', '.join(missing_keys)}\n"
+            detailed_error += f"  - File path: {secure_prefs}\n"
+            detailed_error += f"  - Search results detail: {found_key_details}"
+
+            Settings.WRITE_LOG_DEV_FILE(detailed_error, "ERROR")
+            UIManager.Show_Critical_Message(
+                window,
+                "Configuration Error",
+                "The Chrome configuration file is missing required Settings.\n\n"
+                "Please verify your configuration and try again.\n"
+                "If the problem persists, please contact Support.",
+                message_type="critical",
+            )
+            return False
+
+        Settings.WRITE_LOG_DEV_FILE("All required JSON keys were found", "SUCCESS")
+
+        # 5️⃣ Vérification et mise à jour de l'extension
+        ext_path = Settings.EXTENTION_EX3
+        if not ValidationUtils.path_exists(ext_path):
+            Settings.WRITE_LOG_DEV_FILE(f"Extension not found, downloading...", "INFO")
+            valid_ext_dir = ValidationUtils.validate_directory_path(ext_path, must_exist=False)
+            if not valid_ext_dir:
+                Settings.WRITE_LOG_DEV_FILE(f"Invalid extension path: {ext_path}", "WARNING")
+                return False
+            if UpdateManager.update_extension_from_server():
+                Settings.WRITE_LOG_DEV_FILE(f"Extension installed successfully", "INFO")
+            else:
+                Settings.WRITE_LOG_DEV_FILE(f"Failed to install extension", "WARNING")
+                return False
+        else:
+            Settings.WRITE_LOG_DEV_FILE(f"Extension found: {ext_path}", "INFO")
+            manifest_file = os.path.join(ext_path, "manifest.json")
+            if not os.path.exists(manifest_file):
+                Settings.WRITE_LOG_DEV_FILE(f"manifest.json not found", "WARNING")
+                return False
+
+            remote_version = UpdateManager.check_version_extension(window)
+            if isinstance(remote_version, str):
+                Settings.WRITE_LOG_DEV_FILE(f"Update available: {remote_version}", "INFO")
+                if UpdateManager.update_extension_from_server(remote_version):
+                    Settings.WRITE_LOG_DEV_FILE(f"Extension updated successfully", "INFO")
+                else:
+                    Settings.WRITE_LOG_DEV_FILE(f"Failed to update extension", "WARNING")
+                    return False
+            elif remote_version is True:
+                Settings.WRITE_LOG_DEV_FILE("Extension already up to date", "INFO")
+            else:
+                Settings.WRITE_LOG_DEV_FILE(f"Failed to check extension version", "WARNING")
+                return False
+
+        Settings.WRITE_LOG_DEV_FILE(f"Processing completed successfully for Chrome browser", "INFO")
+        return True
+    
 
     
     
@@ -107,7 +239,71 @@ class BrowserManager:
         return None
     
     
+    
+    @staticmethod
+    def store_browser_session_info(   pid: str,  Path_DiR: str,   email: str,  SESSION_ID: str, browser: str,  inserted_id: str ) -> None:
+        def _write_and_verify(target_path: Path, content: str, label: str):
+            target_path.parent.mkdir(parents=True, exist_ok=True)
+            target_path.write_text(f"{content}\n", encoding="utf-8")
+            actual = target_path.read_text(encoding="utf-8").strip()
+            Settings.WRITE_LOG_DEV_FILE(f"Content of {target_path} after write: '{actual}'", "INFO")
+            if actual != content.strip():
+                Settings.WRITE_LOG_DEV_FILE(
+                    f"❌ [{label}] ERREUR: Contenu attendu '{content.strip()}', mais lu '{actual}'",
+                    "ERROR",
+                )
+
+        try:
+            browser_key = browser.strip().lower()
+            chrome_family = Settings.CHROME_FAMILY_BROWSERS
+            Settings.WRITE_LOG_DEV_FILE(
+                f"store_browser_session_info called with PID={pid}, email={email}, SESSION_ID={SESSION_ID}, browser={browser_key}, inserted_id={inserted_id}",
+                "INFO",
+            )
+
+            session_entry = f"{pid}:{email}:{SESSION_ID}:{inserted_id}"
+            session_file = Path(Path_DiR) / email / "data.txt"
+
+            if browser_key in chrome_family:
+                browser_label = browser_key.upper()
+                Settings.WRITE_LOG_DEV_FILE(f"{browser_label} browser detected", "INFO")
+
+                extension_file = Path(Settings.EXTENTION_EX3) / "data.txt"
+                existing_content = (
+                    extension_file.read_text(encoding="utf-8").strip()
+                    if extension_file.exists()
+                    else None
+                )
+                if existing_content is not None:
+                    Settings.WRITE_LOG_DEV_FILE(
+                        f"Content of {extension_file} before write: '{existing_content}'",
+                        "INFO",
+                    )
+                else:
+                    Settings.WRITE_LOG_DEV_FILE(f"{extension_file} does not exist yet", "INFO")
+
+                Settings.WRITE_LOG_DEV_FILE(f"Writing SESSION_ID={SESSION_ID} to {extension_file}", "INFO")
+                _write_and_verify(extension_file, SESSION_ID, browser_label)
+
+                Settings.WRITE_LOG_DEV_FILE(f"Writing session to {session_file}", "INFO")
+                _write_and_verify(session_file, session_entry, browser_label)
+            else:
+                Settings.WRITE_LOG_DEV_FILE(f"Other browser detected: {browser_key}", "INFO")
+                Settings.WRITE_LOG_DEV_FILE(f"Writing session to {session_file}", "INFO")
+                _write_and_verify(session_file, session_entry, "OTHER")
+
+            Settings.WRITE_LOG_DEV_FILE("Session data stored successfully", "INFO")
+
+        except Exception as e:
+            Settings.WRITE_LOG_DEV_FILE(
+                f"Error in store_browser_session_info: {e}\n{traceback.format_exc()}",
+                "ERROR",
+            )
+
+    
     # ---------------------- Firefox ----------------------
+    
+    
     @staticmethod
     def _get_firefox_profiles() -> Dict[str, str]:
         ini_path = os.path.join(Settings.APPDATA, 'Mozilla', 'Firefox', 'profiles.ini')

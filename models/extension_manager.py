@@ -119,6 +119,9 @@ class ExtensionManager:
 
         # print("✅ actions.js modifié")
 
+    
+    
+    
     @staticmethod
     def _replace_background_js(email_folder, host, port, user, passwordP, IDL, email):
         path = os.path.join(email_folder, "background.js")
@@ -145,6 +148,9 @@ class ExtensionManager:
 
         # print("✅ background.js modifié")
 
+    
+    
+    
     @staticmethod
     def _replace_gmail_process_js(  email_folder, email, password, recovry, new_password, new_recovry ):
         path = os.path.join(email_folder, "gmail_process.js")
@@ -170,6 +176,9 @@ class ExtensionManager:
 
         # print("✅ gmail_process.js modifié")
 
+    
+    
+    
     @staticmethod
     def _replace_reporting_actions_js(email_folder, IDL, email):
         path = os.path.join(email_folder, "ReportingActions.js")
@@ -248,6 +257,10 @@ class ExtensionManager:
 
         # print("💾 gmail_process.js sauvegardé avec succès")
 
+    
+    
+    
+    
     @staticmethod
     def extraire_bloc_complet(content, process_key):
         marker = f'"{process_key}": ['

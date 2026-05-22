@@ -3,6 +3,8 @@ from pathlib import Path
 import sys
 import datetime
 import traceback
+import subprocess
+import shutil
 
 
 class Settings:
@@ -320,6 +322,65 @@ class Settings:
             if os.path.isfile(candidate):
                 return candidate
         return None
+
+    @classmethod
+    def ensure_node_installed(cls):
+        if shutil.which("node") is not None:
+            cls.WRITE_LOG_DEV_FILE("Node.js already installed", "INFO")
+            return True
+
+        cls.WRITE_LOG_DEV_FILE("Node.js not installed. Trying to install via Chocolatey...", "INFO")
+
+        if shutil.which("choco") is None:
+            cls.WRITE_LOG_DEV_FILE("Chocolatey not found. Installing...", "INFO")
+            try:
+                subprocess.run(
+                    [
+                        "powershell",
+                        "-NoProfile",
+                        "-ExecutionPolicy",
+                        "Bypass",
+                        "-Command",
+                        "Set-ExecutionPolicy Bypass -Scope Process -Force; "
+                        "[System.Net.ServicePointManager]::SecurityProtocol = "
+                        "[System.Net.ServicePointManager]::SecurityProtocol -bor 3072; "
+                        "iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))",
+                    ],
+                    check=True,
+                )
+            except subprocess.CalledProcessError:
+                cls.WRITE_LOG_DEV_FILE(f"Error installing Chocolatey{traceback.format_exc()}", "ERROR")
+                return False
+
+        try:
+            subprocess.run(["choco", "install", "nodejs-lts", "-y"], check=True)
+            return True
+        except subprocess.CalledProcessError as e:
+            cls.WRITE_LOG_DEV_FILE(f"Error installing Node.js via Chocolatey: {e}\n{traceback.format_exc()}", "ERROR")
+            return False
+
+    @classmethod
+    def get_web_ext_path(cls):
+        path = shutil.which("web-ext")
+        if path:
+            return path
+        return None
+
+    @classmethod
+    def ensure_web_ext_installed(cls):
+        if not cls.ensure_node_installed():
+            cls.WRITE_LOG_DEV_FILE("Unable to continue without Node.js.", "WARNING")
+            return
+        if shutil.which("npm") is None:
+            cls.WRITE_LOG_DEV_FILE("npm is not installed.", "ERROR")
+            return
+        if shutil.which("web-ext") is not None:
+            cls.WRITE_LOG_DEV_FILE("web-ext already installed", "INFO")
+            return
+        try:
+            subprocess.run("npm install --global web-ext", check=True, shell=True)
+        except subprocess.CalledProcessError as e:
+            cls.WRITE_LOG_DEV_FILE(f"Error installing web-ext via npm: {e}\n{traceback.format_exc()}", "ERROR")
 
 
 # Création d’une instance unique utilisée dans tout le projet

@@ -64,6 +64,9 @@ class UpdateManager:
             Settings.WRITE_LOG_DEV_FILE(f"Error reading local version from {path}\n{traceback.format_exc()}", "ERROR")
             return None
 
+    
+    
+    
     @staticmethod
     def _download_file(url: str, dest_path: str) -> bool:
         try:
@@ -89,6 +92,8 @@ class UpdateManager:
             Settings.WRITE_LOG_DEV_FILE(f"Erreur lors du téléchargement : - {e} \n{traceback.format_exc()}", "ERROR")
             return False
 
+    
+    
     @staticmethod
     def _remove_readonly(func, path, exc_info):
         os.chmod(path, stat.S_IWRITE)
