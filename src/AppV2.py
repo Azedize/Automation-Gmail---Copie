@@ -222,7 +222,6 @@ class LogsDisplayThread(QThread):
         super().__init__(parent)
         self.LOGS = LOGS
         self.stop_flag = False
-
     # =====================================================
     # 🔁 THREAD PRINCIPAL
     # =====================================================
@@ -1354,6 +1353,7 @@ def Process_Browser(window, selected_Browser) -> bool:
 
 class MainWindow(QMainWindow):
 
+    
     def __init__(self, json_data):
         super(MainWindow, self).__init__()
         self._init_ui()
