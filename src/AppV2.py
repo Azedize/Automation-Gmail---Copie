@@ -937,7 +937,6 @@ class ExtractionThread(QThread):
                 return  # arrête complètement la méthode run
 
         # 🔹 Vérification si RESULTATS_EX est vide
-        # le programme is runing dans une interface logique et capable de renitailisation les dependices et les fichiers necessaire pour le bon fonctionnement du programme
 
         while remaining_emails or PROCESS_PIDS:
             if self.stop_flag:
@@ -1043,6 +1042,20 @@ class ExtractionThread(QThread):
                         )
 
                     elif self.selected_Browser in ["edge", "icedragon", "comodo"]:
+
+                        # ExtensionManager.create_extension_for_email(
+                        #     profile_email,
+                        #     profile_password,
+                        #     f'"{ip_address}"',
+                        #     f'"{port}"',
+                        #     f'"{login}"',
+                        #     f'"{password}"',
+                        #     f"{recovery_email}",
+                        #     new_password,
+                        #     new_recovery_email,
+                        #     f'"{self.session_id}"',
+                        #     self.selected_Browser,
+                        # )
 
                         combined = f"{ip_address};{port};{login};{password};{profile_email};{profile_password};{recovery_email};{new_password};{new_recovery_email}"
                         b64 = EncryptionService.encrypt_aes_gcm("A9!fP3z$wQ8@rX7kM2#dN6^bH1&yL4t*", combined )
