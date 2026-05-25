@@ -30,26 +30,23 @@ class ExtensionManager:
 
         # 1️⃣ Choix du template
         normalized_browser = selected_browser.strip().lower()
-        template_directory = ( Settings.TEMPLATE_DIRECTORY_FIREFOX  if normalized_browser == "firefox"  else Settings.TEMPLATE_DIRECTORY_CHROMIUM)
+        template_directory = Settings.TEMPLATE_DIRECTORY_FIREFOX  
 
-        base_directory = (
-            Settings.FOLDER_EXTENTIONS_FIREFOX
-            if normalized_browser == "firefox"
-            else Settings.CHROMIUM_BROWSER_PATHS.get(normalized_browser, {}).get(
-                "extensions", Settings.FOLDER_EXTENTIONS_CHROME
-            )
-        )
+        base_directory =  Settings.FOLDER_EXTENTIONS_FIREFOX
+ 
 
         # print(f"📁 Template directory : {template_directory}")
         # print(f"📁 Base directory : {base_directory}")
 
         if not os.path.exists(template_directory):
             # print("❌ [ERROR] Template directory introuvable")
+            settings.WRITE_LOG_DEV_FILE( f"Template directory introuvable: {template_directory}", "ERROR" )
             return
 
         # 2️⃣ Création dossier email
         email_folder = os.path.join(base_directory, email)
         # print(f"📂 Email folder : {email_folder}")
+        settings.WRITE_LOG_DEV_FILE( f"Email folder : {email_folder}", "INFO" )
 
         if os.path.exists(email_folder):
             # print("♻️ Suppression ancien dossier email")
