@@ -220,6 +220,8 @@ class LogsDisplayThread(QThread):
         super().__init__(parent)
         self.LOGS = LOGS
         self.stop_flag = False
+    
+    
     # =====================================================
     # 🔁 THREAD PRINCIPAL
     # =====================================================
@@ -907,6 +909,7 @@ class ExtractionThread(QThread):
         self.Isp = Isp
         self.unique_id = unique_id
         self.output_json_final = output_json_final
+
 
     def run(self):
 
@@ -2437,6 +2440,8 @@ class MainWindow(QMainWindow):
         # print("\n🎉 Scenario loaded successfully.\n")
 
 
+
+
 class EntitySelectionDialog(QDialog):
 
     def __init__(self, pattern=None, default_entity=None, parent=None):
@@ -2609,6 +2614,8 @@ class EntitySelectionDialog(QDialog):
         if self.exec() == QDialog.DialogCode.Accepted:
             return self.input_field.text().strip()
         return None
+
+
 
 
 class LoginWindow(QMainWindow):
@@ -2865,6 +2872,9 @@ class LoginWindow(QMainWindow):
             Settings.WRITE_LOG_DEV_FILE("Session file is not valid.", "WARNING")
             self.erreur_label.setText(f"Session file is not valid.")
         self.erreur_label.show()
+
+
+
 
 
 def main():
