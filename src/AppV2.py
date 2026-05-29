@@ -221,7 +221,6 @@ class LogsDisplayThread(QThread):
         self.LOGS = LOGS
         self.stop_flag = False
     
-    
     # =====================================================
     # 🔁 THREAD PRINCIPAL
     # =====================================================
@@ -261,7 +260,7 @@ class CloseBrowserThread(QThread):
         self.lock = threading.Lock()
 
         Settings.WRITE_LOG_DEV_FILE( f"Thread created | Browser={selected_Browser} | User={username}", "INFO" )
-
+        
     # ======================================================
     # 🔁 THREAD PRINCIPAL
     # ======================================================
@@ -978,11 +977,12 @@ class ExtractionThread(QThread):
                         "email_recovery": "",
                         "line": "",
                         "app": "V4",
-                        "e_pid": self.unique_id,
+                        "e_pid": self.unique_id
                     }
 
                     inserted_id = str(APIManager.save_email(params))
                     new_password = ValidationUtils.generate_secure_password(16)
+                    
 
                     try:
                         os.makedirs(Settings.LOGS_DIRECTORY, exist_ok=True)
@@ -2205,8 +2205,6 @@ class MainWindow(QMainWindow):
             if state.get("showOnInit", False):
                 self.Create_Option_Button(state)
 
-    # test
-
     def Create_Option_Button(self, state):
         default_icon_path = os.path.join(Settings.ICONS_DIR, "icon.png")
         default_icon_path_Templete2 = os.path.join(Settings.ICONS_DIR, "next.png")
@@ -2881,7 +2879,6 @@ def main():
     # print("\n========== [APP START] ==========\n")
     Settings.WRITE_LOG_DEV_FILE("\n\n========== [APP START] ==========\n", "INFO")
     Settings.WRITE_LOG_DEV_FILE("Application starting...", "INFO")
-
     # 1️⃣ Vérification des arguments
     # print(f"[DEBUG] Arguments reçus: {sys.argv}")
     Settings.WRITE_LOG_DEV_FILE(f"Received arguments: {sys.argv}", "DEBUG")
@@ -2972,7 +2969,6 @@ def main():
             # print(f"[ERROR] Impossible de charger MainWindow: {e}")
             # print("[INFO] Fallback → LoginWindow")
             SessionManager.clear_session()  # Clear session if loading MainWindow fails
-
             window = LoginWindow()
 
     else:
