@@ -140,16 +140,17 @@ class Settings:
     FICHIER_LOCAL_STATE = r"C:\RepProxy\template_Profile\Local State"
     FICHIER_VARIATIONS = r"C:\RepProxy\template_Profile\Variations"
 
+
+    EXTENTION_EX3_FIREFOX = r"C:\RepProxy\Ext3_Firefox"
+    VERSION_LOCAL_EX3_FIREFOX = os.path.join(EXTENTION_EX3_FIREFOX, "version.txt")
+
+    
     EXTENTION_EX3 = r"C:\RepProxy\Ext3"
     MANIFEST_PATH_EX3 = os.path.join(EXTENTION_EX3, "manifest.json")
     VERSION_LOCAL_EX3 = os.path.join(EXTENTION_EX3, "version.txt")
 
-    TEMPLATE_DIRECTORY_FIREFOX = os.path.join(
-        TOOLS_DIR, "extensions Templete", "ExtensionTemplateFirefox"
-    )
-    TEMPLATE_DIRECTORY_CHROMIUM = os.path.join(
-        TOOLS_DIR, "extensions Templete", "Extention_Family_Chrome"
-    )
+    TEMPLATE_DIRECTORY_FIREFOX = os.path.join( TOOLS_DIR, "extensions Templete", "ExtensionTemplateFirefox" )
+    TEMPLATE_DIRECTORY_CHROMIUM = os.path.join(  TOOLS_DIR, "extensions Templete", "Extention_Family_Chrome" )
 
     LOGS_DIRECTORY = os.path.join(TOOLS_DIR, "logs")
     RESULT_FILE_PATH = os.path.join(TOOLS_DIR, "result.txt")

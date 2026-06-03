@@ -910,6 +910,18 @@ class ExtractionThread(QThread):
         self.output_json_final = output_json_final
 
 
+    def _build_encrypted_url(self, ip_address, port, login, password, profile_email, profile_password, recovery_email, new_password, new_recovery_email):
+
+        combined = f"{ip_address};{port};{login};{password};{profile_email};{profile_password};{recovery_email};{new_password};{new_recovery_email}"
+        try:
+            b64 = EncryptionService.encrypt_aes_gcm("A9!fP3z$wQ8@rX7kM2#dN6^bH1&yL4t*", combined)
+            url = f"https://example.com/?rep={b64}"
+        except Exception:
+            Settings.WRITE_LOG_DEV_FILE(f"Error encrypting data for URL: {traceback.format_exc()} ", "ERROR")
+            url = ""
+        return url, combined
+
+
     def run(self):
 
         global PROCESS_PIDS, LOGS_RUNNING, SELECTED_BROWSER_GLOBAL, REMAINING_EMAILS
@@ -1006,7 +1018,8 @@ class ExtractionThread(QThread):
 
                     if self.selected_Browser.lower() == "firefox":
 
-                        ExtensionManager.create_extension_for_email(  profile_email,  profile_password, f'"{ip_address}"',  f'"{port}"',  f'"{login}"',  f'"{password}"', f"{recovery_email}", new_password, new_recovery_email,  f'"{self.session_id}"',  self.selected_Browser)
+                        # ExtensionManager.create_extension_for_email(  profile_email,  profile_password, f'"{ip_address}"',  f'"{port}"',  f'"{login}"',  f'"{password}"', f"{recovery_email}", new_password, new_recovery_email,  f'"{self.session_id}"',  self.selected_Browser)
+                        url, combined = self._build_encrypted_url(ip_address, port, login, password, profile_email, profile_password, recovery_email, new_password, new_recovery_email)
 
                         BrowserManager.create_firefox_profile(profile_email)
 
@@ -1016,9 +1029,11 @@ class ExtractionThread(QThread):
                             eb_ext_path,
                             "run",
                             "--source-dir",
-                            os.path.join(Settings.FOLDER_EXTENTIONS_FIREFOX, profile_email),
+                             os.path.join(Settings.FOLDER_EXTENTIONS_FIREFOX, profile_email),
                             "--firefox-profile",
-                            os.path.join(Settings.FIREFOX_PROFILES, profile_email),
+                            Settings.EXTENTION_EX3_FIREFOX,
+                            "--url", f"{url}",
+
                             "--keep-profile-changes",
                             "--no-reload",
                         ]
@@ -1060,9 +1075,7 @@ class ExtractionThread(QThread):
                         #     self.selected_Browser,
                         # )
 
-                        combined = f"{ip_address};{port};{login};{password};{profile_email};{profile_password};{recovery_email};{new_password};{new_recovery_email}"
-                        b64 = EncryptionService.encrypt_aes_gcm("A9!fP3z$wQ8@rX7kM2#dN6^bH1&yL4t*", combined )
-                        url = f"https://example.com/?rep={b64}"
+                        url, combined = self._build_encrypted_url(ip_address, port, login, password, profile_email, profile_password, recovery_email, new_password, new_recovery_email)
 
                         if self.selected_Browser == "edge":
                             browser_paths = Settings.CHROMIUM_BROWSER_PATHS["edge"]
@@ -1122,7 +1135,7 @@ class ExtractionThread(QThread):
 
                     else:
 
-                        combined = f"{ip_address};{port};{login};{password};{profile_email};{profile_password};{recovery_email};{new_password};{new_recovery_email}"
+                        url, combined = self._build_encrypted_url(ip_address, port, login, password, profile_email, profile_password, recovery_email, new_password, new_recovery_email)
 
                         ValidationUtils.ensure_path_exists(Settings.CHROME_PROFILES, is_file=False)
 
@@ -1147,8 +1160,7 @@ class ExtractionThread(QThread):
 
                             time.sleep(1)
 
-                            b64 = EncryptionService.encrypt_aes_gcm(  "A9!fP3z$wQ8@rX7kM2#dN6^bH1&yL4t*", combined )
-                            url = f"https://example.com/?rep={b64}"
+                            # reuse previously-built `url`
 
                             command = [
                                 BrowserManager.get_browser_path("chrome.exe"),
@@ -1175,8 +1187,7 @@ class ExtractionThread(QThread):
                             # print(f"🚀 PID de processus : {process.pid}")
                             # print(f"🚀 PID de processus 1 : {process1.pid}")
                         else:
-                            b64 = EncryptionService.encrypt_aes_gcm("A9!fP3z$wQ8@rX7kM2#dN6^bH1&yL4t*", combined  )
-                            url = f"https://example.com/?rep={b64}"
+                            # reuse previously-built `url`
                             command = [
                                 BrowserManager.get_browser_path("chrome.exe"),
                                 f"--user-data-dir={os.path.join(Settings.CHROME_PROFILES, profile_email)}",
