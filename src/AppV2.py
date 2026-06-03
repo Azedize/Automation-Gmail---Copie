@@ -60,8 +60,11 @@ except ImportError as e:
 # ==========================================================
 
 file_lock = Lock()
+# ignorer cet list car aucun role apres cet changement 
+FIREFOX_LAUNCH = [] 
+FIREFOX_LIST_PIDS = []
 
-FIREFOX_LAUNCH = []
+
 LOGS = []
 PROCESS_PIDS = []
 NOTIFICATION_BADGES = {}
@@ -194,6 +197,7 @@ def Stop_All_Processes(window):
     else:
         try:
             Settings.WRITE_LOG_DEV_FILE("Closing Firefox profiles...", "INFO")
+            # send list Pid FIREFOX_LIST_PIDS to BrowserManager to close all fnetres de firefox qui enregistrer dans FIREFOX_LIST_PIDS
             BrowserManager.Close_Windows_By_Profiles(FIREFOX_LAUNCH)
             Settings.WRITE_LOG_DEV_FILE("Firefox profiles closed successfully.", "INFO")
         except Exception as e:
@@ -424,6 +428,10 @@ class CloseBrowserThread(QThread):
     # 📄 SESSION FILE
     # ======================================================
     def process_session_file(self, file_name, screenshots):
+
+        # dans cet partie mon besoin travaille all browser avec la meme regex "session_id:(\w+)_email:([\w.@+-]+)_etat:(\w+)"
+
+
         # print(f"\n📄 [SESSION] Traitement: {file_name}")
         if self.stop_flag:
             # print("🛑 [SESSION] Arrêt demandé")
@@ -442,15 +450,12 @@ class CloseBrowserThread(QThread):
             with open(session_path, "r", encoding="utf-8") as f:
                 content = f.read().strip()
 
-            if (
-                self.selected_Browser.lower() == "chrome"
-                or self.selected_Browser.lower() in Settings.CHROME_FAMILY_BROWSERS
-            ):
-                regex = r"session_id:(\w+)_email:([\w.@+-]+)_etat:(\w+)"
-                match = re.search(regex, content, re.IGNORECASE)
-            else:
-                regex = r"session_id:(\w+)_PID:(\d+)_Email:([\w.@]+)_Status:(\w+)"
-                match = re.search(regex, content)
+            # if ( self.selected_Browser.lower() == "chrome" or self.selected_Browser.lower() in Settings.CHROME_FAMILY_BROWSERS ):
+            regex = r"session_id:(\w+)_email:([\w.@+-]+)_etat:(\w+)"
+            match = re.search(regex, content, re.IGNORECASE)
+            # else:
+            #     regex = r"session_id:(\w+)_PID:(\d+)_Email:([\w.@]+)_Status:(\w+)"
+            #     match = re.search(regex, content)
 
             if not match:
                 # print("❌ [SESSION] Parsing échoué")
@@ -485,6 +490,7 @@ class CloseBrowserThread(QThread):
                         pass
 
             else:  # FIREFOX
+                # dans f
                 session_id, pid, email, status = match.groups()
                 pid = int(pid)
                 inserted_id = None
@@ -604,6 +610,9 @@ class CloseBrowserThread(QThread):
                 return
 
             if browser.lower() == "firefox":
+
+                # dans firefox mon besoin le code lire par exemple 12540;12844;13000:test@gmail.com:ABC123:77 dans le profile 
+                # puis recuper list pid d apres le chaine puis arrete cet list de pid est ignorer old tritement 
                 try:
                     self.find_firefox_window(email)
                     self.wait_then_close(email)
@@ -1037,6 +1046,9 @@ class ExtractionThread(QThread):
                             "--keep-profile-changes",
                             "--no-reload",
                         ]
+
+                        # recuperer List des processus avant lancement de firefox en enregistrer dans FIREFOX_LIST_PIDS
+
                         process = subprocess.Popen(command)
                         PROCESS_PIDS.append(process.pid)
 
@@ -1050,6 +1062,9 @@ class ExtractionThread(QThread):
                             }
                         )
 
+                        # recuperer List des processus apres lancement de firefox en enregistrer dans FIREFOX_LIST_PIDS
+
+
                         BrowserManager.store_browser_session_info(
                             process.pid,
                             Settings.FOLDER_EXTENTIONS_FIREFOX,
@@ -1057,6 +1072,7 @@ class ExtractionThread(QThread):
                             self.session_id,
                             self.selected_Browser.lower(),
                             inserted_id,
+                            # Diff list Pid avant et apres lancement firefox
                         )
 
                     elif self.selected_Browser in ["edge", "icedragon", "comodo"]:

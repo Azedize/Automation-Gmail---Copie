@@ -242,6 +242,9 @@ class BrowserManager:
     
     @staticmethod
     def store_browser_session_info(   pid: str,  Path_DiR: str,   email: str,  SESSION_ID: str, browser: str,  inserted_id: str ) -> None:
+        # dans chromium family va enregistrer comme ca  par exemple 5000:test@gmail.com:ABC123:77
+        # dans firefox va enregistrer comme ca  par exemple: 12540;12844;13000:test@gmail.com:ABC123:77
+        
         def _write_and_verify(target_path: Path, content: str, label: str):
             target_path.parent.mkdir(parents=True, exist_ok=True)
             target_path.write_text(f"{content}\n", encoding="utf-8")
