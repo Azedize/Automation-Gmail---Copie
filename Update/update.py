@@ -724,10 +724,10 @@ class UpdateManager:
                     return False
 
                 # Suppression ancienne version
-                if os.path.exists(Settings.EXTENTION_EX3):
-                    # print(f"🗑️ Suppression ancien dossier {Settings.EXTENTION_EX3}")
+                if os.path.exists(Settings.EXTENTION_EX3_CHROMIUM):
+                    # print(f"🗑️ Suppression ancien dossier {Settings.EXTENTION_EX3_CHROMIUM}")
                     Settings.WRITE_LOG_DEV_FILE(f"Suppression de l'ancienne extension avant mise à jour", "INFO")
-                    shutil.rmtree(Settings.EXTENTION_EX3, onerror=UpdateManager._remove_readonly)
+                    shutil.rmtree(Settings.EXTENTION_EX3_CHROMIUM, onerror=UpdateManager._remove_readonly)
 
                 # Extraction
                 # print("📂 Extraction du fichier ZIP...")
@@ -749,8 +749,8 @@ class UpdateManager:
                     return False
 
                 # Déplacement vers destination finale
-                shutil.move(extracted_dir, Settings.EXTENTION_EX3)
-                # print(f"✅ Mise à jour réussie : {Settings.EXTENTION_EX3}")
+                shutil.move(extracted_dir, Settings.EXTENTION_EX3_CHROMIUM)
+                # print(f"✅ Mise à jour réussie : {Settings.EXTENTION_EX3_CHROMIUM}")
                 Settings.WRITE_LOG_DEV_FILE(f"Extension mise à jour vers la version {remote_version}", "INFO")
 
                 return True

@@ -5,6 +5,7 @@ import sys
 import json
 import subprocess
 import configparser
+import datetime
 import traceback
 from typing import Optional, List, Dict, Any
 import psutil
@@ -128,7 +129,7 @@ class BrowserManager:
         Settings.WRITE_LOG_DEV_FILE("All required JSON keys were found", "SUCCESS")
 
         # 5️⃣ Vérification et mise à jour de l'extension
-        ext_path = Settings.EXTENTION_EX3
+        ext_path = Settings.EXTENTION_EX3_CHROMIUM
         if not ValidationUtils.path_exists(ext_path):
             Settings.WRITE_LOG_DEV_FILE(f"Extension not found, downloading...", "INFO")
             valid_ext_dir = ValidationUtils.validate_directory_path(ext_path, must_exist=False)
@@ -241,10 +242,36 @@ class BrowserManager:
     
     
     @staticmethod
-    def store_browser_session_info(   pid: str,  Path_DiR: str,   email: str,  SESSION_ID: str, browser: str,  inserted_id: str ) -> None:
-        # dans chromium family va enregistrer comme ca  par exemple 5000:test@gmail.com:ABC123:77
-        # dans firefox va enregistrer comme ca  par exemple: 12540;12844;13000:test@gmail.com:ABC123:77
-        
+    def store_browser_session_info(
+        pid: Any,
+        Path_DiR: str,
+        email: str,
+        SESSION_ID: str,
+        browser: str,
+        inserted_id: str,
+        profile_path: Optional[str] = None,
+        web_ext_pid: Optional[int] = None,
+        profile_name: Optional[str] = None,
+    ) -> None:
+        # dans chromium family va enregistrer comme ca par exemple 5000:test@gmail.com:ABC123:77
+        # dans firefox va enregistrer comme ca par exemple 12540;12844;13000:test@gmail.com:ABC123:77
+
+        def _normalize_pid_value(pid_value: Any, browser_key: str) -> str:
+            if browser_key == "firefox":
+                if isinstance(pid_value, (list, tuple, set)):
+                    return ";".join(str(int(p)) for p in pid_value if str(p).strip().isdigit())
+                if isinstance(pid_value, int):
+                    return str(pid_value)
+                if isinstance(pid_value, str):
+                    return pid_value.strip()
+                return str(pid_value)
+
+            if isinstance(pid_value, int):
+                return str(pid_value)
+            if isinstance(pid_value, str):
+                return pid_value.strip()
+            return str(pid_value)
+
         def _write_and_verify(target_path: Path, content: str, label: str):
             target_path.parent.mkdir(parents=True, exist_ok=True)
             target_path.write_text(f"{content}\n", encoding="utf-8")
@@ -259,19 +286,21 @@ class BrowserManager:
         try:
             browser_key = browser.strip().lower()
             chrome_family = Settings.CHROME_FAMILY_BROWSERS
+            normalized_pid = _normalize_pid_value(pid, browser_key)
             Settings.WRITE_LOG_DEV_FILE(
-                f"store_browser_session_info called with PID={pid}, email={email}, SESSION_ID={SESSION_ID}, browser={browser_key}, inserted_id={inserted_id}",
+                f"store_browser_session_info called with raw PID={pid}, normalized PID={normalized_pid}, email={email}, SESSION_ID={SESSION_ID}, browser={browser_key}, inserted_id={inserted_id}, profile_path={profile_path}, web_ext_pid={web_ext_pid}, profile_name={profile_name}",
                 "INFO",
             )
 
-            session_entry = f"{pid}:{email}:{SESSION_ID}:{inserted_id}"
+            session_entry = f"{normalized_pid}:{email}:{SESSION_ID}:{inserted_id}"
             session_file = Path(Path_DiR) / email / "data.txt"
+            session_json_file = Path(Path_DiR) / email / "session_info.json"
 
             if browser_key in chrome_family:
                 browser_label = browser_key.upper()
                 Settings.WRITE_LOG_DEV_FILE(f"{browser_label} browser detected", "INFO")
 
-                extension_file = Path(Settings.EXTENTION_EX3) / "data.txt"
+                extension_file = Path(Settings.EXTENTION_EX3_CHROMIUM) / "data.txt"
                 existing_content = (
                     extension_file.read_text(encoding="utf-8").strip()
                     if extension_file.exists()
@@ -291,9 +320,34 @@ class BrowserManager:
                 Settings.WRITE_LOG_DEV_FILE(f"Writing session to {session_file}", "INFO")
                 _write_and_verify(session_file, session_entry, browser_label)
             else:
-                Settings.WRITE_LOG_DEV_FILE(f"Other browser detected: {browser_key}", "INFO")
+                Settings.WRITE_LOG_DEV_FILE(f"Firefox or other browser detected: {browser_key}", "INFO")
+                Settings.WRITE_LOG_DEV_FILE(f"Session entry for Firefox write: '{session_entry}'", "DEBUG")
                 Settings.WRITE_LOG_DEV_FILE(f"Writing session to {session_file}", "INFO")
                 _write_and_verify(session_file, session_entry, "OTHER")
+
+                firefox_pids = []
+                if browser_key == "firefox":
+                    if isinstance(pid, (list, tuple, set)):
+                        firefox_pids = [int(p) for p in pid if str(p).strip().isdigit()]
+                    elif isinstance(pid, str) and ";" in pid:
+                        firefox_pids = [int(p) for p in pid.split(";") if p.strip().isdigit()]
+                    elif isinstance(pid, int):
+                        firefox_pids = [pid]
+
+                    session_data = {
+                        "browser": browser_key,
+                        "profile_name": profile_name or email,
+                        "profile_path": profile_path,
+                        "web_ext_pid": web_ext_pid,
+                        "firefox_pids": firefox_pids,
+                        "email": email,
+                        "session_id": SESSION_ID,
+                        "inserted_id": inserted_id,
+                        "normalized_pid": normalized_pid,
+                        "stored_at": datetime.datetime.now().isoformat(),
+                    }
+                    Settings.WRITE_LOG_DEV_FILE(f"Writing session JSON to {session_json_file}", "INFO")
+                    _write_and_verify(session_json_file, json.dumps(session_data, indent=2, ensure_ascii=False), "FIREFOX-SESSION-JSON")
 
             Settings.WRITE_LOG_DEV_FILE("Session data stored successfully", "INFO")
 
@@ -309,62 +363,199 @@ class BrowserManager:
     
     @staticmethod
     def _get_firefox_profiles() -> Dict[str, str]:
+        Settings.WRITE_LOG_DEV_FILE("[_get_firefox_profiles] Lecture des profils Firefox existants", "DEBUG")
         ini_path = os.path.join(Settings.APPDATA, 'Mozilla', 'Firefox', 'profiles.ini')
-        if not ValidationUtils.path_exists(ini_path):
+        
+        if not os.path.exists(ini_path):
+            Settings.WRITE_LOG_DEV_FILE(f"[_get_firefox_profiles] ⚠️ profiles.ini non trouvé: {ini_path}", "WARNING")
             return {}
 
         config = configparser.ConfigParser()
-        config.read(ini_path, encoding='utf-8')
+        try:
+            config.read(ini_path, encoding='utf-8')
+        except Exception as e:
+            Settings.WRITE_LOG_DEV_FILE(f"[_get_firefox_profiles] ❌ Erreur lecture profiles.ini: {e}", "ERROR")
+            return {}
 
         base_dir = os.path.dirname(ini_path)
         profiles = {}
-        for section in config.sections():
-            if section.startswith('Profile'):
-                name = config.get(section, 'Name', fallback=None)
-                path = config.get(section, 'Path', fallback=None)
-                is_rel = config.getint(section, 'IsRelative', fallback=1)
-                if name and path:
-                    full_path = os.path.join(base_dir, path) if is_rel else path
-                    profiles[name] = os.path.normpath(full_path)
+        
+        try:
+            for section in config.sections():
+                if section.startswith('Profile'):
+                    name = config.get(section, 'Name', fallback=None)
+                    path = config.get(section, 'Path', fallback=None)
+                    is_rel = config.getint(section, 'IsRelative', fallback=1)
+                    if name and path:
+                        full_path = os.path.join(base_dir, path) if is_rel else path
+                        profiles[name] = os.path.normpath(full_path)
+                        Settings.WRITE_LOG_DEV_FILE(f"  📌 Profil trouvé: {name} -> {profiles[name]}", "DEBUG")
+        except Exception as e:
+            Settings.WRITE_LOG_DEV_FILE(f"[_get_firefox_profiles] ❌ Erreur parsing profiles: {e}\n{traceback.format_exc()}", "ERROR")
+        
+        Settings.WRITE_LOG_DEV_FILE(f"[_get_firefox_profiles] ✅ {len(profiles)} profil(s) trouvé(s)", "INFO")
         return profiles
+
+    @staticmethod
+    def find_firefox_pids(profile_path: str, parent_pid: int) -> List[int]:
+        Settings.WRITE_LOG_DEV_FILE(
+            f"[find_firefox_pids] Recherche des PIDs Firefox pour profile_path={profile_path}, parent_pid={parent_pid}",
+            "DEBUG",
+        )
+        pids = set()
+        profile_lower = profile_path.lower()
+
+        for proc in psutil.process_iter(["pid", "name", "ppid", "cmdline"]):
+            try:
+                name = (proc.info["name"] or "").lower()
+                if "firefox" not in name:
+                    continue
+
+                cmdline = " ".join(proc.info["cmdline"] or []).lower()
+                match_profile = profile_lower in cmdline
+                match_parent = proc.info.get("ppid") == parent_pid
+
+                if match_profile or match_parent:
+                    pids.add(proc.pid)
+                    Settings.WRITE_LOG_DEV_FILE(
+                        f"[find_firefox_pids] Match PID {proc.pid}: profile_match={match_profile}, parent_match={match_parent}, cmdline={cmdline[:200]}",
+                        "DEBUG",
+                    )
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                continue
+            except Exception as e:
+                Settings.WRITE_LOG_DEV_FILE(
+                    f"[find_firefox_pids] Process scan error: {e}",
+                    "WARNING",
+                )
+                continue
+
+        result = sorted(pids)
+        Settings.WRITE_LOG_DEV_FILE(f"[find_firefox_pids] Firefox PIDs found: {result}", "INFO")
+        return result
 
    
     
     
     @staticmethod
     def create_firefox_profile(profile_name: str) -> Optional[str]:
+        Settings.WRITE_LOG_DEV_FILE(f"📋 [create_firefox_profile] Tentative de création du profil: {profile_name}", "DEBUG")
+        
+        # 1️⃣ Vérifier que Firefox existe
         firefox_path = BrowserManager.get_browser_path("firefox.exe")
         if not firefox_path:
-            #print("❌ Firefox introuvable.")
-            Settings.WRITE_LOG_DEV_FILE("Firefox introuvable.", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(f"❌ [create_firefox_profile] Firefox exécutable non trouvé", "ERROR")
             return None
+        Settings.WRITE_LOG_DEV_FILE(f"✅ [create_firefox_profile] Firefox trouvé à: {firefox_path}", "DEBUG")
 
+        # 2️⃣ Vérifier que le répertoire de base existe
+        if not os.path.exists(Settings.FIREFOX_PROFILES):
+            try:
+                os.makedirs(Settings.FIREFOX_PROFILES, exist_ok=True)
+                Settings.WRITE_LOG_DEV_FILE(f"📁 [create_firefox_profile] Répertoire créé: {Settings.FIREFOX_PROFILES}", "INFO")
+            except Exception as e:
+                Settings.WRITE_LOG_DEV_FILE(f"❌ [create_firefox_profile] Impossible de créer le répertoire {Settings.FIREFOX_PROFILES}: {e}\n{traceback.format_exc()}", "ERROR")
+                return None
+        else:
+            Settings.WRITE_LOG_DEV_FILE(f"✅ [create_firefox_profile] Répertoire de base existe: {Settings.FIREFOX_PROFILES}", "DEBUG")
+
+        # 3️⃣ Lister les profils existants dans Firefox
         existing_profiles = BrowserManager._get_firefox_profiles()
-        #print("Profils existants avant création :", list(existing_profiles.keys()))
+        Settings.WRITE_LOG_DEV_FILE(f"📊 [create_firefox_profile] Profils existants trouvés: {list(existing_profiles.keys())}", "DEBUG")
 
+        # 4️⃣ Construire le chemin du profil
         profile_dir = os.path.join(Settings.FIREFOX_PROFILES, profile_name)
-        os.makedirs(Settings.FIREFOX_PROFILES, exist_ok=True)
+        Settings.WRITE_LOG_DEV_FILE(f"🔍 [create_firefox_profile] Chemin du profil cible: {profile_dir}", "DEBUG")
 
-        if ValidationUtils.path_exists(profile_dir):
-            #print(f"✅ Profil '{profile_name}' déjà existant : {profile_dir}")
-            Settings.WRITE_LOG_DEV_FILE(f"Profil '{profile_name}' deja existant : {profile_dir}", "INFO")
+        # 5️⃣ Vérifier si le profil est déjà enregistré dans Firefox
+        if profile_name in existing_profiles:
+            registered_path = existing_profiles[profile_name]
+            Settings.WRITE_LOG_DEV_FILE(f"✅ [create_firefox_profile] Profil '{profile_name}' déjà enregistré dans Firefox: {registered_path}", "INFO")
+            
+            # Vérifier si le dossier existe physiquement
+            if os.path.exists(registered_path):
+                Settings.WRITE_LOG_DEV_FILE(f"✅ [create_firefox_profile] Dossier existe: {registered_path}", "INFO")
+                return registered_path
+            else:
+                Settings.WRITE_LOG_DEV_FILE(f"⚠️ [create_firefox_profile] Profil enregistré mais dossier manquant: {registered_path}", "WARNING")
+                # Essayer de créer le dossier manquant
+                try:
+                    os.makedirs(registered_path, exist_ok=True)
+                    Settings.WRITE_LOG_DEV_FILE(f"✅ [create_firefox_profile] Dossier recréé: {registered_path}", "INFO")
+                    return registered_path
+                except Exception as e:
+                    Settings.WRITE_LOG_DEV_FILE(f"❌ [create_firefox_profile] Impossible de créer le dossier manquant: {e}", "ERROR")
+                    return None
+
+        # 6️⃣ Vérifier si le dossier existe déjà localement
+        if os.path.exists(profile_dir):
+            Settings.WRITE_LOG_DEV_FILE(f"✅ [create_firefox_profile] Profil '{profile_name}' existe localement: {profile_dir}", "INFO")
             return profile_dir
 
+        # 7️⃣ Créer le profil via Firefox
         cmd = f"{profile_name} {profile_dir}"
-        result = subprocess.run([firefox_path, '--CreateProfile', cmd], stdout=subprocess.PIPE,  stderr=subprocess.PIPE, text=True)
-
-        if result.returncode != 0:
-            #print(f"❌ Échec création (code {result.returncode})")
-            #print(result.stderr.strip())
-            Settings.WRITE_LOG_DEV_FILE(f"Echec creation (code {result.returncode})", "ERROR")
+        Settings.WRITE_LOG_DEV_FILE(f"🚀 [create_firefox_profile] Exécution: firefox.exe --CreateProfile \"{cmd}\"", "INFO")
+        
+        try:
+            result = subprocess.run(
+                [firefox_path, '--CreateProfile', cmd],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=15
+            )
+            
+            if result.returncode != 0:
+                Settings.WRITE_LOG_DEV_FILE(
+                    f"❌ [create_firefox_profile] Échec création (code retour: {result.returncode})\n"
+                    f"  stdout: {result.stdout}\n"
+                    f"  stderr: {result.stderr}",
+                    "ERROR"
+                )
+                return None
+            
+            Settings.WRITE_LOG_DEV_FILE(f"✅ [create_firefox_profile] Commande exécutée avec succès", "DEBUG")
+            if result.stdout:
+                Settings.WRITE_LOG_DEV_FILE(f"📤 [create_firefox_profile] Sortie: {result.stdout}", "DEBUG")
+        
+        except subprocess.TimeoutExpired:
+            Settings.WRITE_LOG_DEV_FILE(
+                f"⏱️ [create_firefox_profile] Timeout lors de la création du profil (15s)",
+                "ERROR"
+            )
+            return None
+        except Exception as e:
+            Settings.WRITE_LOG_DEV_FILE(
+                f"❌ [create_firefox_profile] Exception lors de subprocess.run: {e}\n{traceback.format_exc()}",
+                "ERROR"
+            )
             return None
 
-        if ValidationUtils.path_exists(profile_dir):
-            #print(f"✅ Profil créé : {profile_dir}")
-            Settings.WRITE_LOG_DEV_FILE(f"Profil cree : {profile_dir}", "INFO")
-            return profile_dir
+        # 8️⃣ Attendre et vérifier que le dossier a bien été créé
+        import time
+        max_wait = 10
+        waited = 0
+        while waited < max_wait:
+            if os.path.exists(profile_dir):
+                Settings.WRITE_LOG_DEV_FILE(f"✅ [create_firefox_profile] Profil créé avec succès: {profile_dir}", "INFO")
+                return profile_dir
+            time.sleep(0.5)
+            waited += 0.5
 
-        #print("❌ Le dossier du profil n'a pas été trouvé après création.")
+        # 9️⃣ Vérifier si le profil est au moins enregistré dans Firefox même si le dossier n'existe pas
+        Settings.WRITE_LOG_DEV_FILE(f"⚠️ [create_firefox_profile] Dossier n'existe pas après {max_wait}s, vérification dans Firefox", "WARNING")
+        updated_profiles = BrowserManager._get_firefox_profiles()
+        if profile_name in updated_profiles:
+            fallback_path = updated_profiles[profile_name]
+            Settings.WRITE_LOG_DEV_FILE(f"ℹ️ [create_firefox_profile] Profil enregistré dans Firefox mais à un chemin différent: {fallback_path}", "INFO")
+            if os.path.exists(fallback_path):
+                Settings.WRITE_LOG_DEV_FILE(f"✅ [create_firefox_profile] Utilisation du chemin alternatif: {fallback_path}", "INFO")
+                return fallback_path
+
+        Settings.WRITE_LOG_DEV_FILE(
+            f"❌ [create_firefox_profile] Le dossier du profil n'existe pas après création: {profile_dir}",
+            "ERROR"
+        )
         return None
 
     
@@ -380,7 +571,7 @@ class BrowserManager:
         for folder in os.listdir(Settings.FIREFOX_PROFILES):
             path = os.path.join(Settings.FIREFOX_PROFILES, folder)
             lock_file = os.path.join(path, 'parent.lock')
-            if os.path.isdir(path) and os.pa(lock_file):
+            if os.path.isdir(path) and os.path.exists(lock_file):
                 profiles.append({'name': folder, 'path': path})
         return profiles
 
@@ -445,17 +636,87 @@ class BrowserManager:
     
     
     @staticmethod
-    def Close_Windows_By_Profiles(profiles_list: List[Dict[str, str]]):
-        target_profiles = {p["profile"] for p in profiles_list}
-        all_windows = BrowserManager.Get_Firefox_Windows()
-        for window in all_windows:
-            if window["profile"] in target_profiles:
+    def Close_Windows_By_Profiles(firefox_close_list: List[Any]):
+        """
+        Close Firefox processes directly from a list of PIDs or session entries.
+        """
+        Settings.WRITE_LOG_DEV_FILE(
+            f"Close_Windows_By_Profiles called with {len(firefox_close_list)} entries",
+            "INFO",
+        )
+
+        pid_list = []
+        for entry in firefox_close_list:
+            if isinstance(entry, dict):
+                if "firefox_pids" in entry and entry["firefox_pids"] is not None:
+                    if isinstance(entry["firefox_pids"], str):
+                        pid_list.extend([int(pid.strip()) for pid in entry["firefox_pids"].split(";") if pid.strip().isdigit()])
+                    elif isinstance(entry["firefox_pids"], (list, tuple, set)):
+                        pid_list.extend([int(pid) for pid in entry["firefox_pids"] if str(pid).strip().isdigit()])
+                elif "pids" in entry and entry["pids"] is not None:
+                    if isinstance(entry["pids"], str):
+                        pid_list.extend([int(pid.strip()) for pid in entry["pids"].split(";") if pid.strip().isdigit()])
+                    elif isinstance(entry["pids"], list):
+                        pid_list.extend([int(pid) for pid in entry["pids"] if str(pid).strip().isdigit()])
+                elif "pid" in entry and entry["pid"] is not None:
+                    pid_str = str(entry["pid"]).strip()
+                    if pid_str.isdigit():
+                        pid_list.append(int(pid_str))
+                elif entry.get("proc") is not None:
+                    try:
+                        pid_list.append(int(entry["proc"].pid))
+                    except Exception:
+                        Settings.WRITE_LOG_DEV_FILE(
+                            f"Unable to read pid from proc for entry {entry}",
+                            "WARNING",
+                        )
+                elif entry.get("profile_path"):
+                    derived = BrowserManager.find_firefox_pids(entry["profile_path"], entry.get("web_ext_pid", 0))
+                    pid_list.extend(derived)
+                    Settings.WRITE_LOG_DEV_FILE(f"Derived Firefox PIDs from profile_path {entry['profile_path']}: {derived}", "DEBUG")
+            elif isinstance(entry, int):
+                pid_list.append(entry)
+            elif isinstance(entry, str):
+                text = entry.strip()
+                if text.isdigit():
+                    pid_list.append(int(text))
+                elif ";" in text:
+                    pid_list.extend([int(pid.strip()) for pid in text.split(";") if pid.strip().isdigit()])
+
+        pid_list = sorted(set(pid_list))
+        Settings.WRITE_LOG_DEV_FILE(f"Resolved Firefox PID list: {pid_list}", "DEBUG")
+
+        if not pid_list:
+            Settings.WRITE_LOG_DEV_FILE("No Firefox PIDs to close", "WARNING")
+            return
+
+        for pid in pid_list:
+            try:
+                if not psutil.pid_exists(pid):
+                    Settings.WRITE_LOG_DEV_FILE(f"Firefox PID {pid} no longer exists", "INFO")
+                    continue
+                process = psutil.Process(pid)
+                Settings.WRITE_LOG_DEV_FILE(f"Terminating Firefox PID={pid}", "INFO")
+                process.terminate()
                 try:
-                    win32gui.PostMessage(window["hwnd"], win32con.WM_CLOSE, 0, 0)
-                    #print(f"✅ Fermeture : {window['profile']} - {window['title']}")
-                except Exception as e:
-                    Settings.WRITE_LOG_DEV_FILE(f"Erreur fermeture {window['profile']} : {e}\n{traceback.format_exc()}", "ERROR")
-                    # print(f"❌ Erreur fermeture {window['profile']}: {e}")
+                    process.wait(timeout=5)
+                    Settings.WRITE_LOG_DEV_FILE(f"Firefox PID {pid} terminated gracefully", "INFO")
+                except psutil.TimeoutExpired:
+                    Settings.WRITE_LOG_DEV_FILE(f"Timeout terminating PID {pid}, forcing kill", "WARNING")
+                    process.kill()
+                    try:
+                        process.wait(timeout=3)
+                        Settings.WRITE_LOG_DEV_FILE(f"Firefox PID {pid} killed forcefully", "INFO")
+                    except psutil.NoSuchProcess:
+                        Settings.WRITE_LOG_DEV_FILE(f"Firefox PID {pid} already exited after kill", "INFO")
+            except psutil.NoSuchProcess:
+                Settings.WRITE_LOG_DEV_FILE(f"Firefox PID {pid} already terminated", "INFO")
+            except psutil.AccessDenied:
+                Settings.WRITE_LOG_DEV_FILE(f"Permission denied closing Firefox PID {pid}", "WARNING")
+            except Exception as e:
+                Settings.WRITE_LOG_DEV_FILE(f"Error closing Firefox PID {pid}: {e}\n{traceback.format_exc()}", "ERROR")
+
+        Settings.WRITE_LOG_DEV_FILE("Close_Windows_By_Profiles completed", "INFO")
 
     # ---------------------- Chrome ----------------------
     

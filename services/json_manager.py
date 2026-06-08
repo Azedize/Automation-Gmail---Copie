@@ -324,7 +324,7 @@ class JsonManager:
             if browser_lower == "firefox":
                 path = Settings.TEMPLATE_DIRECTORY_FIREFOX
             elif browser_lower == "chrome":
-                path = Settings.EXTENTION_EX3
+                path = Settings.EXTENTION_EX3_CHROMIUM
             else:
                 path = Settings.TEMPLATE_DIRECTORY_CHROMIUM
 

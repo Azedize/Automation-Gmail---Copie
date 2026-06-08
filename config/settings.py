@@ -12,6 +12,7 @@ class Settings:
     API_KEY_PROXY = "Gmf15dfVD61G8gZQg"
 
     AUTHORISED_PORTS = ["5836", "0000", "8080", "3128", "1111", "16666"]
+
     # ═══════════════════════════════════════════════════════════
     #  DATA AUTH
     # ═══════════════════════════════════════════════════════════
@@ -145,9 +146,9 @@ class Settings:
     VERSION_LOCAL_EX3_FIREFOX = os.path.join(EXTENTION_EX3_FIREFOX, "version.txt")
 
     
-    EXTENTION_EX3 = r"C:\RepProxy\Ext3"
-    MANIFEST_PATH_EX3 = os.path.join(EXTENTION_EX3, "manifest.json")
-    VERSION_LOCAL_EX3 = os.path.join(EXTENTION_EX3, "version.txt")
+    EXTENTION_EX3_CHROMIUM = r"C:\RepProxy\Ext3"
+    MANIFEST_PATH_EX3 = os.path.join(EXTENTION_EX3_CHROMIUM, "manifest.json")
+    VERSION_LOCAL_EX3 = os.path.join(EXTENTION_EX3_CHROMIUM, "version.txt")
 
     TEMPLATE_DIRECTORY_FIREFOX = os.path.join( TOOLS_DIR, "extensions Templete", "ExtensionTemplateFirefox" )
     TEMPLATE_DIRECTORY_CHROMIUM = os.path.join(  TOOLS_DIR, "extensions Templete", "Extention_Family_Chrome" )

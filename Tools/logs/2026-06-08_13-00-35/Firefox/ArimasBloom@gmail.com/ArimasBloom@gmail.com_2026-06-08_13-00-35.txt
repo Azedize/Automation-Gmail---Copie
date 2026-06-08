@@ -1,0 +1,2 @@
+[2026-06-08T12:01:03.901Z] ❌ [ABSENT] Élément introuvable : //a[starts-with(@href,'https://accounts.google.com/AccountChooser')]
+[2026-06-08T12:01:08.454Z] ❌ [ABSENT] Élément introuvable : //a[@aria-label='Try to restore' or @aria-label='Essayer de restaurer']
