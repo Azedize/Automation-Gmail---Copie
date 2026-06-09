@@ -131,6 +131,7 @@ class PidFinder:
  
     @staticmethod
     def find(profile_path: str, webext_pid: int) -> List[int]:
+        print(f"Recherche des PIDs Firefox pour le profil: {profile_path}")
  
         Logger.line()
         Logger.info(f"Recherche des PIDs Firefox pour le profil: {profile_path}")
@@ -159,13 +160,9 @@ class PidFinder:
                 if by_cmdline or by_ppid:
                     found.add(proc.pid)
                     matched += 1
-                    Logger.debug(
-                        f"Match PID {proc.pid}: by_cmdline={by_cmdline}, by_ppid={by_ppid}, cmdline={cmdline}"
-                    )
+                    Logger.debug(f"Match PID {proc.pid}: by_cmdline={by_cmdline}, by_ppid={by_ppid}, cmdline={cmdline}")
                 else:
-                    Logger.debug(
-                        f"Non-match Firefox PID {proc.pid}: ppid={ppid}, cmdline snippet={cmdline[:120]}"
-                    )
+                    Logger.debug( f"Non-match Firefox PID {proc.pid}: ppid={ppid}, cmdline snippet={cmdline[:120]}" )
             except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
                 Logger.warning(f"Process scan skipped: PID {getattr(proc, 'pid', '?')} -> {e}")
  
@@ -194,7 +191,7 @@ class WebExtManager:
  
         profile_path = ProfileManager.ensure_profile(profile_name)
         url          = self._build_url(profile_name)
- 
+
         cmd = [
             Settings.WEB_EXT_PATH,
             "run",

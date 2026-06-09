@@ -396,12 +396,15 @@ class BrowserManager:
         Settings.WRITE_LOG_DEV_FILE(f"[_get_firefox_profiles] ✅ {len(profiles)} profil(s) trouvé(s)", "INFO")
         return profiles
 
+
+
+    # ==========================================================
+    # FIREFOX PID SEARCH - Recherche tous les processus Firefox
+    # liés à un profil spécifique ou à un parent PID via psutil
+    # ==========================================================
     @staticmethod
     def find_firefox_pids(profile_path: str, parent_pid: int) -> List[int]:
-        Settings.WRITE_LOG_DEV_FILE(
-            f"[find_firefox_pids] Recherche des PIDs Firefox pour profile_path={profile_path}, parent_pid={parent_pid}",
-            "DEBUG",
-        )
+        Settings.WRITE_LOG_DEV_FILE( f"[find_firefox_pids] Recherche des PIDs Firefox pour profile_path={profile_path}, parent_pid={parent_pid}",  "DEBUG"  )
         pids = set()
         profile_lower = profile_path.lower()
 
@@ -417,17 +420,11 @@ class BrowserManager:
 
                 if match_profile or match_parent:
                     pids.add(proc.pid)
-                    Settings.WRITE_LOG_DEV_FILE(
-                        f"[find_firefox_pids] Match PID {proc.pid}: profile_match={match_profile}, parent_match={match_parent}, cmdline={cmdline[:200]}",
-                        "DEBUG",
-                    )
+                    Settings.WRITE_LOG_DEV_FILE(  f"[find_firefox_pids] Match PID {proc.pid}: profile_match={match_profile}, parent_match={match_parent}, cmdline={cmdline[:200]}", "DEBUG"  )
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                 continue
             except Exception as e:
-                Settings.WRITE_LOG_DEV_FILE(
-                    f"[find_firefox_pids] Process scan error: {e}",
-                    "WARNING",
-                )
+                Settings.WRITE_LOG_DEV_FILE( f"[find_firefox_pids] Process scan error: {e}",  "WARNING"   )
                 continue
 
         result = sorted(pids)
@@ -436,127 +433,67 @@ class BrowserManager:
 
    
     
-    
+
+    # ==========================================================
+    # CRÉATION DE PROFIL FIREFOX - Crée ou récupère un profil Firefox
+    # via la ligne de commande, vérifie l'existence, synchronise
+    # avec le système de fichiers et retourne le chemin du profil
+    # avec un système de fallback en cas d'échec
+    # ==========================================================
+        
     @staticmethod
     def create_firefox_profile(profile_name: str) -> Optional[str]:
-        Settings.WRITE_LOG_DEV_FILE(f"📋 [create_firefox_profile] Tentative de création du profil: {profile_name}", "DEBUG")
-        
-        # 1️⃣ Vérifier que Firefox existe
+        Settings.WRITE_LOG_DEV_FILE( f"[create_firefox_profile] Start: {profile_name}", "DEBUG"  )
+
+        # 1️⃣ Firefox path
         firefox_path = BrowserManager.get_browser_path("firefox.exe")
         if not firefox_path:
-            Settings.WRITE_LOG_DEV_FILE(f"❌ [create_firefox_profile] Firefox exécutable non trouvé", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE("Firefox not found", "ERROR")
             return None
-        Settings.WRITE_LOG_DEV_FILE(f"✅ [create_firefox_profile] Firefox trouvé à: {firefox_path}", "DEBUG")
 
-        # 2️⃣ Vérifier que le répertoire de base existe
-        if not os.path.exists(Settings.FIREFOX_PROFILES):
-            try:
-                os.makedirs(Settings.FIREFOX_PROFILES, exist_ok=True)
-                Settings.WRITE_LOG_DEV_FILE(f"📁 [create_firefox_profile] Répertoire créé: {Settings.FIREFOX_PROFILES}", "INFO")
-            except Exception as e:
-                Settings.WRITE_LOG_DEV_FILE(f"❌ [create_firefox_profile] Impossible de créer le répertoire {Settings.FIREFOX_PROFILES}: {e}\n{traceback.format_exc()}", "ERROR")
-                return None
-        else:
-            Settings.WRITE_LOG_DEV_FILE(f"✅ [create_firefox_profile] Répertoire de base existe: {Settings.FIREFOX_PROFILES}", "DEBUG")
+        # 2️⃣ Base directory
+        base_dir = Settings.FIREFOX_PROFILES
+        try:
+            os.makedirs(base_dir, exist_ok=True)
+        except Exception as e:
+            Settings.WRITE_LOG_DEV_FILE(f"Cannot create base dir: {e}", "ERROR")
+            return None
 
-        # 3️⃣ Lister les profils existants dans Firefox
-        existing_profiles = BrowserManager._get_firefox_profiles()
-        Settings.WRITE_LOG_DEV_FILE(f"📊 [create_firefox_profile] Profils existants trouvés: {list(existing_profiles.keys())}", "DEBUG")
+        profile_dir = os.path.join(base_dir, profile_name)
 
-        # 4️⃣ Construire le chemin du profil
-        profile_dir = os.path.join(Settings.FIREFOX_PROFILES, profile_name)
-        Settings.WRITE_LOG_DEV_FILE(f"🔍 [create_firefox_profile] Chemin du profil cible: {profile_dir}", "DEBUG")
-
-        # 5️⃣ Vérifier si le profil est déjà enregistré dans Firefox
-        if profile_name in existing_profiles:
-            registered_path = existing_profiles[profile_name]
-            Settings.WRITE_LOG_DEV_FILE(f"✅ [create_firefox_profile] Profil '{profile_name}' déjà enregistré dans Firefox: {registered_path}", "INFO")
-            
-            # Vérifier si le dossier existe physiquement
-            if os.path.exists(registered_path):
-                Settings.WRITE_LOG_DEV_FILE(f"✅ [create_firefox_profile] Dossier existe: {registered_path}", "INFO")
-                return registered_path
-            else:
-                Settings.WRITE_LOG_DEV_FILE(f"⚠️ [create_firefox_profile] Profil enregistré mais dossier manquant: {registered_path}", "WARNING")
-                # Essayer de créer le dossier manquant
-                try:
-                    os.makedirs(registered_path, exist_ok=True)
-                    Settings.WRITE_LOG_DEV_FILE(f"✅ [create_firefox_profile] Dossier recréé: {registered_path}", "INFO")
-                    return registered_path
-                except Exception as e:
-                    Settings.WRITE_LOG_DEV_FILE(f"❌ [create_firefox_profile] Impossible de créer le dossier manquant: {e}", "ERROR")
-                    return None
-
-        # 6️⃣ Vérifier si le dossier existe déjà localement
+        # 3️⃣ Already exists locally
         if os.path.exists(profile_dir):
-            Settings.WRITE_LOG_DEV_FILE(f"✅ [create_firefox_profile] Profil '{profile_name}' existe localement: {profile_dir}", "INFO")
             return profile_dir
 
-        # 7️⃣ Créer le profil via Firefox
-        cmd = f"{profile_name} {profile_dir}"
-        Settings.WRITE_LOG_DEV_FILE(f"🚀 [create_firefox_profile] Exécution: firefox.exe --CreateProfile \"{cmd}\"", "INFO")
-        
+        # 4️⃣ Create via Firefox
         try:
+            cmd = f"{profile_name} {profile_dir}"
+
             result = subprocess.run(
-                [firefox_path, '--CreateProfile', cmd],
+                [firefox_path, "--CreateProfile", cmd],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
                 timeout=15
             )
-            
+
             if result.returncode != 0:
-                Settings.WRITE_LOG_DEV_FILE(
-                    f"❌ [create_firefox_profile] Échec création (code retour: {result.returncode})\n"
-                    f"  stdout: {result.stdout}\n"
-                    f"  stderr: {result.stderr}",
-                    "ERROR"
-                )
+                Settings.WRITE_LOG_DEV_FILE( f"Create failed: {result.stderr}", "ERROR")
                 return None
-            
-            Settings.WRITE_LOG_DEV_FILE(f"✅ [create_firefox_profile] Commande exécutée avec succès", "DEBUG")
-            if result.stdout:
-                Settings.WRITE_LOG_DEV_FILE(f"📤 [create_firefox_profile] Sortie: {result.stdout}", "DEBUG")
-        
-        except subprocess.TimeoutExpired:
-            Settings.WRITE_LOG_DEV_FILE(
-                f"⏱️ [create_firefox_profile] Timeout lors de la création du profil (15s)",
-                "ERROR"
-            )
-            return None
+
         except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE(
-                f"❌ [create_firefox_profile] Exception lors de subprocess.run: {e}\n{traceback.format_exc()}",
-                "ERROR"
-            )
+            Settings.WRITE_LOG_DEV_FILE(f"Subprocess error: {e}", "ERROR")
             return None
 
-        # 8️⃣ Attendre et vérifier que le dossier a bien été créé
-        import time
-        max_wait = 10
-        waited = 0
-        while waited < max_wait:
+        # 5️⃣ Wait for folder creation
+        for _ in range(20):  # ~10 seconds
             if os.path.exists(profile_dir):
-                Settings.WRITE_LOG_DEV_FILE(f"✅ [create_firefox_profile] Profil créé avec succès: {profile_dir}", "INFO")
                 return profile_dir
             time.sleep(0.5)
-            waited += 0.5
 
-        # 9️⃣ Vérifier si le profil est au moins enregistré dans Firefox même si le dossier n'existe pas
-        Settings.WRITE_LOG_DEV_FILE(f"⚠️ [create_firefox_profile] Dossier n'existe pas après {max_wait}s, vérification dans Firefox", "WARNING")
-        updated_profiles = BrowserManager._get_firefox_profiles()
-        if profile_name in updated_profiles:
-            fallback_path = updated_profiles[profile_name]
-            Settings.WRITE_LOG_DEV_FILE(f"ℹ️ [create_firefox_profile] Profil enregistré dans Firefox mais à un chemin différent: {fallback_path}", "INFO")
-            if os.path.exists(fallback_path):
-                Settings.WRITE_LOG_DEV_FILE(f"✅ [create_firefox_profile] Utilisation du chemin alternatif: {fallback_path}", "INFO")
-                return fallback_path
-
-        Settings.WRITE_LOG_DEV_FILE(
-            f"❌ [create_firefox_profile] Le dossier du profil n'existe pas après création: {profile_dir}",
-            "ERROR"
-        )
-        return None
+        # 6️⃣ Fallback check inside Firefox registry
+        profiles = BrowserManager._get_firefox_profiles()
+        return profiles.get(profile_name)
 
     
     

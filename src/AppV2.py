@@ -852,20 +852,8 @@ class ExtractionThread(QThread):
 
 
     # ==========================================================
-    # FIREFOX MULTI-PROCESS PID DETECTION - START
+    # PID PARSING - Parse Firefox PID lists ("1001; 2002; abc; 3003" → [1001, 2002, 3003])
     # ==========================================================
-    def _get_firefox_pids(self):
-        pids = set()
-        for proc in psutil.process_iter(["name"]):
-            try:
-                if proc.info.get("name", "").lower() == "firefox.exe":
-                    pids.add(proc.pid)
-            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-                continue
-        Settings.WRITE_LOG_DEV_FILE(f"Firefox process scan found {len(pids)} PIDs: {sorted(pids)}", "DEBUG")
-        return pids
-
-        
 
     def _parse_pid_list(self, pid_value):
         if pid_value is None:
@@ -884,24 +872,6 @@ class ExtractionThread(QThread):
                 Settings.WRITE_LOG_DEV_FILE(f"_parse_pid_list skipped non-digit segment: '{part}'", "WARNING")
         Settings.WRITE_LOG_DEV_FILE(f"_parse_pid_list parsed PIDs: {pids} from '{pid_str}'", "DEBUG")
         return pids
-
-    def _wait_for_new_firefox_pids(self, before_pids, timeout=8, interval=0.5):
-        Settings.WRITE_LOG_DEV_FILE(f"Waiting for new Firefox PIDs with before_pids={sorted(before_pids)} timeout={timeout}s", "DEBUG")
-        start = time.time()
-        while time.time() - start < timeout:
-            after_pids = self._get_firefox_pids()
-            new_pids = sorted(after_pids - before_pids)
-            Settings.WRITE_LOG_DEV_FILE(f"Firefox PID diff check: after={sorted(after_pids)} before={sorted(before_pids)} new={new_pids}", "DEBUG")
-            if new_pids:
-                Settings.WRITE_LOG_DEV_FILE(f"Detected new Firefox PIDs: {new_pids}", "INFO")
-                return new_pids
-            time.sleep(interval)
-        final_new_pids = sorted(self._get_firefox_pids() - before_pids)
-        Settings.WRITE_LOG_DEV_FILE(f"Timeout reached, fallback PID diff: {final_new_pids}", "WARNING")
-        return final_new_pids
-    # ==========================================================
-    # FIREFOX MULTI-PROCESS PID DETECTION - END
-    # ==========================================================
 
 
     def run(self):
@@ -930,15 +900,18 @@ class ExtractionThread(QThread):
                 self.stopped.emit(err_desc)
                 self.stop_flag = True
                 Settings.WRITE_LOG_DEV_FILE(err_desc, "ERROR")
-                return  # arrête complètement la méthode run
+                return  
 
-        # 🔹 enregistrer la session_id dans le fichier data.txt de l'extension avant le traitement des emails
+        # ==========================================================
+        # SESSION STORAGE - Save session_id into extension data.txt
+        # (Firefox / Chromium) before email processing starts
+        # ==========================================================
+
         try:
             if self.selected_Browser.lower() == "firefox":
                 extension_data_path = os.path.join(Settings.EXTENTION_EX3_FIREFOX, "data.txt")
             else:
                 extension_data_path = os.path.join(Settings.EXTENTION_EX3_CHROMIUM, "data.txt")
-
             os.makedirs(os.path.dirname(extension_data_path), exist_ok=True)
             with open(extension_data_path, "w", encoding="utf-8") as f:
                 f.write(f"{self.session_id}\n")
@@ -989,7 +962,6 @@ class ExtractionThread(QThread):
 
                     inserted_id = str(APIManager.save_email(params))
                     new_password = ValidationUtils.generate_secure_password(16)
-                    
 
                     try:
                         os.makedirs(Settings.LOGS_DIRECTORY, exist_ok=True)
@@ -1022,10 +994,18 @@ class ExtractionThread(QThread):
                         if not firefox_profile_path:
                             Settings.WRITE_LOG_DEV_FILE(f"❌ [Firefox] Impossible de créer le profil Firefox pour {profile_email}", "ERROR")
                             log_message(f"[ERROR] Impossible de créer le profil Firefox pour {profile_email}")
+                            # enregistrer dans le fichier de log que le profil n'a pas pu être créé pour cet email et result "Others"
                             continue
 
                         Settings.WRITE_LOG_DEV_FILE(f"✅ [Firefox] Profil créé/vérifié: {firefox_profile_path}", "INFO")
 
+
+                        # ==========================================================
+                        # FIREFOX WEB-EXT LAUNCH - Run Firefox extension using web-ext
+                        # inside a specific Firefox profile, launch target URL,
+                        # start process in background, and store PID for later control
+                        # ==========================================================
+                        
                         eb_ext_path = Settings.get_web_ext_path()
 
                         if not eb_ext_path:
@@ -1055,18 +1035,12 @@ class ExtractionThread(QThread):
 
                         firefox_pids = BrowserManager.find_firefox_pids(firefox_profile_path, process.pid)
                         if not firefox_pids:
-                            Settings.WRITE_LOG_DEV_FILE(
-                                "Aucune PID Firefox détectée immédiatement après lancement, attente de 2 secondes puis nouvelle recherche",
-                                "WARNING",
-                            )
+                            Settings.WRITE_LOG_DEV_FILE( "Aucune PID Firefox détectée immédiatement après lancement, attente de 2 secondes puis nouvelle recherche",  "WARNING"  )
                             time.sleep(2)
                             firefox_pids = BrowserManager.find_firefox_pids(firefox_profile_path, process.pid)
 
                         if not firefox_pids:
-                            Settings.WRITE_LOG_DEV_FILE(
-                                "Aucune PID Firefox fiable trouvée, utilisation du PID web-ext comme fallback",
-                                "WARNING",
-                            )
+                            Settings.WRITE_LOG_DEV_FILE( "Aucune PID Firefox fiable trouvée, utilisation du PID web-ext comme fallback", "WARNING"  )
                             firefox_pids = [process.pid]
 
                         firefox_pids = sorted(set(firefox_pids))
