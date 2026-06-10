@@ -159,6 +159,7 @@ class Settings:
     APPDATA = os.getenv("APPDATA")
     APP_NAME = "SecureDesk"
     APPDATA_DIR = os.path.join(APPDATA, APP_NAME)
+    FIREFOX_PROFILES_INI = os.path.join(APPDATA, "Mozilla", "Firefox", "profiles.ini")
 
     SESSION_PATH = os.path.join(APPDATA_DIR, "session.txt")
 

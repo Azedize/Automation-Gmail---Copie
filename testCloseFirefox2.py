@@ -326,6 +326,7 @@ class WebExtManager:
                 Logger.info(f"KILL Firefox PID {pid}")
                 killed += 1
             except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
+                print(f"Erreur lors de la tentative de fermeture du PID {pid}: {e}")
                 Logger.warning(f"Impossible de tuer PID {pid}: {e}")
  
         try:
@@ -336,6 +337,7 @@ class WebExtManager:
             else:
                 Logger.debug(f"web-ext PID {webext.pid} déjà arrêté")
         except Exception as e:
+            print(f"Erreur en fermant web-ext PID {data.get('pid', '?')}: {e}")
             Logger.warning(f"Erreur en fermant web-ext: {e}")
  
         profile_lower = data["profile_path"].lower()
@@ -354,6 +356,7 @@ class WebExtManager:
                     killed += 1
                     fallback_count += 1
             except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
+                print(f"Erreur lors de la tentative de fermeture du PID {getattr(proc, 'pid', '?')} : {e}")
                 Logger.debug(f"Fallback skip PID {getattr(proc, 'pid', '?')} : {e}")
  
         Logger.debug(f"Fallback Firefox scan terminé, tués: {fallback_count}")
@@ -413,6 +416,7 @@ def main():
  
         else:
             Logger.warning(f"Commande inconnue: '{raw}'")
+            print(f"Commandes valides: 'close <profile>', 'status', 'exit'")
  
  
 # ==========================================================
@@ -421,7 +425,9 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         Logger.warning("Programme interrompu par l'utilisateur")
+        print(f"Traceback complet:\n{traceback.format_exc()}")
     except Exception as e:
         Logger.error(f"Exception inattendue: {e}")
+        print(f"Traceback complet:\n{traceback.format_exc()}")
         sys.exit(1)
  

@@ -44,7 +44,7 @@ try:
     from core import EncryptionService
     from core import SessionManager
     from models import BrowserManager
-    from models import ExtensionManager
+    # from models import ExtensionManager
     from api import APIManager
     from utils import ValidationUtils
     from ui_utils import UIManager
@@ -60,9 +60,7 @@ except ImportError as e:
 # ==========================================================
 
 file_lock = Lock()
-# ignorer cet list FIREFOX_LAUNCH car aucun role apres cet changement 
-# FIREFOX_LAUNCH = [] 
-FIREFOX_LIST_PIDS = []
+
 FIREFOX_SESSIONS: Dict[str, Any] = {}
 
 
@@ -76,7 +74,7 @@ LOGS_RUNNING = True
 SELECTED_BROWSER_GLOBAL = None
 REMAINING_EMAILS = 0
 
-# 🧪 Exemple de génération d'un ID de session
+
 SESSION_ID = ValidationUtils.generate_session_id()
 
 
@@ -102,7 +100,7 @@ def Stop_All_Processes(window):
 
     UIManager.disable_button(window.stopButton)
     global EXTRACTION_THREAD, CLOSE_BROWSER_THREAD
-    global PROCESS_PIDS, LOGS_RUNNING
+    global PROCESS_PIDS, LOGS_RUNNING, FIREFOX_SESSIONS
     global SELECTED_BROWSER_GLOBAL
 
     Settings.WRITE_LOG_DEV_FILE("Stopping all processes...", "INFO")
@@ -197,17 +195,24 @@ def Stop_All_Processes(window):
     # ==========================================================
     else:
         try:
-            Settings.WRITE_LOG_DEV_FILE("Closing Firefox profiles using stored PID list...", "INFO")
-            BrowserManager.Close_Windows_By_Profiles(FIREFOX_LIST_PIDS)
+            Settings.WRITE_LOG_DEV_FILE("Closing Firefox profiles using stored session entries...", "INFO")
+            if FIREFOX_SESSIONS:
+                session_entries = list(FIREFOX_SESSIONS.values())
+                Settings.WRITE_LOG_DEV_FILE(f"Closing {len(session_entries)} Firefox session entries", "DEBUG")
+                BrowserManager.Close_Windows_By_Profiles(session_entries)
+            else:
+                Settings.WRITE_LOG_DEV_FILE("No Firefox sessions found, unable to close Firefox profiles.", "WARNING")
             Settings.WRITE_LOG_DEV_FILE("Firefox profiles closed successfully.", "INFO")
         except Exception as e:
             Settings.WRITE_LOG_DEV_FILE(f"Error closing Firefox profiles: {e}\n{traceback.format_exc()}", "WARNING")
         finally:
-            for pid in PROCESS_PIDS[:]:
-                PROCESS_PIDS.remove(pid)
-                Settings.WRITE_LOG_DEV_FILE(f"PID {pid} removed from process list.", "INFO")
-            FIREFOX_LIST_PIDS.clear()
-            Settings.WRITE_LOG_DEV_FILE("FIREFOX_LIST_PIDS cleared", "DEBUG")
+            if PROCESS_PIDS:
+                for pid in PROCESS_PIDS[:]:
+                    PROCESS_PIDS.remove(pid)
+                    Settings.WRITE_LOG_DEV_FILE(f"PID {pid} removed from process list.", "INFO")
+            if FIREFOX_SESSIONS:
+                FIREFOX_SESSIONS.clear()
+                Settings.WRITE_LOG_DEV_FILE("FIREFOX_SESSIONS cleared", "DEBUG")
     # ==========================================================
     # 🔹 ENABLE BUTTONS
     # ==========================================================
@@ -247,10 +252,33 @@ class LogsDisplayThread(QThread):
 
 
 
-# log_2026-06-03T10-15-30-123Z_test@gmail.com.txt
-# ABC123_test@gmail.com_success.txt
 
 
+
+
+
+# ==========================================================
+# CLOSE BROWSER MONITORING THREAD
+#
+# This QThread continuously monitors the downloads directory
+# to detect and process generated session files, logs, and
+# screenshots while tracking active browser processes.
+#
+# Responsibilities:
+# - Monitor filesystem changes in real time
+# - Process session and log files using parallel workers
+# - Track active browser processes (PROCESS_PIDS)
+# - Safely handle termination conditions
+# - Automatically stop when no active work remains
+#
+# The thread is designed to be:
+# - Interruptible via stop_flag
+# - CPU efficient with controlled sleep cycles
+# - Thread-safe for shared global resources
+# Exemples of session file and log file names:
+#         log_2026-06-03T10-15-30-123Z_test@gmail.com.txt
+#         ABC123_test@gmail.com_success.txt
+# ==========================================================
 
 class CloseBrowserThread(QThread):
 
@@ -279,27 +307,6 @@ class CloseBrowserThread(QThread):
     # ======================================================
     def run(self):
         global PROCESS_PIDS, REMAINING_EMAILS
-        # print(f"\n{'='*70}")
-        # print(f"🚀 [THREAD] CloseBrowserThread DÉMARRÉ")
-        # print(f"{'='*70}")
-        # print(f"  📊 Configuration initiale:")
-        # print(f"     • Browser type: {self.selected_Browser}")
-        # print(f"     • Username: {self.username}")
-        # print(f"     • Downloads folder: {self.downloads_folder}")
-        # print(f"     • Session ID: {self.session_id}")
-        # print(f"     • Base log dir: {self.BASE_LOG_DIR}")
-        # print(f"     • Session dir: {self.SESSION_DIR}")
-        # print(f"  📊 État initial:")
-        # print(f"     • PROCESS_PIDS: {PROCESS_PIDS}")
-        # print(f"     • REMAINING_EMAILS: {REMAINING_EMAILS}")
-        # print(f"     • completed_emails: {len(self.completed_emails)} entries")
-        # print(f"  ⏳ Attente initiale: 10 secondes avant de commencer...")
-        # print(f"{'='*70}\n")
-
-        # print(f"\n🚀 [THREAD] CloseBrowserThread DÉMARRÉ")
-        # print(f"  📊 Browser: {self.selected_Browser} | User: {self.username}")
-        # print(f"  📊 PROCESS_PIDS: {PROCESS_PIDS} | REMAINING_EMAILS: {REMAINING_EMAILS}")
-        # print(f"  ⏳ Attente initiale: 10 secondes...")
 
         # Attente interruptible de 10 secondes
         start_wait = time.time()
@@ -316,29 +323,13 @@ class CloseBrowserThread(QThread):
         while not self.stop_flag:
             try:
                 all_files = os.listdir(self.downloads_folder)
-                session_files = [
-                    f
-                    for f in all_files
-                    if f.startswith(self.session_id) and f.endswith(".txt")
-                ]
 
-                log_files = [
-                    f
-                    for f in all_files
-                    if f.startswith("log_") and f.endswith(".txt")
-                ]
-
-                screenshots = [
-                    f
-                    for f in all_files
-                    if f.lower().endswith((".png", ".jpg", ".jpeg"))
-                ]
+                session_files = [  f for f in all_files if f.startswith(self.session_id) and f.endswith(".txt")  ]
+                log_files = [  f  for f in all_files  if f.startswith("log_") and f.endswith(".txt") ]
+                screenshots = [ f  for f in all_files if f.lower().endswith((".png", ".jpg", ".jpeg")) ]
 
                 current_time = time.strftime("%H:%M:%S", time.localtime())
-                Settings.WRITE_LOG_DEV_FILE(
-                    f"[LOOP] {current_time} | stop_flag={self.stop_flag} | PROCESS_PIDS={len(PROCESS_PIDS)} | REMAINING_EMAILS={REMAINING_EMAILS} | session_files={len(session_files)} | log_files={len(log_files)} | screenshots={len(screenshots)} | empty_counter={empty_counter}",
-                    "DEBUG"
-                )
+                Settings.WRITE_LOG_DEV_FILE( f"[LOOP] {current_time} | stop_flag={self.stop_flag} | PROCESS_PIDS={len(PROCESS_PIDS)} | REMAINING_EMAILS={REMAINING_EMAILS} | session_files={len(session_files)} | log_files={len(log_files)} | screenshots={len(screenshots)} | empty_counter={empty_counter}",  "DEBUG"  )
                 Settings.WRITE_LOG_DEV_FILE(f"[LOOP] downloaded files: {all_files}", "TRACE" if hasattr(Settings, 'TRACE') else "DEBUG")
 
                 if PROCESS_PIDS:
@@ -387,9 +378,28 @@ class CloseBrowserThread(QThread):
         # print(f"  📊 PROCESS_PIDS: {PROCESS_PIDS} | REMAINING_EMAILS: {REMAINING_EMAILS}")
         Settings.WRITE_LOG_DEV_FILE(  f"Thread finished | End time: {end_time} | PROCESS_PIDS: {len(PROCESS_PIDS)} | REMAINING_EMAILS: {REMAINING_EMAILS}",  "INFO"  )
 
-    # ======================================================
-    # 📄 LOG FILE
-    # ======================================================
+
+    # ==========================================================
+    # LOG FILE PROCESSING PIPELINE
+    #
+    # This function processes browser-generated log files from
+    # the downloads directory.
+    #
+    # Responsibilities:
+    # - Safely stop processing when thread is requested to stop
+    # - Extract user email from log file content
+    # - Prevent duplicate processing using thread-safe locking
+    # - Organize logs into structured directories:
+    #     SESSION_DIR / Browser / Email /
+    # - Copy log content into a persistent structured file
+    # - Remove original temporary log file after processing
+    #
+    # This ensures:
+    # - Clean downloads directory
+    # - Structured session-based log storage
+    # - No duplicate processing of the same email
+    # ==========================================================
+    
     def process_log_file(self, log_file):
         if self.stop_flag:
             Settings.WRITE_LOG_DEV_FILE("🛑 [LOG] Stop requested", "INFO")
@@ -409,10 +419,7 @@ class CloseBrowserThread(QThread):
             if not email:
                 with open(full_path, "r", encoding="utf-8", errors="replace") as f:
                     sample = f.read(256)
-                Settings.WRITE_LOG_DEV_FILE(
-                    f"No email found in log file content sample: {sample!r}",
-                    "ERROR"
-                )
+                Settings.WRITE_LOG_DEV_FILE( f"No email found in log file content sample: {sample!r}", "ERROR")
                 return
 
             with self.lock:
@@ -439,12 +446,92 @@ class CloseBrowserThread(QThread):
         except Exception as e:
             Settings.WRITE_LOG_DEV_FILE(f"❌ [LOG] Erreur processing log file {full_path}: {e}\n{ traceback.format_exc()}", "ERROR")
 
-    # 📄 SESSION FILE
-    # ======================================================
+
+
+    # ==========================================================
+    # FIREFOX PROCESS CLEANUP HANDLER
+    #
+    # This function is responsible for safely terminating all
+    # Firefox-related processes associated with a session.
+    #
+    # Responsibilities:
+    # - Kill all Firefox PIDs linked to a profile/session
+    # - Safely terminate the web-ext process (extension runner)
+    # - Remove cleaned PIDs from global PROCESS_PIDS registry
+    # - Handle missing or already terminated processes safely
+    # - Prevent process leaks after session completion
+    # ==========================================================
+    
+    def _close_firefox_session(self, firefox_pids, web_ext_pid, email, flow_label=""):
+        if firefox_pids:
+            Settings.WRITE_LOG_DEV_FILE(f"[CLOSE{flow_label}] Closing Firefox PIDs: {firefox_pids} for {email}", "INFO")
+            for firefox_pid in firefox_pids:
+                try:
+                    if psutil.pid_exists(firefox_pid):
+                        psutil.Process(firefox_pid).kill()
+                        Settings.WRITE_LOG_DEV_FILE(f"[CLOSE{flow_label}] Firefox PID {firefox_pid} killed successfully", "INFO")
+                    else:
+                        Settings.WRITE_LOG_DEV_FILE(f"[CLOSE{flow_label}] Firefox PID {firefox_pid} no longer exists", "INFO")
+                except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
+                    Settings.WRITE_LOG_DEV_FILE(f"[CLOSE{flow_label}] Error closing Firefox PID {firefox_pid}: {e}", "WARNING")
+        else:
+            Settings.WRITE_LOG_DEV_FILE(f"No Firefox PIDs for {email} {flow_label}".strip(), "WARNING")
+
+        if web_ext_pid:
+            try:
+                if psutil.pid_exists(web_ext_pid):
+                    psutil.Process(web_ext_pid).kill()
+                    Settings.WRITE_LOG_DEV_FILE(f"[CLOSE{flow_label}] web-ext PID {web_ext_pid} killed successfully", "INFO")
+                else:
+                    Settings.WRITE_LOG_DEV_FILE(f"[CLOSE{flow_label}] web-ext PID {web_ext_pid} no longer exists", "INFO")
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                Settings.WRITE_LOG_DEV_FILE(f"[CLOSE{flow_label}] web-ext PID {web_ext_pid} already closed", "INFO")
+
+        if web_ext_pid in PROCESS_PIDS:
+            PROCESS_PIDS.remove(web_ext_pid)
+            Settings.WRITE_LOG_DEV_FILE(f"[CLOSE{flow_label}] web-ext PID {web_ext_pid} removed from PROCESS_PIDS queue", "INFO")
+
+
+    # ==========================================================
+    # GENERIC BROWSER SESSION CLOSURE
+    #
+    # Unified entry point to close browser processes depending
+    # on the browser type (Firefox or Chromium-based browsers).
+    #
+    # Responsibilities:
+    # - Route closure logic based on browser type
+    # - Use Firefox-specific cleanup if browser is Firefox
+    # - Use generic process termination for Chromium browsers
+    # - Ensure safe fallback when PID is missing
+    # ==========================================================
+    def _close_session(self, pid, email, browser, firefox_pids, web_ext_pid, flow_label=""):
+        if browser.lower() == "firefox":
+            self._close_firefox_session(firefox_pids, web_ext_pid, email, flow_label)
+        else:
+            if pid:
+                self._close_browser_process(pid, email, browser)
+                Settings.WRITE_LOG_DEV_FILE(f"[CLOSE{flow_label}] Process {pid} closed for {email}", "INFO")
+            else:
+                Settings.WRITE_LOG_DEV_FILE(f"No PID for {email} {flow_label}".strip(), "WARNING")
+
+    
+    # ==========================================================
+    # SESSION FILE PARSER AND PROCESSOR
+    #
+    # This function handles browser session files and extracts
+    # execution state information.
+    #
+    # Responsibilities:
+    # - Parse session_id, email, and status using regex
+    # - Retrieve browser-specific process information
+    # - Handle Firefox sessions from memory registry
+    # - Handle Chromium sessions from disk profile files
+    # - Execute success or error flow logic
+    # - Close related browser processes safely
+    # - Move screenshots if error flow is triggered
+    # - Clean up session files after processing
+    # ==========================================================
     def process_session_file(self, file_name, screenshots):
-
-        # dans cet partie mon besoin travaille all browser avec la meme regex "session_id:(\w+)_email:([\w.@+-]+)_etat:(\w+)"
-
         if self.stop_flag:
             Settings.WRITE_LOG_DEV_FILE("🛑 [SESSION] Stop requested", "INFO")
             return
@@ -524,79 +611,19 @@ class CloseBrowserThread(QThread):
                     self.completed_emails.add(email)
 
                 self.write_result_and_send_status(session_id, pid, email, status, inserted_id)
-
-                if self.selected_Browser.lower() == "firefox":
-                    if firefox_pids:
-                        Settings.WRITE_LOG_DEV_FILE(f"[CLOSE] Closing Firefox PIDs: {firefox_pids} for {email}", "INFO")
-                        for firefox_pid in firefox_pids:
-                            try:
-                                if psutil.pid_exists(firefox_pid):
-                                    psutil.Process(firefox_pid).kill()
-                                    Settings.WRITE_LOG_DEV_FILE(f"[CLOSE] Firefox PID {firefox_pid} killed successfully", "INFO")
-                            except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
-                                Settings.WRITE_LOG_DEV_FILE(f"[CLOSE] Error closing Firefox PID {firefox_pid}: {e}", "WARNING")
-                        
-                        if web_ext_pid:
-                            try:
-                                if psutil.pid_exists(web_ext_pid):
-                                    psutil.Process(web_ext_pid).kill()
-                                    Settings.WRITE_LOG_DEV_FILE(f"[CLOSE] web-ext PID {web_ext_pid} killed successfully", "INFO")
-                            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                                Settings.WRITE_LOG_DEV_FILE(f"[CLOSE] web-ext PID {web_ext_pid} already closed", "INFO")
-                        
-                        if web_ext_pid in PROCESS_PIDS:
-                            PROCESS_PIDS.remove(web_ext_pid)
-                            Settings.WRITE_LOG_DEV_FILE(f"[CLOSE] web-ext PID {web_ext_pid} removed from PROCESS_PIDS queue", "INFO")
-                    else:
-                        Settings.WRITE_LOG_DEV_FILE(f"No Firefox PIDs for {email}", "WARNING")
-                else:
-                    if pid:
-                        self._close_browser_process(pid, email, self.selected_Browser)
-                        Settings.WRITE_LOG_DEV_FILE(f"Process {pid} closed for {email}", "INFO")
-                    else:
-                        Settings.WRITE_LOG_DEV_FILE(f"No PID for {email}", "WARNING")
-
+                self._close_session(pid, email, self.selected_Browser, firefox_pids, web_ext_pid)
                 return
 
             # ❌ ERROR FLOW
             Settings.WRITE_LOG_DEV_FILE(f"ERROR FLOW detected for session {session_id} email={email} status={status}", "DEBUG")
+
             email_folder = os.path.join(self.SESSION_DIR, self.selected_Browser, email)
             os.makedirs(email_folder, exist_ok=True)
 
             self._move_screenshot(email, screenshots, email_folder)
 
             self.write_result_and_send_status(session_id, pid, email, status, inserted_id)
-
-            if self.selected_Browser.lower() == "firefox":
-                if firefox_pids:
-                    Settings.WRITE_LOG_DEV_FILE(f"[CLOSE-ERROR] Closing Firefox PIDs: {firefox_pids} for {email} (error)", "INFO")
-                    for firefox_pid in firefox_pids:
-                        try:
-                            if psutil.pid_exists(firefox_pid):
-                                psutil.Process(firefox_pid).kill()
-                                Settings.WRITE_LOG_DEV_FILE(f"[CLOSE-ERROR] Firefox PID {firefox_pid} killed successfully", "INFO")
-                        except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
-                            Settings.WRITE_LOG_DEV_FILE(f"[CLOSE-ERROR] Error closing Firefox PID {firefox_pid}: {e}", "WARNING")
-                    
-                    if web_ext_pid:
-                        try:
-                            if psutil.pid_exists(web_ext_pid):
-                                psutil.Process(web_ext_pid).kill()
-                                Settings.WRITE_LOG_DEV_FILE(f"[CLOSE-ERROR] web-ext PID {web_ext_pid} killed successfully", "INFO")
-                        except (psutil.NoSuchProcess, psutil.AccessDenied):
-                            Settings.WRITE_LOG_DEV_FILE(f"[CLOSE-ERROR] web-ext PID {web_ext_pid} already closed", "INFO")
-                    
-                    if web_ext_pid in PROCESS_PIDS:
-                        PROCESS_PIDS.remove(web_ext_pid)
-                        Settings.WRITE_LOG_DEV_FILE(f"[CLOSE-ERROR] web-ext PID {web_ext_pid} removed from PROCESS_PIDS queue", "INFO")
-                else:
-                    Settings.WRITE_LOG_DEV_FILE(f"No Firefox PIDs for {email} (error)", "WARNING")
-            else:
-                if pid:
-                    self._close_browser_process(pid, email, self.selected_Browser)
-                    Settings.WRITE_LOG_DEV_FILE(f"Process {pid} closed for {email} (error)", "INFO")
-                else:
-                    Settings.WRITE_LOG_DEV_FILE(f"No PID for {email} (error)", "WARNING")
+            self._close_session(pid, email, self.selected_Browser, firefox_pids, web_ext_pid, "-ERROR")
 
         except Exception as e:
             Settings.WRITE_LOG_DEV_FILE(  f"❌ [SESSION] Erreur: {e}\n{ traceback.format_exc()}", "ERROR"  )
@@ -623,7 +650,18 @@ class CloseBrowserThread(QThread):
                     Settings.WRITE_LOG_DEV_FILE( f"❌ [CLEANUP] Error removing profile data file: {e}\n{ traceback.format_exc()}", "DEBUG"  )
 
 
-
+    # ==========================================================
+    # SESSION RESULT LOGGER + API SENDER
+    #
+    # This function handles final session reporting by:
+    #
+    # Responsibilities:
+    # - Writing session result to local result file
+    # - Formatting result as: session_id:pid:email:status
+    # - Sending status update to external API
+    # - Mapping status to OK / NotOK format
+    # - Handling API failure cases safely
+    # ==========================================================
 
     def write_result_and_send_status(self, session_id, pid, email, status, inserted_id):
         """Écrire le résultat et envoyer l'état"""
@@ -659,7 +697,19 @@ class CloseBrowserThread(QThread):
             # print(f"❌ [RESULT] Erreur: {e}")
             raise SystemExit(1)
 
-    # ======================================================
+    # ==========================================================
+    # SCREENSHOT ORGANIZATION HANDLER
+    #
+    # This function moves browser-generated screenshots into
+    # the correct session/email folder.
+    #
+    # Responsibilities:
+    # - Match screenshots with corresponding email session
+    # - Move image files from downloads folder to session folder
+    # - Rename or organize screenshots for structured storage
+    # - Ensure no duplicate or unrelated screenshots are moved
+    # ==========================================================
+    
     def _move_screenshot(self, email, screenshots, email_folder):
         try:
             for img in screenshots:
@@ -670,57 +720,82 @@ class CloseBrowserThread(QThread):
             Settings.WRITE_LOG_DEV_FILE(  f"⚠️ [SCREENSHOT] Erreur: {e}\n{ traceback.format_exc()}", "ERROR" )
             # print(f"⚠️ Screenshot error: {e}")
 
-    # ======================================================
+    
+    # ==========================================================
+    # GENERIC PROCESS TERMINATION (NON-FIREFOX)
+    #
+    # This function safely terminates browser processes using PID.
+    #
+    # Responsibilities:
+    # - Parse PID input (single or list format)
+    # - Kill process using OS signal (SIGTERM)
+    # - Force terminate if process does not stop
+    # - Remove cleaned PID from PROCESS_PIDS list
+    # - Prevent zombie or orphan processes
+    # ==========================================================
+    
     def _close_browser_process(self, pid, email, browser):
         """Fermer le processus du navigateur"""
-        # print(f"\n🔒 [CLOSE] Fermeture {browser} PID={pid} pour {email}")
+        Settings.WRITE_LOG_DEV_FILE(
+            f"_close_browser_process start | browser={browser} | email={email} | pid={repr(pid)} | pid_type={type(pid).__name__}",
+            "DEBUG",
+        )
+
         try:
-            pid_list = self._parse_pid_list(pid)
-            Settings.WRITE_LOG_DEV_FILE(f"_close_browser_process received pid value: {pid} parsed list: {pid_list}", "DEBUG")
-            if not pid_list:
+            if pid is None:
+                Settings.WRITE_LOG_DEV_FILE(f"No PID provided for {email} ({browser})", "WARNING")
                 return
 
-            if browser.lower() == "firefox":
-                # fermer directement la liste des PID Firefox sans tenter de fermer par fenêtre
-                Settings.WRITE_LOG_DEV_FILE("Closing Firefox PID list directly without window fallback", "DEBUG")
-                for firefox_pid in pid_list:
-                    if not psutil.pid_exists(firefox_pid):
-                        Settings.WRITE_LOG_DEV_FILE(f"Firefox PID {firefox_pid} no longer exists at close time", "INFO")
-                        if firefox_pid in PROCESS_PIDS:
-                            PROCESS_PIDS.remove(firefox_pid)
-                        continue
-                    try:
-                        os.kill(firefox_pid, signal.SIGTERM)
-                        Settings.WRITE_LOG_DEV_FILE(f"Firefox closed via SIGTERM for PID {firefox_pid}", "INFO")
-                    except Exception as e_kill:
-                        Settings.WRITE_LOG_DEV_FILE(  f"Error closing Firefox PID {firefox_pid}: {e_kill}\n{traceback.format_exc()}", "ERROR"  )
+            pid_list = []
+            if isinstance(pid, (list, tuple, set)):
+                for item in pid:
+                    item_str = str(item).strip()
+                    if item_str.isdigit():
+                        pid_list.append(int(item_str))
+                    else:
+                        Settings.WRITE_LOG_DEV_FILE(
+                            f"Skipped non-numeric PID segment in list: {repr(item)}", "WARNING"
+                        )
+            else:
+                pid_str = str(pid).strip()
+                if pid_str.isdigit():
+                    pid_list = [int(pid_str)]
+                else:
+                    Settings.WRITE_LOG_DEV_FILE(
+                        f"Invalid PID value for Chromium family: {repr(pid)}", "ERROR"
+                    )
+                    return
 
-            else:  # CHROME
+            Settings.WRITE_LOG_DEV_FILE(f"_close_browser_process computed pid_list={pid_list}", "DEBUG")
+            if not pid_list:
+                Settings.WRITE_LOG_DEV_FILE(f"No valid PID to close for {email} ({browser})", "WARNING")
+                return
+
+            for current_pid in pid_list:
                 try:
-                    os.kill(pid, signal.SIGTERM)
+                    os.kill(current_pid, signal.SIGTERM)
                     time.sleep(2)
-                    if psutil.pid_exists(pid):
-                        p = psutil.Process(pid)
+                    if psutil.pid_exists(current_pid):
+                        p = psutil.Process(current_pid)
                         p.terminate()
                         p.wait(timeout=3)
-                        # print(f"✅ [CLOSE] Chrome fermé via terminate()")
-                        Settings.WRITE_LOG_DEV_FILE(f"Chrome closed via terminate() for PID {pid}", "INFO")
+                        Settings.WRITE_LOG_DEV_FILE(f"Chrome closed via terminate() for PID {current_pid}", "INFO")
                     else:
-                        # print(f"✅ [CLOSE] Chrome fermé via SIGTERM")
-                        Settings.WRITE_LOG_DEV_FILE(f"Chrome closed via SIGTERM for PID {pid}", "INFO")
+                        Settings.WRITE_LOG_DEV_FILE(f"Chrome closed via SIGTERM for PID {current_pid}", "INFO")
                 except Exception as e_chrome:
-                    # print(f"❌ [CLOSE] Erreur fermeture Chrome: {e_chrome}")
-                    Settings.WRITE_LOG_DEV_FILE(  f"Error closing Chrome PID {pid}: {e_chrome}\n{traceback.format_exc()}",  "ERROR" )
-                    # Settings.WRITE_LOG_DEV_FILE(   f"Error closing Chrome PID {pid}: {e_chrome}\n{traceback.format_exc()}",  "ERROR")
+                    Settings.WRITE_LOG_DEV_FILE(
+                        f"Error closing Chrome PID {current_pid}: {e_chrome}\n{traceback.format_exc()}",
+                        "ERROR"
+                    )
 
-            for removed_pid in pid_list:
-                if removed_pid in PROCESS_PIDS:
-                    PROCESS_PIDS.remove(removed_pid)
-                    Settings.WRITE_LOG_DEV_FILE(f"PID {removed_pid} removed from PROCESS_PIDS", "INFO")
+                if current_pid in PROCESS_PIDS:
+                    PROCESS_PIDS.remove(current_pid)
+                    Settings.WRITE_LOG_DEV_FILE(f"PID {current_pid} removed from PROCESS_PIDS", "INFO")
 
         except Exception as e:
-            # print(f"❌ [CLOSE] Exception générale: {e}")
-            Settings.WRITE_LOG_DEV_FILE( f"❌ [CLOSE] Erreur: {e}\n{ traceback.format_exc()}", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(
+                f"❌ [CLOSE] Erreur: {e}\n{traceback.format_exc()}", "ERROR"
+            )
 
     
 
@@ -890,16 +965,15 @@ class ExtractionThread(QThread):
             Settings.WRITE_LOG_DEV_FILE("Invalid session. Please reconnect.", "ERROR")
             return
 
-        if self.selected_Browser.lower() == "chrome" or self.selected_Browser.lower() in Settings.CHROME_FAMILY_BROWSERS:
+        if self.selected_Browser.lower() == "chrome" :
             Settings.RESULTATS_EX = BrowserManager.Upload_EXTENSION_PROXY( "default", Settings.CLES_RECHERCHE, Settings.RESULTATS )
 
             # 🔹 Vérification si RESULTATS_EX est None
             if Settings.RESULTATS_EX is None:
-                err_desc = "An issue occurred while copying the JSON file to the template profile ➡ Please contact support."
-                UIManager.Show_Critical_Message(self.window, err_desc, message_type="critical")
-                self.stopped.emit(err_desc)
+                UIManager.Show_Critical_Message(self.window, "An issue occurred while copying the JSON file to the template profile ➡ Please contact support.", message_type="critical")
+                self.stopped.emit("An issue occurred while copying the JSON file to the template profile ➡ Please contact support.")
                 self.stop_flag = True
-                Settings.WRITE_LOG_DEV_FILE(err_desc, "ERROR")
+                Settings.WRITE_LOG_DEV_FILE("An issue occurred while copying the JSON file to the template profile ➡ Please contact support.", "ERROR")
                 return  
 
         # ==========================================================
@@ -985,10 +1059,8 @@ class ExtractionThread(QThread):
 
                     if self.selected_Browser.lower() == "firefox":
 
-                        # ExtensionManager.create_extension_for_email(  profile_email,  profile_password, f'"{ip_address}"',  f'"{port}"',  f'"{login}"',  f'"{password}"', f"{recovery_email}", new_password, new_recovery_email,  f'"{self.session_id}"',  self.selected_Browser)
                         url, combined = self._build_encrypted_url(ip_address, port, login, password, profile_email, profile_password, recovery_email, new_password, new_recovery_email)
 
-                        # Créer le profil Firefox et vérifier le succès
                         firefox_profile_path = BrowserManager.create_firefox_profile(profile_email)
 
                         if not firefox_profile_path:
@@ -1039,13 +1111,32 @@ class ExtractionThread(QThread):
                             time.sleep(2)
                             firefox_pids = BrowserManager.find_firefox_pids(firefox_profile_path, process.pid)
 
+                        # ==============================================================
+                        # If no reliable Firefox PID is found, use the web-ext PID
+                        # as a fallback to keep control over the launched session
+                        # ==============================================================
                         if not firefox_pids:
                             Settings.WRITE_LOG_DEV_FILE( "Aucune PID Firefox fiable trouvée, utilisation du PID web-ext comme fallback", "WARNING"  )
                             firefox_pids = [process.pid]
 
+                        
+                        # ==============================================================
+                        # Remove duplicates and sort the PID list
+                        # ==============================================================
                         firefox_pids = sorted(set(firefox_pids))
+
+                        # ==============================================================
+                        # Convert PID list into a semicolon-separated string
+                        # Example: [1234, 5678, 9012] -> "1234;5678;9012"
+                        # ==============================================================
+
                         firefox_pid_string = ";".join(str(pid) for pid in firefox_pids)
                         Settings.WRITE_LOG_DEV_FILE(  f"Firefox PID list stored for profile {profile_email}: {firefox_pid_string}",  "INFO"   )
+                        # ==============================================================
+                        # Create a complete Firefox session descriptor containing
+                        # profile information, process identifiers, launch details,
+                        # session identifiers and runtime metadata
+                        # ==============================================================
 
                         firefox_session = {
                             "profile_name": profile_email,
@@ -1059,14 +1150,18 @@ class ExtractionThread(QThread):
                             "launch_command": command,
                             "launched_at": datetime.datetime.now().isoformat(),
                         }
+
+                        # ===============================================================
+                        # Register the session in the in-memory session registry
+                        # for fast runtime access and process management
+                        # FIREFOX_SESSIONS = {
+                        #     "test@gmail.com": {...},
+                        #     "user2@gmail.com": {...}
+                        # }
+                        # ==============================================================
                         FIREFOX_SESSIONS[profile_email] = firefox_session
                         Settings.WRITE_LOG_DEV_FILE(f"Firefox session map updated for {profile_email}: {json.dumps(firefox_session, ensure_ascii=False)}", "DEBUG")
 
-                        for pid_value in firefox_pids:
-                            if pid_value not in FIREFOX_LIST_PIDS:
-                                FIREFOX_LIST_PIDS.append(pid_value)
-
-                        Settings.WRITE_LOG_DEV_FILE(  f"Added Firefox PIDs to FIREFOX_LIST_PIDS: {FIREFOX_LIST_PIDS}",  "DEBUG"  )
                         BrowserManager.store_browser_session_info(
                             firefox_pids,
                             Settings.FOLDER_EXTENTIONS_FIREFOX,
@@ -1076,24 +1171,12 @@ class ExtractionThread(QThread):
                             inserted_id,
                             profile_path=firefox_profile_path,
                             web_ext_pid=process.pid,
-                            profile_name=profile_email,
+                            profile_name=profile_email
                         )
 
                     elif self.selected_Browser in ["edge", "icedragon", "comodo"]:
 
-                        # ExtensionManager.create_extension_for_email(
-                        #     profile_email,
-                        #     profile_password,
-                        #     f'"{ip_address}"',
-                        #     f'"{port}"',
-                        #     f'"{login}"',
-                        #     f'"{password}"',
-                        #     f"{recovery_email}",
-                        #     new_password,
-                        #     new_recovery_email,
-                        #     f'"{self.session_id}"',
-                        #     self.selected_Browser,
-                        # )
+
 
                         url, combined = self._build_encrypted_url(ip_address, port, login, password, profile_email, profile_password, recovery_email, new_password, new_recovery_email)
 
@@ -1119,22 +1202,20 @@ class ExtractionThread(QThread):
                             "--disable-sync",
                             "--disable-popup-blocking",
                             "--disable-notifications",
-                            "--disable-features=DownloadBubble",
+                            "--disable-features=DownloadBubble"
                          ]
                         
                         command1 = [
                             self.Browser_path,
                             f"--user-data-dir={os.path.join(profile_dir, profile_email)}",
                             f"--profile-directory={profile_email}",
-                     
                             "--no-first-run",
                             "--no-default-browser-check",
                             "--disable-sync",
-
                             "--disable-popup-blocking",
                             "--disable-notifications",
                             "--disable-features=DownloadBubble",
-                            f"{url}",
+                            f"{url}"
                         ]
 
                         process = subprocess.Popen(command)
@@ -1149,6 +1230,7 @@ class ExtractionThread(QThread):
                             self.session_id,
                             self.selected_Browser,
                             inserted_id,
+                            profile_path=os.path.join(profile_dir, profile_email),
                         )
 
                     else:
@@ -1217,7 +1299,16 @@ class ExtractionThread(QThread):
                             process = subprocess.Popen(command)
                             PROCESS_PIDS.append(process.pid)
 
-                        BrowserManager.store_browser_session_info( process.pid,  Settings.CHROME_PROFILES, profile_email,  self.session_id, self.selected_Browser.lower(),  inserted_id  )
+                        BrowserManager.store_browser_session_info(
+                            process.pid,
+                            Settings.CHROME_PROFILES,
+                            profile_email,
+                            self.session_id,
+                            self.selected_Browser.lower(),
+                            inserted_id,
+                            profile_path=os.path.join(Settings.CHROME_PROFILES, profile_email),
+                        )
+                    
                     self.emails_processed += 1
 
                 except Exception as e:
@@ -1239,11 +1330,34 @@ class ExtractionThread(QThread):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # =====================================================
 # 🚀 FONCTION CHECK SESSION
 # =====================================================
-
-
 
 def Process_Browser(window, selected_Browser) -> bool:
     # print(f"\n🌐 Démarrage du traitement du navigateur : {selected_Browser}")

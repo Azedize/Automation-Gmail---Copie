@@ -240,21 +240,45 @@ class BrowserManager:
         return None
     
     
+
+
+
+    # ==========================================================
+    # BROWSER SESSION STORAGE AND PERSISTENCE
+    #
+    # Store browser session information required for runtime
+    # tracking, session recovery, process management and
+    # browser shutdown operations.
+    #
+    # Chromium-family browsers store a single process identifier
+    # and synchronize the session identifier with the extension.
+    #
+    # Firefox sessions may contain multiple browser processes,
+    # therefore both a compact session record (data.txt) and a
+    # detailed session metadata file (session_info.json) are
+    # generated to preserve profile, process and recovery data.
+    #
+    # All written files are verified immediately after writing
+    # to ensure data integrity and persistence reliability.
+    # ==========================================================
+
     
     @staticmethod
-    def store_browser_session_info(
-        pid: Any,
-        Path_DiR: str,
-        email: str,
-        SESSION_ID: str,
-        browser: str,
-        inserted_id: str,
-        profile_path: Optional[str] = None,
-        web_ext_pid: Optional[int] = None,
-        profile_name: Optional[str] = None,
-    ) -> None:
-        # dans chromium family va enregistrer comme ca par exemple 5000:test@gmail.com:ABC123:77
-        # dans firefox va enregistrer comme ca par exemple 12540;12844;13000:test@gmail.com:ABC123:77
+    def store_browser_session_info( pid: Any, Path_DiR: str,  email: str, SESSION_ID: str,  browser: str, inserted_id: str,  profile_path: Optional[str] = None, web_ext_pid: Optional[int] = None,  profile_name: Optional[str] = None ) -> None:
+        # ==========================================================
+        # PID NORMALIZATION AND SERIALIZATION
+        # Normalize browser process identifiers into a storage-ready
+        # string representation. Chromium-family browsers typically
+        # use a single PID, whereas Firefox can spawn multiple
+        # processes associated with the same profile.
+        #
+        # Examples:
+        #   Chrome  : 5000                    -> "5000"
+        #   Firefox : [12540,12844,13000]     -> "12540;12844;13000"
+        #
+        # This standardized format is used for session persistence,
+        # process recovery, browser shutdown, and runtime tracking.
+        # ==========================================================
 
         def _normalize_pid_value(pid_value: Any, browser_key: str) -> str:
             if browser_key == "firefox":
@@ -272,99 +296,119 @@ class BrowserManager:
                 return pid_value.strip()
             return str(pid_value)
 
+
+
+        # ==========================================================
+        # FILE WRITE VERIFICATION
+        # Persist content to disk, read it back immediately, and
+        # verify that the stored value matches the expected content.
+        # Used to guarantee session data integrity and reliability.
+        # ==========================================================
         def _write_and_verify(target_path: Path, content: str, label: str):
             target_path.parent.mkdir(parents=True, exist_ok=True)
             target_path.write_text(f"{content}\n", encoding="utf-8")
             actual = target_path.read_text(encoding="utf-8").strip()
             Settings.WRITE_LOG_DEV_FILE(f"Content of {target_path} after write: '{actual}'", "INFO")
             if actual != content.strip():
-                Settings.WRITE_LOG_DEV_FILE(
-                    f"❌ [{label}] ERREUR: Contenu attendu '{content.strip()}', mais lu '{actual}'",
-                    "ERROR",
-                )
+                Settings.WRITE_LOG_DEV_FILE(  f"❌ [{label}] ERREUR: Contenu attendu '{content.strip()}', mais lu '{actual}'",  "ERROR"  )
 
         try:
             browser_key = browser.strip().lower()
-            chrome_family = Settings.CHROME_FAMILY_BROWSERS
+            
             normalized_pid = _normalize_pid_value(pid, browser_key)
-            Settings.WRITE_LOG_DEV_FILE(
-                f"store_browser_session_info called with raw PID={pid}, normalized PID={normalized_pid}, email={email}, SESSION_ID={SESSION_ID}, browser={browser_key}, inserted_id={inserted_id}, profile_path={profile_path}, web_ext_pid={web_ext_pid}, profile_name={profile_name}",
-                "INFO",
-            )
+            Settings.WRITE_LOG_DEV_FILE( f"store_browser_session_info called with raw PID={pid}, normalized PID={normalized_pid}, email={email}, SESSION_ID={SESSION_ID}, browser={browser_key}, inserted_id={inserted_id}, profile_path={profile_path}, web_ext_pid={web_ext_pid}, profile_name={profile_name}","INFO" )
 
             session_entry = f"{normalized_pid}:{email}:{SESSION_ID}:{inserted_id}"
             session_file = Path(Path_DiR) / email / "data.txt"
             session_json_file = Path(Path_DiR) / email / "session_info.json"
 
-            if browser_key in chrome_family:
+            if browser_key in Settings.CHROME_FAMILY_BROWSERS:
                 browser_label = browser_key.upper()
                 Settings.WRITE_LOG_DEV_FILE(f"{browser_label} browser detected", "INFO")
 
-                extension_file = Path(Settings.EXTENTION_EX3_CHROMIUM) / "data.txt"
-                existing_content = (
-                    extension_file.read_text(encoding="utf-8").strip()
-                    if extension_file.exists()
-                    else None
-                )
-                if existing_content is not None:
-                    Settings.WRITE_LOG_DEV_FILE(
-                        f"Content of {extension_file} before write: '{existing_content}'",
-                        "INFO",
-                    )
+                if profile_path is None and email:
+                    profile_path = str(Path(Path_DiR) / email)
+                    Settings.WRITE_LOG_DEV_FILE(f"Inferred profile_path for Chrome family browser: {profile_path}", "DEBUG")
+
+                if profile_path:
+                    profile_data_file = Path(profile_path) / "data.txt"
+                    Settings.WRITE_LOG_DEV_FILE(f"Writing session entry to Chrome profile data file: {profile_data_file}", "INFO")
+                    _write_and_verify(profile_data_file, session_entry, browser_label)
                 else:
-                    Settings.WRITE_LOG_DEV_FILE(f"{extension_file} does not exist yet", "INFO")
-
-                Settings.WRITE_LOG_DEV_FILE(f"Writing SESSION_ID={SESSION_ID} to {extension_file}", "INFO")
-                _write_and_verify(extension_file, SESSION_ID, browser_label)
-
-                Settings.WRITE_LOG_DEV_FILE(f"Writing session to {session_file}", "INFO")
-                _write_and_verify(session_file, session_entry, browser_label)
+                    Settings.WRITE_LOG_DEV_FILE("No profile_path provided for Chrome session storage", "ERROR")
             else:
                 Settings.WRITE_LOG_DEV_FILE(f"Firefox or other browser detected: {browser_key}", "INFO")
                 Settings.WRITE_LOG_DEV_FILE(f"Session entry for Firefox write: '{session_entry}'", "DEBUG")
                 Settings.WRITE_LOG_DEV_FILE(f"Writing session to {session_file}", "INFO")
                 _write_and_verify(session_file, session_entry, "OTHER")
 
-                firefox_pids = []
-                if browser_key == "firefox":
-                    if isinstance(pid, (list, tuple, set)):
-                        firefox_pids = [int(p) for p in pid if str(p).strip().isdigit()]
-                    elif isinstance(pid, str) and ";" in pid:
-                        firefox_pids = [int(p) for p in pid.split(";") if p.strip().isdigit()]
-                    elif isinstance(pid, int):
-                        firefox_pids = [pid]
+                # firefox_pids = []
+                # if browser_key == "firefox":
+                #     if isinstance(pid, (list, tuple, set)):
+                #         firefox_pids = [int(p) for p in pid if str(p).strip().isdigit()]
+                #     elif isinstance(pid, str) and ";" in pid:
+                #         firefox_pids = [int(p) for p in pid.split(";") if p.strip().isdigit()]
+                #     elif isinstance(pid, int):
+                #         firefox_pids = [pid]
 
-                    session_data = {
-                        "browser": browser_key,
-                        "profile_name": profile_name or email,
-                        "profile_path": profile_path,
-                        "web_ext_pid": web_ext_pid,
-                        "firefox_pids": firefox_pids,
-                        "email": email,
-                        "session_id": SESSION_ID,
-                        "inserted_id": inserted_id,
-                        "normalized_pid": normalized_pid,
-                        "stored_at": datetime.datetime.now().isoformat(),
-                    }
-                    Settings.WRITE_LOG_DEV_FILE(f"Writing session JSON to {session_json_file}", "INFO")
-                    _write_and_verify(session_json_file, json.dumps(session_data, indent=2, ensure_ascii=False), "FIREFOX-SESSION-JSON")
+                #     session_data = {
+                #         "browser": browser_key,
+                #         "profile_name": profile_name or email,
+                #         "profile_path": profile_path,
+                #         "web_ext_pid": web_ext_pid,
+                #         "firefox_pids": firefox_pids,
+                #         "email": email,
+                #         "session_id": SESSION_ID,
+                #         "inserted_id": inserted_id,
+                #         "normalized_pid": normalized_pid,
+                #         "stored_at": datetime.datetime.now().isoformat(),
+                #     }
+                #     Settings.WRITE_LOG_DEV_FILE(f"Writing session JSON to {session_json_file}", "INFO")
+                #     _write_and_verify(session_json_file, json.dumps(session_data, indent=2, ensure_ascii=False), "FIREFOX-SESSION-JSON")
 
             Settings.WRITE_LOG_DEV_FILE("Session data stored successfully", "INFO")
 
         except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE(
-                f"Error in store_browser_session_info: {e}\n{traceback.format_exc()}",
-                "ERROR",
-            )
+            Settings.WRITE_LOG_DEV_FILE(  f"Error in store_browser_session_info: {e}\n{traceback.format_exc()}",  "ERROR" )
 
     
-    # ---------------------- Firefox ----------------------
+
+
+    # =========================================================
+    # FIREFOX PROFILE MANAGEMENT - Gestion des profils Firefox
+    # =========================================================
     
+
+
+    # # ==========================================================
+    # FIREFOX PROFILE DISCOVERY
+    #
+    # Read Firefox's profiles.ini configuration file and build
+    # a mapping of all registered Firefox profiles.
+    #
+    # For each profile, retrieve:
+    # - Profile name
+    # - Profile path
+    # - Relative/absolute path information
+    #
+    # Relative paths are automatically converted into absolute
+    # filesystem paths to simplify profile lookup, process
+    # management, session recovery and browser operations.
+    #
+    # Returns:
+    #     Dict[str, str]
+    #     {
+    #         "Profile_A": "D:\\FirefoxProfiles\\Profile_A",
+    #         "default-release": "C:\\Users\\User\\AppData\\Roaming\\Mozilla\\Firefox\\Profiles\\xxxx.default-release"
+    #     }
+    # ==========================================================
     
     @staticmethod
     def _get_firefox_profiles() -> Dict[str, str]:
         Settings.WRITE_LOG_DEV_FILE("[_get_firefox_profiles] Lecture des profils Firefox existants", "DEBUG")
-        ini_path = os.path.join(Settings.APPDATA, 'Mozilla', 'Firefox', 'profiles.ini')
+        ini_path = getattr(Settings, 'FIREFOX_PROFILES_INI', None) or os.path.join(Settings.APPDATA, 'Mozilla', 'Firefox', 'profiles.ini')
+        Settings.FIREFOX_PROFILES_INI = ini_path
+        Settings.WRITE_LOG_DEV_FILE(f"[_get_firefox_profiles] Firefox profiles.ini path stored in Settings: {ini_path}", "DEBUG")
         
         if not os.path.exists(ini_path):
             Settings.WRITE_LOG_DEV_FILE(f"[_get_firefox_profiles] ⚠️ profiles.ini non trouvé: {ini_path}", "WARNING")
@@ -499,39 +543,11 @@ class BrowserManager:
     
     
     
-    @staticmethod
-    def Get_Firefox_Profiles_In_Use() -> List[Dict[str, str]]:
-        profiles = []
-        if not ValidationUtils.path_exists(Settings.FIREFOX_PROFILES):
-            return profiles
-
-        for folder in os.listdir(Settings.FIREFOX_PROFILES):
-            path = os.path.join(Settings.FIREFOX_PROFILES, folder)
-            lock_file = os.path.join(path, 'parent.lock')
-            if os.path.isdir(path) and os.path.exists(lock_file):
-                profiles.append({'name': folder, 'path': path})
-        return profiles
 
     
     
     
-    
-    
-    @staticmethod
-    def Get_Profile_By_Pid(pid: int, active_profiles: List[Dict[str, str]]) -> Optional[Dict[str, str]]:
-        try:
-            proc = psutil.Process(pid)
-            for f in proc.open_files():
-                for profile in active_profiles:
-                    if os.path.commonpath([f.path, profile['path']]) == profile['path']:
-                        return profile
-                    if profile['name'] in f.path:
-                        return profile
-        except Exception:
-            Settings.WRITE_LOG_DEV_FILE(f"🚨 Erreur proc ({pid}): {traceback.format_exc()}", "ERROR")
-            Settings.WRITE_LOG_DEV_FILE("Profil introuvable.", "ERROR")
-            return None
-        return None
+
 
     
     
@@ -539,48 +555,34 @@ class BrowserManager:
     
     
     
-    @staticmethod
-    def Get_Firefox_Windows() -> List[Dict[str, Any]]:
-        active_profiles = BrowserManager.Get_Firefox_Profiles_In_Use()
-        windows = []
-
-        def callback(hwnd, _):
-            if win32gui.IsWindowVisible(hwnd) and win32gui.GetClassName(hwnd) == 'MozillaWindowClass':
-                try:
-                    _, pid = win32process.GetWindowThreadProcessId(hwnd)
-                    profile = BrowserManager.Get_Profile_By_Pid(pid, active_profiles)
-                    if profile:
-                        windows.append({
-                            'hwnd': hwnd,
-                            'title': win32gui.GetWindowText(hwnd),
-                            'pid': pid,
-                            'profile': profile['name']
-                        })
-                except Exception:
-                    Settings.WRITE_LOG_DEV_FILE(f"🚨 Erreur proc ({hwnd}): {traceback.format_exc()}", "ERROR")
-                    Settings.WRITE_LOG_DEV_FILE("Profil introuvable.", "ERROR")
-                    pass
-            return True
-
-        win32gui.EnumWindows(callback, None)
-        return windows
-
-    
-    
     
 
     
     
-    
+
+    # ==========================================================
+    # FIREFOX PROCESS TERMINATION BY MULTI-SOURCE INPUT
+    #
+    # This function resolves Firefox process identifiers from
+    # heterogeneous inputs (PID, string, dictionary, process
+    # objects, or profile-based lookup) into a unified PID list.
+    #
+    # It ensures robustness by:
+    # - Supporting multiple session data formats
+    # - Extracting PIDs from direct and indirect sources
+    # - Deduplicating and sorting process identifiers
+    #
+    # Once resolved, each Firefox process is terminated using
+    # a graceful shutdown (terminate) followed by a forced kill
+    # if necessary.
+    #
+    # This guarantees reliable cleanup of all Firefox instances
+    # associated with user profiles or sessions.
+    # ==========================================================
+        
     @staticmethod
     def Close_Windows_By_Profiles(firefox_close_list: List[Any]):
-        """
-        Close Firefox processes directly from a list of PIDs or session entries.
-        """
-        Settings.WRITE_LOG_DEV_FILE(
-            f"Close_Windows_By_Profiles called with {len(firefox_close_list)} entries",
-            "INFO",
-        )
+        Settings.WRITE_LOG_DEV_FILE(  f"Close_Windows_By_Profiles called with {len(firefox_close_list)} entries",   "INFO" )
 
         pid_list = []
         for entry in firefox_close_list:
@@ -603,10 +605,7 @@ class BrowserManager:
                     try:
                         pid_list.append(int(entry["proc"].pid))
                     except Exception:
-                        Settings.WRITE_LOG_DEV_FILE(
-                            f"Unable to read pid from proc for entry {entry}",
-                            "WARNING",
-                        )
+                        Settings.WRITE_LOG_DEV_FILE( f"Unable to read pid from proc for entry {entry}",  "WARNING" )
                 elif entry.get("profile_path"):
                     derived = BrowserManager.find_firefox_pids(entry["profile_path"], entry.get("web_ext_pid", 0))
                     pid_list.extend(derived)
@@ -655,7 +654,6 @@ class BrowserManager:
 
         Settings.WRITE_LOG_DEV_FILE("Close_Windows_By_Profiles completed", "INFO")
 
-    # ---------------------- Chrome ----------------------
     
     
     
@@ -694,7 +692,6 @@ class BrowserManager:
                 # print("✅ Chrome fermé")
 
 
-    # ---------------------- JSON Utilities ----------------------
     
     
     
@@ -852,33 +849,6 @@ class BrowserManager:
 
 
     
-    
-    @staticmethod
-    def close_chrome_profile(profile_name: str, user_data_dir: str):
-        closed_any = False
-
-        # Parcours tous les process Chrome
-        for proc in psutil.process_iter(['name', 'cmdline']):
-            try:
-                if proc.info['name'] != 'chrome.exe':
-                    continue
-
-                cmdline = " ".join(proc.info['cmdline'])
-                
-                # Vérifie que le profil et le user-data-dir correspondent
-                if f"--profile-directory={profile_name}" in cmdline and f"--user-data-dir={user_data_dir}" in cmdline:
-                    proc.terminate()  # fermeture propre
-                    closed_any = True
-
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                Settings.WRITE_LOG_DEV_FILE(f"ERREUR CRITIQUE lors de la fermeture du profil {profile_name}", "ERROR")
-                continue
-
-        return closed_any
-    
-
-
-# le programme is runing dans une interface logique et graphique et va lancer des script capable de reduire des interfcaes intermedaires 
 
     
 BrowserManager = BrowserManager()

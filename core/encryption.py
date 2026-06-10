@@ -6,9 +6,9 @@ from cryptography.hazmat.primitives import hashes, padding
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
-
-
-
+from cryptography.fernet import Fernet
+import sys
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 
 
@@ -61,9 +61,32 @@ class EncryptionService:
             sys.exit(1)
 
         try:
-            raw = base64.b64decode(base64_data)
+            if not isinstance(base64_data, str) or not base64_data.strip():
+                raise ValueError(
+                    f"Le texte chiffré doit être une chaîne Base64 non vide. "
+                    f"Valeur reçue: {repr(base64_data)}"
+                )
+
+            try:
+                raw = base64.b64decode(base64_data)
+            except Exception as e:
+                raise ValueError(f"Impossible de décoder Base64: {e}") from e
+
+            if len(raw) < settings.AES_IV_LENGTH_CBC:
+                raise ValueError(
+                    f"Payload chiffré invalide : longueur insuffisante. "
+                    f"Attendu au moins {settings.AES_IV_LENGTH_CBC} octets pour l'IV, reçu {len(raw)}."
+                )
+
             iv = raw[:settings.AES_IV_LENGTH_CBC]
             ciphertext = raw[settings.AES_IV_LENGTH_CBC:]
+
+            if len(iv) != settings.AES_IV_LENGTH_CBC:
+                raise ValueError(
+                    f"Invalid IV size ({len(iv)}) for CBC. Expected {settings.AES_IV_LENGTH_CBC}."
+                )
+            if len(ciphertext) == 0:
+                raise ValueError("Ciphertext is empty after extracting IV.")
 
             cipher = Cipher(algorithms.AES(key_bytes), modes.CBC(iv), backend=default_backend())
             decryptor = cipher.decryptor()
@@ -75,9 +98,7 @@ class EncryptionService:
 
             return plaintext_bytes.decode("utf-8")
         except Exception as e:
-            error_msg = f"❌ ERREUR DÉCRYPTAGE AES-CBC: {str(e)}\nDonnées: {base64_data[:50]}...\nTraceback complet:\n{traceback.format_exc()}"
-            settings.WRITE_LOG_DEV_FILE(error_msg, level="ERROR")
-            # print(error_msg)
+            error_msg = f"❌ ERREUR DÉCRYPTAGE AES-CBC: {str(e)}\nDonnées: {base64_data if isinstance(base64_data, str) else repr(base64_data)}\nTraceback complet:\n{traceback.format_exc()}"
             settings.WRITE_LOG_DEV_FILE(error_msg, level="ERROR")
             sys.exit(1)
 
@@ -121,7 +142,7 @@ class EncryptionService:
     @staticmethod
     def encrypt_message(plaintext: str, key_bytes: bytes) -> str:
         if len(key_bytes) != settings.AES_KEY_LENGTH:
-            # settings.WRITE_LOG_DEV_FILE(error_msg, level="ERROR")
+            settings.WRITE_LOG_DEV_FILE(error_msg, level="ERROR")
             # print(error_msg)
             settings.WRITE_LOG_DEV_FILE(f"❌ ERREUR CHIFFRAGE: Longueur de clé AES invalide. Attendu: {settings.AES_KEY_LENGTH}, Reçu: {len(key_bytes)}\nTraceback complet: {traceback.format_exc()}", level="ERROR")
             sys.exit(1)
@@ -138,7 +159,7 @@ class EncryptionService:
         except Exception as e:
             settings.WRITE_LOG_DEV_FILE(f"❌ ERREUR CHIFFRAGE AES-CBC: {str(e)}\nTexte plaintext length: {len(plaintext)}\nTraceback complet:\n{traceback.format_exc()}", level="ERROR")
             # print(error_msg)
-            # settings.WRITE_LOG_DEV_FILE(error_msg, level="ERROR")
+            settings.WRITE_LOG_DEV_FILE(error_msg, level="ERROR")
             sys.exit(1)
 
 

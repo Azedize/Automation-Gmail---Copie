@@ -12,6 +12,7 @@ import requests
 import re
 from typing import Dict, Any, Optional
 from requests.adapters import HTTPAdapter, Retry
+import sys
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT_DIR not in sys.path:
@@ -261,7 +262,7 @@ class APIManager:
                 timeout=30
             )
 
-            Settings.WRITE_LOG_DEV_FILE(f"API response status: {result.get('status_code')}", "INFO")
+            Settings.WRITE_LOG_DEV_FILE(f"TESt test test API response status: {result.get('status_code')}", "INFO")
             Settings.WRITE_LOG_DEV_FILE(f"Full API result: {result}", "INFO")
 
             if result.get("status") != "success":
