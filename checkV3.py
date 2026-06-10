@@ -22,7 +22,7 @@ import traceback
 # ==========================================================
 
 TOOLS_DIR = Path("Tools")
-EXTENSIONS_DIR_TEMPLETE = TOOLS_DIR / "extensions Templete"
+# EXTENSIONS_DIR_TEMPLETE = TOOLS_DIR / "extensions Templete"
 LOG_DEV_FILE = os.path.abspath(os.path.join( "Log/LogDev/my_project.log"))
 
 
@@ -447,17 +447,17 @@ class UpdateManager:
                     else:
                         sys.exit("❌ Program update failed, exiting program.")
 
-                # Vérifier update extensions
-                if not local_ext or local_ext != server_ext:
-                    WRITE_LOG_DEV_FILE("Required extensions update", "INFO")
-                    tools_dir = TOOLS_DIR
-                    if not os.path.exists(tools_dir):
-                        os.makedirs(tools_dir)
+                # # Vérifier update extensions
+                # if not local_ext or local_ext != server_ext:
+                #     WRITE_LOG_DEV_FILE("Required extensions update", "INFO")
+                #     tools_dir = TOOLS_DIR
+                #     if not os.path.exists(tools_dir):
+                #         os.makedirs(tools_dir)
 
-                    if UpdateManager._download_and_extract(DownloadFiles, tools_dir, clean_target=True, extract_subdir="tools"):
-                        update_done = True
-                    else:
-                        sys.exit("❌ Extensions update failed, exiting program.")
+                #     if UpdateManager._download_and_extract(DownloadFiles, tools_dir, clean_target=True, extract_subdir="tools"):
+                #         update_done = True
+                #     else:
+                #         sys.exit("❌ Extensions update failed, exiting program.")
 
                 # Si tout est OK et à jour
                 if not update_done:

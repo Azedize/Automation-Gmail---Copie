@@ -241,7 +241,6 @@ class UpdateManager:
         # ================================================
         SESSION_INFO = SessionManager.check_session()
         if not SESSION_INFO.get("valid"):
-            # print("[SESSION] ❌ Session invalide. Impossible de continuer.")
             Settings.WRITE_LOG_DEV_FILE("Session invalide. Impossible de continuer.", "ERROR")
             return False
 
@@ -251,12 +250,9 @@ class UpdateManager:
         session_dt = SESSION_INFO.get("date")
         if not isinstance(session_dt, datetime.datetime):
             Settings.WRITE_LOG_DEV_FILE( f"SESSION date type incorrect: {type(session_dt)}", "ERROR" )
-            # print(f"❌ SESSION_INFO['date'] type incorrect: {type(session_dt)}")
             return False
 
         session_date_plain = session_dt.strftime("%Y-%m-%d")
-        # print("🟢 SESSION_INFO['date'] est déjà datetime.datetime")
-        # print("➤ Date session (YYYY-MM-DD) :", session_date_plain)
         settings.WRITE_LOG_DEV_FILE(f"Date de session formatée pour update: {session_date_plain}", "INFO")
         settings.WRITE_LOG_DEV_FILE("Session date is valid datetime", "INFO")
 
@@ -264,18 +260,14 @@ class UpdateManager:
         # 3️⃣ Chiffrement de la date
         # ================================================
         try:
-            date_encrypted = EncryptionService.encrypt_message(
-                session_date_plain, Settings.KEY
-            )
+            date_encrypted = EncryptionService.encrypt_message( session_date_plain, Settings.KEY )
             if not date_encrypted:
                 raise Exception("Encryption failed")
 
             encrypted_safe = urllib.parse.quote(date_encrypted)
-            # print("🔐 Date encryptée :", encrypted_safe)
             settings.WRITE_LOG_DEV_FILE(f"Date encryptée: {encrypted_safe}", "INFO")
 
         except Exception as e:
-            # print(f"❌ Échec du chiffrement : {e}")
             Settings.WRITE_LOG_DEV_FILE( f"Échec du chiffrement : {e}\n{traceback.format_exc()}", "ERROR")
             traceback.print_exc()
             return False
@@ -295,29 +287,19 @@ class UpdateManager:
         SERVER_ZIP_URL_PROGRAM = "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip"
         
 
-        # print("\n🌍 URL finale pour API :", CHECK_URL_PROGRAMM)
         settings.WRITE_LOG_DEV_FILE(f"URL finale pour API: {CHECK_URL_PROGRAMM}", "INFO")
 
         # ================================================
         # 5️⃣ Requête GET
         # ================================================
         try:
-            # print("\n🔍 CHECK UPDATE")
             settings.WRITE_LOG_DEV_FILE("Vérification de mise à jour en cours...", "INFO")
-            response = APIManager.make_request(
-                CHECK_URL_PROGRAMM,
-                method="GET",
-                timeout=10
-            )
+            response = APIManager.make_request(  CHECK_URL_PROGRAMM,  method="GET",  timeout=10)
 
-            # print("\n=== RAW RESPONSE ===")
-            # print(response)
             settings.WRITE_LOG_DEV_FILE(f"Réponse brute de l'API: {response}", "DEBUG")
             settings.WRITE_LOG_DEV_FILE(f"Type de la réponse: {type(response)}", "DEBUG")
 
-            # 🔴 Vérification réponse serveur
             if not isinstance(response, dict) or response.get("status_code") != 200:
-                # print("⚠️ Serveur indisponible → Continuer sans update")
                 settings.WRITE_LOG_DEV_FILE( "Serveur indisponible → Continuer sans update",  "WARNING" )
                 return False
 
@@ -326,19 +308,16 @@ class UpdateManager:
             # ================================================
             # 🚨 INVALID TOKEN DETECTION
             # ================================================
+
             if isinstance(data, str) and "Invalid token" in data:
-                # print("🚨 INVALID TOKEN DETECTED")
                 Settings.WRITE_LOG_DEV_FILE( "Invalid token detected - clearing session",  "ERROR"  )
 
                 try:
                     SessionManager.clear_session()
-                    # print("🗑️ Session supprimée")
                     settings.WRITE_LOG_DEV_FILE("Session cleared due to invalid token detection", "INFO")
                 except Exception as e:
                     Settings.WRITE_LOG_DEV_FILE(f"Error clearing session after invalid token detection\n{traceback.format_exc()}", "ERROR")
-                    # print("❌ Erreur suppression session :", e)
 
-                # ⛔ Arrêt immédiat du programme
                 os._exit(1)
 
             # ================================================
@@ -357,12 +336,8 @@ class UpdateManager:
             # print("server_tools   :", server_tools)
             settings.WRITE_LOG_DEV_FILE(f"Versions serveur - Programme: {server_program}, Outils: {server_tools}", "INFO")
 
-            local_program = UpdateManager._read_local_version(
-                Settings.VERSION_LOCAL_PROGRAMM
-            )
-            local_tools = UpdateManager._read_local_version(
-                Settings.VERSION_LOCAL_EXT
-            )
+            local_program = UpdateManager._read_local_version( Settings.VERSION_LOCAL_PROGRAMM )
+            local_tools = UpdateManager._read_local_version( Settings.VERSION_LOCAL_EXT )
 
             # print("\n=== Versions locales ===")
             # print("local_program :", local_program)
@@ -389,32 +364,22 @@ class UpdateManager:
 
                 os.makedirs(Settings.TOOLS_DIR, exist_ok=True)
 
-                success = UpdateManager._download_and_extract(
-                    SERVER_ZIP_URL_PROGRAM,
-                    Settings.TOOLS_DIR,
-                    clean_target=True,
-                    extract_subdir="tools"
-                )
+                success = UpdateManager._download_and_extract(  SERVER_ZIP_URL_PROGRAM, Settings.TOOLS_DIR,  clean_target=True, extract_subdir="tools" )
 
                 if success:
-                    # print("✅ Tools mis à jour")
                     Settings.WRITE_LOG_DEV_FILE("Outils mis à jour avec succès", "INFO")
                 else:
-                    # print("❌ Échec mise à jour tools")
                     Settings.WRITE_LOG_DEV_FILE("Échec de la mise à jour des outils", "ERROR")
                     return False
 
-            # print("🟢 Application à jour")
             Settings.WRITE_LOG_DEV_FILE("Application à jour", "INFO")
             return True
 
         except ImportError:
-            # print("⚠️ APIManager non disponible → Continuer")
             Settings.WRITE_LOG_DEV_FILE( "APIManager non disponible",  "INFO"  )
             return False
 
         except Exception as e:
-            # print("🔥 ERREUR CRITIQUE :", e)
             Settings.WRITE_LOG_DEV_FILE( f"Erreur critique lors de la vérification de mise à jour: {e}\n{traceback.format_exc()}",  "ERROR"  )
             traceback.print_exc()
             return False
@@ -524,26 +489,22 @@ class UpdateManager:
         # ================================================
         SESSION_INFO = SessionManager.check_session()
         if not SESSION_INFO.get("valid"):
-            # print("[SESSION] ❌ Session invalide. Impossible de continuer l’extraction.")
             Settings.WRITE_LOG_DEV_FILE("Session invalide. Impossible de continuer l’extraction.", "ERROR")
             sys.exit()
             return False
-
-   
 
         # ================================================
         # 🔹 Gestion sécurisée du champ date (datetime uniquement)
         # ================================================
         session_dt = SESSION_INFO.get('date')
         if not isinstance(session_dt, datetime.datetime):
-            # print(f"❌ SESSION_INFO['date'] type incorrect: {type(session_dt)}")
             settings.WRITE_LOG_DEV_FILE(f"SESSION date type incorrect: {type(session_dt)}", "ERROR")
-            return False
-        # print("🟢 SESSION_INFO['date'] est déjà datetime.datetime")
+            return 
+            
         settings.WRITE_LOG_DEV_FILE("Session date is valid datetime", "INFO")
 
         session_date_plain = session_dt.strftime("%Y-%m-%d")
-        # print("➤ Date session (format YYYY-MM-DD) :", session_date_plain)
+
         settings.WRITE_LOG_DEV_FILE(f"Session date (format YYYY-MM-DD): {session_date_plain}", "INFO")
 
         # ================================================
@@ -551,12 +512,9 @@ class UpdateManager:
         # ================================================
         try:
             date_encrypted = EncryptionService.encrypt_message(session_date_plain, Settings.KEY)
-            # print(f"🔐 Date encryptée : {date_encrypted}")
             settings.WRITE_LOG_DEV_FILE(f"Encrypted date: {date_encrypted}", "INFO")
         except Exception as e:
             settings.WRITE_LOG_DEV_FILE(f"Encryption failed: {e}\n{traceback.format_exc()}", level="ERROR")
-            # print(f"❌ Encryption failed: {e}")
-
             traceback.print_exc()
             return False
 
@@ -566,7 +524,6 @@ class UpdateManager:
 
         encrypted_safe = urllib.parse.quote(date_encrypted)
         CHECK_URL_EX3 = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Ext3&k={encrypted_safe}"
-        # print("\n🌍 URL finale pour API :", CHECK_URL_EX3)
 
         # ================================================
         # 🔹 Requête GET
@@ -580,45 +537,30 @@ class UpdateManager:
             except json.JSONDecodeError:
                 try:
                     data = json.loads(response.text)
-                    # print("⚠️ Content-Type incorrect, mais JSON parsé avec succès")
                     settings.WRITE_LOG_DEV_FILE("Content-Type incorrect, but JSON parsed successfully", "WARNING")
                 except Exception as e:
                     settings.WRITE_LOG_DEV_FILE(f"Failed to parse JSON response: {e}\n{traceback.format_exc()}", level="ERROR")
-                    # print("❌ Impossible de parser la réponse JSON :", e)
-                    # print("Raw response:", response.text)
                     return False
 
             remote_version = data.get("version_Extention")
             remote_manifest_version = data.get("manifest_version")
 
-            # print("\n=== JSON Response ===")
-            # print(json.dumps(data, indent=4, ensure_ascii=False))
-            # print(f"➤ version_Extention : {remote_version}")
-            # print(f"➤ manifest_version  : {remote_manifest_version}")
 
-            # stray token removed (previously 'se')
         except Exception as e:
+
             settings.WRITE_LOG_DEV_FILE(f"Failed to get remote version: {e}\n{traceback.format_exc()}", level="ERROR")
-            # print(f"❌ Impossible de récupérer la version distante: {e}")
             traceback.print_exc()
             if window:
-                UIManager.Show_Critical_Message(
-                    window,
-                    "Network Error",
-                    "Unable to check for updates.\nPlease check your internet connection.",
-                    message_type="critical"
-                )
+                UIManager.Show_Critical_Message(window, "Network Error", "Unable to check for updates. Please check your internet connection.", message_type="critical")
             return False
 
         # ================================================
         # 🔹 Vérification fichiers locaux
         # ================================================
         if not os.path.exists(Settings.MANIFEST_PATH_EX3):
-            # print("❌ Fichier manifest.json local introuvable")
             settings.WRITE_LOG_DEV_FILE("Fichier manifest.json local introuvable", "ERROR")
             return False
         if not os.path.exists(Settings.VERSION_LOCAL_EX3):
-            # print("❌ Fichier version locale introuvable")
             settings.WRITE_LOG_DEV_FILE("Fichier version locale introuvable", "ERROR")
             return False
 
@@ -627,8 +569,7 @@ class UpdateManager:
         local_manifest_version = manifest_data.get("version")
         local_version = UpdateManager._read_local_version(Settings.VERSION_LOCAL_EX3)
 
-        # print(f"📄 Version locale : {local_version}")
-        # print(f"📄 Manifest local : {local_manifest_version}")
+
 
         settings.WRITE_LOG_DEV_FILE(f"Version locale: {local_version}, Manifest local version: {local_manifest_version}", "INFO")
 
@@ -636,30 +577,186 @@ class UpdateManager:
         # 🔹 Compatibilité manifest
         # ================================================
         if str(local_manifest_version) != str(remote_manifest_version):
-            # print("⚠️ Manifest incompatible, mise à jour automatique impossible")
             settings.WRITE_LOG_DEV_FILE("Manifest incompatible, mise à jour automatique impossible", "WARNING")
             if window:
-                UIManager.Show_Critical_Message(
-                    window,
-                    "Manifest Incompatibility",
-                    "The local manifest version does not match the remote version.",
-                    message_type="critical"
-                )
+                UIManager.Show_Critical_Message(window, "Manifest Incompatibility", "The local manifest version does not match the remote version.", message_type="critical")
             return False
 
         # ================================================
         # 🔹 Différence de version
         # ================================================
         if local_version != remote_version:
-            # print(f"🔄 Mise à jour requise (nouvelle version: {remote_version})")
             settings.WRITE_LOG_DEV_FILE(f"Extension update required - new version: {remote_version}", "INFO")
             return remote_version
         else:
             settings.WRITE_LOG_DEV_FILE(f"Extension up-to-date", "INFO")
-            # print("✅ Extension locale à jour")
             return True
 
 
+
+
+    @staticmethod
+    def check_version_extension_firefox(window=None):
+
+        SESSION_INFO = SessionManager.check_session()
+        if not SESSION_INFO.get("valid"):
+            Settings.WRITE_LOG_DEV_FILE("Session invalide. Impossible de continuer l’extraction.", "ERROR")
+            sys.exit()
+            return False
+
+        session_dt = SESSION_INFO.get("date")
+        if not isinstance(session_dt, datetime.datetime):
+            settings.WRITE_LOG_DEV_FILE(f"SESSION date type incorrect: {type(session_dt)}", "ERROR")
+            return False
+
+        session_date_plain = session_dt.strftime("%Y-%m-%d")
+        settings.WRITE_LOG_DEV_FILE(f"Session date (format YYYY-MM-DD): {session_date_plain}", "INFO")
+
+        try:
+            date_encrypted = EncryptionService.encrypt_message(session_date_plain, Settings.KEY)
+            settings.WRITE_LOG_DEV_FILE(f"Encrypted date: {date_encrypted}", "INFO")
+        except Exception as e:
+            settings.WRITE_LOG_DEV_FILE(f"Encryption failed: {e}\n{traceback.format_exc()}", level="ERROR")
+            traceback.print_exc()
+            return False
+
+        if not date_encrypted:
+            Settings.WRITE_LOG_DEV_FILE("Date encryption failed", "ERROR")
+            sys.exit("❌ Encryption failed, exiting program.")
+
+        encrypted_safe = urllib.parse.quote(date_encrypted)
+
+        CHECK_URL_EX3 = f"https://www.dropbox.com/scl/fi/78a38bc4papwzlw80hxti/version.json?rlkey=n7dx5mb8tcctvprn0wq4ojw7m&st=ek8lwoh2&dl=1"
+
+        settings.WRITE_LOG_DEV_FILE(f"URL finale pour API: {CHECK_URL_EX3}", "INFO")
+
+        try:
+            response = requests.get(CHECK_URL_EX3, headers=Settings.HEADER, verify=False, timeout=10)
+            response.raise_for_status()
+
+            try:
+                data = response.json()
+            except json.JSONDecodeError:
+                try:
+                    data = json.loads(response.text)
+                    settings.WRITE_LOG_DEV_FILE("Content-Type incorrect, but JSON parsed successfully", "WARNING")
+                except Exception as e:
+                    settings.WRITE_LOG_DEV_FILE(f"Failed to parse JSON response: {e}\n{traceback.format_exc()}", level="ERROR")
+                    return False
+
+            remote_version = data.get("version_Extention")
+            remote_manifest_version = data.get("manifest_version")
+        except Exception as e:
+            settings.WRITE_LOG_DEV_FILE(f"Failed to get remote version: {e}\n{traceback.format_exc()}", level="ERROR")
+            traceback.print_exc()
+            if window:
+                UIManager.Show_Critical_Message(window, "Network Error", "Unable to check for updates. Please check your internet connection.", message_type="critical")
+            return False
+
+        if remote_version is None:
+            settings.WRITE_LOG_DEV_FILE("Remote extension version is missing from update server response", "ERROR")
+            return False
+
+        if not os.path.exists(Settings.MANIFEST_PATH_EX3_FIREFOX):
+            settings.WRITE_LOG_DEV_FILE("Fichier manifest.json Firefox local introuvable", "ERROR")
+            return False
+
+        try:
+            with open(Settings.MANIFEST_PATH_EX3_FIREFOX, "r", encoding="utf-8") as f:
+                manifest_data = json.load(f)
+            local_manifest_version = manifest_data.get("version")
+        except Exception as e:
+            settings.WRITE_LOG_DEV_FILE(f"Erreur lecture du manifest Firefox local: {e}\n{traceback.format_exc()}", "ERROR")
+            return False
+
+        local_version = None
+        if os.path.exists(Settings.VERSION_LOCAL_EX3_FIREFOX):
+            local_version = UpdateManager._read_local_version(Settings.VERSION_LOCAL_EX3_FIREFOX)
+
+        settings.WRITE_LOG_DEV_FILE(  f"Firefox local manifest version: {local_manifest_version}, local version file: {local_version}, remote version: {remote_version}",  "INFO" )
+
+        compare_value = local_version if local_version is not None else local_manifest_version
+        
+        if compare_value is None:
+            settings.WRITE_LOG_DEV_FILE("Aucune version locale de l’extension Firefox disponible pour comparaison", "ERROR")
+            return False
+
+        if str(compare_value) != str(remote_version):
+            settings.WRITE_LOG_DEV_FILE(f"Firefox extension update required - new version: {remote_version}", "INFO")
+            return remote_version
+        else:
+            settings.WRITE_LOG_DEV_FILE("Firefox extension up-to-date", "INFO")
+            return True
+
+
+
+
+
+
+
+    @staticmethod
+    def update_extension_firefox_from_server(remote_version=None) -> bool:
+        """Download and install the Firefox extension to EXTENTION_EX3_FIREFOX."""
+        SESSION_INFO = SessionManager.check_session()
+        if not SESSION_INFO.get("valid"):
+            Settings.WRITE_LOG_DEV_FILE("Session invalide. Impossible de continuer la mise à jour Firefox.", "ERROR")
+            sys.exit()
+            return False
+
+        session_dt = SESSION_INFO.get("date")
+        if not isinstance(session_dt, datetime.datetime):
+            Settings.WRITE_LOG_DEV_FILE(f" type incorrect date session: {type(session_dt)}", "ERROR")
+            return False
+
+        session_date_plain = session_dt.strftime("%Y-%m-%d")
+
+        try:
+            date_encrypted = EncryptionService.encrypt_message(session_date_plain, Settings.KEY)
+            encrypted_safe = urllib.parse.quote(date_encrypted)
+        except Exception as e:
+            Settings.WRITE_LOG_DEV_FILE(f"❌ Encryption failed: {e}\n{traceback.format_exc()}", "ERROR")
+            traceback.print_exc()
+            return False
+
+        SERVEUR_ZIP_URL_EX3_FIREFOX = "https://codeload.github.com/Azedize/Ext3Lastversion/zip/refs/heads/main?token=BDPALGY7HVNAIFWR4XE56T3KFGB3K"
+        Settings.WRITE_LOG_DEV_FILE(f"Firefox update URL: {SERVEUR_ZIP_URL_EX3_FIREFOX}", "INFO")
+
+        try:
+            with tempfile.TemporaryDirectory() as tmpdir:
+                zip_path = os.path.join(tmpdir, "Ext3_Firefox.zip")
+
+                settings.WRITE_LOG_DEV_FILE("Downloading latest Firefox extension version...", "INFO")
+                if not UpdateManager._download_file(SERVEUR_ZIP_URL_EX3_FIREFOX, zip_path):
+                    Settings.WRITE_LOG_DEV_FILE("Échec du téléchargement de l'extension Firefox", "ERROR")
+                    return False
+
+                if os.path.exists(Settings.EXTENTION_EX3_FIREFOX):
+                    Settings.WRITE_LOG_DEV_FILE(f"Suppression de l'ancienne extension Firefox: {Settings.EXTENTION_EX3_FIREFOX}", "INFO")
+                    shutil.rmtree(Settings.EXTENTION_EX3_FIREFOX, onerror=UpdateManager._remove_readonly)
+
+                Settings.WRITE_LOG_DEV_FILE("Extraction du ZIP Firefox...", "INFO")
+                with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                    zip_ref.extractall(tmpdir)
+
+                extracted_dir = None
+                for item in os.listdir(tmpdir):
+                    item_path = os.path.join(tmpdir, item)
+                    if os.path.isdir(item_path) and item != "__MACOSX":
+                        extracted_dir = item_path
+                        break
+
+                if extracted_dir is None:
+                    Settings.WRITE_LOG_DEV_FILE("Dossier extrait introuvable pour l'extension Firefox", "ERROR")
+                    return False
+
+                shutil.move(extracted_dir, Settings.EXTENTION_EX3_FIREFOX)
+                Settings.WRITE_LOG_DEV_FILE(f"Extension Firefox mise à jour vers la version {remote_version}", "INFO")
+                return True
+
+        except Exception as e:
+            Settings.WRITE_LOG_DEV_FILE(f"❌ Erreur lors de la mise à jour Firefox : {e}\n{traceback.format_exc()}", "ERROR")
+            traceback.print_exc()
+            return False
 
 
     @staticmethod
@@ -670,7 +767,6 @@ class UpdateManager:
         # ================================================
         SESSION_INFO = SessionManager.check_session()
         if not SESSION_INFO.get("valid"):
-            # print("[SESSION] ❌ Session invalide. Impossible de continuer la mise à jour.")
             Settings.WRITE_LOG_DEV_FILE("Session invalide. Impossible de continuer la mise à jour.", "ERROR")
             sys.exit()
             return False
@@ -682,12 +778,10 @@ class UpdateManager:
         # ================================================
         session_dt = SESSION_INFO.get('date')
         if not isinstance(session_dt, datetime.datetime):
-            # print(f"❌ SESSION_INFO['date'] type incorrect: {type(session_dt)}")
             Settings.WRITE_LOG_DEV_FILE(f" type incorrect date session: {type(session_dt)}", "ERROR")
             return False
 
         session_date_plain = session_dt.strftime("%Y-%m-%d")
-        # print("➤ Date session (format YYYY-MM-DD) :", session_date_plain)
 
         # ================================================
         # 🔹 Chiffrement du token pour téléchargement
@@ -695,9 +789,7 @@ class UpdateManager:
         try:
             date_encrypted = EncryptionService.encrypt_message(session_date_plain, Settings.KEY)
             encrypted_safe = urllib.parse.quote(date_encrypted)
-            # print(f"🔐 Date encryptée pour API : {encrypted_safe}")
         except Exception as e:
-            # print(f"❌ Encryption failed: {e}")
             Settings.WRITE_LOG_DEV_FILE(f"❌ Encryption failed: {e}\n{traceback.format_exc()}", "ERROR")
             traceback.print_exc()
             return False
@@ -706,7 +798,6 @@ class UpdateManager:
         # 🔹 URL de téléchargement de l'extension
         # ================================================
         SERVEUR_ZIP_URL_EX3 = f"http://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Ext3&k={encrypted_safe}"
-        # print(f"🌍 URL téléchargement : {SERVEUR_ZIP_URL_EX3}")
 
         # ================================================
         # 🔹 Téléchargement et extraction
@@ -715,17 +806,14 @@ class UpdateManager:
             with tempfile.TemporaryDirectory() as tmpdir:
                 zip_path = os.path.join(tmpdir, "Ext3.zip")
 
-                # Téléchargement
-                # print("📥 Téléchargement de la dernière version...")
+
                 settings.WRITE_LOG_DEV_FILE("Downloading latest extension version...", "INFO")
                 if not UpdateManager._download_file(SERVEUR_ZIP_URL_EX3, zip_path):
-                    # print("❌ Échec du téléchargement")
                     Settings.WRITE_LOG_DEV_FILE("Échec du téléchargement", "ERROR")
                     return False
 
                 # Suppression ancienne version
                 if os.path.exists(Settings.EXTENTION_EX3_CHROMIUM):
-                    # print(f"🗑️ Suppression ancien dossier {Settings.EXTENTION_EX3_CHROMIUM}")
                     Settings.WRITE_LOG_DEV_FILE(f"Suppression de l'ancienne extension avant mise à jour", "INFO")
                     shutil.rmtree(Settings.EXTENTION_EX3_CHROMIUM, onerror=UpdateManager._remove_readonly)
 

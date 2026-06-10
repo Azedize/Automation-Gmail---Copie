@@ -111,7 +111,7 @@ class Settings:
         },
     }
 
-    CHROME_FAMILY_BROWSERS = {"chrome", "edge", "icedragon", "comodo"}
+    CHROME_FAMILY_BROWSERS = {"chrome", "edge", "msedge", "icedragon", "comodo"}
 
     BROWSER_PROFILE_PATHS = {
         "chrome": CHROME_PROFILES,
@@ -136,6 +136,7 @@ class Settings:
 
     EXTENTION_EX3_FIREFOX = r"C:\RepProxy\Ext3_Firefox"
     VERSION_LOCAL_EX3_FIREFOX = os.path.join(EXTENTION_EX3_FIREFOX, "version.txt")
+    MANIFEST_PATH_EX3_FIREFOX = os.path.join(EXTENTION_EX3_FIREFOX, "manifest.json")
 
     
     EXTENTION_EX3_CHROMIUM = r"C:\RepProxy\Ext3"
