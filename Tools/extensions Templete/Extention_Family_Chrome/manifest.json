@@ -1,0 +1,60 @@
+{
+  "manifest_version": 3,
+  "name": "Auto login Gmail with Proxy",
+  "version": "1.0.0",
+  "description": "Configure le proxy et ouvre une fenêtre contextuelle",
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "storage",
+    "proxy",
+    "webNavigation",
+    "alarms",
+    "downloads",
+    "webRequest",
+    "webRequestAuthProvider",
+    "declarativeNetRequest",
+    "scripting"
+
+  ]
+,  "host_permissions": [
+    "file://*",
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_icon": "icons/icon3.png",
+    "default_title": "Auto login Gmail with Proxy"
+  },
+  "icons": {
+    "16": "icons/icon1.png",
+    "24": "icons/icon2.png",
+    "32": "icons/icon3.png",
+    "48": "icons/icon4.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://accounts.google.com/*",
+        "*://mail.google.com/*",
+        "https://*.google.com/*"
+      ],
+      "js": ["actions.js" , "gmail_process.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "data.txt",
+        "traitement.json",
+        "gmail_process.js",
+        "ReportingActions.js"
+
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

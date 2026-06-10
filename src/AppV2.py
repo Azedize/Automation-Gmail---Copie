@@ -573,7 +573,7 @@ class CloseBrowserThread(QThread):
                     firefox_pids = firefox_session.get("firefox_pids", [])
                     web_ext_pid = firefox_session.get("web_ext_pid")
                     inserted_id = firefox_session.get("inserted_id")
-                    pid = firefox_pids  # Pour _close_browser_process
+                    pid = firefox_pids 
                     Settings.WRITE_LOG_DEV_FILE(f"[SESSION] Firefox extracted firefox_pids={firefox_pids} web_ext_pid={web_ext_pid} inserted_id={inserted_id}", "INFO")
                 else:
                     Settings.WRITE_LOG_DEV_FILE(f"❌ [SESSION] Firefox session not found in FIREFOX_SESSIONS for email={email}", "ERROR")
@@ -735,11 +735,7 @@ class CloseBrowserThread(QThread):
     # ==========================================================
     
     def _close_browser_process(self, pid, email, browser):
-        """Fermer le processus du navigateur"""
-        Settings.WRITE_LOG_DEV_FILE(
-            f"_close_browser_process start | browser={browser} | email={email} | pid={repr(pid)} | pid_type={type(pid).__name__}",
-            "DEBUG",
-        )
+        Settings.WRITE_LOG_DEV_FILE(  f"_close_browser_process start | browser={browser} | email={email} | pid={repr(pid)} | pid_type={type(pid).__name__}",  "DEBUG" )
 
         try:
             if pid is None:
@@ -753,16 +749,13 @@ class CloseBrowserThread(QThread):
                     if item_str.isdigit():
                         pid_list.append(int(item_str))
                     else:
-                        Settings.WRITE_LOG_DEV_FILE(
-                            f"Skipped non-numeric PID segment in list: {repr(item)}", "WARNING"
-                        )
+                        Settings.WRITE_LOG_DEV_FILE(f"Skipped non-numeric PID segment in list: {repr(item)}", "WARNING"  )
             else:
                 pid_str = str(pid).strip()
                 if pid_str.isdigit():
                     pid_list = [int(pid_str)]
                 else:
-                    Settings.WRITE_LOG_DEV_FILE(
-                        f"Invalid PID value for Chromium family: {repr(pid)}", "ERROR"
+                    Settings.WRITE_LOG_DEV_FILE(  f"Invalid PID value for Chromium family: {repr(pid)}", "ERROR"
                     )
                     return
 
@@ -816,9 +809,8 @@ class CloseBrowserThread(QThread):
 
 
 def Start_Extraction(  window, data_list, entered_number, selected_Browser, Isp, unique_id, output_json_final, username):
+
     global EXTRACTION_THREAD, CLOSE_BROWSER_THREAD
-    # print("Starting extraction process...")
-    # print("🚀 Starting extraction process...")
 
     # ValidationUtils.ensure_path_exists(Path(Settings.LOGS_DIRECTORY))
 
@@ -834,8 +826,8 @@ def Start_Extraction(  window, data_list, entered_number, selected_Browser, Isp,
         UIManager.Show_Critical_Message(  window, "Range Error - Exceeded Limit", f"Maximum allowed entries: {email_count}\n" f"Please enter a value between 1 and {email_count}.", message_type="critical")
         Settings.WRITE_LOG_DEV_FILE( f"Maximum allowed entries: {email_count}\nPlease enter a value between 1 and {email_count}.", "ERROR" )
         return
-    # print("Selected entries:", entered_number)
-    # print("✅ Selected entries:", entered_number)
+
+
     Settings.WRITE_LOG_DEV_FILE(f"Selected entries: {entered_number}", "INFO")
 
     browser_normalized = ( selected_Browser.lower() if isinstance(selected_Browser, str) else "unknown")
@@ -857,22 +849,13 @@ def Start_Extraction(  window, data_list, entered_number, selected_Browser, Isp,
 
     browser_name = selected_Browser.strip() if isinstance(selected_Browser, str) else "Unknown"
     browser_path_display = browser_path or "Non trouvé"
-    Settings.WRITE_LOG_DEV_FILE( "Browser startup details:\n"
-        f"    - Browser selected: {browser_name}\n"
-        f"    - Executable path: {browser_path_display}\n"
-        f"    - Extraction stage: initialisation",
-        "INFO",
-    )
+    Settings.WRITE_LOG_DEV_FILE( f"Browser startup details | Browser selected: {browser_name} | Executable path: {browser_path_display} | Extraction stage: initialisation",  "INFO" )
 
-    # 	tanger 90053 TANGER MA
 
-    # le programme is run dans une interface logique et capable
 
     if selected_Browser.lower() == "firefox":
         Settings.ensure_web_ext_installed()
 
-    # print("browser path   :",   browser_path    or "Non trouvé")
-    # print("✅ browser path   :",   browser_path    or "Non trouvé")
 
     EXTRACTION_THREAD = ExtractionThread( window, data_list,  SESSION_ID,  entered_number,  browser_path,  window,  selected_Browser,  Isp,  unique_id,  output_json_final)
 
@@ -883,7 +866,6 @@ def Start_Extraction(  window, data_list, entered_number, selected_Browser, Isp,
     EXTRACTION_THREAD.start()
 
     time.sleep(10)
-    # print("Launching CloseBrowserThread...")
     Settings.WRITE_LOG_DEV_FILE("Launching CloseBrowserThread...", "INFO")
     CLOSE_BROWSER_THREAD = CloseBrowserThread(selected_Browser, username)
     CLOSE_BROWSER_THREAD.progress.connect(lambda msg: print(msg))
@@ -1189,7 +1171,6 @@ class ExtractionThread(QThread):
 
                         profile_dir = browser_paths["profiles"]
                         ValidationUtils.ensure_path_exists(profile_dir, is_file=False)
-                        extension_dir = browser_paths["extensions"]
 
                         command = [
                             self.Browser_path,
@@ -1360,11 +1341,9 @@ class ExtractionThread(QThread):
 # =====================================================
 
 def Process_Browser(window, selected_Browser) -> bool:
-    # print(f"\n🌐 Démarrage du traitement du navigateur : {selected_Browser}")
 
     # 1️⃣ Vérification du navigateur
     if selected_Browser.lower() != "chrome":
-        # print(f"❌ Navigateur non supporté : {selected_Browser}")
         Settings.WRITE_LOG_DEV_FILE(f"Unsupported browser: {selected_Browser}", "WARNING")
         return False
     # print("✅ Navigateur : Chrome supporté")
@@ -1373,15 +1352,12 @@ def Process_Browser(window, selected_Browser) -> bool:
     config_profile = Settings.CONFIG_PROFILE
     if not os.path.exists(config_profile):
         Settings.WRITE_LOG_DEV_FILE(f"Configuration folder not found: {config_profile}", "WARNING")
-        # print(f"❌ Dossier de configuration introuvable : {config_profile}")
         return False
-    # print(f"✅ Dossier de configuration trouvé : {config_profile}")
 
     # 3️⃣ Vérification du fichier secure_preferences
     secure_prefs = Settings.SECURE_PREFERENCES_TEMPLATE
     if not os.path.exists(secure_prefs):
         Settings.WRITE_LOG_DEV_FILE(f"Secure preferences file not found: {secure_prefs}", "WARNING")
-        # print(f"❌ Fichier sécurisé introuvable : {secure_prefs}")
         return False
 
     # Lecture du fichier JSON
@@ -1389,13 +1365,10 @@ def Process_Browser(window, selected_Browser) -> bool:
         with open(secure_prefs, "r", encoding="utf-8") as f:
             data = json.load(f)
         Settings.WRITE_LOG_DEV_FILE( f"Secure preferences file loaded successfully: {secure_prefs}", "INFO" )
-        # print("✅ Fichier JSON chargé avec succès")
     except Exception as e:
         Settings.WRITE_LOG_DEV_FILE( f"Error reading JSON file: {e}\n{traceback.format_exc()}", "ERROR" )
-        # print(f"❌ Erreur lecture fichier JSON : {e}")
         return False
 
-    # 4️⃣ Vérification des clés JSON
     required_keys = Settings.CLES_RECHERCHE
     results_keys = []
     Settings.WRITE_LOG_DEV_FILE(f"Searching JSON for required keys: {required_keys}", "INFO")
@@ -1425,7 +1398,6 @@ def Process_Browser(window, selected_Browser) -> bool:
         detailed_error += f"  - Search results detail: {found_key_details}"
 
         Settings.WRITE_LOG_DEV_FILE(detailed_error, "ERROR")
-        # print(f"❌ Clés manquantes : {', '.join(missing_keys)}")
 
         UIManager.Show_Critical_Message(
             window,
@@ -1438,56 +1410,41 @@ def Process_Browser(window, selected_Browser) -> bool:
         return False
 
     Settings.WRITE_LOG_DEV_FILE("All required JSON keys were found", "SUCCESS")
-    # print( f"✅ Toutes les clés JSON requises sont présentes ({len(found_keys)}/{len(required_keys)})" )
-    # print(f"✅ Toutes les clés JSON requises sont présentes ({len(found_keys)}/{len(required_keys)})")
 
     # 5️⃣ Vérification et mise à jour de l'extension
     ext_path = Settings.EXTENTION_EX3_CHROMIUM
     if not ValidationUtils.path_exists(ext_path):
-        # print("📥 Extension manquante, téléchargement...")
         Settings.WRITE_LOG_DEV_FILE(f"Extension not found, downloading...", "INFO")
         valid_ext_dir = ValidationUtils.validate_directory_path(ext_path, must_exist=False)
         if not valid_ext_dir:
-            # print(f"❌ Chemin extension invalide : ")
             Settings.WRITE_LOG_DEV_FILE(f"Invalid extension path: {ext_path}", "WARNING")
             return False
         if UpdateManager.update_extension_from_server():
-            # print("✅ Extension installée avec succès")
             Settings.WRITE_LOG_DEV_FILE(f"Extension installed successfully", "INFO")
         else:
             Settings.WRITE_LOG_DEV_FILE(f"Failed to install extension", "WARNING")
-            # print("❌ Échec installation extension")
             return False
     else:
-        # print(f"📂 Extension trouvée : {ext_path}")
         Settings.WRITE_LOG_DEV_FILE(f"Extension found: {ext_path}", "INFO")
         manifest_file = os.path.join(ext_path, "manifest.json")
         if not os.path.exists(manifest_file):
-            # print("❌ manifest.json manquant")
             Settings.WRITE_LOG_DEV_FILE(f"manifest.json not found", "WARNING")
             return False
 
         remote_version = UpdateManager.check_version_extension(window)
         if isinstance(remote_version, str):
-            # print(f"🔄 Mise à jour disponible : {remote_version}")
             Settings.WRITE_LOG_DEV_FILE(f"Update available: {remote_version}", "INFO")
             if UpdateManager.update_extension_from_server(remote_version):
-                # print("✅ Extension mise à jour avec succès")
                 Settings.WRITE_LOG_DEV_FILE(f"Extension updated successfully", "INFO")
             else:
-                # print("❌ Échec mise à jour extension")
                 Settings.WRITE_LOG_DEV_FILE(f"Failed to update extension", "WARNING")
                 return False
         elif remote_version is True:
-            # print("✅ Extension déjà à jour")
             Settings.WRITE_LOG_DEV_FILE("✅ Extension déjà à jour", "INFO")
         else:
             Settings.WRITE_LOG_DEV_FILE(f"Failed to check extension version", "WARNING")
-            # print("❌ Impossible de vérifier la version de l'extension")
             return False
 
-    # ✅ Tout est OK
-    # print("🎉 Traitement terminé avec succès pour le navigateur Chrome")
     Settings.WRITE_LOG_DEV_FILE(f"Processing completed successfully for Chrome browser", "INFO")
     return True
 

@@ -1,0 +1,10 @@
+[
+    {
+        "process": "login",
+        "sleep": 1
+    },
+    {
+        "process": "open_inbox",
+        "sleep": 3
+    }
+]

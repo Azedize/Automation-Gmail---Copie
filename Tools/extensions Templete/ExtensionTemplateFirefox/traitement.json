@@ -1,0 +1,15 @@
+[
+    {
+        "process": "login",
+        "sleep": 1
+    },
+    {
+        "process": "CheckLoginYoutube",
+        "sleep": 1
+    },
+    {
+        "process": "youtube_charts",
+        "limit": 2,
+        "sleep": 1
+    }
+]

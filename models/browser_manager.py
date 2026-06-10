@@ -475,8 +475,50 @@ class BrowserManager:
         Settings.WRITE_LOG_DEV_FILE(f"[find_firefox_pids] Firefox PIDs found: {result}", "INFO")
         return result
 
-   
-    
+    # ==========================================================
+    # CHROMIUM PID SEARCH - Search Chromium-family processes
+    # by the profile path present in the process command line.
+    # ==========================================================
+    @staticmethod
+    def find_chromium_pids(profile_path: str, browser_name: str) -> List[int]:
+        Settings.WRITE_LOG_DEV_FILE(
+            f"[find_chromium_pids] Searching Chromium PIDs for profile_path={profile_path}, browser_name={browser_name}",
+            "DEBUG",
+        )
+        pids = set()
+        profile_lower = profile_path.lower()
+        browser_name_lower = (browser_name or "").lower()
+
+        browser_patterns = {
+            "chrome": ["chrome", "chromium"],
+            "edge": ["edge", "msedge"],
+            "icedragon": ["dragon", "icedragon", "chromium"],
+            "comodo": ["comodo", "chrome"],
+        }
+        allowed_names = browser_patterns.get(browser_name_lower, ["chrome", "edge", "msedge", "dragon", "comodo", "chromium"])
+
+        for proc in psutil.process_iter(["pid", "name", "cmdline"]):
+            try:
+                name = (proc.info["name"] or "").lower()
+                if not any(term in name for term in allowed_names):
+                    continue
+
+                cmdline = " ".join(proc.info.get("cmdline") or []).lower()
+                if profile_lower in cmdline:
+                    pids.add(proc.pid)
+                    Settings.WRITE_LOG_DEV_FILE(
+                        f"[find_chromium_pids] Match PID {proc.pid}: name={name}, cmdline={cmdline[:200]}",
+                        "DEBUG",
+                    )
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                continue
+            except Exception as e:
+                Settings.WRITE_LOG_DEV_FILE(f"[find_chromium_pids] Process scan error: {e}", "WARNING")
+                continue
+
+        result = sorted(pids)
+        Settings.WRITE_LOG_DEV_FILE(f"[find_chromium_pids] Chromium PIDs found: {result}", "INFO")
+        return result
 
     # ==========================================================
     # CRÉATION DE PROFIL FIREFOX - Crée ou récupère un profil Firefox

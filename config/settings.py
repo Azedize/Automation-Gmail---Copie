@@ -97,25 +97,17 @@ class Settings:
     EXTENTIONS_DIR_FIREFOX_TEMPLETE = EXTENSIONS_DIR_TEMPLETE / "ExtensionTemplateFirefox"
     EXTENSIONS_DIR_CHROMIUM_TEMPLETE = EXTENSIONS_DIR_TEMPLETE / "Extention_Family_Chrome"
 
-    FOLDER_EXTENSIONS_DIR = TOOLS_DIR / "extensions"
-    FOLDER_EXTENTIONS_FIREFOX = FOLDER_EXTENSIONS_DIR / "firefox"
-    FOLDER_EXTENTIONS_CHROME = FOLDER_EXTENSIONS_DIR / "chrome"
-    FOLDER_EXTENTIONS_EDGE = FOLDER_EXTENSIONS_DIR / "edge"
-    FOLDER_EXTENTIONS_ICEDRAGON = FOLDER_EXTENSIONS_DIR / "icedragon"
-    FOLDER_EXTENTIONS_COMODO = FOLDER_EXTENSIONS_DIR / "comodo"
+ 
 
     CHROMIUM_BROWSER_PATHS = {
         "edge": {
-            "profiles": EDGE_PROFILES,
-            "extensions": FOLDER_EXTENTIONS_EDGE,
+            "profiles": EDGE_PROFILES
         },
         "icedragon": {
-            "profiles": ICEDRAGON_PROFILES,
-            "extensions": FOLDER_EXTENTIONS_ICEDRAGON,
+            "profiles": ICEDRAGON_PROFILES
         },
         "comodo": {
-            "profiles": COMODO_PROFILES,
-            "extensions": FOLDER_EXTENTIONS_COMODO,
+            "profiles": COMODO_PROFILES
         },
     }
 
@@ -290,13 +282,7 @@ class Settings:
             cls.FIREFOX_PROFILES,
             cls.EDGE_PROFILES,
             cls.ICEDRAGON_PROFILES,
-            cls.COMODO_PROFILES,
-            cls.FOLDER_EXTENSIONS_DIR,
-            cls.FOLDER_EXTENTIONS_FIREFOX,
-            cls.FOLDER_EXTENTIONS_CHROME,
-            cls.FOLDER_EXTENTIONS_EDGE,
-            cls.FOLDER_EXTENTIONS_ICEDRAGON,
-            cls.FOLDER_EXTENTIONS_COMODO,
+            cls.COMODO_PROFILES
         ]
         for directory in directories:
             path = Path(directory)
