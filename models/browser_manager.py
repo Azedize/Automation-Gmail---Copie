@@ -183,8 +183,6 @@ class BrowserManager:
 
 
 
-
-
     @staticmethod
     def get_browser_path(browser_name_or_exe: str) -> Optional[str]:
         """Récupère le chemin d'un navigateur via le registre Windows avec logs détaillés"""

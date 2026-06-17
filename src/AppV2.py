@@ -44,7 +44,6 @@ try:
     from core import EncryptionService
     from core import SessionManager
     from models import BrowserManager
-    # from models import ExtensionManager
     from api import APIManager
     from utils import ValidationUtils
     from ui_utils import UIManager
@@ -96,7 +95,6 @@ def log_message(text):
 # 🔹 FUNCTION STOP ALL PROCESSES
 # ==========================================================
 def Stop_All_Processes(window):
-    """Stop all running threads and processes safely."""
 
     UIManager.disable_button(window.stopButton)
     global EXTRACTION_THREAD, CLOSE_BROWSER_THREAD
@@ -797,7 +795,10 @@ class CloseBrowserThread(QThread):
 
 
 
+# le programme is runing dans une interface logique et capable de renitailisation de dependies et des caracteristiques de l'interface graphique et de la logique de l'application. Il est conçu pour gérer les threads d'extraction et de fermeture du navigateur, ainsi que pour traiter les fichiers de session et les journaux générés par le navigateur. L'application utilise PyQt pour l'interface utilisateur et gère les processus du navigateur via psutil.
+# si le programme est interrompu, il peut être redémarré et reprendre les opérations en cours grâce à la gestion des threads et des fichiers de session. l'application est également capable de gérer les erreurs et les exceptions de manière robuste en enregistrant les détails dans des fichiers de journalisation pour faciliter le débogage et la maintenance.
 
+# si le programme is runing dans une interface logique et capable de renitalisation de dependies et des caracteristiques de l'interface graphique et de la logique de l'application. Il est conçu pour gérer les threads d'extraction et de fermeture du navigateur, ainsi que pour traiter les fichiers de session et les journaux générés par le navigateur. L'application utilise PyQt pour l'interface utilisateur et gère les processus du navigateur via psutil.
 
 
 
@@ -934,9 +935,11 @@ class ExtractionThread(QThread):
     def run(self):
 
         global PROCESS_PIDS, LOGS_RUNNING, SELECTED_BROWSER_GLOBAL, REMAINING_EMAILS
+
         SELECTED_BROWSER_GLOBAL = self.selected_Browser
         remaining_emails = self.data_list[:]
         REMAINING_EMAILS = len(remaining_emails)
+
         log_message("[INFO] Processing started")
         Settings.WRITE_LOG_DEV_FILE( f"ExtractionThread started with browser={self.selected_Browser} | Browser_path={self.Browser_path}",  "INFO")
 
@@ -948,9 +951,9 @@ class ExtractionThread(QThread):
             return
 
         if self.selected_Browser.lower() == "chrome" :
-            Settings.RESULTATS_EX = BrowserManager.Upload_EXTENSION_PROXY( "default", Settings.CLES_RECHERCHE, Settings.RESULTATS )
 
-            # 🔹 Vérification si RESULTATS_EX est None
+            Settings.RESULTATS_EX = BrowserManager.Upload_EXTENSION_PROXY( "default", Settings.CLES_RECHERCHE, Settings.RESULTATS )
+            
             if Settings.RESULTATS_EX is None:
                 UIManager.Show_Critical_Message(self.window, "An issue occurred while copying the JSON file to the template profile ➡ Please contact support.", message_type="critical")
                 self.stopped.emit("An issue occurred while copying the JSON file to the template profile ➡ Please contact support.")
@@ -968,15 +971,19 @@ class ExtractionThread(QThread):
                 extension_data_path = os.path.join(Settings.EXTENTION_EX3_FIREFOX, "data.txt")
             else:
                 extension_data_path = os.path.join(Settings.EXTENTION_EX3_CHROMIUM, "data.txt")
+
             os.makedirs(os.path.dirname(extension_data_path), exist_ok=True)
+
             with open(extension_data_path, "w", encoding="utf-8") as f:
                 f.write(f"{self.session_id}\n")
             Settings.WRITE_LOG_DEV_FILE(f"Wrote session_id to extension data file: {extension_data_path}", "INFO")
+
         except Exception as e:
             Settings.WRITE_LOG_DEV_FILE(f"Failed to write session_id to extension data file: {extension_data_path} | error={e}\n{traceback.format_exc()}", "ERROR")
 
         
         while remaining_emails or PROCESS_PIDS:
+
             if self.stop_flag:
                 LOGS_RUNNING = False
                 log_message("[INFO] Processing interrupted by user.")
@@ -984,6 +991,7 @@ class ExtractionThread(QThread):
                 break
 
             if len(PROCESS_PIDS) < self.entered_number and remaining_emails:
+
                 next_email = remaining_emails.pop(0)
                 REMAINING_EMAILS = len(remaining_emails)
                 email_value = ValidationUtils.get_key_from_dict(next_email, ["email", "Email"])
@@ -1021,11 +1029,7 @@ class ExtractionThread(QThread):
 
                     try:
                         os.makedirs(Settings.LOGS_DIRECTORY, exist_ok=True)
-                        logs_subdirs = [
-                            os.path.join(Settings.LOGS_DIRECTORY, d)
-                            for d in os.listdir(Settings.LOGS_DIRECTORY)
-                            if os.path.isdir(os.path.join(Settings.LOGS_DIRECTORY, d))
-                        ]
+                        logs_subdirs = [ os.path.join(Settings.LOGS_DIRECTORY, d)  for d in os.listdir(Settings.LOGS_DIRECTORY)  if os.path.isdir(os.path.join(Settings.LOGS_DIRECTORY, d)) ]
                         logs_subdirs.sort(key=os.path.getctime)
 
                         if len(logs_subdirs) > 4:
@@ -1035,14 +1039,13 @@ class ExtractionThread(QThread):
                                     shutil.rmtree(dir_to_delete)
                                 except Exception as e:
                                     Settings.WRITE_LOG_DEV_FILE(  f"Error while deleting {dir_to_delete} : {e}\n{traceback.format_exc()}",  "ERROR"  )
+                    
                     except Exception as e:
                         Settings.WRITE_LOG_DEV_FILE( f"Error accessing or creating log directory {Settings.LOGS_DIRECTORY} : {e}\n{traceback.format_exc()}", "ERROR" )
                         logs_subdirs = []
 
                     if self.selected_Browser.lower() == "firefox":
-
                         url, combined = self._build_encrypted_url(ip_address, port, login, password, profile_email, profile_password, recovery_email, new_password, new_recovery_email)
-
                         firefox_profile_path = BrowserManager.create_firefox_profile(profile_email)
 
                         if not firefox_profile_path:
@@ -1305,7 +1308,6 @@ class ExtractionThread(QThread):
         time.sleep(3)
         LOGS_RUNNING = False
         self.finished.emit()
-
 
 
 
