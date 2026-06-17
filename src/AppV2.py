@@ -1465,11 +1465,13 @@ class MainWindow(QMainWindow):
         self._setup_ui_components()
         self._load_initial_state()
 
+    
     def _init_ui(self):
         # print("🟢 Initialisation de l'interface utilisateur...")
         Settings.WRITE_LOG_DEV_FILE("Initializing user interface...", "INFO")
         uic.loadUi(Settings.INTERFACE_UI, self)
 
+    
     def _init_data(self, json_data):
         self.states = json_data
         self.STATE_STACK = []
