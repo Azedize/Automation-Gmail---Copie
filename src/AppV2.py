@@ -2094,15 +2094,8 @@ class MainWindow(QMainWindow):
         LOGS_RUNNING = True
 
         if self.scenario_layout.count() == 0:
-
-            UIManager.Show_Critical_Message(
-                window,
-                "Empty Scenario",
-                "No actions have been added. Please add actions before submitting.",
-                message_type="warning",
-            )
+            UIManager.Show_Critical_Message(   window, "Empty Scenario",  "No actions have been added. Please add actions before submitting.",  message_type="warning")
             UIManager.enable_button(self.submitButton)
-
             Settings.WRITE_LOG_DEV_FILE( "No actions have been added. Please add actions before submitting.", "WARNING")
             return
 
@@ -2118,6 +2111,8 @@ class MainWindow(QMainWindow):
                 return
 
             if not result.get("valid"):
+                Settings.WRITE_LOG_DEV_FILE("❌ [DATA ERROR] Invalid proxy API response detected, stopping all active processing threads.", "ERROR")
+                Stop_All_Processes(window)
 
                 # 🔹 Affichage dans la console pour debug
                 # print(f"❌ [DATA ERROR] {result.get('error', 'Unknown error')}")
@@ -2140,13 +2135,7 @@ class MainWindow(QMainWindow):
                 Settings.WRITE_LOG_DEV_FILE( f"Generate_User_Input_Data failed: {result.get('error', 'Unknown error')}", "ERROR"  )
 
                 # 🔹 Affichage QMessageBox pro pour l'utilisateur
-                UIManager.Show_Critical_Message(
-                    window,
-                    title.strip(),
-                    detail_text.strip(),
-                    message_type="warning",
-                )
-
+                UIManager.Show_Critical_Message(   window,  title.strip(), detail_text.strip(), message_type="warning" )
                 UIManager.enable_button(self.submitButton)
                 return
             # =======================
@@ -2174,14 +2163,7 @@ class MainWindow(QMainWindow):
 
         except Exception as e:
             Settings.WRITE_LOG_DEV_FILE(f"Processing error: {e}\n{traceback.format_exc()}", "ERROR")
-
-            UIManager.Show_Critical_Message(
-                window,
-                "Unexpected Error",
-                "Something went wrong while processing your request.\n\nPlease try again or contact support.",
-                message_type="critical",
-            )
-
+            UIManager.Show_Critical_Message( window,  "Unexpected Error", "Something went wrong while processing your request.\n\nPlease try again or contact support.",  message_type="critical" )
             UIManager.enable_button(self.submitButton)
             return
 
@@ -2201,13 +2183,7 @@ class MainWindow(QMainWindow):
         QApplication.processEvents()  # Traite les événements UI en attente pour garder l'interface réactive
 
         if not result_json or result_json == []:
-            UIManager.Show_Critical_Message(
-                window,
-                "Error - Save Configuration",
-                "No valid actions could be generated or an error occurred while saving the configuration file.\n\n"
-                "If the problem persists, contact Support.",
-                message_type="critical",
-            )
+            UIManager.Show_Critical_Message(window, "Error - Save Configuration", "No valid actions could be generated or an error occurred while saving the configuration file.\n\nIf the problem persists, contact Support.", message_type="critical")
             Settings.WRITE_LOG_DEV_FILE( "No valid actions could be generated or an error occurred while saving the configuration file.",  "ERROR" )
             UIManager.enable_button(self.submitButton)
 
@@ -2217,13 +2193,7 @@ class MainWindow(QMainWindow):
             save_status = JsonManager.save_json_to_file(result_json, selected_Browser)
 
             if save_status == "ERROR":
-                UIManager.Show_Critical_Message(
-                    window,
-                    "Error - Save Configuration",
-                    "An error occurred while saving the configuration file.\n\n"
-                    "If the problem persists, contact Support.",
-                    message_type="critical",
-                )
+                UIManager.Show_Critical_Message(window, "Error - Save Configuration", "An error occurred while saving the configuration file.\n\nIf the problem persists, contact Support.", message_type="critical")
                 Settings.WRITE_LOG_DEV_FILE(  "An error occurred while saving the configuration file.", "ERROR"  )
                 UIManager.enable_button(self.submitButton)
                 return
@@ -2233,12 +2203,7 @@ class MainWindow(QMainWindow):
         except Exception as e:
             # print(f"❌ Erreur lors de la sauvegarde du JSON: {e}")
             Settings.WRITE_LOG_DEV_FILE( f"An error occurred while saving the configuration file: {e} \n{traceback.format_exc()}", "ERROR")
-            UIManager.Show_Critical_Message(
-                window,
-                "Error - Save Configuration",
-                f"An error occurred while saving the configuration file:\n\n{e}",
-                message_type="critical",
-            )
+            UIManager.Show_Critical_Message(window, "Error - Save Configuration", f"An error occurred while saving the configuration file:\n\n{e}", message_type="critical")
             UIManager.enable_button(self.submitButton)
             return
         QApplication.processEvents()  # Traite les événements UI après sauvegarde du JSON
@@ -2269,28 +2234,20 @@ class MainWindow(QMainWindow):
         unique_id = self.Save_Process(parameters)
 
         if unique_id == -1:
-            # print("❌ Error getting process ID")
-            # print("❌ Error getting process ID")
-            UIManager.Show_Critical_Message(
-                window,
-                "Error - Process Save",
-                "Failed to save the process in the database.\n\n"
-                "Please check your connection and try again.",
-                message_type="critical",
-            )
+            UIManager.Show_Critical_Message(window, "Error - Process Save", "Failed to save the process in the database.\n\nPlease check your connection and try again.", message_type="critical")
             Settings.WRITE_LOG_DEV_FILE("Failed to save the process in the database.", "ERROR")
             UIManager.enable_button(self.submitButton)
 
             return
-        # print("✅ Obtained Process ID:", unique_id)
-        # print(f"✅ Process ID obtenu: {unique_id}")
-        QApplication.processEvents()  # Traite les événements UI après sauvegarde du processus
+
+        QApplication.processEvents() 
 
         with ThreadPoolExecutor(max_workers=2) as executor:
             executor.submit(  Start_Extraction,  window,  data_list,  entered_number, selected_Browser,   self.Isp.currentText(),  unique_id,  result_json,  session_info["username"] )
             executor.submit(self.LOGS_THREAD.start)
         EXTRACTION_THREAD.finished.connect(lambda: self.Extraction_Finished(window))
-        QApplication.processEvents()  # Traite les événements UI après lancement de l'extraction
+        QApplication.processEvents()  
+
 
     def Load_Initial_Options(self):
         while self.reset_options_layout.count() > 0:
@@ -2325,7 +2282,6 @@ class MainWindow(QMainWindow):
         if ValidationUtils.path_exists(icon_path):
             button.setIcon(QIcon(icon_path))
         else:
-            # print(f"[Warning] Icon not found at: {icon_path}")
             Settings.WRITE_LOG_DEV_FILE(f"[Warning] Icon not found at: {icon_path}", "WARNING")
 
         self.reset_options_layout.addWidget(button)
@@ -2400,53 +2356,37 @@ class MainWindow(QMainWindow):
         UIManager.Display_State_Stack_As_Table(self)
 
     def Clear_Button_Clicked(self):
-        self.log_text_edit.clear()  # Effacer tout le texte
+        self.log_text_edit.clear() 
         global LOGS
         LOGS = []
 
     def Scenario_Changed(self, name_selected):
-        # print("\n" + "="*80)
-        # print(f"🔹 Scenario_Changed called with name_selected={name_selected}")
-        # print("="*80 + "\n")
 
-        # 🔐 Check session
         session_info = SessionManager.check_session()
-        # print(f"🔐 [SESSION] Raw session info: {session_info}")
 
         if not session_info.get("valid"):
-            # print("⛔ [SESSION] Invalid session. Redirecting to login.")
             Settings.WRITE_LOG_DEV_FILE("Session invalid. Redirecting to login.", "ERROR")
             sys.exit()
             return False
 
-        # 🔑 Encrypt session string
         encrypted_string = EncryptionService.encrypt_message( f"{session_info['Id_User']}::{session_info['username']}::{session_info['date']}::IT", Settings.KEY )
-        # print(f"🔐 [ENCRYPT] Encrypted string: {encrypted_string}")
 
-        # 🔗 Build API URL
         api_url = f"https://reporting.nrb-apps.com/pub/ReportingV4/senario.php?rv4=1&action=get&entity=IT&l={encrypted_string}"
-        # print(f"🌐 [API] URL: {api_url}")
 
         payload = {"name": name_selected}
 
-        # 🟢 Call API
         try:
             raw_result = APIManager.handle_save_scenario(payload, api_url)
-            # print(f"🟦 [RAW RESULT] {raw_result}")
         except Exception as e:
-            # print(f"❌ API call failed: {e}")
             Settings.WRITE_LOG_DEV_FILE( f"API call failed: {e} \n {traceback.format_exc()}", "ERROR"  )
             return
 
-        # 🔹 Case 3: API returns error dict
         if isinstance(raw_result, dict) and raw_result.get("status") is False:
             Settings.WRITE_LOG_DEV_FILE( f"API returned error: {raw_result.get('error', 'Unknown API error')}",  "ERROR" )
             return
 
-        # 🔹 Case 1 & 2: API returns list (data) or empty list
         if isinstance(raw_result, list):
-            if not raw_result:  # empty list -> case 2
-                # print("⚠️ No scenario returned from API.")
+            if not raw_result: 
                 Settings.WRITE_LOG_DEV_FILE("No scenario returned from API.", "WARNING")
                 # self.STATE_STACK = []  # clear state stack
                 return
@@ -2529,10 +2469,8 @@ class MainWindow(QMainWindow):
                     unique_states.append(state)
             self.STATE_STACK = unique_states
         except Exception as e:
-            # print(f"⚠️ Failed to deduplicate STATE_STACK: {e}")
             Settings.WRITE_LOG_DEV_FILE( f"⚠️ Failed to deduplicate STATE_STACK: {e}\n{traceback.format_exc()}", "ERROR" )
 
-        # print("\n🎉 Scenario loaded successfully.\n")
 
 
 
@@ -2546,14 +2484,10 @@ class EntitySelectionDialog(QDialog):
         self.setModal(True)
         self.setFixedSize(500, 320)
         self.setWindowIcon(QIcon(os.path.join(Settings.ICONS_DIR, "logo.jpg")))
-        self.pattern = pattern  # Regex pattern for validation
-
-        # Main layout with margins
+        self.pattern = pattern  
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(25, 25, 25, 25)
         main_layout.setSpacing(12)
-
-        # Title label
         title_label = QLabel("Entity Selection")
         title_label.setStyleSheet("""
             font-size: 18px;
@@ -2562,8 +2496,6 @@ class EntitySelectionDialog(QDialog):
             margin-bottom: 10px;
         """)
         main_layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignCenter)
-
-        # Instruction label
         instruction_label = QLabel("Please enter the entity you want to use for this session:")
         instruction_label.setStyleSheet("""
             font-size: 14px;
@@ -2573,7 +2505,6 @@ class EntitySelectionDialog(QDialog):
         instruction_label.setWordWrap(True)
         main_layout.addWidget(instruction_label)
 
-        # Format info label
         if self.pattern:
             format_info = QLabel("Format: opm followed by digits (e.g., opm74, opm19)")
             format_info.setStyleSheet("""
@@ -2584,7 +2515,6 @@ class EntitySelectionDialog(QDialog):
             """)
             main_layout.addWidget(format_info)
 
-        # LineEdit with styling
         self.input_field = QLineEdit()
         self.input_field.setPlaceholderText("Enter entity (opm + number)...")
         if default_entity:
@@ -2608,7 +2538,6 @@ class EntitySelectionDialog(QDialog):
         """)
         main_layout.addWidget(self.input_field, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        # Error label
         self.error_label = QLabel()
         self.error_label.setStyleSheet("""
             font-size: 12px;
@@ -2621,14 +2550,10 @@ class EntitySelectionDialog(QDialog):
         self.error_label.hide()
         main_layout.addWidget(self.error_label)
 
-        # Spacer
         main_layout.addSpacing(20)
-
-        # Buttons layout
         button_layout = QHBoxLayout()
         button_layout.setSpacing(10)
 
-        # Cancel button
         self.cancel_button = QPushButton("Cancel")
         self.cancel_button.setStyleSheet("""
             QPushButton {
@@ -2650,7 +2575,6 @@ class EntitySelectionDialog(QDialog):
         self.cancel_button.clicked.connect(self.reject)
         button_layout.addWidget(self.cancel_button)
 
-        # Confirm button
         self.confirm_button = QPushButton("Confirm")
         self.confirm_button.setStyleSheet("""
             QPushButton {
@@ -2675,7 +2599,6 @@ class EntitySelectionDialog(QDialog):
 
         main_layout.addLayout(button_layout)
 
-        # Set overall dialog style
         self.setStyleSheet("""
             QDialog {
                 background-color: #f8f8f8;
@@ -2693,14 +2616,12 @@ class EntitySelectionDialog(QDialog):
             self.error_label.show()
             return
 
-        # Validate against pattern if provided
         if self.pattern:
             if not re.match(self.pattern, entity_text):
                 self.error_label.setText( f"Invalid entity format. Expected format: opm followed by digits (e.g., opm74)" )
                 self.error_label.show()
                 return
 
-        # Validation passed
         self.error_label.hide()
         self.accept()
 
@@ -2733,7 +2654,6 @@ class LoginWindow(QMainWindow):
             if session_info["valid"]:
                 return Settings.INTERFACE_UI
         except Exception as e:
-            # print(f"[SESSION ERROR] {e}")
             Settings.WRITE_LOG_DEV_FILE(f"[SESSION ERROR] {e}\n{traceback.format_exc()}", "WARNING")
             sys.exit()
 
@@ -2814,38 +2734,27 @@ class LoginWindow(QMainWindow):
                 self.background_label.setPixmap(pixmap)
 
     def Handle_Login(self):
-        # print("🔹 Starting Handle_Login")
         UIManager.disable_button(self.login_button)
-        # 1️⃣ Get input from UI
         username = ( self.login_input.text().strip()  if hasattr(self.login_input, "text")  else str(self.login_input).strip())
         password = ( self.password_input.text().strip()  if hasattr(self.password_input, "text")  else str(self.password_input).strip() )
-        # print(f"📝 Inputs received: username='{username}', password='{'*' * len(password)}'")
 
-        # 2️⃣ Validate username and password length
         if len(username) <= 4:
-
-            # print(f"❌ Username must contain more than 4 characters.")
             Settings.WRITE_LOG_DEV_FILE(  f"❌ Username must contain more than 4 characters.", "WARNING")
             self.erreur_label.setText("Username must contain more than 4 characters.")
             self.erreur_label.show()
             return
 
         if len(password) <= 4:
-            # print(f"❌ Password must contain more than 4 characters.")
             Settings.WRITE_LOG_DEV_FILE(  f"❌ Password must contain more than 4 characters.", "WARNING"  )
             self.erreur_label.setText("Password must contain more than 4 characters.")
             self.erreur_label.show()
             return
 
         # 3️⃣ Call check_api_credentials
-        # print("📡 Calling check_api_credentials...")
         Settings.WRITE_LOG_DEV_FILE("Calling check_api_credentials...", "INFO")
         auth_result = SessionManager.check_api_credentials(username, password)
-        # print(f"🔍 API result: {auth_result}")
         Settings.WRITE_LOG_DEV_FILE(f"API result: {auth_result}", "INFO")
 
-        # 4️⃣ Handle API error codes
-        # 4️⃣ Handle API error codes
         if isinstance(auth_result, int):
             UIManager.enable_button(self.login_button)
 
@@ -2858,44 +2767,33 @@ class LoginWindow(QMainWindow):
             }
 
             error_message = messages.get(auth_result, "Unknown error occurred.")
-
-            # print(f"❌ Error code: {auth_result} → {error_message}")
             Settings.WRITE_LOG_DEV_FILE( f"Authentication error code: {auth_result} → {error_message}", "WARNING" )
-
             self.erreur_label.setText(error_message)
             self.erreur_label.show()
             return
 
 
-        # 5️⃣ Entity is already decrypted
-        id_user, p_entity_Origine = auth_result
-        # print(f"✅ Authentication successful: idUser={id_user}, entity={p_entity_Origine}")
 
-        # Special case for 'rep.test' user: allow entity selection
+        id_user, p_entity_Origine = auth_result
         if username == "rep.test":
-            # Entity validation pattern: "opm" followed by digits
+
             entity_pattern = r"^opm\d+$"
 
             dialog = EntitySelectionDialog(  pattern=entity_pattern, default_entity=p_entity_Origine, parent=self  )
             selected_entity = dialog.get_selected_entity()
 
             if selected_entity is None:
-                # User canceled, abort login
                 UIManager.enable_button(self.login_button)
-                # print(f"Entity selection canceled. Login aborted.")
                 Settings.WRITE_LOG_DEV_FILE("Entity selection canceled. Login aborted.", "WARNING")
                 self.erreur_label.setText(  "Entity selection is required for this user. Login aborted."  )
                 self.erreur_label.show()
                 return
 
             p_entity_Nouveau = selected_entity
-            # print(f"✅ Entity overridden to: {p_entity_Nouveau}")
             Settings.WRITE_LOG_DEV_FILE(f"✅ Entity overridden to: {p_entity_Nouveau}", "INFO")
         else:
             p_entity_Nouveau = p_entity_Origine
 
-        # 6️⃣ Create user session
-        # print("🛠️ Creating user session...")
 
         try:
             valid_session = SessionManager.create_session(  username, password, p_entity_Origine, p_entity_Nouveau, id_user  )
@@ -2904,35 +2802,29 @@ class LoginWindow(QMainWindow):
                 self.erreur_label.setText("Failed to create user session.")
                 self.erreur_label.show()
                 return
-            # print("✅ Session created successfully")
         except Exception as e:
             UIManager.enable_button(self.login_button)
-            # print(f"❌ {msg}")
             Settings.WRITE_LOG_DEV_FILE( f"Exception during session creation: {str(e)}\n{traceback.format_exc()}", "ERROR"  )
             self.erreur_label.setText( f"Exception during session creation: {str(e)}\n{traceback.format_exc()}" )
             self.erreur_label.show()
             return
 
-        # 7️⃣ Read JSON configuration file
-        # print(f"📂 Reading configuration file: {Settings.FILE_ACTIONS_JSON}")
+
         try:
             with open(Settings.FILE_ACTIONS_JSON, "r", encoding="utf-8") as file:
                 json_data = json.load(file)
             if not json_data:
                 Settings.WRITE_LOG_DEV_FILE("Configuration file is empty.", "ERROR")
                 raise ValueError("Configuration file is empty.")
-            # print("✅ JSON file loaded successfully")
         except Exception as e:
             UIManager.enable_button(self.login_button)
             Settings.WRITE_LOG_DEV_FILE(f"Configuration error: {str(e)}\n{traceback.format_exc()}", "ERROR" )
-            # print(f"❌ {msg}")
             self.erreur_label.setText(f"Configuration error: {str(e)}\n{traceback.format_exc()}")
             self.erreur_label.show()
             return
 
         # 8️⃣ Initialize and show MainWindow
-        # print("🖥️ Initializing main window...")
-        UIManager.enable_button(self.login_button)  # Re-enable login button before opening main window
+        UIManager.enable_button(self.login_button) 
         self.main_window = MainWindow(json_data)
         self.main_window.setFixedSize(Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT)
         self.main_window.setWindowTitle("AutoMailPro")
@@ -2949,7 +2841,6 @@ class LoginWindow(QMainWindow):
         self.main_window.show()
         self.close()
         Settings.WRITE_LOG_DEV_FILE("Main window displayed, login completed successfully.", "INFO")
-        # print("✅ Main window displayed, login completed successfully")
 
     def Handle_Show_Session_Date(self):
         if not ValidationUtils.path_exists(Settings.SESSION_PATH):
@@ -2973,116 +2864,87 @@ class LoginWindow(QMainWindow):
 
 
 def main():
-    # print("\n========== [APP START] ==========\n")
     Settings.WRITE_LOG_DEV_FILE("\n\n========== [APP START] ==========\n", "INFO")
     Settings.WRITE_LOG_DEV_FILE("Application starting...", "INFO")
     # 1️⃣ Vérification des arguments
-    # print(f"[DEBUG] Arguments reçus: {sys.argv}")
     Settings.WRITE_LOG_DEV_FILE(f"Received arguments: {sys.argv}", "DEBUG")
-    # Settings.WRITE_LOG_DEV_FILE(f"Received arguments: {sys.argv}", "DEBUG")
 
     if len(sys.argv) < 3:
         Settings.WRITE_LOG_DEV_FILE(  "Insufficient arguments provided. Expected encrypted_key and secret_key.", "ERROR" )
-        # print("[ERROR] Arguments insuffisants.")
-        # print("Usage: python AppV2.py <encrypted_key> <secret_key>")
         Settings.WRITE_LOG_DEV_FILE(  "Usage: python AppV2.py <encrypted_key> <secret_key>", "ERROR" )
         sys.exit(1)
 
     encrypted_key = sys.argv[1]
     secret_key = sys.argv[2]
 
-    # print(f"[DEBUG] encrypted_key: {encrypted_key}")
-    # print(f"[DEBUG] secret_key: {secret_key}")
+
     Settings.WRITE_LOG_DEV_FILE(f"Encrypted key and secret key received.", "DEBUG")
     Settings.WRITE_LOG_DEV_FILE("Arguments parsed successfully.", "DEBUG")
 
     # 2️⃣ Vérification de la clé
-    # print("[DEBUG] Vérification de la clé...")
     Settings.WRITE_LOG_DEV_FILE("Verifying key...", "DEBUG")
     if not EncryptionService.verify_key(encrypted_key, secret_key):
-        # print("[ERROR] Clé invalide. Accès refusé.")
         Settings.WRITE_LOG_DEV_FILE("Invalid key. Access denied.", "ERROR")
         sys.exit(1)
     else:
-        # print("[SUCCESS] Clé valide.")
         Settings.WRITE_LOG_DEV_FILE("Key is valid.", "INFO")
 
     # 3️⃣ Vérification session
-    # print("[DEBUG] Vérification de la session...")
     Settings.WRITE_LOG_DEV_FILE("Checking user session...", "DEBUG")
     session_info = SessionManager.check_session_full()
     session_valid = session_info.get("valid", False)
-    # Settings.WRITE_LOG_DEV_FILE(f"Session check result: valid={session_valid}, info={session_info}", "DEBUG")
 
-    # print(f"[DEBUG] Session valid: {session_valid}")
-    # print(f"[DEBUG] Session info: {session_info}")
     Settings.WRITE_LOG_DEV_FILE(f"Session valid: {session_valid}", "DEBUG")
     Settings.WRITE_LOG_DEV_FILE(f"Session info: {session_info}", "DEBUG")
 
     # 4️⃣ Initialisation app Qt
     app = QApplication(sys.argv)
-    # print("[DEBUG] QApplication initialisée.")
     Settings.WRITE_LOG_DEV_FILE("QApplication initialized.", "DEBUG")
 
     # 5️⃣ Icône application
     icon_path = Path(Settings.APP_ICON)
-    # print(f"[DEBUG] Chemin icône: {icon_path}")
 
     if ValidationUtils.path_exists(icon_path):
         app.setWindowIcon(QIcon(str(icon_path)))
         Settings.WRITE_LOG_DEV_FILE("Application icon set successfully.", "INFO")
-        # print("[SUCCESS] Icône appliquée.")
     else:
-        # print("[WARNING] Fichier d'icône introuvable.")
         Settings.WRITE_LOG_DEV_FILE(f"Icon file not found at: {icon_path}", "WARNING")
 
     # 6️⃣ Choix de la fenêtre
     window = None
 
     if session_valid:
-        # print("[INFO] Session valide → tentative d'ouverture MainWindow")
         Settings.WRITE_LOG_DEV_FILE("Valid session found. Attempting to open MainWindow.", "INFO")
         try:
-            # print(f"[DEBUG] Chargement fichier config: {Settings.FILE_ACTIONS_JSON}")
             Settings.WRITE_LOG_DEV_FILE(  f"Loading config file: {Settings.FILE_ACTIONS_JSON}", "DEBUG" )
-
             with open(Settings.FILE_ACTIONS_JSON, "r", encoding="utf-8") as file:
                 json_data = json.load(file)
 
             if not json_data:
-                # print("[WARNING] Fichier JSON vide.")
                 Settings.WRITE_LOG_DEV_FILE( f"Configuration file is empty: {Settings.FILE_ACTIONS_JSON}", "WARNING" )
                 raise ValueError("Fichier de configuration vide")
 
-            # print("[SUCCESS] Configuration chargée.")
             Settings.WRITE_LOG_DEV_FILE("Configuration file loaded successfully.", "INFO")
 
             window = MainWindow(json_data)
-            # print("[SUCCESS] MainWindow initialisée.")
             Settings.WRITE_LOG_DEV_FILE("MainWindow initialized.", "INFO")
 
         except Exception as e:
             Settings.WRITE_LOG_DEV_FILE( f"An error occurred while loading MainWindow: {e}\n{traceback.format_exc()}",  "ERROR" )
-            # print(f"[ERROR] Impossible de charger MainWindow: {e}")
-            # print("[INFO] Fallback → LoginWindow")
-            SessionManager.clear_session()  # Clear session if loading MainWindow fails
+            SessionManager.clear_session()  
             window = LoginWindow()
 
     else:
-        # print("[INFO] Session invalide → ouverture LoginWindow")
         Settings.WRITE_LOG_DEV_FILE("No valid session found. Opening LoginWindow.", "INFO")
-        SessionManager.clear_session()  # Clear session if loading MainWindow fails
+        SessionManager.clear_session()  
         window = LoginWindow()
 
     # 7️⃣ Vérification sécurité
     if window is None:
-        # print("[CRITICAL] Aucune fenêtre créée !")
         Settings.WRITE_LOG_DEV_FILE("Critical error: No window could be created.", "CRITICAL")
         sys.exit(1)
 
     # 8️⃣ Taille et position
-    # print("[DEBUG] Configuration taille et position fenêtre...")
-
     window.setFixedSize(Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT)
 
     screen = QGuiApplication.primaryScreen()
@@ -3093,31 +2955,23 @@ def main():
 
     window.move(x, y)
 
-    # print(f"[DEBUG] Position fenêtre: x={x}, y={y}")
 
     # 9️⃣ Connexion stop button
     if hasattr(window, "stopButton"):
-        # print("[DEBUG] stopButton détecté → connexion")
         Settings.WRITE_LOG_DEV_FILE("stopButton detected in window. Attempting to connect.", "DEBUG")
         Settings.WRITE_LOG_DEV_FILE("stopButton found. Connecting to Stop_All_Processes.", "DEBUG")
         try:
             window.stopButton.clicked.connect(lambda: Stop_All_Processes(window))
-            # print("[SUCCESS] stopButton connecté.")
             Settings.WRITE_LOG_DEV_FILE("stopButton connected successfully.", "INFO")
         except Exception as e:
             Settings.WRITE_LOG_DEV_FILE( f"An error occurred while connecting stopButton: {e}\n{traceback.format_exc()}", "ERROR"  )
-            # print(f"[ERROR] Erreur connexion stopButton: {e}")
     else:
-        # print("[INFO] Aucun stopButton trouvé.")
         Settings.WRITE_LOG_DEV_FILE("No stopButton found in window.", "INFO")
 
     # 🔟 Finalisation
     window.setWindowTitle("AutoMailPro")
     window.show()
     Settings.WRITE_LOG_DEV_FILE("Application started successfully, window displayed.", "INFO")
-
-    # print("[SUCCESS] Fenêtre affichée.")
-    # print("\n========== [APP RUNNING] ==========\n")
     Settings.WRITE_LOG_DEV_FILE("\n\n========== [APP RUNNING] ==========\n", "INFO")
     Settings.WRITE_LOG_DEV_FILE("Application is now running.", "INFO")
     sys.exit(app.exec())

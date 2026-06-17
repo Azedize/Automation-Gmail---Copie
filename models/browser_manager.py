@@ -91,14 +91,7 @@ class BrowserManager:
             BrowserManager.Search_Keys(data, required_keys, results_keys)
 
             found_keys = [list(d.keys())[0] for d in results_keys]
-            found_key_details = [
-                (
-                    f"{list(d.keys())[0]} at {next(iter(d.values()))['path']}"
-                    if isinstance(next(iter(d.values())), dict) and "path" in next(iter(d.values()))
-                    else str(list(d.keys())[0])
-                )
-                for d in results_keys
-            ]
+            found_key_details = [( f"{list(d.keys())[0]} at {next(iter(d.values()))['path']}"  if isinstance(next(iter(d.values())), dict) and "path" in next(iter(d.values())) else str(list(d.keys())[0]) ) for d in results_keys ]
             missing_keys = [key for key in required_keys if key not in found_keys]
 
             Settings.WRITE_LOG_DEV_FILE(f"Found keys: {found_keys}", "INFO")
@@ -114,14 +107,7 @@ class BrowserManager:
                 detailed_error += f"  - Search results detail: {found_key_details}"
 
                 Settings.WRITE_LOG_DEV_FILE(detailed_error, "ERROR")
-                UIManager.Show_Critical_Message(
-                    window,
-                    "Configuration Error",
-                    "The Chrome configuration file is missing required Settings.\n\n"
-                    "Please verify your configuration and try again.\n"
-                    "If the problem persists, please contact Support.",
-                    message_type="critical",
-                )
+                UIManager.Show_Critical_Message(window, "Configuration Error", "The Chrome configuration file is missing required Settings.\n\nPlease verify your configuration and try again.\nIf the problem persists, please contact Support.", message_type="critical")
                 return False
 
             Settings.WRITE_LOG_DEV_FILE("All required JSON keys were found", "SUCCESS")
@@ -292,7 +278,6 @@ class BrowserManager:
     # All written files are verified immediately after writing
     # to ensure data integrity and persistence reliability.
     # ==========================================================
-
     
     @staticmethod
     def store_browser_session_info( pid: Any, Path_DiR: str,  email: str, SESSION_ID: str,  browser: str, inserted_id: str,  profile_path: Optional[str] = None, web_ext_pid: Optional[int] = None,  profile_name: Optional[str] = None ) -> None:
@@ -373,30 +358,6 @@ class BrowserManager:
                 Settings.WRITE_LOG_DEV_FILE(f"Writing session to {session_file}", "INFO")
                 _write_and_verify(session_file, session_entry, "OTHER")
 
-                # firefox_pids = []
-                # if browser_key == "firefox":
-                #     if isinstance(pid, (list, tuple, set)):
-                #         firefox_pids = [int(p) for p in pid if str(p).strip().isdigit()]
-                #     elif isinstance(pid, str) and ";" in pid:
-                #         firefox_pids = [int(p) for p in pid.split(";") if p.strip().isdigit()]
-                #     elif isinstance(pid, int):
-                #         firefox_pids = [pid]
-
-                #     session_data = {
-                #         "browser": browser_key,
-                #         "profile_name": profile_name or email,
-                #         "profile_path": profile_path,
-                #         "web_ext_pid": web_ext_pid,
-                #         "firefox_pids": firefox_pids,
-                #         "email": email,
-                #         "session_id": SESSION_ID,
-                #         "inserted_id": inserted_id,
-                #         "normalized_pid": normalized_pid,
-                #         "stored_at": datetime.datetime.now().isoformat(),
-                #     }
-                #     Settings.WRITE_LOG_DEV_FILE(f"Writing session JSON to {session_json_file}", "INFO")
-                #     _write_and_verify(session_json_file, json.dumps(session_data, indent=2, ensure_ascii=False), "FIREFOX-SESSION-JSON")
-
             Settings.WRITE_LOG_DEV_FILE("Session data stored successfully", "INFO")
 
         except Exception as e:
@@ -404,12 +365,8 @@ class BrowserManager:
 
     
 
-
-    # =========================================================
-    # FIREFOX PROFILE MANAGEMENT - Gestion des profils Firefox
-    # =========================================================
     
-
+    #  le programme is runing dans une interface logique et capable de renitailisation des dependices et caracteres e
 
     # # ==========================================================
     # FIREFOX PROFILE DISCOVERY
@@ -430,7 +387,7 @@ class BrowserManager:
     #     Dict[str, str]
     #     {
     #         "Profile_A": "D:\\FirefoxProfiles\\Profile_A",
-    #         "default-release": "C:\\Users\\User\\AppData\\Roaming\\Mozilla\\Firefox\\Profiles\\xxxx.default-release"
+    #         "default-release": "C:\\Users\\User\\AppData\\Roaming\\Mozilla\\Firefox\\Profiles\\xxxx.default-re+lease"
     #     }
     # ==========================================================
     

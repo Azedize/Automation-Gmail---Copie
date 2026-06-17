@@ -70,7 +70,7 @@ class UpdateManager:
     @staticmethod
     def _download_file(url: str, dest_path: str) -> bool:
         try:
-            # print(f"⬇️ Téléchargement depuis : {url}")
+            Settings.WRITE_LOG_DEV_FILE(f"⬇️ [DOWNLOAD] Demarrage du téléchargement\n   URL: {url}\n   Destination: {dest_path}", "INFO")
             response = requests.get(url, stream=True, headers=Settings.HEADER, verify=False, timeout=60)
             response.raise_for_status()
             total_size = int(response.headers.get("content-length", 0))
@@ -83,13 +83,11 @@ class UpdateManager:
                         downloaded += len(chunk)
                         if total_size:
                             percent = (downloaded / total_size) * 100
-                            # print(f"   → Progression : {percent:.2f}%", end="\r")
-            # print(f"\n✅ Téléchargement terminé : {dest_path}")
-            Settings.WRITE_LOG_DEV_FILE("Téléchargement réussi : ", "INFO")
+                            Settings.WRITE_LOG_DEV_FILE(f"   🔄 [DOWNLOAD] Progression: {percent:.2f}% ({downloaded}/{total_size} bytes)", "DEBUG")
+            Settings.WRITE_LOG_DEV_FILE(f"✅ [DOWNLOAD] Téléchargement réussi : {dest_path}", "INFO")
             return True
         except Exception as e:
-            # print(f"❌ Erreur lors du téléchargement : {e}")
-            Settings.WRITE_LOG_DEV_FILE(f"Erreur lors du téléchargement : - {e} \n{traceback.format_exc()}", "ERROR")
+            Settings.WRITE_LOG_DEV_FILE(f"❌ [DOWNLOAD] Erreur lors du téléchargement\n   URL: {url}\n   Destination: {dest_path}\n   Erreur: {e}\n{traceback.format_exc()}", "ERROR")
             return False
 
     
@@ -337,12 +335,12 @@ class UpdateManager:
             settings.WRITE_LOG_DEV_FILE(f"Versions serveur - Programme: {server_program}, Outils: {server_tools}", "INFO")
 
             local_program = UpdateManager._read_local_version( Settings.VERSION_LOCAL_PROGRAMM )
-            local_tools = UpdateManager._read_local_version( Settings.VERSION_LOCAL_EXT )
+            # local_tools = UpdateManager._read_local_version( Settings.VERSION_LOCAL_EXT )
 
             # print("\n=== Versions locales ===")
             # print("local_program :", local_program)
             # print("local_tools   :", local_tools)
-            settings.WRITE_LOG_DEV_FILE(f"Versions locales - Programme: {local_program}, Outils: {local_tools}", "INFO")
+            settings.WRITE_LOG_DEV_FILE(f"Versions locales - Programme: {local_program}", "INFO")
 
             # 🔴 Update Programme
             if not local_program or local_program != server_program:
@@ -358,19 +356,19 @@ class UpdateManager:
                 return True
 
             # 🟡 Update Tools
-            if not local_tools or local_tools != server_tools:
-                # print("🟡 UPDATE TOOLS NECESSAIRE")
-                Settings.WRITE_LOG_DEV_FILE("Mise à jour des outils nécessaires", "INFO")
+            # if not local_tools or local_tools != server_tools:
+            #     # print("🟡 UPDATE TOOLS NECESSAIRE")
+            #     Settings.WRITE_LOG_DEV_FILE("Mise à jour des outils nécessaires", "INFO")
 
-                os.makedirs(Settings.TOOLS_DIR, exist_ok=True)
+            #     os.makedirs(Settings.TOOLS_DIR, exist_ok=True)
 
-                success = UpdateManager._download_and_extract(  SERVER_ZIP_URL_PROGRAM, Settings.TOOLS_DIR,  clean_target=True, extract_subdir="tools" )
+            #     success = UpdateManager._download_and_extract(  SERVER_ZIP_URL_PROGRAM, Settings.TOOLS_DIR,  clean_target=True, extract_subdir="tools" )
 
-                if success:
-                    Settings.WRITE_LOG_DEV_FILE("Outils mis à jour avec succès", "INFO")
-                else:
-                    Settings.WRITE_LOG_DEV_FILE("Échec de la mise à jour des outils", "ERROR")
-                    return False
+            #     if success:
+            #         Settings.WRITE_LOG_DEV_FILE("Outils mis à jour avec succès", "INFO")
+            #     else:
+            #         Settings.WRITE_LOG_DEV_FILE("Échec de la mise à jour des outils", "ERROR")
+            #         return False
 
             Settings.WRITE_LOG_DEV_FILE("Application à jour", "INFO")
             return True
@@ -718,16 +716,17 @@ class UpdateManager:
             traceback.print_exc()
             return False
 
-        SERVEUR_ZIP_URL_EX3_FIREFOX = "https://codeload.github.com/Azedize/Ext3Lastversion/zip/refs/heads/main?token=BDPALGY7HVNAIFWR4XE56T3KFGB3K"
-        Settings.WRITE_LOG_DEV_FILE(f"Firefox update URL: {SERVEUR_ZIP_URL_EX3_FIREFOX}", "INFO")
+        SERVEUR_ZIP_URL_EX3_FIREFOX = "https://github.com/Azedize/Ext3Lastversion/archive/refs/heads/main.zip"
+        Settings.WRITE_LOG_DEV_FILE("🚀 [EXTENSION FIREFOX] Lancement de la séquence de mise à jour Firefox", "INFO")
+        Settings.WRITE_LOG_DEV_FILE(f"🔗 URL de mise à jour Firefox : {SERVEUR_ZIP_URL_EX3_FIREFOX}", "INFO")
 
         try:
             with tempfile.TemporaryDirectory() as tmpdir:
                 zip_path = os.path.join(tmpdir, "Ext3_Firefox.zip")
 
-                settings.WRITE_LOG_DEV_FILE("Downloading latest Firefox extension version...", "INFO")
+                settings.WRITE_LOG_DEV_FILE("⬇️ [EXTENSION FIREFOX] Téléchargement de l'archive Firefox", "INFO")
                 if not UpdateManager._download_file(SERVEUR_ZIP_URL_EX3_FIREFOX, zip_path):
-                    Settings.WRITE_LOG_DEV_FILE("Échec du téléchargement de l'extension Firefox", "ERROR")
+                    Settings.WRITE_LOG_DEV_FILE("🛑 [EXTENSION FIREFOX] Échec du téléchargement de l'extension Firefox", "ERROR")
                     return False
 
                 if os.path.exists(Settings.EXTENTION_EX3_FIREFOX):
@@ -798,6 +797,8 @@ class UpdateManager:
         # 🔹 URL de téléchargement de l'extension
         # ================================================
         SERVEUR_ZIP_URL_EX3 = f"http://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Ext3&k={encrypted_safe}"
+        Settings.WRITE_LOG_DEV_FILE("🚀 [EXTENSION CHROMIUM] Lancement de la séquence de mise à jour Chromium", "INFO")
+        Settings.WRITE_LOG_DEV_FILE(f"🔗 URL de mise à jour Chromium : {SERVEUR_ZIP_URL_EX3}", "INFO")
 
         # ================================================
         # 🔹 Téléchargement et extraction
@@ -806,10 +807,9 @@ class UpdateManager:
             with tempfile.TemporaryDirectory() as tmpdir:
                 zip_path = os.path.join(tmpdir, "Ext3.zip")
 
-
-                settings.WRITE_LOG_DEV_FILE("Downloading latest extension version...", "INFO")
+                settings.WRITE_LOG_DEV_FILE("⬇️ [EXTENSION CHROMIUM] Téléchargement de l'archive Chromium", "INFO")
                 if not UpdateManager._download_file(SERVEUR_ZIP_URL_EX3, zip_path):
-                    Settings.WRITE_LOG_DEV_FILE("Échec du téléchargement", "ERROR")
+                    Settings.WRITE_LOG_DEV_FILE("🛑 [EXTENSION CHROMIUM] Échec du téléchargement de l'extension Chromium", "ERROR")
                     return False
 
                 # Suppression ancienne version

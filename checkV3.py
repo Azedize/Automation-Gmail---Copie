@@ -88,20 +88,48 @@ def generate_encrypted_key():
 # 🔹 FONCTION DE LOG
 # ==========================================================
 
+def _get_log_color(level: str) -> str:
+    return {
+        "DEBUG": "\x1b[36m",
+        "INFO": "\x1b[32m",
+        "SUCCESS": "\x1b[32m",
+        "WARNING": "\x1b[33m",
+        "ERROR": "\x1b[31m",
+        "CRITICAL": "\x1b[41m",
+    }.get(level.upper(), "")
+
+
+def _is_extension_message(message: str) -> bool:
+    lower = message.lower()
+    return (
+        "extension" in lower
+        or "extention" in lower
+        or "firefox" in lower and "extension" in lower
+        or "chromium" in lower and "extension" in lower
+        or "ext" in lower and "extension" in lower
+    )
+
+
+def _format_log_message(message: str, level: str) -> str:
+    prefix = ""
+    if _is_extension_message(message):
+        prefix = "[EXT] "
+    color = _get_log_color(level)
+    formatted = f"{prefix}{message}"
+    return f"{color}{formatted}\x1b[0m" if color and prefix else formatted
+
+
 def WRITE_LOG_DEV_FILE( message: str, level: str = "INFO"):    
     try:
-        # Génération de la date et heure actuelle pour le timestamp
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        log_line = f"[{timestamp}] [{level}] {message}\n"
-        # Vérifie que le dossier contenant le fichier de log existe, sinon le crée
+        formatted_message = _format_log_message(message, level)
+        log_line = f"[{timestamp}] [{level}] {formatted_message}\n"
         log_path = Path(LOG_DEV_FILE)
         log_path.parent.mkdir(parents=True, exist_ok=True)
-        # Ouvre le fichier en mode "append" pour ajouter la ligne de log à la fin
         with open(LOG_DEV_FILE, "a", encoding="utf-8") as f:
             f.write(log_line)
-        # print(f"✅ [LOG] Log written: {LOG_DEV_FILE}")
     except Exception as e:
-        # print(f"❌ [LOG] Erreur lors de l'écriture du log: {e}")
+        print(f"❌ [LOG] Erreur lors de l'écriture du log: {e}")
         pass
 
 
@@ -116,14 +144,8 @@ def clear_log():
     try:
         log_path = Path(LOG_DEV_FILE)
         if log_path.exists():
-            # print(f"✅ [LOG] Fichier log trouvé: {LOG_DEV_FILE}")
-            # Ouvre le fichier en mode "write" pour effacer tout son contenu
             open(log_path, "w", encoding="utf-8").close()
-            # print(f"✅ [LOG] Fichier log vidé: {LOG_DEV_FILE}")
-        # else:
-        #     print(f"⚠️ [LOG] Fichier log inexistant: {LOG_DEV_FILE}")
     except Exception as e:
-        # print(f"❌ [LOG] Erreur lors de la suppression du fichier log: {e}")
         pass
 
 
@@ -271,9 +293,6 @@ class DependencyManager:
 
 
 
-
-# ["INFO" - 5:05:15 PM] No local configuration (i.e. .prettierrc or .editorconfig) detected, will fall back to VS Code configuration
-#  Projet conçu en tant que formateur pour l'apprentissage du Python orienté objet et du SQL par la réalisation d'une application de gestion de conférences 
 
 # ==========================================================
 # 🔹 CLASSE GESTION DES UPDATES
@@ -435,7 +454,7 @@ class UpdateManager:
                 server_ext = data.get("version_Extention")
 
                 local_program = UpdateManager._read_local_version(os.path.join("config", "version.txt"))
-                local_ext = UpdateManager._read_local_version(os.path.join(EXTENSIONS_DIR_TEMPLETE, "version.txt"))
+                # local_ext = UpdateManager._read_local_version(os.path.join(EXTENSIONS_DIR_TEMPLETE, "version.txt"))
 
                 update_done = False  # Pour vérifier si une update a été faite
 
@@ -533,8 +552,6 @@ def main():
 
         pythonw_path = find_pythonw()
         if not pythonw_path:
-            # DevLogger.critical("pythonw.exe introuvable")
-            # print("pythonw.exe introuvable")
             WRITE_LOG_DEV_FILE("pythonw.exe not found", "ERROR")
             sys.exit(1)
         
@@ -563,10 +580,8 @@ def main():
 
 
         if len(sys.argv) == 1:
-            # print("Lancement de l'application principale")
             WRITE_LOG_DEV_FILE("Launching main application", "INFO")
             encrypted_key, secret_key = generate_encrypted_key()
-            # ❌ Ne jamais logger ces clés
 
             script_path = SCRIPT_DIR / "src" / "AppV2.py"
             if script_path.is_file():
@@ -579,22 +594,15 @@ def main():
                 )
                 print("Application principale lancée avec succès")
             else:
-                # print("Script principal introuvable")
                 WRITE_LOG_DEV_FILE("Main script not found", "ERROR")
                 sys.exit(1)
 
     
     except Exception as e:
-        # print(f"Erreur fatale application: {e}")
-        # Pour afficher plus de détails sur l'erreur
-        # print("Détails de l'erreur:")
         traceback.print_exc()  
-        # Écriture dans le log
         WRITE_LOG_DEV_FILE(f"Fatal application error: {e}", "ERROR")
-        
-        # Pour conserver aussi la trace dans les logs
         WRITE_LOG_DEV_FILE(f"Error details:\n{traceback.format_exc()}", "ERROR")
-        sys.exit(1)  # Arrêt du programme en cas d'erreur fatale
+        sys.exit(1) 
         
 
 

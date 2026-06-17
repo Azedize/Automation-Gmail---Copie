@@ -80,7 +80,7 @@ class Settings:
     SESSION_FILE = DATA_DIR / "session.txt"
 
     TOOLS_DIR = BASE_DIR / "Tools"
-    EXTENSIONS_DIR_TEMPLETE = TOOLS_DIR / "extensions Templete"
+    # EXTENSIONS_DIR_TEMPLETE = TOOLS_DIR / "extensions Templete"
 
     PROFILES_DIR = TOOLS_DIR / "Profiles"
     CHROME_PROFILES = PROFILES_DIR / "chrome"
@@ -91,11 +91,9 @@ class Settings:
 
   
 
-    VERSION_LOCAL_EXT = os.path.join(EXTENSIONS_DIR_TEMPLETE, "version.txt")
+    # VERSION_LOCAL_EXT = os.path.join(EXTENSIONS_DIR_TEMPLETE, "version.txt")
     VERSION_LOCAL_PROGRAMM = os.path.join(BASE_DIR, "config", "version.txt")
 
-    EXTENTIONS_DIR_FIREFOX_TEMPLETE = EXTENSIONS_DIR_TEMPLETE / "ExtensionTemplateFirefox"
-    EXTENSIONS_DIR_CHROMIUM_TEMPLETE = EXTENSIONS_DIR_TEMPLETE / "Extention_Family_Chrome"
 
  
 
@@ -134,7 +132,7 @@ class Settings:
     FICHIER_VARIATIONS = r"C:\RepProxy\template_Profile\Variations"
 
 
-    EXTENTION_EX3_FIREFOX = r"C:\RepProxy\Ext3_Firefox"
+    EXTENTION_EX3_FIREFOX = r"C:\RepProxy\Ext3_Firefoxtest"
     VERSION_LOCAL_EX3_FIREFOX = os.path.join(EXTENTION_EX3_FIREFOX, "version.txt")
     MANIFEST_PATH_EX3_FIREFOX = os.path.join(EXTENTION_EX3_FIREFOX, "manifest.json")
 

@@ -254,21 +254,16 @@ class APIManager:
 
             headers = {"User-Agent": "Mozilla/5.0"}
 
-            result = self.make_request(
-                Settings.API_ENDPOINTS["__GET_PROXY_INFO__"],
-                method="POST",
-                data=params,
-                headers=headers,
-                timeout=30
-            )
+            result = self.make_request( Settings.API_ENDPOINTS["__GET_PROXY_INFO__"],  method="POST", data=params,  headers=headers,  timeout=30  )
 
             Settings.WRITE_LOG_DEV_FILE(f"TESt test test API response status: {result.get('status_code')}", "INFO")
             Settings.WRITE_LOG_DEV_FILE(f"Full API result: {result}", "INFO")
 
             if result.get("status") != "success":
-                Settings.WRITE_LOG_DEV_FILE(f"API failed: {result.get('error')}", "ERROR")
+                error_detail = result.get('error') or 'Invalid response status from proxy service'
+                Settings.WRITE_LOG_DEV_FILE(f"❌ [PROXY] API returned invalid status: {result.get('status')}. Error: {error_detail}", "ERROR")
                 Settings.WRITE_LOG_DEV_FILE("=== PROXY CONFIGURATION FETCH FAILED ===", "ERROR")
-                return {"valid": False, "data": None, "error": result.get("error")}
+                return {"valid": False, "data": None, "error": f"Données API non valides : {error_detail}"}
 
             response_text = result.get("data", "")
             response_size = len(response_text) if isinstance(response_text, str) else 0
@@ -306,9 +301,9 @@ class APIManager:
             Settings.WRITE_LOG_DEV_FILE(f"Extra IPs: {extra if extra else 'NONE'}", "INFO")
 
             if missing:
-                Settings.WRITE_LOG_DEV_FILE(f"Proxy configuration incomplete: Missing IPs: {missing}. Response key count={len(data)}.", "ERROR")
+                Settings.WRITE_LOG_DEV_FILE(f"❌ [PROXY] Proxy configuration invalid: missing expected IPs: {missing}. Response key count={len(data)}.", "ERROR")
                 Settings.WRITE_LOG_DEV_FILE("=== PROXY CONFIGURATION FETCH FAILED (MISSING IPS) ===", "ERROR")
-                return {"valid": False, "data": data, "error": "La réponse du service est incomplète : certaines adresses IP attendues n'ont pas été reçues. Veuillez réessayer ou contacter le support si le problème persiste."}
+                return {"valid": False, "data": data, "error": "Données du service non valides : certaines adresses IP attendues sont absentes de la réponse. Veuillez réessayer ou contacter le support si le problème persiste."}
 
             Settings.WRITE_LOG_DEV_FILE("Proxy data retrieved for all IPs", "INFO")
             Settings.WRITE_LOG_DEV_FILE("=== PROXY CONFIGURATION FETCH COMPLETED SUCCESSFULLY ===", "INFO")
