@@ -59,9 +59,7 @@ except ImportError as e:
 # ==========================================================
 
 file_lock = Lock()
-
 FIREFOX_SESSIONS: Dict[str, Any] = {}
-
 
 LOGS = []
 PROCESS_PIDS = []
@@ -91,9 +89,11 @@ def log_message(text):
 
 
 
+
 # ==========================================================
 # 🔹 FUNCTION STOP ALL PROCESSES
 # ==========================================================
+
 def Stop_All_Processes(window):
 
     UIManager.disable_button(window.stopButton)
@@ -221,18 +221,24 @@ def Stop_All_Processes(window):
 
 
 
+
+
 class LogsDisplayThread(QThread):
 
+
     log_signal = pyqtSignal(str)
+
 
     def __init__(self, LOGS, parent=None):
         super().__init__(parent)
         self.LOGS = LOGS
         self.stop_flag = False
     
+    
     # =====================================================
     # 🔁 THREAD PRINCIPAL
     # =====================================================
+
     def run(self):
         global LOGS_RUNNING
         while LOGS_RUNNING:
@@ -294,7 +300,7 @@ class CloseBrowserThread(QThread):
         self.SESSION_DIR = os.path.join(self.BASE_LOG_DIR, f"{self.CURRENT_DATETIME}")
         os.makedirs(self.SESSION_DIR, exist_ok=True)
 
-        # ✅ tracking success emails (thread-safe)
+        
         self.completed_emails = set()
         self.lock = threading.Lock()
 
@@ -303,6 +309,7 @@ class CloseBrowserThread(QThread):
     # ======================================================
     # 🔁 THREAD PRINCIPAL
     # ======================================================
+
     def run(self):
         global PROCESS_PIDS, REMAINING_EMAILS
 
@@ -502,6 +509,7 @@ class CloseBrowserThread(QThread):
     # - Use generic process termination for Chromium browsers
     # - Ensure safe fallback when PID is missing
     # ==========================================================
+
     def _close_session(self, pid, email, browser, firefox_pids, web_ext_pid, flow_label=""):
         if browser.lower() == "firefox":
             self._close_firefox_session(firefox_pids, web_ext_pid, email, flow_label)
@@ -529,6 +537,7 @@ class CloseBrowserThread(QThread):
     # - Move screenshots if error flow is triggered
     # - Clean up session files after processing
     # ==========================================================
+
     def process_session_file(self, file_name, screenshots):
         if self.stop_flag:
             Settings.WRITE_LOG_DEV_FILE("🛑 [SESSION] Stop requested", "INFO")
@@ -627,7 +636,6 @@ class CloseBrowserThread(QThread):
             Settings.WRITE_LOG_DEV_FILE(  f"❌ [SESSION] Erreur: {e}\n{ traceback.format_exc()}", "ERROR"  )
 
         finally:
-            # ✅ Nettoyage
             try:
                 if os.path.exists(session_path):
                     os.remove(session_path)
@@ -662,7 +670,6 @@ class CloseBrowserThread(QThread):
     # ==========================================================
 
     def write_result_and_send_status(self, session_id, pid, email, status, inserted_id):
-        """Écrire le résultat et envoyer l'état"""
         # print(f"\n📝 [RESULT] {email} | Status: {status}")
 
         if self.stop_flag:
@@ -753,8 +760,7 @@ class CloseBrowserThread(QThread):
                 if pid_str.isdigit():
                     pid_list = [int(pid_str)]
                 else:
-                    Settings.WRITE_LOG_DEV_FILE(  f"Invalid PID value for Chromium family: {repr(pid)}", "ERROR"
-                    )
+                    Settings.WRITE_LOG_DEV_FILE(  f"Invalid PID value for Chromium family: {repr(pid)}", "ERROR"  )
                     return
 
             Settings.WRITE_LOG_DEV_FILE(f"_close_browser_process computed pid_list={pid_list}", "DEBUG")
@@ -774,31 +780,20 @@ class CloseBrowserThread(QThread):
                     else:
                         Settings.WRITE_LOG_DEV_FILE(f"Chrome closed via SIGTERM for PID {current_pid}", "INFO")
                 except Exception as e_chrome:
-                    Settings.WRITE_LOG_DEV_FILE(
-                        f"Error closing Chrome PID {current_pid}: {e_chrome}\n{traceback.format_exc()}",
-                        "ERROR"
-                    )
+                    Settings.WRITE_LOG_DEV_FILE( f"Error closing Chrome PID {current_pid}: {e_chrome}\n{traceback.format_exc()}", "ERROR"  )
 
                 if current_pid in PROCESS_PIDS:
                     PROCESS_PIDS.remove(current_pid)
                     Settings.WRITE_LOG_DEV_FILE(f"PID {current_pid} removed from PROCESS_PIDS", "INFO")
 
         except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE(
-                f"❌ [CLOSE] Erreur: {e}\n{traceback.format_exc()}", "ERROR"
-            )
+            Settings.WRITE_LOG_DEV_FILE( f"❌ [CLOSE] Erreur: {e}\n{traceback.format_exc()}", "ERROR"  )
 
     
 
 
 
 
-
-
-# le programme is runing dans une interface logique et capable de renitailisation de dependies et des caracteristiques de l'interface graphique et de la logique de l'application. Il est conçu pour gérer les threads d'extraction et de fermeture du navigateur, ainsi que pour traiter les fichiers de session et les journaux générés par le navigateur. L'application utilise PyQt pour l'interface utilisateur et gère les processus du navigateur via psutil.
-# si le programme est interrompu, il peut être redémarré et reprendre les opérations en cours grâce à la gestion des threads et des fichiers de session. l'application est également capable de gérer les erreurs et les exceptions de manière robuste en enregistrant les détails dans des fichiers de journalisation pour faciliter le débogage et la maintenance.
-
-# si le programme is runing dans une interface logique et capable de renitalisation de dependies et des caracteristiques de l'interface graphique et de la logique de l'application. Il est conçu pour gérer les threads d'extraction et de fermeture du navigateur, ainsi que pour traiter les fichiers de session et les journaux générés par le navigateur. L'application utilise PyQt pour l'interface utilisateur et gère les processus du navigateur via psutil.
 
 
 
@@ -834,19 +829,21 @@ def Start_Extraction(  window, data_list, entered_number, selected_Browser, Isp,
     browser_normalized = ( selected_Browser.lower() if isinstance(selected_Browser, str) else "unknown")
     Settings.WRITE_LOG_DEV_FILE(f"Browser selection normalized: {browser_normalized}", "INFO")
 
-    browser_path = (
-        BrowserManager.get_browser_path("chrome.exe")
-        if browser_normalized == "chrome"
-        else (
-            BrowserManager.get_browser_path("firefox")
-            if browser_normalized == "firefox"
-            else (
-                BrowserManager.get_browser_path("msedge.exe")
-                if browser_normalized == "edge"
-                else BrowserManager.get_browser_path("dragon.exe")
-            )
-        )
-    )
+    # browser_path = (
+    #     BrowserManager.get_browser_path("chrome.exe")
+    #     if browser_normalized == "chrome"
+    #     else (
+    #         BrowserManager.get_browser_path("firefox")
+    #         if browser_normalized == "firefox"
+    #         else (
+    #             BrowserManager.get_browser_path("msedge.exe")
+    #             if browser_normalized == "edge"
+    #             else BrowserManager.get_browser_path("dragon.exe")
+    #         )
+    #     )
+    # )
+
+    browser_path = BrowserManager.get_browser_path("chrome.exe") if browser_normalized == "chrome" else BrowserManager.get_browser_path("firefox") if browser_normalized == "firefox" else BrowserManager.get_browser_path("msedge.exe") if browser_normalized == "edge" else BrowserManager.get_browser_path("dragon.exe")
 
     browser_name = selected_Browser.strip() if isinstance(selected_Browser, str) else "Unknown"
     browser_path_display = browser_path or "Non trouvé"
@@ -983,6 +980,7 @@ class ExtractionThread(QThread):
 
         
         while remaining_emails or PROCESS_PIDS:
+            
 
             if self.stop_flag:
                 LOGS_RUNNING = False
@@ -1316,28 +1314,6 @@ class ExtractionThread(QThread):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # =====================================================
 # 🚀 FONCTION CHECK SESSION
 # =====================================================
@@ -1465,13 +1441,11 @@ class MainWindow(QMainWindow):
         self._setup_ui_components()
         self._load_initial_state()
 
-    
     def _init_ui(self):
         # print("🟢 Initialisation de l'interface utilisateur...")
         Settings.WRITE_LOG_DEV_FILE("Initializing user interface...", "INFO")
         uic.loadUi(Settings.INTERFACE_UI, self)
 
-    
     def _init_data(self, json_data):
         self.states = json_data
         self.STATE_STACK = []
