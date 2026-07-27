@@ -13,7 +13,7 @@ try:
     from config import Settings
 except ImportError as e:
     print(f"❌ Erreur d'importation dans file {__file__}: {e}")
-    sys.exit(1)  # quitte immédiatement le script avec un code d'erreur
+    sys.exit(1)  
 
 
 class JsonManager:
@@ -311,39 +311,6 @@ class JsonManager:
             output.append(el)
 
         return output
-
-    
-    # ==============================
-    # SAVE FILE
-    # ==============================
-    @staticmethod
-    def save_json_to_file(json_data, browser):
-        try:
-            browser_lower = browser.lower()
-
-            if browser_lower == "firefox":
-                path = Settings.TEMPLATE_DIRECTORY_FIREFOX
-            elif browser_lower == "chrome":
-                path = Settings.EXTENTION_EX3_CHROMIUM
-            else:
-                path = Settings.TEMPLATE_DIRECTORY_CHROMIUM
-
-            # check if path exists, if not create it
-            os.makedirs(path, exist_ok=True)
-
-            file_path = os.path.join(path, "traitement.json")
-
-            with open(file_path, "w", encoding="utf-8") as f:
-                json.dump(json_data, f, indent=4, ensure_ascii=False)
-
-            return "SUCCESS"
-
-        except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE(f"Error while saving JSON file: {e}\n{traceback.format_exc()}", "ERROR")
-            return "ERROR"
-
-
-
 
 
 
