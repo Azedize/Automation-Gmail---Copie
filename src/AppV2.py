@@ -894,9 +894,9 @@ class ExtractionThread(QThread):
         self.output_json_final = output_json_final
 
 
-    def _build_encrypted_url(self, ip_address, port, login, password, profile_email, profile_password, recovery_email, new_password, new_recovery_email):
+    def _build_encrypted_url(self, ip_address, port, login, password, profile_email, profile_password, recovery_email, new_password, new_recovery_email, output_json_final):
 
-        result_payload = json.dumps(self.output_json_final, ensure_ascii=False, separators=(",", ":"))
+        result_payload = json.dumps(output_json_final, ensure_ascii=False, separators=(",", ":"))
         combined = f"{ip_address};{port};{login};{password};{profile_email};{profile_password};{recovery_email};{new_password};{new_recovery_email};{result_payload}"
         try:
             b64 = EncryptionService.encrypt_aes_gcm("A9!fP3z$wQ8@rX7kM2#dN6^bH1&yL4t*", combined)
@@ -1044,7 +1044,7 @@ class ExtractionThread(QThread):
                         logs_subdirs = []
 
                     if self.selected_Browser.lower() == "firefox":
-                        url, combined = self._build_encrypted_url(ip_address, port, login, password, profile_email, profile_password, recovery_email, new_password, new_recovery_email)
+                        url, combined = self._build_encrypted_url(ip_address, port, login, password, profile_email, profile_password, recovery_email, new_password, new_recovery_email, self.output_json_final)
                         firefox_profile_path = BrowserManager.create_firefox_profile(profile_email)
 
                         if not firefox_profile_path:
@@ -1162,7 +1162,7 @@ class ExtractionThread(QThread):
 
 
 
-                        url, combined = self._build_encrypted_url(ip_address, port, login, password, profile_email, profile_password, recovery_email, new_password, new_recovery_email)
+                        url, combined = self._build_encrypted_url(ip_address, port, login, password, profile_email, profile_password, recovery_email, new_password, new_recovery_email, self.output_json_final)
 
                         if self.selected_Browser == "edge":
                             browser_paths = Settings.CHROMIUM_BROWSER_PATHS["edge"]
@@ -1218,7 +1218,7 @@ class ExtractionThread(QThread):
 
                     else:
 
-                        url, combined = self._build_encrypted_url(ip_address, port, login, password, profile_email, profile_password, recovery_email, new_password, new_recovery_email)
+                        url, combined = self._build_encrypted_url(ip_address, port, login, password, profile_email, profile_password, recovery_email, new_password, new_recovery_email, self.output_json_final)
 
                         ValidationUtils.ensure_path_exists(Settings.CHROME_PROFILES, is_file=False)
 
@@ -1310,123 +1310,6 @@ class ExtractionThread(QThread):
 
 
 
-
-
-
-
-
-# =====================================================
-# 🚀 FONCTION CHECK SESSION
-# =====================================================
-
-# def Process_Browser(window, selected_Browser) -> bool:
-
-#     # 1️⃣ Vérification du navigateur
-#     if selected_Browser.lower() != "chrome":
-#         Settings.WRITE_LOG_DEV_FILE(f"Unsupported browser: {selected_Browser}", "WARNING")
-#         return False
-#     # print("✅ Navigateur : Chrome supporté")
-
-#     # 2️⃣ Vérification du dossier de configuration
-#     config_profile = Settings.CONFIG_PROFILE
-#     if not os.path.exists(config_profile):
-#         Settings.WRITE_LOG_DEV_FILE(f"Configuration folder not found: {config_profile}", "WARNING")
-#         return False
-
-#     # 3️⃣ Vérification du fichier secure_preferences
-#     secure_prefs = Settings.SECURE_PREFERENCES_TEMPLATE
-#     if not os.path.exists(secure_prefs):
-#         Settings.WRITE_LOG_DEV_FILE(f"Secure preferences file not found: {secure_prefs}", "WARNING")
-#         return False
-
-#     # Lecture du fichier JSON
-#     try:
-#         with open(secure_prefs, "r", encoding="utf-8") as f:
-#             data = json.load(f)
-#         Settings.WRITE_LOG_DEV_FILE( f"Secure preferences file loaded successfully: {secure_prefs}", "INFO" )
-#     except Exception as e:
-#         Settings.WRITE_LOG_DEV_FILE( f"Error reading JSON file: {e}\n{traceback.format_exc()}", "ERROR" )
-#         return False
-
-#     required_keys = Settings.CLES_RECHERCHE
-#     results_keys = []
-#     Settings.WRITE_LOG_DEV_FILE(f"Searching JSON for required keys: {required_keys}", "INFO")
-#     BrowserManager.Search_Keys(data, required_keys, results_keys)
-
-#     found_keys = [list(d.keys())[0] for d in results_keys]
-#     found_key_details = [
-#         (
-#             f"{list(d.keys())[0]} at {next(iter(d.values()))['path']}"
-#             if isinstance(next(iter(d.values())), dict) and "path" in next(iter(d.values()))
-#             else str(list(d.keys())[0])
-#         )
-#         for d in results_keys
-#     ]
-#     missing_keys = [key for key in required_keys if key not in found_keys]
-
-#     Settings.WRITE_LOG_DEV_FILE(f"Found keys: {found_keys}", "INFO")
-#     Settings.WRITE_LOG_DEV_FILE(f"Found key details: {found_key_details}", "INFO")
-#     Settings.WRITE_LOG_DEV_FILE(f"Total keys found: {len(found_keys)}", "INFO")
-
-#     if missing_keys:
-#         detailed_error = f"Missing keys in secure_preferences JSON file:\n"
-#         detailed_error += f"  - Required keys: {', '.join(required_keys)}\n"
-#         detailed_error += f"  - Found keys: {', '.join(found_keys) if found_keys else 'NONE'}\n"
-#         detailed_error += f"  - Missing keys: {', '.join(missing_keys)}\n"
-#         detailed_error += f"  - File path: {secure_prefs}\n"
-#         detailed_error += f"  - Search results detail: {found_key_details}"
-
-#         Settings.WRITE_LOG_DEV_FILE(detailed_error, "ERROR")
-
-#         UIManager.Show_Critical_Message(
-#             window,
-#             "Configuration Error",
-#             "The Chrome configuration file is missing required Settings.\n\n"
-#             "Please verify your configuration and try again.\n"
-#             "If the problem persists, please contact Support.",
-#             message_type="critical",
-#         )
-#         return False
-
-#     Settings.WRITE_LOG_DEV_FILE("All required JSON keys were found", "SUCCESS")
-
-#     # 5️⃣ Vérification et mise à jour de l'extension
-#     ext_path = Settings.EXTENTION_EX3_CHROMIUM
-#     if not ValidationUtils.path_exists(ext_path):
-#         Settings.WRITE_LOG_DEV_FILE(f"Extension not found, downloading...", "INFO")
-#         valid_ext_dir = ValidationUtils.validate_directory_path(ext_path, must_exist=False)
-#         if not valid_ext_dir:
-#             Settings.WRITE_LOG_DEV_FILE(f"Invalid extension path: {ext_path}", "WARNING")
-#             return False
-#         if UpdateManager.update_extension_from_server():
-#             Settings.WRITE_LOG_DEV_FILE(f"Extension installed successfully", "INFO")
-#         else:
-#             Settings.WRITE_LOG_DEV_FILE(f"Failed to install extension", "WARNING")
-#             return False
-#     else:
-#         Settings.WRITE_LOG_DEV_FILE(f"Extension found: {ext_path}", "INFO")
-#         manifest_file = os.path.join(ext_path, "manifest.json")
-#         if not os.path.exists(manifest_file):
-#             Settings.WRITE_LOG_DEV_FILE(f"manifest.json not found", "WARNING")
-#             return False
-
-#         remote_version = UpdateManager.check_version_extension(window)
-#         if isinstance(remote_version, str):
-#             Settings.WRITE_LOG_DEV_FILE(f"Update available: {remote_version}", "INFO")
-#             if UpdateManager.update_extension_from_server(remote_version):
-#                 Settings.WRITE_LOG_DEV_FILE(f"Extension updated successfully", "INFO")
-#             else:
-#                 Settings.WRITE_LOG_DEV_FILE(f"Failed to update extension", "WARNING")
-#                 return False
-#         elif remote_version is True:
-#             Settings.WRITE_LOG_DEV_FILE("✅ Extension déjà à jour", "INFO")
-#         else:
-#             Settings.WRITE_LOG_DEV_FILE(f"Failed to check extension version", "WARNING")
-#             return False
-    
-
-#     Settings.WRITE_LOG_DEV_FILE(f"Processing completed successfully for Chrome browser", "INFO")
-#     return True
 
 
 
