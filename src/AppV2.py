@@ -29,6 +29,7 @@ import json
 from typing import List, Dict, Any, Set
 import traceback
 
+
 warnings.simplefilter("ignore", urllib3.exceptions.InsecureRequestWarning)
 urllib3.disable_warnings()
 
@@ -60,6 +61,7 @@ except ImportError as e:
 
 file_lock = Lock()
 FIREFOX_SESSIONS: Dict[str, Any] = {}
+
 
 LOGS = []
 PROCESS_PIDS = []
@@ -223,6 +225,8 @@ def Stop_All_Processes(window):
 
 
 
+
+
 class LogsDisplayThread(QThread):
 
 
@@ -235,9 +239,10 @@ class LogsDisplayThread(QThread):
         self.stop_flag = False
     
     
-    # =====================================================
+    # =====================================================bn f
     # 🔁 THREAD PRINCIPAL
     # =====================================================
+ 
 
     def run(self):
         global LOGS_RUNNING
@@ -248,6 +253,8 @@ class LogsDisplayThread(QThread):
             else:
                 time.sleep(1)
 
+    
+    
     def stop(self):
         self.stop_flag = True
         self.wait()
@@ -287,6 +294,8 @@ class LogsDisplayThread(QThread):
 class CloseBrowserThread(QThread):
 
     progress = pyqtSignal(str)
+
+
 
     def __init__(self, selected_Browser, username):
         super().__init__()
@@ -450,6 +459,7 @@ class CloseBrowserThread(QThread):
 
         except Exception as e:
             Settings.WRITE_LOG_DEV_FILE(f"❌ [LOG] Erreur processing log file {full_path}: {e}\n{ traceback.format_exc()}", "ERROR")
+            
 
 
 
@@ -1318,6 +1328,8 @@ class ExtractionThread(QThread):
 class MainWindow(QMainWindow):
 
     
+
+
     def __init__(self, json_data):
         super(MainWindow, self).__init__()
         self._init_ui()
@@ -1325,15 +1337,17 @@ class MainWindow(QMainWindow):
         self._setup_ui_components()
         self._load_initial_state()
 
+
     def _init_ui(self):
         # print("🟢 Initialisation de l'interface utilisateur...")
         Settings.WRITE_LOG_DEV_FILE("Initializing user interface...", "INFO")
         uic.loadUi(Settings.INTERFACE_UI, self)
 
+
     def _init_data(self, json_data):
         self.states = json_data
         self.STATE_STACK = []
-
+    
     def _setup_ui_components(self):
         self._setup_containers()
         self._setup_template_widgets()
@@ -1354,11 +1368,9 @@ class MainWindow(QMainWindow):
     def _setup_containers(self):
         UIManager._setup_containers(self)
 
-    
     def _setup_template_widgets(self):
         UIManager._setup_template_widgets(self)
 
-    
     def _setup_buttons(self):
         self.Button_Initaile_state = self._setup_button(  "Button_Initaile_state", self.Load_Initial_Options)
         # print(f"🟢 Bouton 'Initial State' configuré avec succès")
@@ -1386,6 +1398,7 @@ class MainWindow(QMainWindow):
     def _setup_icon_button(  self, button_name, icon_file, callback, icon_size=None, button_size=None ):
         return UIManager._setup_icon_button(  self, button_name, icon_file, callback, icon_size, button_size )
 
+    
     def _setup_button(self, widget_name, callback):
         return UIManager._setup_button(self, widget_name, callback)
 
@@ -2471,6 +2484,7 @@ class EntitySelectionDialog(QDialog):
 
 class LoginWindow(QMainWindow):
 
+
     def __init__(self):
         super().__init__()
 
@@ -2480,6 +2494,8 @@ class LoginWindow(QMainWindow):
             self.Initialize_Login_Ui()
             Settings.WRITE_LOG_DEV_FILE("Login UI initialized", "INFO")
         self.setWindowTitle("AutoMailPro")
+
+
 
     def Select_Ui_File(self) -> str:
 
@@ -2493,6 +2509,7 @@ class LoginWindow(QMainWindow):
             sys.exit()
 
         return Settings.AUTH_UI
+
 
     def Initialize_Login_Ui(self):
         self.login_input = self.findChild(QLineEdit, "loginInput")
@@ -2561,12 +2578,16 @@ class LoginWindow(QMainWindow):
                     self.user_label.setGeometry(0, 0, self.UseFrame.width(), self.UseFrame.height())
                     self.user_label.show()
 
+
+
     def Update_Background_Image(self):
         if hasattr(self, "background_frame") and hasattr(self, "background_label"):
             pixmap = QPixmap(self.background_image_path)
             if not pixmap.isNull():
                 self.background_label.resize(self.background_frame.size())
                 self.background_label.setPixmap(pixmap)
+
+
 
     def Handle_Login(self):
         UIManager.disable_button(self.login_button)
@@ -2677,6 +2698,8 @@ class LoginWindow(QMainWindow):
         self.close()
         Settings.WRITE_LOG_DEV_FILE("Main window displayed, login completed successfully.", "INFO")
 
+
+
     def Handle_Show_Session_Date(self):
         if not ValidationUtils.path_exists(Settings.SESSION_PATH):
             Settings.WRITE_LOG_DEV_FILE("Session file not found at expected path.", "WARNING")
@@ -2695,7 +2718,7 @@ class LoginWindow(QMainWindow):
         self.erreur_label.show()
 
 
-
+    
 
 
 def main():
