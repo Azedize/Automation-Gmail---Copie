@@ -265,7 +265,48 @@ class LogsDisplayThread(QThread):
 
 
 
+class Techniques_Machine_Learning:
 
+    def __init__(self):
+        pass
+
+
+    def operations_sur_les_vecteurs(self):
+        """Effectuer des opérations de base sur les vecteurs."""
+        vecteur_a = np.array([1, 2, 3], dtype=float)
+        vecteur_b = np.array([4, 5, 6], dtype=float)
+
+        somme = vecteur_a + vecteur_b
+        produit = vecteur_a * vecteur_b
+        norme_a = np.linalg.norm(vecteur_a)
+
+        print("1) Opérations sur les vecteurs")
+        print("Vecteur A :", vecteur_a)
+        print("Vecteur B :", vecteur_b)
+        print("Somme :", somme)
+        print("Produit élément par élément :", produit)
+        print("Norme de A :", norme_a)
+        print( "Explication : les opérations sur les vecteurs sont fondamentales en machine learning pour manipuler les données et calculer des distances.\n" )
+
+
+    def descente_de_gradient(self):
+        """Apprendre les paramètres d'une fonction linéaire par descente de gradient."""
+        heures = np.array([1, 2, 3, 4, 5], dtype=float)
+        notes = np.array([52, 58, 65, 72, 80], dtype=float)
+
+        # Ajouter une colonne de 1 pour le biais.
+        X = np.column_stack((np.ones(heures.size), heures))
+        parametres = np.zeros(X.shape[1])
+        pas = 0.01
+
+        for _ in range(1000):
+            predictions = X @ parametres
+            erreurs = predictions - notes
+            gradient = X.T @ erreurs / len(notes)
+            parametres -= pas * gradient
+    
+
+    
 
 
 # ==========================================================
@@ -294,8 +335,7 @@ class LogsDisplayThread(QThread):
 class CloseBrowserThread(QThread):
 
     progress = pyqtSignal(str)
-
-
+    
 
     def __init__(self, selected_Browser, username):
         super().__init__()
@@ -958,16 +998,16 @@ class ExtractionThread(QThread):
             Settings.WRITE_LOG_DEV_FILE("Invalid session. Please reconnect.", "ERROR")
             return
 
-        if self.selected_Browser.lower() == "chrome" :
+        # if self.selected_Browser.lower() == "chrome" :
 
-            Settings.RESULTATS_EX = BrowserManager.Upload_EXTENSION_PROXY( "default", Settings.CLES_RECHERCHE, Settings.RESULTATS )
+        #     Settings.RESULTATS_EX = BrowserManager.Upload_EXTENSION_PROXY( "default", Settings.CLES_RECHERCHE, Settings.RESULTATS )
             
-            if Settings.RESULTATS_EX is None:
-                UIManager.Show_Critical_Message(self.window, "An issue occurred while copying the JSON file to the template profile ➡ Please contact support.", message_type="critical")
-                self.stopped.emit("An issue occurred while copying the JSON file to the template profile ➡ Please contact support.")
-                self.stop_flag = True
-                Settings.WRITE_LOG_DEV_FILE("An issue occurred while copying the JSON file to the template profile ➡ Please contact support.", "ERROR")
-                return  
+        #     if Settings.RESULTATS_EX is None:
+        #         UIManager.Show_Critical_Message(self.window, "An issue occurred while copying the JSON file to the template profile ➡ Please contact support.", message_type="critical")
+        #         self.stopped.emit("An issue occurred while copying the JSON file to the template profile ➡ Please contact support.")
+        #         self.stop_flag = True
+        #         Settings.WRITE_LOG_DEV_FILE("An issue occurred while copying the JSON file to the template profile ➡ Please contact support.", "ERROR")
+        #         return  
 
         # ==========================================================
         # SESSION STORAGE - Save session_id into extension data.txt
@@ -1233,23 +1273,23 @@ class ExtractionThread(QThread):
                         ValidationUtils.ensure_path_exists(Settings.CHROME_PROFILES, is_file=False)
 
                         if not ValidationUtils.path_exists( os.path.join(Settings.CHROME_PROFILES, profile_email) ):
-                            BrowserManager.Run_Browser_Create_Profile(profile_email)
+                            # BrowserManager.Run_Browser_Create_Profile(profile_email)
 
-                            if not Settings.RESULTATS_EX:
-                                UIManager.Show_Critical_Message(  self.window, "An issue occurred while copying the JSON file to the template profile  ➡ Please contact support.", message_type="critical")
-                                self.stopped.emit( "An issue occurred while copying the JSON file to the template profile  ➡ Please contact support." )
-                                self.stop_flag = True
-                                Settings.WRITE_LOG_DEV_FILE(  "An issue occurred while copying the JSON file to the template profile  ➡ Please contact support.",  "ERROR" )
-                                return
-                            else:
-                                success = BrowserManager.UpdateChromeProfileFromTemplate( profile_email  )
-                                if success:
-                                    # print(f"✅ Profil {profile_email} mis à jour avec succès.")
-                                    Settings.WRITE_LOG_DEV_FILE(f"Profile {profile_email} updated successfully.", "INFO")
-                                else:
-                                    # print(f"❌ Échec de la mise à jour du profil {profile_email}.")
-                                    Settings.WRITE_LOG_DEV_FILE(f"Failed to update profile {profile_email}.", "ERROR")
-                                    return
+                            # if not Settings.RESULTATS_EX:
+                            #     UIManager.Show_Critical_Message(  self.window, "An issue occurred while copying the JSON file to the template profile  ➡ Please contact support.", message_type="critical")
+                            #     self.stopped.emit( "An issue occurred while copying the JSON file to the template profile  ➡ Please contact support." )
+                            #     self.stop_flag = True
+                            #     Settings.WRITE_LOG_DEV_FILE(  "An issue occurred while copying the JSON file to the template profile  ➡ Please contact support.",  "ERROR" )
+                            #     return
+                            # else:
+                            #     success = BrowserManager.UpdateChromeProfileFromTemplate( profile_email  )
+                            #     if success:
+                            #         # print(f"✅ Profil {profile_email} mis à jour avec succès.")
+                            #         Settings.WRITE_LOG_DEV_FILE(f"Profile {profile_email} updated successfully.", "INFO")
+                            #     else:
+                            #         # print(f"❌ Échec de la mise à jour du profil {profile_email}.")
+                            #         Settings.WRITE_LOG_DEV_FILE(f"Failed to update profile {profile_email}.", "ERROR")
+                            #         return
 
                             time.sleep(1)
 
@@ -1264,33 +1304,33 @@ class ExtractionThread(QThread):
                             ]
 
                             time.sleep(1)
-                            command1 = [
-                                BrowserManager.get_browser_path("chrome.exe"),
-                                f"--user-data-dir={os.path.join(Settings.CHROME_PROFILES, profile_email)}",
-                                f"--profile-directory={profile_email}",
-                                f"{url}",
-                                "--lang=En-US",
-                                "--no-first-run",
-                            ]
+                            # command1 = [
+                            #     BrowserManager.get_browser_path("chrome.exe"),
+                            #     f"--user-data-dir={os.path.join(Settings.CHROME_PROFILES, profile_email)}",
+                            #     f"--profile-directory={profile_email}",
+                            #     f"{url}",
+                            #     "--lang=En-US",
+                            #     "--no-first-run",
+                            # ]
                             process = subprocess.Popen(command)
-                            time.sleep(2)
-                            process1 = subprocess.Popen(command1)
+                            # time.sleep(2)
+                            # process1 = subprocess.Popen(command1)
                             PROCESS_PIDS.append(process.pid)
                             # print('➡️➡️➡️➡️➡️➡️ PROCESS_PIDS : ' ,PROCESS_PIDS)
                             # print(f"🚀 PID de processus : {process.pid}")
                             # print(f"🚀 PID de processus 1 : {process1.pid}")
-                        else:
+                        # else:
                             # reuse previously-built `url`
-                            command = [
-                                BrowserManager.get_browser_path("chrome.exe"),
-                                f"--user-data-dir={os.path.join(Settings.CHROME_PROFILES, profile_email)}",
-                                f"--profile-directory={profile_email}",
-                                f"{url}",
-                                "--lang=En-US",
-                                "--no-first-run",
-                            ]
-                            process = subprocess.Popen(command)
-                            PROCESS_PIDS.append(process.pid)
+                            # command = [
+                            #     BrowserManager.get_browser_path("chrome.exe"),
+                            #     f"--user-data-dir={os.path.join(Settings.CHROME_PROFILES, profile_email)}",
+                            #     f"--profile-directory={profile_email}",
+                            #     f"{url}",
+                            #     "--lang=En-US",
+                            #     "--no-first-run",
+                            # ]
+                            # process = subprocess.Popen(command)
+                            # PROCESS_PIDS.append(process.pid)
 
                         BrowserManager.store_browser_session_info(
                             process.pid,

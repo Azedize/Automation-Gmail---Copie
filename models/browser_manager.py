@@ -679,31 +679,31 @@ class BrowserManager:
     # Crée un profil Chrome avec le nom spécifié et lance temporairement le navigateur.
     # Configure les options du profil et ferme le navigateur après quelques secondes.
     
-    @staticmethod
-    def Run_Browser_Create_Profile(profile_name: str):
-        profile_path = os.path.join(Settings.CHROME_PROFILES, profile_name)
-        os.makedirs(profile_path, exist_ok=True)
-        #print(f"📂 Profil Chrome : {profile_path}")
+    # @staticmethod
+    # def Run_Browser_Create_Profile(profile_name: str):
+    #     profile_path = os.path.join(Settings.CHROME_PROFILES, profile_name)
+    #     os.makedirs(profile_path, exist_ok=True)
+    #     #print(f"📂 Profil Chrome : {profile_path}")
 
-        chrome_options = Options()
-        chrome_options.add_argument(f"--user-data-dir={profile_path}")
-        chrome_options.add_argument(f"--profile-directory={profile_name}")
-        chrome_options.add_argument("--lang=en-US")
-        chrome_options.add_argument("--no-first-run")
-        chrome_options.add_argument("--no-default-browser-check")
-        chrome_options.add_argument("--disable-sync")
+    #     chrome_options = Options()
+    #     chrome_options.add_argument(f"--user-data-dir={profile_path}")
+    #     chrome_options.add_argument(f"--profile-directory={profile_name}")
+    #     chrome_options.add_argument("--lang=en-US")
+    #     chrome_options.add_argument("--no-first-run")
+    #     chrome_options.add_argument("--no-default-browser-check")
+    #     chrome_options.add_argument("--disable-sync")
 
-        try:
-            driver = webdriver.Chrome(options=chrome_options)
-            #print("✅ Chrome lancé")
-            time.sleep(2)
-        except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE(f"Erreur lancement Chrome : {e}\n{traceback.format_exc()}", "ERROR")
-            # print(f"❌ Erreur lancement Chrome : {e}")
-        finally:
-            if 'driver' in locals():
-                driver.quit()
-                # print("✅ Chrome fermé")
+    #     try:
+    #         driver = webdriver.Chrome(options=chrome_options)
+    #         #print("✅ Chrome lancé")
+    #         time.sleep(2)
+    #     except Exception as e:
+    #         Settings.WRITE_LOG_DEV_FILE(f"Erreur lancement Chrome : {e}\n{traceback.format_exc()}", "ERROR")
+    #         # print(f"❌ Erreur lancement Chrome : {e}")
+    #     finally:
+    #         if 'driver' in locals():
+    #             driver.quit()
+    #             # print("✅ Chrome fermé")
 
 
     
