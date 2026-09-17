@@ -633,7 +633,6 @@ class ValidationUtils:
         except Exception as e:
             Settings.WRITE_LOG_DEV_FILE(f"Exception in ensure_path_exists: {e}\n{traceback.format_exc()}", "ERROR")
             # print(f"[EXCEPTION] ensure_path_exists error: {e}")
-            Settings.WRITE_LOG_DEV_FILE(f"Exception in ensure_path_exists: {e}\n{traceback.format_exc()}", "ERROR")
             return False
 
 

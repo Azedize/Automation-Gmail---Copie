@@ -264,70 +264,25 @@ class LogsDisplayThread(QThread):
 
 
 
-
-class Techniques_Machine_Learning:
-
-    def __init__(self):
-        pass
-
-
-    def operations_sur_les_vecteurs(self):
-        """Effectuer des opérations de base sur les vecteurs."""
-        vecteur_a = np.array([1, 2, 3], dtype=float)
-        vecteur_b = np.array([4, 5, 6], dtype=float)
-
-        somme = vecteur_a + vecteur_b
-        produit = vecteur_a * vecteur_b
-        norme_a = np.linalg.norm(vecteur_a)
-
-        print("1) Opérations sur les vecteurs")
-        print("Vecteur A :", vecteur_a)
-        print("Vecteur B :", vecteur_b)
-        print("Somme :", somme)
-        print("Produit élément par élément :", produit)
-        print("Norme de A :", norme_a)
-        print( "Explication : les opérations sur les vecteurs sont fondamentales en machine learning pour manipuler les données et calculer des distances.\n" )
-
-
-    def descente_de_gradient(self):
-        """Apprendre les paramètres d'une fonction linéaire par descente de gradient."""
-        heures = np.array([1, 2, 3, 4, 5], dtype=float)
-        notes = np.array([52, 58, 65, 72, 80], dtype=float)
-
-        # Ajouter une colonne de 1 pour le biais.
-        X = np.column_stack((np.ones(heures.size), heures))
-        parametres = np.zeros(X.shape[1])
-        pas = 0.01
-
-        for _ in range(1000):
-            predictions = X @ parametres
-            erreurs = predictions - notes
-            gradient = X.T @ erreurs / len(notes)
-            parametres -= pas * gradient
-    
-
-    
-
-
 # ==========================================================
-# CLOSE BROWSER MONITORING THREAD
+# THREAD DE SURVEILLANCE DE FERMETURE DU NAVIGATEUR
 #
-# This QThread continuously monitors the downloads directory
-# to detect and process generated session files, logs, and
-# screenshots while tracking active browser processes.
+# Ce QThread surveille en continu le dossier de téléchargements
+# pour détecter et traiter les fichiers de session, les journaux
+# et les captures d'écran tout en suivant les processus du navigateur actifs.
 #
-# Responsibilities:
-# - Monitor filesystem changes in real time
-# - Process session and log files using parallel workers
-# - Track active browser processes (PROCESS_PIDS)
-# - Safely handle termination conditions
-# - Automatically stop when no active work remains
+# Responsabilités :
+# - Surveiller les changements du système de fichiers en temps réel
+# - Traiter les fichiers de session et les journaux avec des workers parallèles
+# - Suivre les processus actifs du navigateur (PROCESS_PIDS)
+# - Gérer proprement les conditions d'arrêt
+# - S'arrêter automatiquement quand il ne reste plus de travail actif
 #
-# The thread is designed to be:
-# - Interruptible via stop_flag
-# - CPU efficient with controlled sleep cycles
-# - Thread-safe for shared global resources
-# Exemples of session file and log file names:
+# Le thread est conçu pour être :
+# - Interrompu via stop_flag
+# - Efficace en CPU avec des cycles de sommeil contrôlés
+# - Thread-safe pour les ressources globales partagées
+# Exemples de noms de fichiers de session et de journaux :
 #         log_2026-06-03T10-15-30-123Z_test@gmail.com.txt
 #         ABC123_test@gmail.com_success.txt
 # ==========================================================
@@ -434,24 +389,24 @@ class CloseBrowserThread(QThread):
 
 
     # ==========================================================
-    # LOG FILE PROCESSING PIPELINE
+    # PIPELINE DE TRAITEMENT DES FICHIERS DE JOURNAL
     #
-    # This function processes browser-generated log files from
-    # the downloads directory.
+    # Cette fonction traite les fichiers de journal générés par
+    # le navigateur dans le dossier de téléchargements.
     #
-    # Responsibilities:
-    # - Safely stop processing when thread is requested to stop
-    # - Extract user email from log file content
-    # - Prevent duplicate processing using thread-safe locking
-    # - Organize logs into structured directories:
-    #     SESSION_DIR / Browser / Email /
-    # - Copy log content into a persistent structured file
-    # - Remove original temporary log file after processing
+    # Responsabilités :
+    # - Arrêter proprement le traitement si le thread reçoit une demande d'arrêt
+    # - Extraire l'adresse e-mail depuis le contenu du fichier journal
+    # - Empêcher le traitement en double avec un verrou thread-safe
+    # - Organiser les journaux dans des dossiers structurés :
+    #     SESSION_DIR / Navigateur / Email /
+    # - Copier le contenu du journal dans un fichier persistant
+    # - Supprimer le fichier temporaire d'origine après traitement
     #
-    # This ensures:
-    # - Clean downloads directory
-    # - Structured session-based log storage
-    # - No duplicate processing of the same email
+    # Cela permet :
+    # - de nettoyer le dossier de téléchargements
+    # - de stocker les sessions de manière structurée
+    # - d'éviter le traitement multiple du même e-mail
     # ==========================================================
     
     def process_log_file(self, log_file):
@@ -504,17 +459,17 @@ class CloseBrowserThread(QThread):
 
 
     # ==========================================================
-    # FIREFOX PROCESS CLEANUP HANDLER
+    # GESTIONNAIRE DE NETTOYAGE DES PROCESSUS FIREFOX
     #
-    # This function is responsible for safely terminating all
-    # Firefox-related processes associated with a session.
+    # Cette fonction est responsable de la terminaison propre de tous
+    # les processus Firefox associés à une session.
     #
-    # Responsibilities:
-    # - Kill all Firefox PIDs linked to a profile/session
-    # - Safely terminate the web-ext process (extension runner)
-    # - Remove cleaned PIDs from global PROCESS_PIDS registry
-    # - Handle missing or already terminated processes safely
-    # - Prevent process leaks after session completion
+    # Responsabilités :
+    # - Tuer tous les PID Firefox liés à un profil ou à une session
+    # - Terminer proprement le processus web-ext (exécuteur de l'extension)
+    # - Retirer les PID nettoyés du registre global PROCESS_PIDS
+    # - Gérer les processus absents ou déjà terminés de manière sûre
+    # - Éviter les fuites de processus après la fin d'une session
     # ==========================================================
     
     def _close_firefox_session(self, firefox_pids, web_ext_pid, email, flow_label=""):
@@ -548,16 +503,16 @@ class CloseBrowserThread(QThread):
 
 
     # ==========================================================
-    # GENERIC BROWSER SESSION CLOSURE
+    # FERMETURE GÉNÉRIQUE DE LA SESSION DU NAVIGATEUR
     #
-    # Unified entry point to close browser processes depending
-    # on the browser type (Firefox or Chromium-based browsers).
+    # Point d'entrée unique pour fermer les processus du navigateur en
+    # fonction du type de navigateur (Firefox ou navigateur basé sur Chromium).
     #
-    # Responsibilities:
-    # - Route closure logic based on browser type
-    # - Use Firefox-specific cleanup if browser is Firefox
-    # - Use generic process termination for Chromium browsers
-    # - Ensure safe fallback when PID is missing
+    # Responsabilités :
+    # - Diriger la logique de fermeture selon le type de navigateur
+    # - Utiliser le nettoyage spécifique à Firefox si le navigateur est Firefox
+    # - Utiliser la terminaison générique des processus pour les navigateurs Chromium
+    # - Prévoir un repli sûr quand le PID est absent
     # ==========================================================
 
     def _close_session(self, pid, email, browser, firefox_pids, web_ext_pid, flow_label=""):
@@ -572,20 +527,20 @@ class CloseBrowserThread(QThread):
 
     
     # ==========================================================
-    # SESSION FILE PARSER AND PROCESSOR
+    # ANALYSEUR ET TRAITEMENT DES FICHIERS DE SESSION
     #
-    # This function handles browser session files and extracts
-    # execution state information.
+    # Cette fonction gère les fichiers de session du navigateur et extrait
+    # les informations sur l'état d'exécution.
     #
-    # Responsibilities:
-    # - Parse session_id, email, and status using regex
-    # - Retrieve browser-specific process information
-    # - Handle Firefox sessions from memory registry
-    # - Handle Chromium sessions from disk profile files
-    # - Execute success or error flow logic
-    # - Close related browser processes safely
-    # - Move screenshots if error flow is triggered
-    # - Clean up session files after processing
+    # Responsabilités :
+    # - Analyser session_id, e-mail et statut via regex
+    # - Récupérer les informations sur les processus selon le navigateur
+    # - Gérer les sessions Firefox depuis le registre mémoire
+    # - Gérer les sessions Chromium depuis les fichiers de profil sur disque
+    # - Exécuter la logique de succès ou d'erreur
+    # - Fermer proprement les processus associés
+    # - Déplacer les captures d'écran si le flux d'erreur est déclenché
+    # - Nettoyer les fichiers de session après traitement
     # ==========================================================
 
     def process_session_file(self, file_name, screenshots):
@@ -707,16 +662,16 @@ class CloseBrowserThread(QThread):
 
 
     # ==========================================================
-    # SESSION RESULT LOGGER + API SENDER
+    # ENREGISTREMENT DU RÉSULTAT DE SESSION + ENVOI API
     #
-    # This function handles final session reporting by:
+    # Cette fonction gère le reporting final de la session en :
     #
-    # Responsibilities:
-    # - Writing session result to local result file
-    # - Formatting result as: session_id:pid:email:status
-    # - Sending status update to external API
-    # - Mapping status to OK / NotOK format
-    # - Handling API failure cases safely
+    # Responsabilités :
+    # - Écrire le résultat de la session dans un fichier local
+    # - Formater le résultat sous la forme : session_id:pid:email:status
+    # - Envoyer la mise à jour du statut à l'API externe
+    # - Mapper le statut vers le format OK / NotOK
+    # - Gérer proprement les cas d'échec de l'API
     # ==========================================================
 
     def write_result_and_send_status(self, session_id, pid, email, status, inserted_id):
@@ -753,16 +708,16 @@ class CloseBrowserThread(QThread):
             raise SystemExit(1)
 
     # ==========================================================
-    # SCREENSHOT ORGANIZATION HANDLER
+    # GESTIONNAIRE D'ORGANISATION DES CAPTURES D'ÉCRAN
     #
-    # This function moves browser-generated screenshots into
-    # the correct session/email folder.
+    # Cette fonction déplace les captures d'écran générées par le navigateur
+    # vers le dossier correct de session/e-mail.
     #
-    # Responsibilities:
-    # - Match screenshots with corresponding email session
-    # - Move image files from downloads folder to session folder
-    # - Rename or organize screenshots for structured storage
-    # - Ensure no duplicate or unrelated screenshots are moved
+    # Responsabilités :
+    # - Associer les captures d'écran à la session e-mail correspondante
+    # - Déplacer les images depuis le dossier de téléchargements vers le dossier de session
+    # - Renommer ou organiser les captures d'écran pour un stockage structuré
+    # - Vérifier qu'aucune capture en double ou hors sujet n'est déplacée
     # ==========================================================
     
     def _move_screenshot(self, email, screenshots, email_folder):
@@ -777,16 +732,16 @@ class CloseBrowserThread(QThread):
 
     
     # ==========================================================
-    # GENERIC PROCESS TERMINATION (NON-FIREFOX)
+    # TERMINAISON GÉNÉRIQUE DES PROCESSUS (NON-FIREFOX)
     #
-    # This function safely terminates browser processes using PID.
+    # Cette fonction termine proprement les processus du navigateur via leur PID.
     #
-    # Responsibilities:
-    # - Parse PID input (single or list format)
-    # - Kill process using OS signal (SIGTERM)
-    # - Force terminate if process does not stop
-    # - Remove cleaned PID from PROCESS_PIDS list
-    # - Prevent zombie or orphan processes
+    # Responsabilités :
+    # - Analyser les PID d'entrée (format unique ou liste)
+    # - Tuer le processus via un signal système (SIGTERM)
+    # - Forcer l'arrêt si le processus ne s'arrête pas
+    # - Retirer le PID nettoyé de la liste PROCESS_PIDS
+    # - Empêcher les processus zombie ou orphelins
     # ==========================================================
     
     def _close_browser_process(self, pid, email, browser):
@@ -1272,7 +1227,7 @@ class ExtractionThread(QThread):
 
                         ValidationUtils.ensure_path_exists(Settings.CHROME_PROFILES, is_file=False)
 
-                        if not ValidationUtils.path_exists( os.path.join(Settings.CHROME_PROFILES, profile_email) ):
+                        # if not ValidationUtils.path_exists( os.path.join(Settings.CHROME_PROFILES, profile_email) ):
                             # BrowserManager.Run_Browser_Create_Profile(profile_email)
 
                             # if not Settings.RESULTATS_EX:
@@ -1291,56 +1246,52 @@ class ExtractionThread(QThread):
                             #         Settings.WRITE_LOG_DEV_FILE(f"Failed to update profile {profile_email}.", "ERROR")
                             #         return
 
-                            time.sleep(1)
+                        time.sleep(1)
 
-                            # reuse previously-built `url`
+                        # reuse previously-built `url`
 
-                            command = [
-                                BrowserManager.get_browser_path("chrome.exe"),
-                                f"--user-data-dir={os.path.join(Settings.CHROME_PROFILES, profile_email)}",
-                                f"--profile-directory={profile_email}",
-                                "--lang=En-US",
-                                "--no-first-run",
-                            ]
+                        command = [
+                            BrowserManager.get_browser_path("chrome.exe"),
+                            f"--user-data-dir={os.path.join(Settings.CHROME_PROFILES, profile_email)}",
+                            f"--profile-directory={profile_email}",
+                            "--lang=En-US",
+                            "--no-first-run",
+                        ]
 
-                            time.sleep(1)
-                            # command1 = [
-                            #     BrowserManager.get_browser_path("chrome.exe"),
-                            #     f"--user-data-dir={os.path.join(Settings.CHROME_PROFILES, profile_email)}",
-                            #     f"--profile-directory={profile_email}",
-                            #     f"{url}",
-                            #     "--lang=En-US",
-                            #     "--no-first-run",
-                            # ]
-                            process = subprocess.Popen(command)
-                            # time.sleep(2)
-                            # process1 = subprocess.Popen(command1)
-                            PROCESS_PIDS.append(process.pid)
-                            # print('➡️➡️➡️➡️➡️➡️ PROCESS_PIDS : ' ,PROCESS_PIDS)
-                            # print(f"🚀 PID de processus : {process.pid}")
-                            # print(f"🚀 PID de processus 1 : {process1.pid}")
-                        # else:
-                            # reuse previously-built `url`
-                            # command = [
-                            #     BrowserManager.get_browser_path("chrome.exe"),
-                            #     f"--user-data-dir={os.path.join(Settings.CHROME_PROFILES, profile_email)}",
-                            #     f"--profile-directory={profile_email}",
-                            #     f"{url}",
-                            #     "--lang=En-US",
-                            #     "--no-first-run",
-                            # ]
-                            # process = subprocess.Popen(command)
-                            # PROCESS_PIDS.append(process.pid)
+                        # time.sleep(3)
+                        command1 = [
+                            BrowserManager.get_browser_path("chrome.exe"),
+                            f"--user-data-dir={os.path.join(Settings.CHROME_PROFILES, profile_email)}",
+                            f"--profile-directory={profile_email}",
+                            f"{url}",
+                            "--lang=En-US",
+                            "--no-first-run",
+                        ]
+                        process = subprocess.Popen(command)
+                        time.sleep(3)
+                        time.sleep(3)
+                        time.sleep(3)
+                        time.sleep(3)
 
-                        BrowserManager.store_browser_session_info(
-                            process.pid,
-                            Settings.CHROME_PROFILES,
-                            profile_email,
-                            self.session_id,
-                            self.selected_Browser.lower(),
-                            inserted_id,
-                            profile_path=os.path.join(Settings.CHROME_PROFILES, profile_email),
-                        )
+                        process1 = subprocess.Popen(command1)
+                        PROCESS_PIDS.append(process.pid)
+                        # print('➡️➡️➡️➡️➡️➡️ PROCESS_PIDS : ' ,PROCESS_PIDS)
+                        # print(f"🚀 PID de processus : {process.pid}")
+                        # print(f"🚀 PID de processus 1 : {process1.pid}")
+                    # else:
+                        # reuse previously-built `url`
+                        # command = [
+                        #     BrowserManager.get_browser_path("chrome.exe"),
+                        #     f"--user-data-dir={os.path.join(Settings.CHROME_PROFILES, profile_email)}",
+                        #     f"--profile-directory={profile_email}",
+                        #     f"{url}",
+                        #     "--lang=En-US",
+                        #     "--no-first-run",
+                        # ]
+                        # process = subprocess.Popen(command)
+                        # PROCESS_PIDS.append(process.pid)
+
+                        BrowserManager.store_browser_session_info( process.pid, Settings.CHROME_PROFILES, profile_email,  self.session_id, self.selected_Browser.lower(), inserted_id,  profile_path=os.path.join(Settings.CHROME_PROFILES, profile_email) )
                     
                     self.emails_processed += 1
 
@@ -1965,11 +1916,11 @@ class MainWindow(QMainWindow):
 
         # check sur browser if exist selected_Browser
 
-        if selected_Browser:
-            if not BrowserManager.validate_and_setup_browser(self, selected_Browser):
-                Settings.WRITE_LOG_DEV_FILE(f"Browser not processed: {selected_Browser}", "WARNING")
-                UIManager.enable_button(self.submitButton)
-                return
+        # if selected_Browser:
+        #     if not BrowserManager.validate_and_setup_browser(self, selected_Browser):
+        #         Settings.WRITE_LOG_DEV_FILE(f"Browser not processed: {selected_Browser}", "WARNING")
+        #         UIManager.enable_button(self.submitButton)
+        #         return
         QApplication.processEvents()  
 
         browser_path = (
