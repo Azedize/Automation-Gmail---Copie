@@ -97,7 +97,6 @@ def log_message(text):
 # ==========================================================
 
 def Stop_All_Processes(window):
-
     UIManager.disable_button(window.stopButton)
     global EXTRACTION_THREAD, CLOSE_BROWSER_THREAD
     global PROCESS_PIDS, LOGS_RUNNING, FIREFOX_SESSIONS
@@ -238,12 +237,9 @@ class LogsDisplayThread(QThread):
         self.LOGS = LOGS
         self.stop_flag = False
     
-    
     # =====================================================bn f
     # 🔁 THREAD PRINCIPAL
     # =====================================================
- 
-
     def run(self):
         global LOGS_RUNNING
         while LOGS_RUNNING:
@@ -253,7 +249,6 @@ class LogsDisplayThread(QThread):
             else:
                 time.sleep(1)
 
-    
     
     def stop(self):
         self.stop_flag = True
