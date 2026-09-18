@@ -1,7 +1,6 @@
 import os
 import base64
 import hashlib
-import traceback
 from cryptography.hazmat.primitives import hashes, padding
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -11,29 +10,26 @@ import sys
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 
-
-
-
 try:
     from config.settings import settings
 except ImportError as e:
     print(f"❌ Erreur d'importation dans file {__file__} : {e}")
-    sys.exit(1) 
-    
+    sys.exit(1)
 
-    
+
 # =========================================================
 # 🔒 EncryptionService (AES-CBC, AES-GCM, Fernet)
 # =========================================================
 
 
-
 class EncryptionService:
-
-    
     # =========================
     # 🔹 AES-CBC decrypt unified
     # =========================
+    @staticmethod
+    def decryptMessage(base64_data: str, key) -> str:
+        return EncryptionService.decrypt_message(base64_data, key)
+
     @staticmethod
     def decrypt_message(base64_data: str, key) -> str:
         """
@@ -41,23 +37,26 @@ class EncryptionService:
         - base64_data: النص المشفر Base64
         - key: str أو bytes
         """
-        
+
         if isinstance(key, str):
-            key_bytes = hashlib.sha256(key.encode('utf-8')).digest()
+            key_bytes = hashlib.sha256(key.encode("utf-8")).digest()
         elif isinstance(key, bytes):
             key_bytes = key
         else:
-            msg = f"❌ ERREUR DÉCRYPTAGE: La clé doit être str ou bytes. Type reçu: {type(key)}\nTraceback complet: {traceback.format_exc()}"
-            settings.WRITE_LOG_DEV_FILE(msg, level="ERROR")
-            # print(msg)
-            settings.WRITE_LOG_DEV_FILE(msg, level="ERROR")
+            settings.write_log_event(
+                "decryption_key_invalid",
+                "ERROR",
+                key_type=type(key).__name__,
+            )
             sys.exit(1)
 
         if len(key_bytes) != settings.AES_KEY_LENGTH:
-            msg = f"❌ ERREUR DÉCRYPTAGE: Longueur de clé AES invalide. Attendu: {settings.AES_KEY_LENGTH}, Reçu: {len(key_bytes)}\nTraceback complet: {traceback.format_exc()}"
-            settings.WRITE_LOG_DEV_FILE(msg, level="ERROR")
-            # print(msg)
-            settings.WRITE_LOG_DEV_FILE(msg, level="ERROR")
+            settings.write_log_event(
+                "decryption_key_invalid",
+                "ERROR",
+                expected_length=settings.AES_KEY_LENGTH,
+                received_length=len(key_bytes),
+            )
             sys.exit(1)
 
         try:
@@ -78,8 +77,8 @@ class EncryptionService:
                     f"Attendu au moins {settings.AES_IV_LENGTH_CBC} octets pour l'IV, reçu {len(raw)}."
                 )
 
-            iv = raw[:settings.AES_IV_LENGTH_CBC]
-            ciphertext = raw[settings.AES_IV_LENGTH_CBC:]
+            iv = raw[: settings.AES_IV_LENGTH_CBC]
+            ciphertext = raw[settings.AES_IV_LENGTH_CBC :]
 
             if len(iv) != settings.AES_IV_LENGTH_CBC:
                 raise ValueError(
@@ -88,7 +87,9 @@ class EncryptionService:
             if len(ciphertext) == 0:
                 raise ValueError("Ciphertext is empty after extracting IV.")
 
-            cipher = Cipher(algorithms.AES(key_bytes), modes.CBC(iv), backend=default_backend())
+            cipher = Cipher(
+                algorithms.AES(key_bytes), modes.CBC(iv), backend=default_backend()
+            )
             decryptor = cipher.decryptor()
             padded_plaintext = decryptor.update(ciphertext) + decryptor.finalize()
 
@@ -98,53 +99,66 @@ class EncryptionService:
 
             return plaintext_bytes.decode("utf-8")
         except Exception as e:
-            error_msg = f"❌ ERREUR DÉCRYPTAGE AES-CBC: {str(e)}\nDonnées: {base64_data if isinstance(base64_data, str) else repr(base64_data)}\nTraceback complet:\n{traceback.format_exc()}"
-            settings.WRITE_LOG_DEV_FILE(error_msg, level="ERROR")
+            settings.write_log_event(
+                "aes_cbc_decryption_failed",
+                "ERROR",
+                exception_type=type(e).__name__,
+                error=str(e),
+                payload_length=len(base64_data) if isinstance(base64_data, str) else 0,
+            )
             sys.exit(1)
-
-
-
-
-
 
     # =========================
     # 🔑 Key derivation (PBKDF2)
     # =========================
     @staticmethod
-    def Derive_Key(password: str, salt: bytes) -> bytes:
+    def deriveKey(password: str, salt: bytes) -> bytes:
+        return EncryptionService.derive_key(password, salt)
+
+    @staticmethod
+    def derive_key(password: str, salt: bytes) -> bytes:
         if len(salt) != settings.AES_SALT_LENGTH:
-            error_msg = f"❌ ERREUR DÉRIVATION CLÉ: Longueur de salt invalide. Attendu: {settings.AES_SALT_LENGTH}, Reçu: {len(salt)}\nTraceback complet: {traceback.format_exc()}"
-            settings.WRITE_LOG_DEV_FILE(error_msg, level="ERROR")
-            # print(error_msg)
-            settings.WRITE_LOG_DEV_FILE(error_msg, level="ERROR")
+            settings.write_log_event(
+                "pbkdf2_key_derivation_failed",
+                "ERROR",
+                expected_salt_length=settings.AES_SALT_LENGTH,
+                received_salt_length=len(salt),
+            )
             sys.exit(1)
         try:
             kdf = PBKDF2HMAC(
                 algorithm=hashes.SHA256(),
                 length=settings.AES_KEY_LENGTH,
                 salt=salt,
-                iterations=settings.PBKDF2_ITERATIONS
+                iterations=settings.PBKDF2_ITERATIONS,
             )
             return kdf.derive(password.encode("utf-8"))
         except Exception as e:
-            error_msg = f"❌ ERREUR DÉRIVATION CLÉ PBKDF2: {str(e)}\nMot de passe length: {len(password)}\nTraceback complet:\n{traceback.format_exc()}"
-            settings.WRITE_LOG_DEV_FILE(error_msg, level="ERROR")
-            # print(error_msg)
-            settings.WRITE_LOG_DEV_FILE(error_msg, level="ERROR")
+            settings.write_log_event(
+                "pbkdf2_key_derivation_failed",
+                "ERROR",
+                exception_type=type(e).__name__,
+                error=str(e),
+                password_length=len(password),
+            )
             sys.exit(1)
-
-
-
 
     # =========================
     # 🔒 AES-CBC Encrypt
     # =========================
     @staticmethod
+    def encryptMessage(plaintext: str, key_bytes: bytes) -> str:
+        return EncryptionService.encrypt_message(plaintext, key_bytes)
+
+    @staticmethod
     def encrypt_message(plaintext: str, key_bytes: bytes) -> str:
         if len(key_bytes) != settings.AES_KEY_LENGTH:
-            settings.WRITE_LOG_DEV_FILE(error_msg, level="ERROR")
-            # print(error_msg)
-            settings.WRITE_LOG_DEV_FILE(f"❌ ERREUR CHIFFRAGE: Longueur de clé AES invalide. Attendu: {settings.AES_KEY_LENGTH}, Reçu: {len(key_bytes)}\nTraceback complet: {traceback.format_exc()}", level="ERROR")
+            settings.write_log_event(
+                "aes_cbc_encryption_failed",
+                "ERROR",
+                expected_length=settings.AES_KEY_LENGTH,
+                received_length=len(key_bytes),
+            )
             sys.exit(1)
         try:
             padder = padding.PKCS7(settings.AES_BLOCK_SIZE).padder()
@@ -157,24 +171,27 @@ class EncryptionService:
 
             return base64.b64encode(iv + ciphertext).decode("utf-8")
         except Exception as e:
-            settings.WRITE_LOG_DEV_FILE(f"❌ ERREUR CHIFFRAGE AES-CBC: {str(e)}\nTexte plaintext length: {len(plaintext)}\nTraceback complet:\n{traceback.format_exc()}", level="ERROR")
-            # print(error_msg)
-            settings.WRITE_LOG_DEV_FILE(error_msg, level="ERROR")
+            settings.write_log_event(
+                "aes_cbc_encryption_failed",
+                "ERROR",
+                exception_type=type(e).__name__,
+                error=str(e),
+                plaintext_length=len(plaintext),
+            )
             sys.exit(1)
-
-
-
-
-
 
     # =========================
     # 🔐 AES-GCM Encrypt
     # =========================
     @staticmethod
+    def encryptAesGcm(password: str, plaintext: str) -> str:
+        return EncryptionService.encrypt_aes_gcm(password, plaintext)
+
+    @staticmethod
     def encrypt_aes_gcm(password: str, plaintext: str) -> str:
         try:
             salt = os.urandom(settings.AES_SALT_LENGTH)
-            key = EncryptionService.Derive_Key(password, salt)
+            key = EncryptionService.derive_key(password, salt)
             iv = os.urandom(settings.AES_IV_LENGTH_GCM)
 
             aesgcm = AESGCM(key)
@@ -185,17 +202,23 @@ class EncryptionService:
         except SystemExit:
             raise
         except Exception as e:
-            
-            # print(error_msg)
-            settings.WRITE_LOG_DEV_FILE(f"❌ ERREUR CHIFFRAGE AES-GCM: {str(e)}\nMot de passe length: {len(password)}, Plaintext length: {len(plaintext)}\nTraceback complet:\n{traceback.format_exc()}", level="ERROR")
+            settings.write_log_event(
+                "aes_gcm_encryption_failed",
+                "ERROR",
+                exception_type=type(e).__name__,
+                error=str(e),
+                password_length=len(password),
+                plaintext_length=len(plaintext),
+            )
             sys.exit(1)
-
-
-
 
     # =========================
     # 🔑 Verify Fernet Key
     # =========================
+    @staticmethod
+    def verifyKey(encrypted_key: str, secret_key: str) -> bool:
+        return EncryptionService.verify_key(encrypted_key, secret_key)
+
     @staticmethod
     def verify_key(encrypted_key: str, secret_key: str) -> bool:
         try:
@@ -203,16 +226,23 @@ class EncryptionService:
             decrypted = fernet.decrypt(encrypted_key.encode())
             return decrypted == b"authorized"
         except Exception as e:
-            settings.WRITE_LOG_DEV_FILE( f"❌ ERREUR VÉRIFICATION CLÉ FERNET: {str(e)}\nEncrypted key length: {len(encrypted_key)}, Secret key length: {len(secret_key)}\nTraceback complet:\n{traceback.format_exc()}", level="ERROR")
-            # print(error_msg)
+            settings.write_log_event(
+                "fernet_key_verification_failed",
+                "ERROR",
+                exception_type=type(e).__name__,
+                error=str(e),
+                encrypted_key_length=len(encrypted_key),
+                secret_key_length=len(secret_key),
+            )
             sys.exit(1)
-
-
-
 
     # =========================
     # 🔑 Generate Fernet Encrypted Key
     # =========================
+    @staticmethod
+    def generateEncryptedKey():
+        return EncryptionService.generate_encrypted_key()
+
     @staticmethod
     def generate_encrypted_key():
         try:
@@ -221,16 +251,16 @@ class EncryptionService:
             encrypted_message = fernet.encrypt(b"authorized")
             return encrypted_message.decode(), secret_key.decode()
         except Exception as e:
-            # print(error_msg)
-            settings.WRITE_LOG_DEV_FILE(f"❌ ERREUR GÉNÉRATION CLÉ FERNET: {str(e)}\nTraceback complet:\n{traceback.format_exc()}", level="ERROR")
+            settings.write_log_event(
+                "fernet_key_generation_failed",
+                "ERROR",
+                exception_type=type(e).__name__,
+                error=str(e),
+            )
             sys.exit(1)
-
 
 
 # =========================
 # 🔹 Instance
 # =========================
 EncryptionService = EncryptionService()
-
-
-

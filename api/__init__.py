@@ -1,6 +1,7 @@
-from .base_client import APIManager
+from .base_client import API_MANAGER, ApiClient
 
 __all__ = [
-    'APIManager'
+    'API_MANAGER',
+    'ApiClient',
 
 ]

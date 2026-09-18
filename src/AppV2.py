@@ -39,19 +39,24 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
 
-
 try:
     from config import Settings as Settings
     from core import EncryptionService
     from core import SessionManager
     from models import BrowserManager
-    from api import APIManager
+    from api import API_MANAGER
     from utils import ValidationUtils
     from ui_utils import UIManager
     from services import JsonManager
     from Update import UpdateManager
 except ImportError as e:
-    Settings.WRITE_LOG_DEV_FILE(f"Import error in file {__file__}: {e}\n{traceback.format_exc()}", "ERROR")
+    Settings.write_log_event(
+        "app_import_failed",
+        "ERROR",
+        file=__file__,
+        exception_type=type(e).__name__,
+        error=str(e),
+    )
     sys.exit(1)
 
 
@@ -74,8 +79,7 @@ SELECTED_BROWSER_GLOBAL = None
 REMAINING_EMAILS = 0
 
 
-SESSION_ID = ValidationUtils.generate_session_id()
-
+SESSION_ID = ValidationUtils.generateSessionId()
 
 
 # ==========================================================
@@ -83,26 +87,23 @@ SESSION_ID = ValidationUtils.generate_session_id()
 # ==========================================================
 
 
-def log_message(text):
+def logMessage(text):
     global LOGS
     LOGS.append(text)
-
-
-
-
 
 
 # ==========================================================
 # 🔹 FUNCTION STOP ALL PROCESSES
 # ==========================================================
 
-def Stop_All_Processes(window):
-    UIManager.disable_button(window.stopButton)
+
+def stopAllProcesses(window):
+    UIManager.disableButton(window.stopButton)
     global EXTRACTION_THREAD, CLOSE_BROWSER_THREAD
     global PROCESS_PIDS, LOGS_RUNNING, FIREFOX_SESSIONS
     global SELECTED_BROWSER_GLOBAL
 
-    Settings.WRITE_LOG_DEV_FILE("Stopping all processes...", "INFO")
+    Settings.write_log_dev_file("Stopping all processes...", "INFO")
     LOGS_RUNNING = False
 
     # ==========================================================
@@ -110,30 +111,53 @@ def Stop_All_Processes(window):
     # ==========================================================
     try:
         if EXTRACTION_THREAD:
-            Settings.WRITE_LOG_DEV_FILE("Stopping extraction thread...", "INFO")
+            Settings.write_log_dev_file("Stopping extraction thread...", "INFO")
             EXTRACTION_THREAD.stop_flag = True
             EXTRACTION_THREAD.wait()
             EXTRACTION_THREAD = None
-            Settings.WRITE_LOG_DEV_FILE("Extraction thread stopped successfully.", "INFO")
+            Settings.write_log_dev_file(
+                "Extraction thread stopped successfully.", "INFO"
+            )
     except Exception as e:
-        Settings.WRITE_LOG_DEV_FILE(f"Error stopping extraction thread: {e}\n{traceback.format_exc()}", "ERROR")
+        Settings.write_log_event(
+            "thread_stop_failed",
+            "ERROR",
+            thread_name="extraction",
+            exception_type=type(e).__name__,
+            error=str(e),
+        )
     try:
         if CLOSE_BROWSER_THREAD:
-            Settings.WRITE_LOG_DEV_FILE("Stopping close browser thread...", "INFO")
+            Settings.write_log_dev_file("Stopping close browser thread...", "INFO")
             CLOSE_BROWSER_THREAD.stop_flag = True
             CLOSE_BROWSER_THREAD.wait()
             CLOSE_BROWSER_THREAD = None
-            Settings.WRITE_LOG_DEV_FILE("Close browser thread stopped successfully.", "INFO")
+            Settings.write_log_dev_file(
+                "Close browser thread stopped successfully.", "INFO"
+            )
     except Exception as e:
-        Settings.WRITE_LOG_DEV_FILE(f"Error stopping close browser thread: {e}\n{traceback.format_exc()}", "ERROR")
+        Settings.write_log_event(
+            "thread_stop_failed",
+            "ERROR",
+            thread_name="browser_close",
+            exception_type=type(e).__name__,
+            error=str(e),
+        )
     # ==========================================================
     # 🔹 CHECK SELECTED BROWSER
     # ==========================================================
     if not SELECTED_BROWSER_GLOBAL:
-        Settings.WRITE_LOG_DEV_FILE("Stop failed: No browser selected or no processes running.", "WARNING")
-        UIManager.Show_Critical_Message(window, "No Processes Running", "No processes are currently running.", message_type="warning")
-        UIManager.enable_button(window.submitButton)
-        UIManager.enable_button(window.stopButton)
+        Settings.write_log_dev_file(
+            "Stop failed: No browser selected or no processes running.", "WARNING"
+        )
+        UIManager.showCriticalMessage(
+            window,
+            "No Processes Running",
+            "No processes are currently running.",
+            message_type="warning",
+        )
+        UIManager.enableButton(window.submitButton)
+        UIManager.enableButton(window.stopButton)
         return
     browser_name = SELECTED_BROWSER_GLOBAL.lower()
 
@@ -143,7 +167,9 @@ def Stop_All_Processes(window):
     if browser_name != "firefox":
         for pid in PROCESS_PIDS[:]:
             try:
-                Settings.WRITE_LOG_DEV_FILE(f"Attempting to terminate process with PID {pid}...", "INFO")
+                Settings.write_log_dev_file(
+                    f"Attempting to terminate process with PID {pid}...", "INFO"
+                )
                 process = psutil.Process(pid)
                 # --------------------------------------------------
                 # NORMAL TERMINATION
@@ -151,92 +177,114 @@ def Stop_All_Processes(window):
                 process.terminate()
                 try:
                     process.wait(timeout=5)
-                    Settings.WRITE_LOG_DEV_FILE(f"Process {pid} terminated successfully.", "INFO")
+                    Settings.write_log_dev_file(
+                        f"Process {pid} terminated successfully.", "INFO"
+                    )
                 # --------------------------------------------------
                 # FORCE KILL
                 # --------------------------------------------------
                 except psutil.TimeoutExpired:
-                    Settings.WRITE_LOG_DEV_FILE(f"Timeout for PID {pid}, forcing kill...", "WARNING")
+                    Settings.write_log_dev_file(
+                        f"Timeout for PID {pid}, forcing kill...", "WARNING"
+                    )
                     process.kill()
                     try:
                         process.wait(timeout=3)
-                        Settings.WRITE_LOG_DEV_FILE(f"Process {pid} killed successfully.", "INFO")
+                        Settings.write_log_dev_file(
+                            f"Process {pid} killed successfully.", "INFO"
+                        )
                     except psutil.NoSuchProcess:
-                        Settings.WRITE_LOG_DEV_FILE(f"Process {pid} already closed after kill.", "INFO")
+                        Settings.write_log_dev_file(
+                            f"Process {pid} already closed after kill.", "INFO"
+                        )
                     except psutil.TimeoutExpired:
-                        Settings.WRITE_LOG_DEV_FILE(f"Failed to kill PID {pid} after timeout.", "ERROR")
+                        Settings.write_log_dev_file(
+                            f"Failed to kill PID {pid} after timeout.", "ERROR"
+                        )
                 except psutil.NoSuchProcess:
-                    Settings.WRITE_LOG_DEV_FILE(f"Process {pid} already terminated.", "INFO")
+                    Settings.write_log_dev_file(
+                        f"Process {pid} already terminated.", "INFO"
+                    )
             # ======================================================
             # NO SUCH PROCESS
             # ======================================================
             except psutil.NoSuchProcess:
-                Settings.WRITE_LOG_DEV_FILE(f"Process {pid} no longer exists.", "INFO")
+                Settings.write_log_dev_file(f"Process {pid} no longer exists.", "INFO")
             # ======================================================
             # ACCESS DENIED
             # ======================================================
             except psutil.AccessDenied:
-                Settings.WRITE_LOG_DEV_FILE(f"Permission denied for PID {pid}.", "WARNING")
+                Settings.write_log_dev_file(
+                    f"Permission denied for PID {pid}.", "WARNING"
+                )
             # ======================================================
             # UNKNOWN ERROR
             # ======================================================
             except Exception as e:
-                Settings.WRITE_LOG_DEV_FILE(f"Unexpected error terminating PID {pid}: {e}\n{traceback.format_exc()}", "ERROR")
+                Settings.write_log_dev_file(
+                    f"Unexpected error terminating PID {pid}: {e}\n{traceback.format_exc()}",
+                    "ERROR",
+                )
             # ======================================================
             # CLEAN LIST
             # ======================================================
             finally:
                 if pid in PROCESS_PIDS:
                     PROCESS_PIDS.remove(pid)
-                    Settings.WRITE_LOG_DEV_FILE(f"PID {pid} removed from process list.", "INFO")
+                    Settings.write_log_dev_file(
+                        f"PID {pid} removed from process list.", "INFO"
+                    )
     # ==========================================================
     # 🔹 FIREFOX
     # ==========================================================
     else:
         try:
-            Settings.WRITE_LOG_DEV_FILE("Closing Firefox profiles using stored session entries...", "INFO")
+            Settings.write_log_dev_file(
+                "Closing Firefox profiles using stored session entries...", "INFO"
+            )
             if FIREFOX_SESSIONS:
                 session_entries = list(FIREFOX_SESSIONS.values())
-                Settings.WRITE_LOG_DEV_FILE(f"Closing {len(session_entries)} Firefox session entries", "DEBUG")
-                BrowserManager.Close_Windows_By_Profiles(session_entries)
+                Settings.write_log_dev_file(
+                    f"Closing {len(session_entries)} Firefox session entries", "DEBUG"
+                )
+                BrowserManager.closeFirefoxProcesses(session_entries)
             else:
-                Settings.WRITE_LOG_DEV_FILE("No Firefox sessions found, unable to close Firefox profiles.", "WARNING")
-            Settings.WRITE_LOG_DEV_FILE("Firefox profiles closed successfully.", "INFO")
+                Settings.write_log_dev_file(
+                    "No Firefox sessions found, unable to close Firefox profiles.",
+                    "WARNING",
+                )
+            Settings.write_log_dev_file("Firefox profiles closed successfully.", "INFO")
         except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE(f"Error closing Firefox profiles: {e}\n{traceback.format_exc()}", "WARNING")
+            Settings.write_log_dev_file(
+                f"Error closing Firefox profiles: {e}\n{traceback.format_exc()}",
+                "WARNING",
+            )
         finally:
             if PROCESS_PIDS:
                 for pid in PROCESS_PIDS[:]:
                     PROCESS_PIDS.remove(pid)
-                    Settings.WRITE_LOG_DEV_FILE(f"PID {pid} removed from process list.", "INFO")
+                    Settings.write_log_dev_file(
+                        f"PID {pid} removed from process list.", "INFO"
+                    )
             if FIREFOX_SESSIONS:
                 FIREFOX_SESSIONS.clear()
-                Settings.WRITE_LOG_DEV_FILE("FIREFOX_SESSIONS cleared", "DEBUG")
+                Settings.write_log_dev_file("FIREFOX_SESSIONS cleared", "DEBUG")
     # ==========================================================
     # 🔹 ENABLE BUTTONS
     # ==========================================================
-    UIManager.enable_button(window.submitButton)
-    UIManager.enable_button(window.stopButton)
-    Settings.WRITE_LOG_DEV_FILE("All stop operations completed.", "INFO")
+    UIManager.enableButton(window.submitButton)
+    UIManager.enableButton(window.stopButton)
+    Settings.write_log_dev_file("All stop operations completed.", "INFO")
 
 
-
-
-
-
-
-
-class LogsDisplayThread(QThread):
-
-
+class ApplicationLogDisplayThread(QThread):
     log_signal = pyqtSignal(str)
-
 
     def __init__(self, LOGS, parent=None):
         super().__init__(parent)
         self.LOGS = LOGS
         self.stop_flag = False
-    
+
     # =====================================================bn f
     # 🔁 THREAD PRINCIPAL
     # =====================================================
@@ -249,14 +297,9 @@ class LogsDisplayThread(QThread):
             else:
                 time.sleep(1)
 
-    
-    def stop(self):
+    def stopThread(self):
         self.stop_flag = True
         self.wait()
-
-
-
-
 
 
 # ==========================================================
@@ -282,10 +325,9 @@ class LogsDisplayThread(QThread):
 #         ABC123_test@gmail.com_success.txt
 # ==========================================================
 
-class CloseBrowserThread(QThread):
 
+class BrowserSessionMonitorThread(QThread):
     progress = pyqtSignal(str)
-    
 
     def __init__(self, selected_Browser, username):
         super().__init__()
@@ -299,12 +341,46 @@ class CloseBrowserThread(QThread):
         self.SESSION_DIR = os.path.join(self.BASE_LOG_DIR, f"{self.CURRENT_DATETIME}")
         os.makedirs(self.SESSION_DIR, exist_ok=True)
 
-        
         self.completed_emails = set()
         self.lock = threading.Lock()
 
-        Settings.WRITE_LOG_DEV_FILE(f"Thread created | Browser={selected_Browser} | User={username} | downloads_folder={self.downloads_folder} | session_id={self.session_id} | session_dir={self.SESSION_DIR}", "INFO")
-        
+        Settings.write_log_dev_file(
+            f"Thread created | Browser={selected_Browser} | User={username} | downloads_folder={self.downloads_folder} | session_id={self.session_id} | session_dir={self.SESSION_DIR}",
+            "INFO",
+        )
+
+    @staticmethod
+    def parseFilenameMetadata(file_name):
+        file_name = os.path.basename(file_name)
+        match = re.match(
+            r"^(?:"
+            r"(?P<category>log|capture)_(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z)_(?P<session_id>[A-Za-z0-9]+)_(?P<email>[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})_(?P<status>[A-Za-z0-9_-]+)\.(?P<ext>txt|png|jpg|jpeg)"
+            r"|(?P<legacy_session_id>[A-Za-z0-9]+)_(?P<legacy_email>[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})_(?P<legacy_status>[A-Za-z0-9_-]+)\.(?P<legacy_ext>txt|png|jpg|jpeg)"
+            r")$",
+            file_name,
+            re.IGNORECASE,
+        )
+
+        if not match:
+            return None
+
+        data = match.groupdict()
+        session_id = data.get("session_id") or data.get("legacy_session_id")
+        email = data.get("email") or data.get("legacy_email")
+        status = data.get("status") or data.get("legacy_status")
+        category = data.get("category") or "session"
+
+        if not session_id or not email or not status:
+            return None
+
+        return {
+            "category": category,
+            "session_id": session_id,
+            "email": email,
+            "status": status.lower(),
+            "file_name": file_name,
+        }
+
     # ======================================================
     # 🔁 THREAD PRINCIPAL
     # ======================================================
@@ -314,12 +390,16 @@ class CloseBrowserThread(QThread):
 
         # Attente interruptible de 10 secondes
         start_wait = time.time()
-        Settings.WRITE_LOG_DEV_FILE(f"Waiting initial delay before processing files: 10s", "DEBUG")
+        Settings.write_log_dev_file(
+            f"Waiting initial delay before processing files: 10s", "DEBUG"
+        )
         while time.time() - start_wait < 10 and not self.stop_flag:
             time.sleep(1)
 
         if self.stop_flag:
-            Settings.WRITE_LOG_DEV_FILE("🛑 [THREAD] Stop requested during initial wait", "INFO")
+            Settings.write_log_dev_file(
+                "🛑 [THREAD] Stop requested during initial wait", "INFO"
+            )
             return
 
         empty_counter = 0
@@ -328,60 +408,114 @@ class CloseBrowserThread(QThread):
             try:
                 all_files = os.listdir(self.downloads_folder)
 
-                session_files = [  f for f in all_files if f.startswith(self.session_id) and f.endswith(".txt")  ]
-                log_files = [  f  for f in all_files  if f.startswith("log_") and f.endswith(".txt") ]
-                screenshots = [ f  for f in all_files if f.lower().endswith((".png", ".jpg", ".jpeg")) ]
+                session_files = []
+                log_files = []
+                screenshots = []
+
+                for file_name in all_files:
+                    lower_name = file_name.lower()
+                    metadata = self.parseFilenameMetadata(file_name)
+
+                    if lower_name.endswith(".txt") and (
+                        file_name.startswith("log_")
+                        or (metadata and metadata.get("status"))
+                        or file_name.startswith(self.session_id)
+                    ):
+                        if file_name.startswith("log_"):
+                            log_files.append(file_name)
+                        else:
+                            session_files.append(file_name)
+
+                    if lower_name.endswith((".png", ".jpg", ".jpeg")) and (
+                        file_name.startswith("capture_")
+                        or (metadata and metadata.get("status"))
+                        or "@" in file_name
+                    ):
+                        screenshots.append(file_name)
 
                 current_time = time.strftime("%H:%M:%S", time.localtime())
-                Settings.WRITE_LOG_DEV_FILE( f"[LOOP] {current_time} | stop_flag={self.stop_flag} | PROCESS_PIDS={len(PROCESS_PIDS)} | REMAINING_EMAILS={REMAINING_EMAILS} | session_files={len(session_files)} | log_files={len(log_files)} | screenshots={len(screenshots)} | empty_counter={empty_counter}",  "DEBUG"  )
-                Settings.WRITE_LOG_DEV_FILE(f"[LOOP] downloaded files: {all_files}", "TRACE" if hasattr(Settings, 'TRACE') else "DEBUG")
+                Settings.write_log_dev_file(
+                    f"[LOOP] {current_time} | stop_flag={self.stop_flag} | PROCESS_PIDS={len(PROCESS_PIDS)} | REMAINING_EMAILS={REMAINING_EMAILS} | session_files={len(session_files)} | log_files={len(log_files)} | screenshots={len(screenshots)} | empty_counter={empty_counter}",
+                    "DEBUG",
+                )
+                Settings.write_log_dev_file(
+                    f"[LOOP] downloaded file count: {len(all_files)}",
+                    "TRACE" if hasattr(Settings, "TRACE") else "DEBUG",
+                )
 
                 if PROCESS_PIDS:
                     empty_counter = 0
 
                     # 🔹 logs
                     if log_files:
-                        Settings.WRITE_LOG_DEV_FILE(f"Processing log files: {len(log_files)} -> {log_files}", "DEBUG")
+                        Settings.write_log_dev_file(
+                            f"Processing log files: {len(log_files)} -> {log_files}",
+                            "DEBUG",
+                        )
                         with ThreadPoolExecutor(max_workers=4) as executor:
-                            executor.map(self.process_log_file, log_files)
-                        Settings.WRITE_LOG_DEV_FILE("Finished processing log files", "DEBUG")
+                            executor.map(self.processLogFile, log_files)
+                        Settings.write_log_dev_file( "Finished processing log files", "DEBUG"  )
 
                     # 🔹 sessions
                     if session_files:
-                        Settings.WRITE_LOG_DEV_FILE(f"Processing session files: {len(session_files)} -> {session_files}", "DEBUG")
+                        Settings.write_log_dev_file(
+                            f"Processing session files: {len(session_files)} -> {session_files}",
+                            "DEBUG",
+                        )
                         with ThreadPoolExecutor(max_workers=4) as executor:
-                            executor.map(lambda f: self.process_session_file(f, screenshots), session_files)
-                        Settings.WRITE_LOG_DEV_FILE("Finished processing session files", "DEBUG")
+                            executor.map(
+                                lambda f: self.processSessionFile(f, screenshots),
+                                session_files,
+                            )
+                        Settings.write_log_dev_file(
+                            "Finished processing session files", "DEBUG"
+                        )
 
-                    Settings.WRITE_LOG_DEV_FILE(f"PROCESS_PIDS after processing: {len(PROCESS_PIDS)} | REMAINING_EMAILS: {REMAINING_EMAILS}", "DEBUG")
+                    Settings.write_log_dev_file(
+                        f"PROCESS_PIDS after processing: {len(PROCESS_PIDS)} | REMAINING_EMAILS: {REMAINING_EMAILS}",
+                        "DEBUG",
+                    )
 
                 else:
                     if REMAINING_EMAILS == 0 and not log_files and not session_files:
-                        Settings.WRITE_LOG_DEV_FILE("🛑 Aucun PID actif et aucun email restant → arrêt immédiat du thread", "INFO")
+                        Settings.write_log_dev_file(
+                            "🛑 Aucun PID actif et aucun email restant → arrêt immédiat du thread",
+                            "INFO",
+                        )
                         break
 
                     empty_counter += 1
-                    Settings.WRITE_LOG_DEV_FILE(f"No active PIDs but files remain: log_files={len(log_files)}, session_files={len(session_files)} | empty_counter={empty_counter}", "WARNING")
+                    Settings.write_log_dev_file(
+                        f"No active PIDs but files remain: log_files={len(log_files)}, session_files={len(session_files)} | empty_counter={empty_counter}",
+                        "WARNING",
+                    )
                     if empty_counter >= 15:
-                        Settings.WRITE_LOG_DEV_FILE("🛑 PROCESS_PIDS vide → arrêt du thread après attente", "WARNING")
+                        Settings.write_log_dev_file(
+                            "🛑 PROCESS_PIDS vide → arrêt du thread après attente",
+                            "WARNING",
+                        )
                         break
 
-                Settings.WRITE_LOG_DEV_FILE(f"📊 Fin d'itération: logs={len(log_files)}, sessions={len(session_files)}, screenshots={len(screenshots)}", "DEBUG")
+                Settings.write_log_dev_file( f"📊 Fin d'itération: logs={len(log_files)}, sessions={len(session_files)}, screenshots={len(screenshots)}",  "DEBUG"   )
 
                 start_sleep = time.time()
                 while time.time() - start_sleep < 1 and not self.stop_flag:
                     time.sleep(0.1)
 
             except Exception as e:
-                Settings.WRITE_LOG_DEV_FILE(  f"❌ [THREAD] Erreur: {e}\n{ traceback.format_exc()}", "ERROR" )
+                Settings.write_log_dev_file(
+                    f"❌ [THREAD] Erreur: {e}\n{traceback.format_exc()}", "ERROR"
+                )
                 # print(f"❌ [THREAD] Erreur: {e}")
 
         end_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        # print(f"\n🛑 [THREAD] CloseBrowserThread TERMINÉ")
+        # print(f"\n🛑 [THREAD] BrowserSessionMonitorThread TERMINÉ")
         # print(f"  ⏰ Fin: {end_time}")
         # print(f"  📊 PROCESS_PIDS: {PROCESS_PIDS} | REMAINING_EMAILS: {REMAINING_EMAILS}")
-        Settings.WRITE_LOG_DEV_FILE(  f"Thread finished | End time: {end_time} | PROCESS_PIDS: {len(PROCESS_PIDS)} | REMAINING_EMAILS: {REMAINING_EMAILS}",  "INFO"  )
-
+        Settings.write_log_dev_file(
+            f"Thread finished | End time: {end_time} | PROCESS_PIDS: {len(PROCESS_PIDS)} | REMAINING_EMAILS: {REMAINING_EMAILS}",
+            "INFO",
+        )
 
     # ==========================================================
     # PIPELINE DE TRAITEMENT DES FICHIERS DE JOURNAL
@@ -403,55 +537,248 @@ class CloseBrowserThread(QThread):
     # - de stocker les sessions de manière structurée
     # - d'éviter le traitement multiple du même e-mail
     # ==========================================================
-    
-    def process_log_file(self, log_file):
+
+    def resolveBrowserSessionFromProfile(self, email):
+        if not email:
+            return {
+                "pid": None,
+                "session_id": self.session_id,
+                "inserted_id": None,
+                "firefox_pids": [],
+                "web_ext_pid": None,
+                "profile_data_file": None,
+            }
+
+        browser_name = (self.selected_Browser or "").lower()
+        session_data = {
+            "pid": None,
+            "session_id": self.session_id,
+            "inserted_id": None,
+            "firefox_pids": [],
+            "web_ext_pid": None,
+            "profile_data_file": None,
+        }
+
+        if browser_name == "firefox":
+            if email in FIREFOX_SESSIONS:
+                firefox_session = FIREFOX_SESSIONS[email]
+                session_data["firefox_pids"] = firefox_session.get("firefox_pids", [])
+                session_data["web_ext_pid"] = firefox_session.get("web_ext_pid")
+                session_data["inserted_id"] = firefox_session.get("inserted_id")
+                session_data["session_id"] = (
+                    firefox_session.get("session_id") or self.session_id
+                )
+                if session_data["firefox_pids"]:
+                    session_data["pid"] = session_data["firefox_pids"][0]
+                elif session_data["web_ext_pid"]:
+                    session_data["pid"] = session_data["web_ext_pid"]
+                return session_data
+
+            profile_dir = os.path.join(Settings.FIREFOX_PROFILES, email)
+            profile_data_file = os.path.join(profile_dir, "data.txt")
+            session_data["profile_data_file"] = profile_data_file
+            if os.path.exists(profile_data_file):
+                try:
+                    with open(
+                        profile_data_file, "r", encoding="utf-8", errors="replace"
+                    ) as f:
+                        content = f.read().strip()
+                    if content:
+                        parts = content.split(":")
+                        if len(parts) >= 4:
+                            pid_value = parts[0].strip()
+                            session_data["pid"] = (
+                                int(pid_value) if str(pid_value).isdigit() else None
+                            )
+                            session_data["session_id"] = (
+                                parts[2].strip() or self.session_id
+                            )
+                            session_data["inserted_id"] = parts[3].strip() or None
+                            if isinstance(session_data["pid"], int):
+                                session_data["firefox_pids"] = [session_data["pid"]]
+                except Exception as e:
+                    Settings.write_log_dev_file(
+                        f"[LOG] Failed to read Firefox session data file {profile_data_file}: {e}",
+                        "WARNING",
+                    )
+            return session_data
+
+        profile_dir = None
+        if browser_name == "chrome":
+            profile_dir = Settings.CHROME_PROFILES
+        elif browser_name in {"edge", "icedragon", "comodo"}:
+            profile_dir = Settings.CHROMIUM_BROWSER_PATHS.get(browser_name, {}).get(
+                "profiles"
+            )
+
+        if profile_dir:
+            profile_data_file = os.path.join(profile_dir, email, "data.txt")
+            session_data["profile_data_file"] = profile_data_file
+            if os.path.exists(profile_data_file):
+                try:
+                    with open(
+                        profile_data_file, "r", encoding="utf-8", errors="replace"
+                    ) as f:
+                        content = f.read().strip()
+                    if content:
+                        parts = content.split(":")
+                        if len(parts) >= 4:
+                            pid_value = parts[0].strip()
+                            session_data["pid"] = (
+                                int(pid_value) if str(pid_value).isdigit() else None
+                            )
+                            session_data["session_id"] = (
+                                parts[2].strip() or self.session_id
+                            )
+                            session_data["inserted_id"] = parts[3].strip() or None
+                except Exception as e:
+                    Settings.write_log_dev_file(
+                        f"[LOG] Failed to read profile session data file {profile_data_file}: {e}",
+                        "WARNING",
+                    )
+
+        return session_data
+
+    def moveAssociatedScreenshot(self, email, email_folder):
+        try:
+            if not os.path.isdir(email_folder):
+                os.makedirs(email_folder, exist_ok=True)
+
+            for file_name in os.listdir(self.downloads_folder):
+                lower_name = file_name.lower()
+                if lower_name.startswith("capture_") and email.lower() in lower_name:
+                    source_path = os.path.join(self.downloads_folder, file_name)
+                    target_path = os.path.join(email_folder, file_name)
+                    if os.path.exists(source_path):
+                        if os.path.exists(target_path):
+                            os.remove(target_path)
+                        shutil.move(source_path, target_path)
+                        Settings.write_log_dev_file(
+                            f"[LOG] Screenshot moved to email folder: {target_path}",
+                            "INFO",
+                        )
+                        return target_path
+        except Exception as e:
+            Settings.write_log_dev_file(
+                f"⚠️ [SCREENSHOT] Error moving screenshot for {email}: {e}\n{traceback.format_exc()}",
+                "ERROR",
+            )
+        return None
+
+    def processLogFile(self, log_file):
         if self.stop_flag:
-            Settings.WRITE_LOG_DEV_FILE("🛑 [LOG] Stop requested", "INFO")
+            Settings.write_log_dev_file("🛑 [LOG] Stop requested", "INFO")
             return
 
         full_path = os.path.join(self.downloads_folder, log_file)
-        Settings.WRITE_LOG_DEV_FILE(f"[LOG] Starting log file processing: {log_file} | full_path={full_path}", "DEBUG")
+        metadata = self.parseFilenameMetadata(full_path)
+        Settings.write_log_dev_file(
+            f"[LOG] Starting log file processing: {log_file} | full_path={full_path} | metadata={metadata}",
+            "DEBUG",
+        )
 
         try:
             if not os.path.exists(full_path):
-                Settings.WRITE_LOG_DEV_FILE(f"[LOG] File not found during processing: {full_path}", "ERROR")
+                Settings.write_log_dev_file(
+                    f"[LOG] File not found during processing: {full_path}", "ERROR"
+                )
                 return
 
-            email = ValidationUtils.get_email_from_log_file(full_path)
-            Settings.WRITE_LOG_DEV_FILE(f"[LOG] Extracted email from log file: {email}", "DEBUG")
+            email = None
+            status = None
+            session_id = self.session_id
+            if metadata:
+                email = metadata.get("email")
+                status = metadata.get("status")
+                session_id = metadata.get("session_id") or session_id
+
+            if not email:
+                email = ValidationUtils.extractEmailFromLogFile(full_path)
 
             if not email:
                 with open(full_path, "r", encoding="utf-8", errors="replace") as f:
                     sample = f.read(256)
-                Settings.WRITE_LOG_DEV_FILE( f"No email found in log file content sample: {sample!r}", "ERROR")
+                Settings.write_log_dev_file(
+                    f"No email found in log file content sample: {sample!r}", "ERROR"
+                )
                 return
+
+            session_lookup = self.resolveBrowserSessionFromProfile(email)
+            if not session_id:
+                session_id = session_lookup.get("session_id") or self.session_id
+            if not status:
+                status = "unknown"
+            pid = session_lookup.get("pid")
+            inserted_id = session_lookup.get("inserted_id")
+            firefox_pids = session_lookup.get("firefox_pids", [])
+            web_ext_pid = session_lookup.get("web_ext_pid")
+
+            Settings.write_log_dev_file(
+                f"[LOG] Extracted email from log file: {email} | status={status} | session_id={session_id} | pid={pid}",
+                "DEBUG",
+            )
+
+            if status:
+                Settings.write_log_dev_file(
+                    f"[LOG] Status parsed from filename: {status}", "INFO"
+                )
 
             with self.lock:
                 if email in self.completed_emails:
-                    Settings.WRITE_LOG_DEV_FILE(f"Email {email} already processed, skipping log file: {log_file}", "INFO")
+                    Settings.write_log_dev_file(
+                        f"Email {email} already processed, skipping log file: {log_file}",
+                        "INFO",
+                    )
                     return
 
             email_folder = os.path.join(self.SESSION_DIR, self.selected_Browser, email)
             os.makedirs(email_folder, exist_ok=True)
-            Settings.WRITE_LOG_DEV_FILE(f"[LOG] Email folder ensured: {email_folder}", "DEBUG")
+            Settings.write_log_dev_file(
+                f"[LOG] Email folder ensured: {email_folder}", "DEBUG"
+            )
 
-            target_log = os.path.join(email_folder, f"{email}_{self.CURRENT_DATETIME}.txt")
+            target_log = os.path.join(
+                email_folder, f"{email}_{self.CURRENT_DATETIME}.txt"
+            )
             with open(full_path, "r", encoding="utf-8", errors="replace") as f:
                 content = f.read()
-            Settings.WRITE_LOG_DEV_FILE(f"[LOG] Read log file content length: {len(content)}", "DEBUG")
+            Settings.write_log_dev_file(
+                f"[LOG] Read log file content length: {len(content)}", "DEBUG"
+            )
 
             with open(target_log, "a", encoding="utf-8") as tf:
                 tf.write(content + "\n")
-            Settings.WRITE_LOG_DEV_FILE(f"[LOG] Appended log to target file: {target_log}", "DEBUG")
+            Settings.write_log_dev_file(
+                f"[LOG] Appended log to target file: {target_log}", "DEBUG"
+            )
+
+            self.moveAssociatedScreenshot(email, email_folder)
+
+            if status and session_id and email:
+                self.writeResultAndSendStatus(
+                    session_id, pid, email, status, inserted_id
+                )
+                self.closeBrowserSession(
+                    pid,
+                    email,
+                    self.selected_Browser,
+                    firefox_pids,
+                    web_ext_pid,
+                    "-LOG",
+                )
+                with self.lock:
+                    self.completed_emails.add(email)
 
             os.remove(full_path)
-            Settings.WRITE_LOG_DEV_FILE(f"✅ [LOG] Processed and removed source file: {full_path}", "INFO")
+            Settings.write_log_dev_file(
+                f"✅ [LOG] Processed and removed source file: {full_path}", "INFO"
+            )
 
         except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE(f"❌ [LOG] Erreur processing log file {full_path}: {e}\n{ traceback.format_exc()}", "ERROR")
-            
-
-
+            Settings.write_log_dev_file(
+                f"❌ [LOG] Erreur processing log file {full_path}: {e}\n{traceback.format_exc()}",
+                "ERROR",
+            )
 
     # ==========================================================
     # GESTIONNAIRE DE NETTOYAGE DES PROCESSUS FIREFOX
@@ -466,36 +793,61 @@ class CloseBrowserThread(QThread):
     # - Gérer les processus absents ou déjà terminés de manière sûre
     # - Éviter les fuites de processus après la fin d'une session
     # ==========================================================
-    
-    def _close_firefox_session(self, firefox_pids, web_ext_pid, email, flow_label=""):
+
+    def closeFirefoxSession(self, firefox_pids, web_ext_pid, email, flow_label=""):
         if firefox_pids:
-            Settings.WRITE_LOG_DEV_FILE(f"[CLOSE{flow_label}] Closing Firefox PIDs: {firefox_pids} for {email}", "INFO")
+            Settings.write_log_dev_file(
+                f"[CLOSE{flow_label}] Closing Firefox PIDs: {firefox_pids} for {email}",
+                "INFO",
+            )
             for firefox_pid in firefox_pids:
                 try:
                     if psutil.pid_exists(firefox_pid):
                         psutil.Process(firefox_pid).kill()
-                        Settings.WRITE_LOG_DEV_FILE(f"[CLOSE{flow_label}] Firefox PID {firefox_pid} killed successfully", "INFO")
+                        Settings.write_log_dev_file(
+                            f"[CLOSE{flow_label}] Firefox PID {firefox_pid} killed successfully",
+                            "INFO",
+                        )
                     else:
-                        Settings.WRITE_LOG_DEV_FILE(f"[CLOSE{flow_label}] Firefox PID {firefox_pid} no longer exists", "INFO")
+                        Settings.write_log_dev_file(
+                            f"[CLOSE{flow_label}] Firefox PID {firefox_pid} no longer exists",
+                            "INFO",
+                        )
                 except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
-                    Settings.WRITE_LOG_DEV_FILE(f"[CLOSE{flow_label}] Error closing Firefox PID {firefox_pid}: {e}", "WARNING")
+                    Settings.write_log_dev_file(
+                        f"[CLOSE{flow_label}] Error closing Firefox PID {firefox_pid}: {e}",
+                        "WARNING",
+                    )
         else:
-            Settings.WRITE_LOG_DEV_FILE(f"No Firefox PIDs for {email} {flow_label}".strip(), "WARNING")
+            Settings.write_log_dev_file(
+                f"No Firefox PIDs for {email} {flow_label}".strip(), "WARNING"
+            )
 
         if web_ext_pid:
             try:
                 if psutil.pid_exists(web_ext_pid):
                     psutil.Process(web_ext_pid).kill()
-                    Settings.WRITE_LOG_DEV_FILE(f"[CLOSE{flow_label}] web-ext PID {web_ext_pid} killed successfully", "INFO")
+                    Settings.write_log_dev_file(
+                        f"[CLOSE{flow_label}] web-ext PID {web_ext_pid} killed successfully",
+                        "INFO",
+                    )
                 else:
-                    Settings.WRITE_LOG_DEV_FILE(f"[CLOSE{flow_label}] web-ext PID {web_ext_pid} no longer exists", "INFO")
+                    Settings.write_log_dev_file(
+                        f"[CLOSE{flow_label}] web-ext PID {web_ext_pid} no longer exists",
+                        "INFO",
+                    )
             except (psutil.NoSuchProcess, psutil.AccessDenied):
-                Settings.WRITE_LOG_DEV_FILE(f"[CLOSE{flow_label}] web-ext PID {web_ext_pid} already closed", "INFO")
+                Settings.write_log_dev_file(
+                    f"[CLOSE{flow_label}] web-ext PID {web_ext_pid} already closed",
+                    "INFO",
+                )
 
         if web_ext_pid in PROCESS_PIDS:
             PROCESS_PIDS.remove(web_ext_pid)
-            Settings.WRITE_LOG_DEV_FILE(f"[CLOSE{flow_label}] web-ext PID {web_ext_pid} removed from PROCESS_PIDS queue", "INFO")
-
+            Settings.write_log_dev_file(
+                f"[CLOSE{flow_label}] web-ext PID {web_ext_pid} removed from PROCESS_PIDS queue",
+                "INFO",
+            )
 
     # ==========================================================
     # FERMETURE GÉNÉRIQUE DE LA SESSION DU NAVIGATEUR
@@ -510,17 +862,22 @@ class CloseBrowserThread(QThread):
     # - Prévoir un repli sûr quand le PID est absent
     # ==========================================================
 
-    def _close_session(self, pid, email, browser, firefox_pids, web_ext_pid, flow_label=""):
+    def closeBrowserSession(
+        self, pid, email, browser, firefox_pids, web_ext_pid, flow_label=""
+    ):
         if browser.lower() == "firefox":
-            self._close_firefox_session(firefox_pids, web_ext_pid, email, flow_label)
+            self.closeFirefoxSession(firefox_pids, web_ext_pid, email, flow_label)
         else:
             if pid:
-                self._close_browser_process(pid, email, browser)
-                Settings.WRITE_LOG_DEV_FILE(f"[CLOSE{flow_label}] Process {pid} closed for {email}", "INFO")
+                self.closeBrowserProcess(pid, email, browser)
+                Settings.write_log_dev_file(
+                    f"[CLOSE{flow_label}] Process {pid} closed for {email}", "INFO"
+                )
             else:
-                Settings.WRITE_LOG_DEV_FILE(f"No PID for {email} {flow_label}".strip(), "WARNING")
+                Settings.write_log_dev_file(
+                    f"No PID for {email} {flow_label}".strip(), "WARNING"
+                )
 
-    
     # ==========================================================
     # ANALYSEUR ET TRAITEMENT DES FICHIERS DE SESSION
     #
@@ -538,30 +895,44 @@ class CloseBrowserThread(QThread):
     # - Nettoyer les fichiers de session après traitement
     # ==========================================================
 
-    def process_session_file(self, file_name, screenshots):
+    def processSessionFile(self, file_name, screenshots):
         if self.stop_flag:
-            Settings.WRITE_LOG_DEV_FILE("🛑 [SESSION] Stop requested", "INFO")
+            Settings.write_log_dev_file("🛑 [SESSION] Stop requested", "INFO")
             return
 
         session_path = os.path.join(self.downloads_folder, file_name)
-        Settings.WRITE_LOG_DEV_FILE(f"[SESSION] Starting processing: {file_name} | full_path={session_path}", "DEBUG")
+        Settings.write_log_dev_file(
+            f"[SESSION] Starting processing: {file_name} | full_path={session_path}",
+            "DEBUG",
+        )
 
         if not os.path.exists(session_path):
-            Settings.WRITE_LOG_DEV_FILE(f"Session file not found: {session_path}", "ERROR")
+            Settings.write_log_dev_file(
+                f"Session file not found: {session_path}", "ERROR"
+            )
             return
 
         try:
             with open(session_path, "r", encoding="utf-8", errors="replace") as f:
                 content = f.read().strip()
-            Settings.WRITE_LOG_DEV_FILE(f"[SESSION] Read content length={len(content)}", "DEBUG")
-            Settings.WRITE_LOG_DEV_FILE(f"[SESSION] Content preview: {content[:200]!r}", "TRACE" if hasattr(Settings, 'TRACE') else "DEBUG")
+            Settings.write_log_dev_file(
+                f"[SESSION] Read content length={len(content)}", "DEBUG"
+            )
+            Settings.write_log_dev_file(
+                f"[SESSION] Content preview: {content[:200]!r}",
+                "TRACE" if hasattr(Settings, "TRACE") else "DEBUG",
+            )
 
             regex = r"session_id:(\w+)_email:([\w.@+-]+)_etat:(\w+)"
             match = re.search(regex, content, re.IGNORECASE)
-            Settings.WRITE_LOG_DEV_FILE(f"[SESSION] Using regex={regex} | match_found={bool(match)}", "DEBUG")
+            Settings.write_log_dev_file(
+                f"[SESSION] Using regex={regex} | match_found={bool(match)}", "DEBUG"
+            )
 
             if not match:
-                Settings.WRITE_LOG_DEV_FILE(f"❌ [SESSION] Parsing failed for file: {file_name}", "ERROR")
+                Settings.write_log_dev_file(
+                    f"❌ [SESSION] Parsing failed for file: {file_name}", "ERROR"
+                )
                 return
 
             session_id, email, status = match.groups()
@@ -570,91 +941,154 @@ class CloseBrowserThread(QThread):
             firefox_pids = []
             web_ext_pid = None
             profile_data_file = None
-            Settings.WRITE_LOG_DEV_FILE(f"[SESSION] Parsed session_id={session_id} email={email} status={status}", "INFO")
+            Settings.write_log_dev_file(
+                f"[SESSION] Parsed session_id={session_id} email={email} status={status}",
+                "INFO",
+            )
 
             if self.selected_Browser.lower() == "firefox":
-                Settings.WRITE_LOG_DEV_FILE(f"[SESSION] Firefox browser detected, looking up FIREFOX_SESSIONS[{email}]", "DEBUG")
+                Settings.write_log_dev_file(
+                    f"[SESSION] Firefox browser detected, looking up FIREFOX_SESSIONS[{email}]",
+                    "DEBUG",
+                )
                 if email in FIREFOX_SESSIONS:
                     firefox_session = FIREFOX_SESSIONS[email]
-                    Settings.WRITE_LOG_DEV_FILE(f"[SESSION] Firefox session found: {json.dumps(firefox_session, ensure_ascii=False, default=str)}", "DEBUG")
+                    Settings.write_log_dev_file(
+                        f"[SESSION] Firefox session found: {json.dumps(firefox_session, ensure_ascii=False, default=str)}",
+                        "DEBUG",
+                    )
                     firefox_pids = firefox_session.get("firefox_pids", [])
                     web_ext_pid = firefox_session.get("web_ext_pid")
                     inserted_id = firefox_session.get("inserted_id")
-                    pid = firefox_pids 
-                    Settings.WRITE_LOG_DEV_FILE(f"[SESSION] Firefox extracted firefox_pids={firefox_pids} web_ext_pid={web_ext_pid} inserted_id={inserted_id}", "INFO")
+                    pid = firefox_pids
+                    Settings.write_log_dev_file(
+                        f"[SESSION] Firefox extracted firefox_pids={firefox_pids} web_ext_pid={web_ext_pid} inserted_id={inserted_id}",
+                        "INFO",
+                    )
                 else:
-                    Settings.WRITE_LOG_DEV_FILE(f"❌ [SESSION] Firefox session not found in FIREFOX_SESSIONS for email={email}", "ERROR")
-                    Settings.WRITE_LOG_DEV_FILE(f"[SESSION] Available keys in FIREFOX_SESSIONS: {list(FIREFOX_SESSIONS.keys())}", "WARNING")
+                    Settings.write_log_dev_file(
+                        f"❌ [SESSION] Firefox session not found in FIREFOX_SESSIONS for email={email}",
+                        "ERROR",
+                    )
+                    Settings.write_log_dev_file(
+                        f"[SESSION] Available keys in FIREFOX_SESSIONS: {list(FIREFOX_SESSIONS.keys())}",
+                        "WARNING",
+                    )
             else:
                 profile_dir = Settings.CHROME_PROFILES
                 if self.selected_Browser.lower() == "edge":
                     profile_dir = Settings.CHROMIUM_BROWSER_PATHS["edge"]["profiles"]
                 elif self.selected_Browser.lower() == "icedragon":
-                    profile_dir = Settings.CHROMIUM_BROWSER_PATHS["icedragon"]["profiles"]
+                    profile_dir = Settings.CHROMIUM_BROWSER_PATHS["icedragon"][
+                        "profiles"
+                    ]
                 elif self.selected_Browser.lower() == "comodo":
                     profile_dir = Settings.CHROMIUM_BROWSER_PATHS["comodo"]["profiles"]
 
                 profile_data_file = os.path.join(profile_dir, email, "data.txt")
-                Settings.WRITE_LOG_DEV_FILE(f"[SESSION] Chromium profile data path: {profile_data_file}", "DEBUG")
+                Settings.write_log_dev_file(
+                    f"[SESSION] Chromium profile data path: {profile_data_file}",
+                    "DEBUG",
+                )
                 if os.path.exists(profile_data_file):
-                    with open(profile_data_file, "r", encoding="utf-8", errors="replace") as f:
+                    with open(
+                        profile_data_file, "r", encoding="utf-8", errors="replace"
+                    ) as f:
                         profile_line = f.readline().strip()
-                    Settings.WRITE_LOG_DEV_FILE(f"[SESSION] Chromium profile data line: {profile_line}", "DEBUG")
+                    Settings.write_log_dev_file(
+                        f"[SESSION] Chromium profile data line: {profile_line}", "DEBUG"
+                    )
                     try:
-                        pid, email_chk, session_id_chk, inserted_id = profile_line.split(":")[:4]
-                        Settings.WRITE_LOG_DEV_FILE(f"[SESSION] Chromium extracted pid={pid} email_chk={email_chk} session_id_chk={session_id_chk} inserted_id={inserted_id}", "INFO")
+                        pid, email_chk, session_id_chk, inserted_id = (
+                            profile_line.split(":")[:4]
+                        )
+                        Settings.write_log_dev_file(
+                            f"[SESSION] Chromium extracted pid={pid} email_chk={email_chk} session_id_chk={session_id_chk} inserted_id={inserted_id}",
+                            "INFO",
+                        )
                     except ValueError as e:
-                        Settings.WRITE_LOG_DEV_FILE(f"🚨 [SESSION] Failed to parse Chromium profile line: {profile_line} | error={e}", "ERROR")
+                        Settings.write_log_dev_file(
+                            f"🚨 [SESSION] Failed to parse Chromium profile line: {profile_line} | error={e}",
+                            "ERROR",
+                        )
                 else:
-                    Settings.WRITE_LOG_DEV_FILE(f"Chromium profile data file not found for {email} at {profile_data_file}", "ERROR")
+                    Settings.write_log_dev_file(
+                        f"Chromium profile data file not found for {email} at {profile_data_file}",
+                        "ERROR",
+                    )
 
-            Settings.WRITE_LOG_DEV_FILE(f"Session found | Email: {email} | Status: {status} | PID: {pid} | inserted_id: {inserted_id}", "DEBUG")
+            Settings.write_log_dev_file(
+                f"Session found | Email: {email} | Status: {status} | PID: {pid} | inserted_id: {inserted_id}",
+                "DEBUG",
+            )
 
             # ✅ LIGHT FLOW (completed / bad_proxy)
             if status.lower() in ("completed", "bad_proxy"):
-                Settings.WRITE_LOG_DEV_FILE(f"✅ LIGHT FLOW | {email}", "DEBUG")
+                Settings.write_log_dev_file(f"✅ LIGHT FLOW | {email}", "DEBUG")
 
                 with self.lock:
                     self.completed_emails.add(email)
 
-                self.write_result_and_send_status(session_id, pid, email, status, inserted_id)
-                self._close_session(pid, email, self.selected_Browser, firefox_pids, web_ext_pid)
+                self.writeResultAndSendStatus(
+                    session_id, pid, email, status, inserted_id
+                )
+                self.closeBrowserSession(
+                    pid, email, self.selected_Browser, firefox_pids, web_ext_pid
+                )
                 return
 
             # ❌ ERROR FLOW
-            Settings.WRITE_LOG_DEV_FILE(f"ERROR FLOW detected for session {session_id} email={email} status={status}", "DEBUG")
+            Settings.write_log_dev_file(
+                f"ERROR FLOW detected for session {session_id} email={email} status={status}",
+                "DEBUG",
+            )
 
             email_folder = os.path.join(self.SESSION_DIR, self.selected_Browser, email)
             os.makedirs(email_folder, exist_ok=True)
 
-            self._move_screenshot(email, screenshots, email_folder)
+            self.moveScreenshot(email, screenshots, email_folder)
 
-            self.write_result_and_send_status(session_id, pid, email, status, inserted_id)
-            self._close_session(pid, email, self.selected_Browser, firefox_pids, web_ext_pid, "-ERROR")
+            self.writeResultAndSendStatus(session_id, pid, email, status, inserted_id)
+            self.closeBrowserSession(
+                pid, email, self.selected_Browser, firefox_pids, web_ext_pid, "-ERROR"
+            )
 
         except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE(  f"❌ [SESSION] Erreur: {e}\n{ traceback.format_exc()}", "ERROR"  )
+            Settings.write_log_dev_file(
+                f"❌ [SESSION] Erreur: {e}\n{traceback.format_exc()}", "ERROR"
+            )
 
         finally:
             try:
                 if os.path.exists(session_path):
                     os.remove(session_path)
-                    Settings.WRITE_LOG_DEV_FILE(f"[CLEANUP] Removed session file: {session_path}", "DEBUG")
+                    Settings.write_log_dev_file(
+                        f"[CLEANUP] Removed session file: {session_path}", "DEBUG"
+                    )
             except Exception as e:
-                Settings.WRITE_LOG_DEV_FILE( f"❌ [CLEANUP] Error removing session file: {e}", "DEBUG"  )
+                Settings.write_log_dev_file(
+                    f"❌ [CLEANUP] Error removing session file: {e}", "DEBUG"
+                )
 
             if self.selected_Browser.lower() == "firefox":
                 if email in FIREFOX_SESSIONS:
                     del FIREFOX_SESSIONS[email]
-                    Settings.WRITE_LOG_DEV_FILE(f"[CLEANUP] Removed Firefox session for {email}", "DEBUG")
+                    Settings.write_log_dev_file(
+                        f"[CLEANUP] Removed Firefox session for {email}", "DEBUG"
+                    )
             else:
                 try:
                     if profile_data_file and os.path.exists(profile_data_file):
                         os.remove(profile_data_file)
-                        Settings.WRITE_LOG_DEV_FILE(f"[CLEANUP] Removed chromium profile data file: {profile_data_file}", "DEBUG")
+                        Settings.write_log_dev_file(
+                            f"[CLEANUP] Removed chromium profile data file: {profile_data_file}",
+                            "DEBUG",
+                        )
                 except Exception as e:
-                    Settings.WRITE_LOG_DEV_FILE( f"❌ [CLEANUP] Error removing profile data file: {e}\n{ traceback.format_exc()}", "DEBUG"  )
-
+                    Settings.write_log_dev_file(
+                        f"❌ [CLEANUP] Error removing profile data file: {e}\n{traceback.format_exc()}",
+                        "DEBUG",
+                    )
 
     # ==========================================================
     # ENREGISTREMENT DU RÉSULTAT DE SESSION + ENVOI API
@@ -669,36 +1103,56 @@ class CloseBrowserThread(QThread):
     # - Gérer proprement les cas d'échec de l'API
     # ==========================================================
 
-    def write_result_and_send_status(self, session_id, pid, email, status, inserted_id):
+    def writeResultAndSendStatus(self, session_id, pid, email, status, inserted_id):
         # print(f"\n📝 [RESULT] {email} | Status: {status}")
 
         if self.stop_flag:
             # print("🛑 [RESULT] Arrêt demandé")
-            Settings.WRITE_LOG_DEV_FILE("🛑 [RESULT] Stop requested", "INFO")
+            Settings.write_log_dev_file("🛑 [RESULT] Stop requested", "INFO")
             return
 
         try:
             result_line = f"{session_id}:{pid}:{email}:{status}"
             with open(Settings.RESULT_FILE_PATH, "a", encoding="utf-8") as f:
                 f.write(f"{result_line}\n")
-            Settings.WRITE_LOG_DEV_FILE(f"💾 [RESULT] Résultat écrit: {result_line}", "INFO")
+            Settings.write_log_event(
+                "result_written",
+                "INFO",
+                status=status,
+                result_file=Settings.RESULT_FILE_PATH,
+            )
 
-            api_data = { "id": inserted_id,  "login": self.username, "status": "OK" if status.lower() == "completed" else "NotOK",   "error": "" if status.lower() == "completed" else status }
+            api_data = {
+                "id": inserted_id,
+                "login": self.username,
+                "status": "OK" if status.lower() == "completed" else "NotOK",
+                "error": "" if status.lower() == "completed" else status,
+            }
 
-            result = str(APIManager.send_status(api_data))
+            result = str(API_MANAGER.sendStatus(api_data))
             # print(f"📡 [RESULT] API result: {result}")
-            Settings.WRITE_LOG_DEV_FILE(f"API result: {result}", "INFO")
+            Settings.write_log_event(
+                "status_api_response",
+                "INFO",
+                response_type=type(result).__name__,
+                response_code=result
+                if result in {"-1", "-2", "-3", "-4", "-5"}
+                else "received",
+            )
 
             if result == -1:
-                
-                Settings.WRITE_LOG_DEV_FILE(f"API returned -1 for {email}", level="ERROR")
+                Settings.write_log_dev_file(
+                    f"API returned -1 for {email}", level="ERROR"
+                )
                 # print(f"❌ [RESULT] API returned -1 for {email}")
                 raise RuntimeError(f"API returned -1 for {email}")
 
             # print(f"✅ [RESULT] Terminé pour {email}")
 
         except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE(f"❌ [RESULT] Erreur: {e} details: {traceback.format_exc()}", "ERROR")
+            Settings.write_log_dev_file(
+                f"❌ [RESULT] Erreur: {e} details: {traceback.format_exc()}", "ERROR"
+            )
             # print(f"❌ [RESULT] Erreur: {e}")
             raise SystemExit(1)
 
@@ -714,18 +1168,22 @@ class CloseBrowserThread(QThread):
     # - Renommer ou organiser les captures d'écran pour un stockage structuré
     # - Vérifier qu'aucune capture en double ou hors sujet n'est déplacée
     # ==========================================================
-    
-    def _move_screenshot(self, email, screenshots, email_folder):
+
+    def moveScreenshot(self, email, screenshots, email_folder):
         try:
             for img in screenshots:
                 if email.lower() in img.lower():
-                    shutil.move( os.path.join(self.downloads_folder, img),   os.path.join(email_folder, f"{email}.png")  )
+                    shutil.move(
+                        os.path.join(self.downloads_folder, img),
+                        os.path.join(email_folder, f"{email}.png"),
+                    )
                     break
         except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE(  f"⚠️ [SCREENSHOT] Erreur: {e}\n{ traceback.format_exc()}", "ERROR" )
+            Settings.write_log_dev_file(
+                f"⚠️ [SCREENSHOT] Erreur: {e}\n{traceback.format_exc()}", "ERROR"
+            )
             # print(f"⚠️ Screenshot error: {e}")
 
-    
     # ==========================================================
     # TERMINAISON GÉNÉRIQUE DES PROCESSUS (NON-FIREFOX)
     #
@@ -738,13 +1196,18 @@ class CloseBrowserThread(QThread):
     # - Retirer le PID nettoyé de la liste PROCESS_PIDS
     # - Empêcher les processus zombie ou orphelins
     # ==========================================================
-    
-    def _close_browser_process(self, pid, email, browser):
-        Settings.WRITE_LOG_DEV_FILE(  f"_close_browser_process start | browser={browser} | email={email} | pid={repr(pid)} | pid_type={type(pid).__name__}",  "DEBUG" )
+
+    def closeBrowserProcess(self, pid, email, browser):
+        Settings.write_log_dev_file(
+            f"_close_browser_process start | browser={browser} | email={email} | pid={repr(pid)} | pid_type={type(pid).__name__}",
+            "DEBUG",
+        )
 
         try:
             if pid is None:
-                Settings.WRITE_LOG_DEV_FILE(f"No PID provided for {email} ({browser})", "WARNING")
+                Settings.write_log_dev_file(
+                    f"No PID provided for {email} ({browser})", "WARNING"
+                )
                 return
 
             pid_list = []
@@ -754,18 +1217,27 @@ class CloseBrowserThread(QThread):
                     if item_str.isdigit():
                         pid_list.append(int(item_str))
                     else:
-                        Settings.WRITE_LOG_DEV_FILE(f"Skipped non-numeric PID segment in list: {repr(item)}", "WARNING"  )
+                        Settings.write_log_dev_file(
+                            f"Skipped non-numeric PID segment in list: {repr(item)}",
+                            "WARNING",
+                        )
             else:
                 pid_str = str(pid).strip()
                 if pid_str.isdigit():
                     pid_list = [int(pid_str)]
                 else:
-                    Settings.WRITE_LOG_DEV_FILE(  f"Invalid PID value for Chromium family: {repr(pid)}", "ERROR"  )
+                    Settings.write_log_dev_file(
+                        f"Invalid PID value for Chromium family: {repr(pid)}", "ERROR"
+                    )
                     return
 
-            Settings.WRITE_LOG_DEV_FILE(f"_close_browser_process computed pid_list={pid_list}", "DEBUG")
+            Settings.write_log_dev_file(
+                f"_close_browser_process computed pid_list={pid_list}", "DEBUG"
+            )
             if not pid_list:
-                Settings.WRITE_LOG_DEV_FILE(f"No valid PID to close for {email} ({browser})", "WARNING")
+                Settings.write_log_dev_file(
+                    f"No valid PID to close for {email} ({browser})", "WARNING"
+                )
                 return
 
             for current_pid in pid_list:
@@ -776,27 +1248,30 @@ class CloseBrowserThread(QThread):
                         p = psutil.Process(current_pid)
                         p.terminate()
                         p.wait(timeout=3)
-                        Settings.WRITE_LOG_DEV_FILE(f"Chrome closed via terminate() for PID {current_pid}", "INFO")
+                        Settings.write_log_dev_file(
+                            f"Chrome closed via terminate() for PID {current_pid}",
+                            "INFO",
+                        )
                     else:
-                        Settings.WRITE_LOG_DEV_FILE(f"Chrome closed via SIGTERM for PID {current_pid}", "INFO")
+                        Settings.write_log_dev_file(
+                            f"Chrome closed via SIGTERM for PID {current_pid}", "INFO"
+                        )
                 except Exception as e_chrome:
-                    Settings.WRITE_LOG_DEV_FILE( f"Error closing Chrome PID {current_pid}: {e_chrome}\n{traceback.format_exc()}", "ERROR"  )
+                    Settings.write_log_dev_file(
+                        f"Error closing Chrome PID {current_pid}: {e_chrome}\n{traceback.format_exc()}",
+                        "ERROR",
+                    )
 
                 if current_pid in PROCESS_PIDS:
                     PROCESS_PIDS.remove(current_pid)
-                    Settings.WRITE_LOG_DEV_FILE(f"PID {current_pid} removed from PROCESS_PIDS", "INFO")
+                    Settings.write_log_dev_file(
+                        f"PID {current_pid} removed from PROCESS_PIDS", "INFO"
+                    )
 
         except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE( f"❌ [CLOSE] Erreur: {e}\n{traceback.format_exc()}", "ERROR"  )
-
-    
-
-
-
-
-
-
-
+            Settings.write_log_dev_file(
+                f"❌ [CLOSE] Erreur: {e}\n{traceback.format_exc()}", "ERROR"
+            )
 
 
 # ======================================================
@@ -804,7 +1279,16 @@ class CloseBrowserThread(QThread):
 # ======================================================
 
 
-def Start_Extraction(  window, data_list, entered_number, selected_Browser, Isp, unique_id, output_json_final, username):
+def startExtraction(
+    window,
+    data_list,
+    entered_number,
+    selected_Browser,
+    Isp,
+    unique_id,
+    output_json_final,
+    username,
+):
 
     global EXTRACTION_THREAD, CLOSE_BROWSER_THREAD
 
@@ -813,21 +1297,40 @@ def Start_Extraction(  window, data_list, entered_number, selected_Browser, Isp,
     try:
         entered_number = int(entered_number)
     except ValueError:
-        UIManager.Show_Critical_Message( window, "Input Error - Invalid Format",  "Numeric value required. Please check your input and try again.",  message_type="critical")
-        Settings.WRITE_LOG_DEV_FILE( "Numeric value required. Please check your input and try again.", "ERROR")
+        UIManager.showCriticalMessage(
+            window,
+            "Input Error - Invalid Format",
+            "Numeric value required. Please check your input and try again.",
+            message_type="critical",
+        )
+        Settings.write_log_dev_file(
+            "Numeric value required. Please check your input and try again.", "ERROR"
+        )
         return
 
     email_count = len(data_list)
     if entered_number > email_count:
-        UIManager.Show_Critical_Message(  window, "Range Error - Exceeded Limit", f"Maximum allowed entries: {email_count}\n" f"Please enter a value between 1 and {email_count}.", message_type="critical")
-        Settings.WRITE_LOG_DEV_FILE( f"Maximum allowed entries: {email_count}\nPlease enter a value between 1 and {email_count}.", "ERROR" )
+        UIManager.showCriticalMessage(
+            window,
+            "Range Error - Exceeded Limit",
+            f"Maximum allowed entries: {email_count}\n"
+            f"Please enter a value between 1 and {email_count}.",
+            message_type="critical",
+        )
+        Settings.write_log_dev_file(
+            f"Maximum allowed entries: {email_count}\nPlease enter a value between 1 and {email_count}.",
+            "ERROR",
+        )
         return
 
+    Settings.write_log_dev_file(f"Selected entries: {entered_number}", "INFO")
 
-    Settings.WRITE_LOG_DEV_FILE(f"Selected entries: {entered_number}", "INFO")
-
-    browser_normalized = ( selected_Browser.lower() if isinstance(selected_Browser, str) else "unknown")
-    Settings.WRITE_LOG_DEV_FILE(f"Browser selection normalized: {browser_normalized}", "INFO")
+    browser_normalized = (
+        selected_Browser.lower() if isinstance(selected_Browser, str) else "unknown"
+    )
+    Settings.write_log_dev_file(
+        f"Browser selection normalized: {browser_normalized}", "INFO"
+    )
 
     # browser_path = (
     #     BrowserManager.get_browser_path("chrome.exe")
@@ -843,42 +1346,76 @@ def Start_Extraction(  window, data_list, entered_number, selected_Browser, Isp,
     #     )
     # )
 
-    browser_path = BrowserManager.get_browser_path("chrome.exe") if browser_normalized == "chrome" else BrowserManager.get_browser_path("firefox") if browser_normalized == "firefox" else BrowserManager.get_browser_path("msedge.exe") if browser_normalized == "edge" else BrowserManager.get_browser_path("dragon.exe")
+    browser_path = (
+        BrowserManager.getBrowserExecutablePath("chrome.exe")
+        if browser_normalized == "chrome"
+        else BrowserManager.getBrowserExecutablePath("firefox")
+        if browser_normalized == "firefox"
+        else BrowserManager.getBrowserExecutablePath("msedge.exe")
+        if browser_normalized == "edge"
+        else BrowserManager.getBrowserExecutablePath("dragon.exe")
+    )
 
-    browser_name = selected_Browser.strip() if isinstance(selected_Browser, str) else "Unknown"
+    browser_name = (
+        selected_Browser.strip() if isinstance(selected_Browser, str) else "Unknown"
+    )
     browser_path_display = browser_path or "Non trouvé"
-    Settings.WRITE_LOG_DEV_FILE( f"Browser startup details | Browser selected: {browser_name} | Executable path: {browser_path_display} | Extraction stage: initialisation",  "INFO" )
-
-
+    Settings.write_log_dev_file(
+        f"Browser startup details | Browser selected: {browser_name} | Executable path: {browser_path_display} | Extraction stage: initialisation",
+        "INFO",
+    )
 
     if selected_Browser.lower() == "firefox":
         Settings.ensure_web_ext_installed()
 
+    EXTRACTION_THREAD = EmailExtractionWorker(
+        window,
+        data_list,
+        SESSION_ID,
+        entered_number,
+        browser_path,
+        window,
+        selected_Browser,
+        Isp,
+        unique_id,
+        output_json_final,
+    )
 
-    EXTRACTION_THREAD = ExtractionThread( window, data_list,  SESSION_ID,  entered_number,  browser_path,  window,  selected_Browser,  Isp,  unique_id,  output_json_final)
-
-    EXTRACTION_THREAD.finished.connect(lambda: window.Extraction_Finished(window))
+    EXTRACTION_THREAD.finished.connect(lambda: window.extraction_finished(window))
     EXTRACTION_THREAD.progress.connect(lambda msg: print(msg))
-    EXTRACTION_THREAD.stopped.connect(lambda msg: QMessageBox.warning(window, "Arrêté", msg))
-    EXTRACTION_THREAD.finished.connect(  lambda: QMessageBox.information(window, "Terminé", "L'extraction est terminée.") )
+    EXTRACTION_THREAD.stopped.connect(
+        lambda msg: QMessageBox.warning(window, "Arrêté", msg)
+    )
+    EXTRACTION_THREAD.finished.connect(
+        lambda: QMessageBox.information(window, "Terminé", "L'extraction est terminée.")
+    )
     EXTRACTION_THREAD.start()
 
     time.sleep(10)
-    Settings.WRITE_LOG_DEV_FILE("Launching CloseBrowserThread...", "INFO")
-    CLOSE_BROWSER_THREAD = CloseBrowserThread(selected_Browser, username)
+    Settings.write_log_dev_file("Launching BrowserSessionMonitorThread...", "INFO")
+    CLOSE_BROWSER_THREAD = BrowserSessionMonitorThread(selected_Browser, username)
     CLOSE_BROWSER_THREAD.progress.connect(lambda msg: print(msg))
     CLOSE_BROWSER_THREAD.start()
 
 
-
-
-class ExtractionThread(QThread):
-
+class EmailExtractionWorker(QThread):
     progress = pyqtSignal(str)
     finished = pyqtSignal()
     stopped = pyqtSignal(str)
 
-    def __init__(  self,  window, data_list, SESSION_ID, entered_number,  Browser_path, main_window, selected_Browser,  Isp, unique_id,  output_json_final ):
+    def __init__(
+        self,
+        window,
+        data_list,
+        SESSION_ID,
+        entered_number,
+        Browser_path,
+        main_window,
+        selected_Browser,
+        Isp,
+        unique_id,
+        output_json_final,
+    ):
         super().__init__()
         self.window = window
         self.data_list = data_list
@@ -887,37 +1424,61 @@ class ExtractionThread(QThread):
         self.Browser_path = Browser_path
         self.stop_flag = False
         self.emails_processed = 0
-        self.selected_Browser = ( selected_Browser.strip().lower() if isinstance(selected_Browser, str) else "unknown" )
+        self.selected_Browser = (
+            selected_Browser.strip().lower()
+            if isinstance(selected_Browser, str)
+            else "unknown"
+        )
         self.main_window = main_window
         self.Isp = Isp
         self.unique_id = unique_id
         self.output_json_final = output_json_final
 
+    def buildEncryptedUrl(
+        self,
+        ip_address,
+        port,
+        login,
+        password,
+        profile_email,
+        profile_password,
+        recovery_email,
+        new_password,
+        new_recovery_email,
+        output_json_final,
+    ):
 
-    def _build_encrypted_url(self, ip_address, port, login, password, profile_email, profile_password, recovery_email, new_password, new_recovery_email, output_json_final):
-
-        result_payload = json.dumps(output_json_final, ensure_ascii=False, separators=(",", ":"))
-        combined = f"{ip_address};{port};{login};{password};{profile_email};{profile_password};{recovery_email};{new_password};{new_recovery_email};{result_payload}"
+        result_payload = json.dumps(
+            output_json_final, ensure_ascii=False, separators=(",", ":")
+        )
+        combined = f"{ip_address};{port};{login};{password};{profile_email};{profile_password};{recovery_email};{new_password};{new_recovery_email};{self.session_id};{result_payload}"
         try:
-            b64 = EncryptionService.encrypt_aes_gcm("A9!fP3z$wQ8@rX7kM2#dN6^bH1&yL4t*", combined)
+            b64 = EncryptionService.encrypt_aes_gcm(
+                "A9!fP3z$wQ8@rX7kM2#dN6^bH1&yL4t*", combined
+            )
             url = f"https://example.com/?rep={b64}"
         except Exception:
-            Settings.WRITE_LOG_DEV_FILE(f"Error encrypting data for URL: {traceback.format_exc()} ", "ERROR")
+            Settings.write_log_dev_file(
+                f"Error encrypting data for URL: {traceback.format_exc()} ", "ERROR"
+            )
             url = ""
         return url, combined
-
 
     # ==========================================================
     # PID PARSING - Parse Firefox PID lists ("1001; 2002; abc; 3003" → [1001, 2002, 3003])
     # ==========================================================
 
-    def _parse_pid_list(self, pid_value):
+    def parsePidList(self, pid_value):
         if pid_value is None:
-            Settings.WRITE_LOG_DEV_FILE("_parse_pid_list received None pid_value", "DEBUG")
+            Settings.write_log_dev_file(
+                "_parse_pid_list received None pid_value", "DEBUG"
+            )
             return []
         pid_str = str(pid_value).strip()
         if not pid_str:
-            Settings.WRITE_LOG_DEV_FILE("_parse_pid_list received empty pid string", "DEBUG")
+            Settings.write_log_dev_file(
+                "_parse_pid_list received empty pid string", "DEBUG"
+            )
             return []
         pids = []
         for part in pid_str.split(";"):
@@ -925,39 +1486,43 @@ class ExtractionThread(QThread):
             if part.isdigit():
                 pids.append(int(part))
             else:
-                Settings.WRITE_LOG_DEV_FILE(f"_parse_pid_list skipped non-digit segment: '{part}'", "WARNING")
-        Settings.WRITE_LOG_DEV_FILE(f"_parse_pid_list parsed PIDs: {pids} from '{pid_str}'", "DEBUG")
+                Settings.write_log_dev_file(
+                    f"_parse_pid_list skipped non-digit segment: '{part}'", "WARNING"
+                )
+        Settings.write_log_dev_file(
+            f"_parse_pid_list parsed PIDs: {pids} from '{pid_str}'", "DEBUG"
+        )
         return pids
 
-
     def run(self):
-
         global PROCESS_PIDS, LOGS_RUNNING, SELECTED_BROWSER_GLOBAL, REMAINING_EMAILS
-
         SELECTED_BROWSER_GLOBAL = self.selected_Browser
-        remaining_emails = self.data_list[:]
-        REMAINING_EMAILS = len(remaining_emails)
+        REMAINING_EMAILS_QUEUE = self.data_list[:]
+        REMAINING_EMAILS = len(REMAINING_EMAILS_QUEUE)
 
-        log_message("[INFO] Processing started")
-        Settings.WRITE_LOG_DEV_FILE( f"ExtractionThread started with browser={self.selected_Browser} | Browser_path={self.Browser_path}",  "INFO")
+        logMessage("[INFO] Processing started")
+        Settings.write_log_dev_file(
+            f"EmailExtractionWorker started with browser={self.selected_Browser} | Browser_path={self.Browser_path}",
+            "INFO",
+        )
 
         session_info = SessionManager.check_session()
 
         if not session_info["valid"]:
             self.stopped.emit("Session invalide. Veuillez vous reconnecter.")
-            Settings.WRITE_LOG_DEV_FILE("Invalid session. Please reconnect.", "ERROR")
+            Settings.write_log_dev_file("Invalid session. Please reconnect.", "ERROR")
             return
 
         # if self.selected_Browser.lower() == "chrome" :
 
         #     Settings.RESULTATS_EX = BrowserManager.Upload_EXTENSION_PROXY( "default", Settings.CLES_RECHERCHE, Settings.RESULTATS )
-            
+
         #     if Settings.RESULTATS_EX is None:
-        #         UIManager.Show_Critical_Message(self.window, "An issue occurred while copying the JSON file to the template profile ➡ Please contact support.", message_type="critical")
+        #         UIManager.show_critical_message(self.window, "An issue occurred while copying the JSON file to the template profile ➡ Please contact support.", message_type="critical")
         #         self.stopped.emit("An issue occurred while copying the JSON file to the template profile ➡ Please contact support.")
         #         self.stop_flag = True
-        #         Settings.WRITE_LOG_DEV_FILE("An issue occurred while copying the JSON file to the template profile ➡ Please contact support.", "ERROR")
-        #         return  
+        #         Settings.write_log_dev_file("An issue occurred while copying the JSON file to the template profile ➡ Please contact support.", "ERROR")
+        #         return
 
         # ==========================================================
         # SESSION STORAGE - Save session_id into extension data.txt
@@ -966,49 +1531,75 @@ class ExtractionThread(QThread):
 
         try:
             if self.selected_Browser.lower() == "firefox":
-                extension_data_path = os.path.join(Settings.EXTENTION_EX3_FIREFOX, "data.txt")
+                extension_data_path = os.path.join(
+                    Settings.EXTENTION_EX3_FIREFOX, "data.txt"
+                )
             else:
-                extension_data_path = os.path.join(Settings.EXTENTION_EX3_CHROMIUM, "data.txt")
+                extension_data_path = os.path.join(
+                    Settings.EXTENTION_EX3_CHROMIUM, "data.txt"
+                )
 
             os.makedirs(os.path.dirname(extension_data_path), exist_ok=True)
 
             with open(extension_data_path, "w", encoding="utf-8") as f:
                 f.write(f"{self.session_id}\n")
-            Settings.WRITE_LOG_DEV_FILE(f"Wrote session_id to extension data file: {extension_data_path}", "INFO")
+            Settings.write_log_dev_file(
+                f"Wrote session_id to extension data file: {extension_data_path}",
+                "INFO",
+            )
 
         except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE(f"Failed to write session_id to extension data file: {extension_data_path} | error={e}\n{traceback.format_exc()}", "ERROR")
+            Settings.write_log_dev_file(
+                f"Failed to write session_id to extension data file: {extension_data_path} | error={e}\n{traceback.format_exc()}",
+                "ERROR",
+            )
 
-        
-        while remaining_emails or PROCESS_PIDS:
-            
-
+        while REMAINING_EMAILS_QUEUE or PROCESS_PIDS:
             if self.stop_flag:
                 LOGS_RUNNING = False
-                log_message("[INFO] Processing interrupted by user.")
-                Settings.WRITE_LOG_DEV_FILE("Processing interrupted by user.", "INFO")
+                logMessage("[INFO] Processing interrupted by user.")
+                Settings.write_log_dev_file("Processing interrupted by user.", "INFO")
                 break
 
-            if len(PROCESS_PIDS) < self.entered_number and remaining_emails:
-
-                next_email = remaining_emails.pop(0)
-                REMAINING_EMAILS = len(remaining_emails)
-                email_value = ValidationUtils.get_key_from_dict(next_email, ["email", "Email"])
-                log_message(f"[INFO] Processing the email:  {email_value}")
-                Settings.WRITE_LOG_DEV_FILE(f"Processing the email: {email_value}", "INFO")
+            if len(PROCESS_PIDS) < self.entered_number and REMAINING_EMAILS_QUEUE:
+                next_email = REMAINING_EMAILS_QUEUE.pop(0)
+                REMAINING_EMAILS = len(REMAINING_EMAILS_QUEUE)
+                email_value = ValidationUtils.getValueFromDictionary(
+                    next_email, ["email", "Email"]
+                )
+                logMessage(f"[INFO] Processing the email:  {email_value}")
+                Settings.write_log_dev_file(
+                    f"Processing the email: {email_value}", "INFO"
+                )
 
                 try:
-                    profile_email = ValidationUtils.get_key_from_dict(  next_email, ["email", "Email"])
-                    profile_password = ValidationUtils.get_key_from_dict( next_email, ["password_email", "passwordEmail"] )
-                    ip_address = ValidationUtils.get_key_from_dict(  next_email, ["ip_address", "ipAddress"] )
-                    port = ValidationUtils.get_key_from_dict(next_email, ["port"])
-                    login = ValidationUtils.get_key_from_dict(next_email, ["login"])
-                    password = ValidationUtils.get_key_from_dict(next_email, ["password"])
-                    recovery_email = ValidationUtils.get_key_from_dict(  next_email, ["recovery_email", "recoveryEmail"])
-                    new_recovery_email = ValidationUtils.get_key_from_dict(  next_email, ["new_recovery_email", "neWrecoveryEmail"])
+                    profile_email = ValidationUtils.getValueFromDictionary(
+                        next_email, ["email", "Email"]
+                    )
+                    profile_password = ValidationUtils.getValueFromDictionary(
+                        next_email, ["password_email", "passwordEmail"]
+                    )
+                    ip_address = ValidationUtils.getValueFromDictionary(
+                        next_email, ["ip_address", "ipAddress"]
+                    )
+                    port = ValidationUtils.getValueFromDictionary(next_email, ["port"])
+                    login = ValidationUtils.getValueFromDictionary(
+                        next_email, ["login"]
+                    )
+                    password = ValidationUtils.getValueFromDictionary(
+                        next_email, ["password"]
+                    )
+                    recovery_email = ValidationUtils.getValueFromDictionary(
+                        next_email, ["recovery_email", "recoveryEmail"]
+                    )
+                    new_recovery_email = ValidationUtils.getValueFromDictionary(
+                        next_email, ["new_recovery_email", "neWrecoveryEmail"]
+                    )
 
                     params = {
-                        "l": EncryptionService.encrypt_message( session_info["username"], Settings.KEY ),
+                        "l": EncryptionService.encrypt_message(
+                            session_info["username"], Settings.KEY
+                        ),
                         "login": session_info["username"],
                         "entity": session_info["p_entity_Origine"],
                         "isp": self.Isp,
@@ -1016,19 +1607,27 @@ class ExtractionThread(QThread):
                         "email": email_value,
                         "password": "",
                         "proxy_ip": ip_address + ":" + port,
-                        "proxy_login": ( f"{login};{password}" if login != session_info["username"] else ""),
+                        "proxy_login": (
+                            f"{login};{password}"
+                            if login != session_info["username"]
+                            else ""
+                        ),
                         "email_recovery": "",
                         "line": "",
                         "app": "V4",
-                        "e_pid": self.unique_id
+                        "e_pid": self.unique_id,
                     }
 
-                    inserted_id = str(APIManager.save_email(params))
-                    new_password = ValidationUtils.generate_secure_password(16)
+                    inserted_id = str(API_MANAGER.saveEmail(params))
+                    new_password = ValidationUtils.generateSecurePassword(16)
 
                     try:
                         os.makedirs(Settings.LOGS_DIRECTORY, exist_ok=True)
-                        logs_subdirs = [ os.path.join(Settings.LOGS_DIRECTORY, d)  for d in os.listdir(Settings.LOGS_DIRECTORY)  if os.path.isdir(os.path.join(Settings.LOGS_DIRECTORY, d)) ]
+                        logs_subdirs = [
+                            os.path.join(Settings.LOGS_DIRECTORY, d)
+                            for d in os.listdir(Settings.LOGS_DIRECTORY)
+                            if os.path.isdir(os.path.join(Settings.LOGS_DIRECTORY, d))
+                        ]
                         logs_subdirs.sort(key=os.path.getctime)
 
                         if len(logs_subdirs) > 4:
@@ -1037,73 +1636,121 @@ class ExtractionThread(QThread):
                                 try:
                                     shutil.rmtree(dir_to_delete)
                                 except Exception as e:
-                                    Settings.WRITE_LOG_DEV_FILE(  f"Error while deleting {dir_to_delete} : {e}\n{traceback.format_exc()}",  "ERROR"  )
-                    
+                                    Settings.write_log_dev_file(
+                                        f"Error while deleting {dir_to_delete} : {e}\n{traceback.format_exc()}",
+                                        "ERROR",
+                                    )
+
                     except Exception as e:
-                        Settings.WRITE_LOG_DEV_FILE( f"Error accessing or creating log directory {Settings.LOGS_DIRECTORY} : {e}\n{traceback.format_exc()}", "ERROR" )
+                        Settings.write_log_dev_file(
+                            f"Error accessing or creating log directory {Settings.LOGS_DIRECTORY} : {e}\n{traceback.format_exc()}",
+                            "ERROR",
+                        )
                         logs_subdirs = []
 
                     if self.selected_Browser.lower() == "firefox":
-                        url, combined = self._build_encrypted_url(ip_address, port, login, password, profile_email, profile_password, recovery_email, new_password, new_recovery_email, self.output_json_final)
-                        firefox_profile_path = BrowserManager.create_firefox_profile(profile_email)
+                        url, combined = self.buildEncryptedUrl(
+                            ip_address,
+                            port,
+                            login,
+                            password,
+                            profile_email,
+                            profile_password,
+                            recovery_email,
+                            new_password,
+                            new_recovery_email,
+                            self.output_json_final,
+                        )
+                        firefox_profile_path = BrowserManager.createFirefoxProfile(
+                            profile_email
+                        )
 
                         if not firefox_profile_path:
-                            Settings.WRITE_LOG_DEV_FILE(f"❌ [Firefox] Impossible de créer le profil Firefox pour {profile_email}", "ERROR")
-                            log_message(f"[ERROR] Impossible de créer le profil Firefox pour {profile_email}")
+                            Settings.write_log_dev_file(
+                                f"❌ [Firefox] Impossible de créer le profil Firefox pour {profile_email}",
+                                "ERROR",
+                            )
+                            logMessage(
+                                f"[ERROR] Impossible de créer le profil Firefox pour {profile_email}"
+                            )
                             # enregistrer dans le fichier de log que le profil n'a pas pu être créé pour cet email et result "Others"
                             continue
 
-                        Settings.WRITE_LOG_DEV_FILE(f"✅ [Firefox] Profil créé/vérifié: {firefox_profile_path}", "INFO")
-
+                        Settings.write_log_dev_file(
+                            f"✅ [Firefox] Profil créé/vérifié: {firefox_profile_path}",
+                            "INFO",
+                        )
 
                         # ==========================================================
                         # FIREFOX WEB-EXT LAUNCH - Run Firefox extension using web-ext
                         # inside a specific Firefox profile, launch target URL,
                         # start process in background, and store PID for later control
                         # ==========================================================
-                        
+
                         eb_ext_path = Settings.get_web_ext_path()
 
                         if not eb_ext_path:
-                            Settings.WRITE_LOG_DEV_FILE(f"❌ [Firefox] web-ext non trouvé", "ERROR")
-                            log_message("[ERROR] web-ext introuvable")
+                            Settings.write_log_dev_file(
+                                f"❌ [Firefox] web-ext non trouvé", "ERROR"
+                            )
+                            logMessage("[ERROR] web-ext introuvable")
                             continue
 
                         command = [
                             eb_ext_path,
                             "run",
                             "--source-dir",
-                             Settings.EXTENTION_EX3_FIREFOX,
+                            Settings.EXTENTION_EX3_FIREFOX,
                             "--firefox-profile",
                             os.path.join(Settings.FIREFOX_PROFILES, profile_email),
-                            "--url", f"{url}",
+                            "--url",
+                            f"{url}",
                             "--keep-profile-changes",
                             "--no-reload",
                         ]
 
+                        Settings.write_log_dev_file(
+                            f"Launching Firefox with command: {command}", "DEBUG"
+                        )
+                        Settings.write_log_dev_file(
+                            f"Firefox profile directory: {os.path.join(Settings.FOLDER_EXTENTIONS_FIREFOX, profile_email)}",
+                            "DEBUG",
+                        )
 
-                        Settings.WRITE_LOG_DEV_FILE( f"Launching Firefox with command: {command}",  "DEBUG"  )
-                        Settings.WRITE_LOG_DEV_FILE( f"Firefox profile directory: {os.path.join(Settings.FOLDER_EXTENTIONS_FIREFOX, profile_email)}", "DEBUG" )
-
-                        process = subprocess.Popen(command ,  stdout=subprocess.DEVNULL,   stderr=subprocess.DEVNULL,)
+                        process = subprocess.Popen(
+                            command,
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL,
+                        )
                         PROCESS_PIDS.append(process.pid)
-                        Settings.WRITE_LOG_DEV_FILE(f"Firefox web-ext PID: {process.pid}", "INFO")
+                        Settings.write_log_dev_file(
+                            f"Firefox web-ext PID: {process.pid}", "INFO"
+                        )
 
-                        firefox_pids = BrowserManager.find_firefox_pids(firefox_profile_path, process.pid)
+                        firefox_pids = BrowserManager.findFirefoxProcessIds(
+                            firefox_profile_path, process.pid
+                        )
                         if not firefox_pids:
-                            Settings.WRITE_LOG_DEV_FILE( "Aucune PID Firefox détectée immédiatement après lancement, attente de 2 secondes puis nouvelle recherche",  "WARNING"  )
+                            Settings.write_log_dev_file(
+                                "Aucune PID Firefox détectée immédiatement après lancement, attente de 2 secondes puis nouvelle recherche",
+                                "WARNING",
+                            )
                             time.sleep(2)
-                            firefox_pids = BrowserManager.find_firefox_pids(firefox_profile_path, process.pid)
+                            firefox_pids = BrowserManager.findFirefoxProcessIds(
+                                firefox_profile_path, process.pid
+                            )
 
                         # ==============================================================
                         # If no reliable Firefox PID is found, use the web-ext PID
                         # as a fallback to keep control over the launched session
                         # ==============================================================
                         if not firefox_pids:
-                            Settings.WRITE_LOG_DEV_FILE( "Aucune PID Firefox fiable trouvée, utilisation du PID web-ext comme fallback", "WARNING"  )
+                            Settings.write_log_dev_file(
+                                "Aucune PID Firefox fiable trouvée, utilisation du PID web-ext comme fallback",
+                                "WARNING",
+                            )
                             firefox_pids = [process.pid]
 
-                        
                         # ==============================================================
                         # Remove duplicates and sort the PID list
                         # ==============================================================
@@ -1115,7 +1762,10 @@ class ExtractionThread(QThread):
                         # ==============================================================
 
                         firefox_pid_string = ";".join(str(pid) for pid in firefox_pids)
-                        Settings.WRITE_LOG_DEV_FILE(  f"Firefox PID list stored for profile {profile_email}: {firefox_pid_string}",  "INFO"   )
+                        Settings.write_log_dev_file(
+                            f"Firefox PID list stored for profile {profile_email}: {firefox_pid_string}",
+                            "INFO",
+                        )
                         # ==============================================================
                         # Create a complete Firefox session descriptor containing
                         # profile information, process identifiers, launch details,
@@ -1144,9 +1794,12 @@ class ExtractionThread(QThread):
                         # }
                         # ==============================================================
                         FIREFOX_SESSIONS[profile_email] = firefox_session
-                        Settings.WRITE_LOG_DEV_FILE(f"Firefox session map updated for {profile_email}: {json.dumps(firefox_session, ensure_ascii=False)}", "DEBUG")
+                        Settings.write_log_dev_file(
+                            f"Firefox session map updated for {profile_email}: {json.dumps(firefox_session, ensure_ascii=False)}",
+                            "DEBUG",
+                        )
 
-                        BrowserManager.store_browser_session_info(
+                        BrowserManager.persistBrowserSessionInfo(
                             firefox_pids,
                             Settings.FOLDER_EXTENTIONS_FIREFOX,
                             profile_email,
@@ -1155,14 +1808,22 @@ class ExtractionThread(QThread):
                             inserted_id,
                             profile_path=firefox_profile_path,
                             web_ext_pid=process.pid,
-                            profile_name=profile_email
+                            profile_name=profile_email,
                         )
 
-                    elif self.selected_Browser in ["edge", "icedragon", "comodo"]:
-
-
-
-                        url, combined = self._build_encrypted_url(ip_address, port, login, password, profile_email, profile_password, recovery_email, new_password, new_recovery_email, self.output_json_final)
+                    elif self.selected_Browser in ["edge", "icedragon"]:
+                        url, combined = self.buildEncryptedUrl(
+                            ip_address,
+                            port,
+                            login,
+                            password,
+                            profile_email,
+                            profile_password,
+                            recovery_email,
+                            new_password,
+                            new_recovery_email,
+                            self.output_json_final,
+                        )
 
                         if self.selected_Browser == "edge":
                             browser_paths = Settings.CHROMIUM_BROWSER_PATHS["edge"]
@@ -1172,7 +1833,7 @@ class ExtractionThread(QThread):
                             browser_paths = Settings.CHROMIUM_BROWSER_PATHS["comodo"]
 
                         profile_dir = browser_paths["profiles"]
-                        ValidationUtils.ensure_path_exists(profile_dir, is_file=False)
+                        ValidationUtils.ensurePathExists(profile_dir, is_file=False)
 
                         command = [
                             self.Browser_path,
@@ -1185,9 +1846,9 @@ class ExtractionThread(QThread):
                             "--disable-sync",
                             "--disable-popup-blocking",
                             "--disable-notifications",
-                            "--disable-features=DownloadBubble"
-                         ]
-                        
+                            "--disable-features=DownloadBubble",
+                        ]
+
                         command1 = [
                             self.Browser_path,
                             f"--user-data-dir={os.path.join(profile_dir, profile_email)}",
@@ -1198,15 +1859,14 @@ class ExtractionThread(QThread):
                             "--disable-popup-blocking",
                             "--disable-notifications",
                             "--disable-features=DownloadBubble",
-                            f"{url}"
+                            f"{url}",
                         ]
 
                         process = subprocess.Popen(command)
                         time.sleep(3)
                         process1 = subprocess.Popen(command1)
                         PROCESS_PIDS.append(process.pid)
-
-                        BrowserManager.store_browser_session_info(
+                        BrowserManager.persistBrowserSessionInfo(
                             process.pid,
                             profile_dir,
                             profile_email,
@@ -1217,36 +1877,48 @@ class ExtractionThread(QThread):
                         )
 
                     else:
+                        url, combined = self.buildEncryptedUrl(
+                            ip_address,
+                            port,
+                            login,
+                            password,
+                            profile_email,
+                            profile_password,
+                            recovery_email,
+                            new_password,
+                            new_recovery_email,
+                            self.output_json_final,
+                        )
 
-                        url, combined = self._build_encrypted_url(ip_address, port, login, password, profile_email, profile_password, recovery_email, new_password, new_recovery_email, self.output_json_final)
-
-                        ValidationUtils.ensure_path_exists(Settings.CHROME_PROFILES, is_file=False)
+                        ValidationUtils.ensurePathExists(
+                            Settings.CHROME_PROFILES, is_file=False
+                        )
 
                         # if not ValidationUtils.path_exists( os.path.join(Settings.CHROME_PROFILES, profile_email) ):
-                            # BrowserManager.Run_Browser_Create_Profile(profile_email)
+                        # BrowserManager.Run_Browser_Create_Profile(profile_email)
 
-                            # if not Settings.RESULTATS_EX:
-                            #     UIManager.Show_Critical_Message(  self.window, "An issue occurred while copying the JSON file to the template profile  ➡ Please contact support.", message_type="critical")
-                            #     self.stopped.emit( "An issue occurred while copying the JSON file to the template profile  ➡ Please contact support." )
-                            #     self.stop_flag = True
-                            #     Settings.WRITE_LOG_DEV_FILE(  "An issue occurred while copying the JSON file to the template profile  ➡ Please contact support.",  "ERROR" )
-                            #     return
-                            # else:
-                            #     success = BrowserManager.UpdateChromeProfileFromTemplate( profile_email  )
-                            #     if success:
-                            #         # print(f"✅ Profil {profile_email} mis à jour avec succès.")
-                            #         Settings.WRITE_LOG_DEV_FILE(f"Profile {profile_email} updated successfully.", "INFO")
-                            #     else:
-                            #         # print(f"❌ Échec de la mise à jour du profil {profile_email}.")
-                            #         Settings.WRITE_LOG_DEV_FILE(f"Failed to update profile {profile_email}.", "ERROR")
-                            #         return
+                        # if not Settings.RESULTATS_EX:
+                        #     UIManager.show_critical_message(  self.window, "An issue occurred while copying the JSON file to the template profile  ➡ Please contact support.", message_type="critical")
+                        #     self.stopped.emit( "An issue occurred while copying the JSON file to the template profile  ➡ Please contact support." )
+                        #     self.stop_flag = True
+                        #     Settings.write_log_dev_file(  "An issue occurred while copying the JSON file to the template profile  ➡ Please contact support.",  "ERROR" )
+                        #     return
+                        # else:
+                        #     success = BrowserManager.UpdateChromeProfileFromTemplate( profile_email  )
+                        #     if success:
+                        #         # print(f"✅ Profil {profile_email} mis à jour avec succès.")
+                        #         Settings.write_log_dev_file(f"Profile {profile_email} updated successfully.", "INFO")
+                        #     else:
+                        #         # print(f"❌ Échec de la mise à jour du profil {profile_email}.")
+                        #         Settings.write_log_dev_file(f"Failed to update profile {profile_email}.", "ERROR")
+                        #         return
 
                         time.sleep(1)
 
                         # reuse previously-built `url`
 
                         command = [
-                            BrowserManager.get_browser_path("chrome.exe"),
+                            BrowserManager.getBrowserExecutablePath("chrome.exe"),
                             f"--user-data-dir={os.path.join(Settings.CHROME_PROFILES, profile_email)}",
                             f"--profile-directory={profile_email}",
                             "--lang=En-US",
@@ -1255,7 +1927,7 @@ class ExtractionThread(QThread):
 
                         # time.sleep(3)
                         command1 = [
-                            BrowserManager.get_browser_path("chrome.exe"),
+                            BrowserManager.getBrowserExecutablePath("chrome.exe"),
                             f"--user-data-dir={os.path.join(Settings.CHROME_PROFILES, profile_email)}",
                             f"--profile-directory={profile_email}",
                             f"{url}",
@@ -1273,7 +1945,7 @@ class ExtractionThread(QThread):
                         # print('➡️➡️➡️➡️➡️➡️ PROCESS_PIDS : ' ,PROCESS_PIDS)
                         # print(f"🚀 PID de processus : {process.pid}")
                         # print(f"🚀 PID de processus 1 : {process1.pid}")
-                    # else:
+                        # else:
                         # reuse previously-built `url`
                         # command = [
                         #     BrowserManager.get_browser_path("chrome.exe"),
@@ -1286,54 +1958,55 @@ class ExtractionThread(QThread):
                         # process = subprocess.Popen(command)
                         # PROCESS_PIDS.append(process.pid)
 
-                        BrowserManager.store_browser_session_info( process.pid, Settings.CHROME_PROFILES, profile_email,  self.session_id, self.selected_Browser.lower(), inserted_id,  profile_path=os.path.join(Settings.CHROME_PROFILES, profile_email) )
-                    
+                        BrowserManager.persistBrowserSessionInfo(
+                            process.pid,
+                            Settings.CHROME_PROFILES,
+                            profile_email,
+                            self.session_id,
+                            self.selected_Browser.lower(),
+                            inserted_id,
+                            profile_path=os.path.join(
+                                Settings.CHROME_PROFILES, profile_email
+                            ),
+                        )
+
                     self.emails_processed += 1
 
                 except Exception as e:
                     # print(f"[INFO] Erreur : {e}")
-                    Settings.WRITE_LOG_DEV_FILE( f"Error processing email {profile_email}: {e}\n{traceback.format_exc()}", "ERROR" )
+                    Settings.write_log_dev_file(
+                        f"Error processing email {profile_email}: {e}\n{traceback.format_exc()}",
+                        "ERROR",
+                    )
 
             self.msleep(1000)
 
         REMAINING_EMAILS = 0
-        log_message("[INFO] Processing finished for all emails.")
-        Settings.WRITE_LOG_DEV_FILE("Processing finished for all emails.", "INFO")
-        UIManager.enable_button(self.window.submitButton)
+        logMessage("[INFO] Processing finished for all emails.")
+        Settings.write_log_dev_file("Processing finished for all emails.", "INFO")
+        UIManager.enableButton(self.window.submitButton)
         time.sleep(3)
         LOGS_RUNNING = False
         self.finished.emit()
 
 
-
-
-
-
-
-
-class MainWindow(QMainWindow):
-
-    
-
-
+class AutomationMainWindow(QMainWindow):
     def __init__(self, json_data):
-        super(MainWindow, self).__init__()
+        super(AutomationMainWindow, self).__init__()
         self._init_ui()
         self._init_data(json_data)
         self._setup_ui_components()
         self._load_initial_state()
 
-
     def _init_ui(self):
         # print("🟢 Initialisation de l'interface utilisateur...")
-        Settings.WRITE_LOG_DEV_FILE("Initializing user interface...", "INFO")
+        Settings.write_log_dev_file("Initializing user interface...", "INFO")
         uic.loadUi(Settings.INTERFACE_UI, self)
-
 
     def _init_data(self, json_data):
         self.states = json_data
         self.STATE_STACK = []
-    
+
     def _setup_ui_components(self):
         self._setup_containers()
         self._setup_template_widgets()
@@ -1343,50 +2016,75 @@ class MainWindow(QMainWindow):
         self._setup_log_system()
         self._setup_miscellaneous()
 
-    
     def _find_widget(self, name, widget_type=None):
-        widget = self.findChild(widget_type, name) if widget_type else self.findChild(QWidget, name)
+        widget = (
+            self.findChild(widget_type, name)
+            if widget_type
+            else self.findChild(QWidget, name)
+        )
         # print(f"🔍 Recherche du widget : {name} ({widget_type})")
-        Settings.WRITE_LOG_DEV_FILE(f"Searching for widget: {name} (type: {widget_type})", "INFO")
+        Settings.write_log_dev_file(
+            f"Searching for widget: {name} (type: {widget_type})", "INFO"
+        )
         return widget
 
-    
     def _setup_containers(self):
-        UIManager._setup_containers(self)
+        UIManager.setupContainers(self)
 
     def _setup_template_widgets(self):
-        UIManager._setup_template_widgets(self)
+        UIManager.setupTemplateWidgets(self)
 
     def _setup_buttons(self):
-        self.Button_Initaile_state = self._setup_button(  "Button_Initaile_state", self.Load_Initial_Options)
+        self.Button_Initaile_state = self._setup_button(
+            "Button_Initaile_state", self.load_initial_options
+        )
         # print(f"🟢 Bouton 'Initial State' configuré avec succès")
 
         # Submit button
-        self.submit_button = self._setup_button( "submitButton", lambda: self.Submit_Button_Clicked(self))
+        self.submit_button = self._setup_button(
+            "submitButton", lambda: self.submit_button_clicked(self)
+        )
         # print(f"🟢 Bouton 'Submit' configuré avec succès")
 
         # Clear button with icon
-        self.ClearButton = self._setup_icon_button(  "ClearButton", "clear.png",  self.Clear_Button_Clicked, icon_size=(32, 32), button_size=(36, 36))
+        self.ClearButton = self._setup_icon_button(
+            "ClearButton",
+            "clear.png",
+            self.clear_button_clicked,
+            icon_size=(32, 32),
+            button_size=(36, 36),
+        )
 
         # print(f"🟢 Bouton 'Clear' configuré avec succès")
         # Copy button with icon
-        self.CopyButton = self._setup_icon_button( "CopyButton",  "copyLog.png",  self.Copy_Logs_To_Clipboard, icon_size=(26, 26),  button_size=(38, 38) )
-        
+        self.CopyButton = self._setup_icon_button(
+            "CopyButton",
+            "copyLog.png",
+            self.copy_logs_to_clipboard,
+            icon_size=(26, 26),
+            button_size=(38, 38),
+        )
+
         # print(f"🟢 Bouton 'Copy' configuré avec succès")
 
         # Save button with icon
-        self.SaveButton = self._setup_icon_button( "saveButton", "save.png", self.Handle_Save, icon_size=(16, 16) )
+        self.SaveButton = self._setup_icon_button(
+            "saveButton", "save.png", self.handle_save, icon_size=(16, 16)
+        )
         # print(f"🟢 Bouton 'Save' configuré avec succès")
 
         # Logout button
-        self.log_out_Button = UIManager._setup_logout_button(self, self.logOut)
+        self.log_out_Button = UIManager.setupLogoutButton(self, self.log_out)
 
-    def _setup_icon_button(  self, button_name, icon_file, callback, icon_size=None, button_size=None ):
-        return UIManager._setup_icon_button(  self, button_name, icon_file, callback, icon_size, button_size )
+    def _setup_icon_button(
+        self, button_name, icon_file, callback, icon_size=None, button_size=None
+    ):
+        return UIManager.setupIconButton(
+            self, button_name, icon_file, callback, icon_size, button_size
+        )
 
-    
     def _setup_button(self, widget_name, callback):
-        return UIManager._setup_button(self, widget_name, callback)
+        return UIManager.setupButton(self, widget_name, callback)
 
     def _setup_comboboxes(self):
         self._setup_browser_combobox()
@@ -1394,17 +2092,17 @@ class MainWindow(QMainWindow):
         self._setup_scenario_combobox()
 
     def _setup_browser_combobox(self):
-        UIManager._setup_browser_combobox(self)
+        UIManager.setupBrowserCombobox(self)
 
     def _setup_isp_combobox(self):
-        UIManager._setup_isp_combobox(self)
+        UIManager.setupIspCombobox(self)
 
     def _setup_scenario_combobox(self):
-        UIManager._setup_scenario_combobox(self)
+        UIManager.setupScenarioCombobox(self)
 
     def _setup_tab_widgets(self):
-        UIManager._setup_result_tab_widget(self)
-        UIManager._setup_interface_tab_widget(self)
+        UIManager.setupResultTabWidget(self)
+        UIManager.setupInterfaceTabWidget(self)
 
     def _setup_log_system(self):
         # Chercher le container des logs
@@ -1424,8 +2122,12 @@ class MainWindow(QMainWindow):
                 }
             """)
             self.log_text_edit.setFrameShape(QFrame.Shape.NoFrame)
-            self.log_text_edit.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-            self.log_text_edit.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+            self.log_text_edit.setVerticalScrollBarPolicy(
+                Qt.ScrollBarPolicy.ScrollBarAsNeeded
+            )
+            self.log_text_edit.setHorizontalScrollBarPolicy(
+                Qt.ScrollBarPolicy.ScrollBarAsNeeded
+            )
             self.log_text_edit.document().setMaximumBlockCount(1000)
 
             # Positionner le champ de logs sous les boutons Clear / Copy existants
@@ -1442,125 +2144,176 @@ class MainWindow(QMainWindow):
             )
 
         # Créer le thread de logs et connecter le signal
-        self.LOGS_THREAD = LogsDisplayThread(LOGS)
-        self.LOGS_THREAD.log_signal.connect(self.Update_Logs_Display)
+        self.LOGS_THREAD = ApplicationLogDisplayThread(LOGS)
+        self.LOGS_THREAD.log_signal.connect(self.update_logs_display)
 
     def _setup_miscellaneous(self):
-        UIManager._setup_miscellaneous(self)
+        UIManager.setupMiscellaneous(self)
 
     def _load_initial_state(self):
-        self.Load_Scenarios_Into_Combobox()
-        self.Load_Initial_Options()
+        self.load_scenarios_into_combobox()
+        self.load_initial_options()
 
-    def Save_Process(self, params):
-        return APIManager.save_process(params)
+    def save_process(self, params):
+        return API_MANAGER.saveProcess(params)
 
-    def Handle_Save(self):
-        # print("🔄 [Handle_Save] Starting Handle_Save function...")
+    def handle_save(self):
+        # print("🔄 [handle_save] Starting handle_save function...")
 
         # 1️⃣ Check if there is data to save
-        # print(  f"🔍 [Handle_Save] Checking STATE_STACK: {len(self.STATE_STACK) if self.STATE_STACK else 0} items" )
-        Settings.WRITE_LOG_DEV_FILE(f"Checking STATE_STACK: {len(self.STATE_STACK) if self.STATE_STACK else 0} items", "INFO")
+        # print(  f"🔍 [handle_save] Checking STATE_STACK: {len(self.STATE_STACK) if self.STATE_STACK else 0} items" )
+        Settings.write_log_dev_file(
+            f"Checking STATE_STACK: {len(self.STATE_STACK) if self.STATE_STACK else 0} items",
+            "INFO",
+        )
         if not self.STATE_STACK:
-            # print("❌ [Handle_Save] STATE_STACK is empty, showing error message")
-            UIManager.Show_Critical_Message(
+            # print("❌ [handle_save] STATE_STACK is empty, showing error message")
+            UIManager.showCriticalMessage(
                 self,
                 "No Data",
                 "No actions to save. Please add actions before saving.",
                 message_type="critical",
             )
-            Settings.WRITE_LOG_DEV_FILE( "No actions to save. Please add actions before saving.", "ERROR" )
+            Settings.write_log_dev_file(
+                "No actions to save. Please add actions before saving.", "ERROR"
+            )
             return
 
-        # print("✅ [Handle_Save] STATE_STACK has data, proceeding to get scenario name")
-        scenario_name, ok = QInputDialog.getText(self, "Save Scenario", "Enter scenario name:")
+        # print("✅ [handle_save] STATE_STACK has data, proceeding to get scenario name")
+        scenario_name, ok = QInputDialog.getText(
+            self, "Save Scenario", "Enter scenario name:"
+        )
 
         if not ok:
-            # print("⚠️ [Handle_Save] User cancelled scenario name input")
-            Settings.WRITE_LOG_DEV_FILE("User cancelled scenario name input", "INFO")
+            # print("⚠️ [handle_save] User cancelled scenario name input")
+            Settings.write_log_dev_file("User cancelled scenario name input", "INFO")
             # User clicked Cancel
             return
 
         scenario_name = scenario_name.strip()
-        # print(f"📝 [Handle_Save] Scenario name entered: '{scenario_name}'")
-        Settings.WRITE_LOG_DEV_FILE(f"Scenario name entered: '{scenario_name}'", "INFO")
+        # print(f"📝 [handle_save] Scenario name entered: '{scenario_name}'")
+        Settings.write_log_dev_file(f"Scenario name entered: '{scenario_name}'", "INFO")
 
         if not scenario_name:
-            # print("❌ [Handle_Save] Scenario name is empty, showing error message")
-            Settings.WRITE_LOG_DEV_FILE("Scenario name cannot be empty", "ERROR")
-            UIManager.Show_Critical_Message(  self, "Invalid Name", "Scenario name cannot be empty.", message_type="critical")
+            # print("❌ [handle_save] Scenario name is empty, showing error message")
+            Settings.write_log_dev_file("Scenario name cannot be empty", "ERROR")
+            UIManager.showCriticalMessage(
+                self,
+                "Invalid Name",
+                "Scenario name cannot be empty.",
+                message_type="critical",
+            )
             return
 
-        # print("✅ [Handle_Save] Scenario name is valid, checking session file")
-        Settings.WRITE_LOG_DEV_FILE("Scenario name is valid, checking session file", "INFO")
+        # print("✅ [handle_save] Scenario name is valid, checking session file")
+        Settings.write_log_dev_file(
+            "Scenario name is valid, checking session file", "INFO"
+        )
         # 3️⃣ Check if session file exists
-        if not ValidationUtils.path_exists(Settings.SESSION_PATH):
-            # print(f"❌ [Handle_Save] Session file not found at: {Settings.SESSION_PATH}")
-            Settings.WRITE_LOG_DEV_FILE(f"Session file not found at: {Settings.SESSION_PATH}", "ERROR")
-            UIManager.Show_Critical_Message( self, "Session Not Found", "[❌] Your session file is missing. Please restart the application.",  message_type="critical" )
-            Settings.WRITE_LOG_DEV_FILE( "Your session file is missing. Please restart the application.", "ERROR")
+        if not ValidationUtils.pathExists(Settings.SESSION_PATH):
+            # print(f"❌ [handle_save] Session file not found at: {Settings.SESSION_PATH}")
+            Settings.write_log_dev_file(
+                f"Session file not found at: {Settings.SESSION_PATH}", "ERROR"
+            )
+            UIManager.showCriticalMessage(
+                self,
+                "Session Not Found",
+                "[❌] Your session file is missing. Please restart the application.",
+                message_type="critical",
+            )
+            Settings.write_log_dev_file(
+                "Your session file is missing. Please restart the application.", "ERROR"
+            )
             return
 
-        # print("✅ [Handle_Save] Session file exists, checking session validity")
-        Settings.WRITE_LOG_DEV_FILE("Session file exists, checking session validity", "INFO")
+        # print("✅ [handle_save] Session file exists, checking session validity")
+        Settings.write_log_dev_file(
+            "Session file exists, checking session validity", "INFO"
+        )
         # 4️⃣ Check session validity
         session_info = SessionManager.check_session()
-        # print( f"🔐 [Handle_Save] Session info: valid={session_info.get('valid')}, user={session_info.get('username')}")
-        Settings.WRITE_LOG_DEV_FILE(f"Session info: valid={session_info.get('valid')}, user={session_info.get('username')}", "INFO")
+        # print( f"🔐 [handle_save] Session info: valid={session_info.get('valid')}, user={session_info.get('username')}")
+        Settings.write_log_event(
+            "session_checked",
+            "INFO",
+            valid=session_info.get("valid"),
+        )
 
         if not session_info["valid"]:
-            # print("❌ [Handle_Save] Session is invalid, exiting")
-            Settings.WRITE_LOG_DEV_FILE("Session is invalid, exiting", "ERROR")
+            # print("❌ [handle_save] Session is invalid, exiting")
+            Settings.write_log_dev_file("Session is invalid, exiting", "ERROR")
             sys.exit()
             return False
 
-        # print("✅ [Handle_Save] Session is valid, encrypting session info")
-        Settings.WRITE_LOG_DEV_FILE("Session is valid, encrypting session info", "INFO")
+        # print("✅ [handle_save] Session is valid, encrypting session info")
+        Settings.write_log_dev_file("Session is valid, encrypting session info", "INFO")
         # 5️⃣ Encrypt session info
-        encrypted_String = EncryptionService.encrypt_message( f"{session_info['Id_User']}::{session_info['username']}::{session_info['date']}::IT", Settings.KEY)
-        # print(f"🔒 [Handle_Save] Encrypted string generated (length: {len(encrypted_String)})")
-        Settings.WRITE_LOG_DEV_FILE(f"Encrypted string generated (length: {len(encrypted_String)})", "INFO")
+        encrypted_String = EncryptionService.encrypt_message(
+            f"{session_info['Id_User']}::{session_info['username']}::{session_info['date']}::IT",
+            Settings.KEY,
+        )
+        # print(f"🔒 [handle_save] Encrypted string generated (length: {len(encrypted_String)})")
+        Settings.write_log_dev_file(
+            f"Encrypted string generated (length: {len(encrypted_String)})", "INFO"
+        )
 
-        Settings.WRITE_LOG_DEV_FILE("Preparing payload", "INFO" )
+        Settings.write_log_dev_file("Preparing payload", "INFO")
         # 6️⃣ Prepare payload
         try:
             state_json = json.dumps(self.STATE_STACK[-1], ensure_ascii=False)
             state_stack_json = json.dumps(self.STATE_STACK, ensure_ascii=False)
 
             state_b64 = base64.b64encode(state_json.encode("utf-8")).decode("utf-8")
-            state_stack_b64 = base64.b64encode(state_stack_json.encode("utf-8")).decode("utf-8")
+            state_stack_b64 = base64.b64encode(state_stack_json.encode("utf-8")).decode(
+                "utf-8"
+            )
 
         except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE( f"Error encoding state for saving: {e}\n{traceback.format_exc()}", "ERROR" )
+            Settings.write_log_dev_file(
+                f"Error encoding state for saving: {e}\n{traceback.format_exc()}",
+                "ERROR",
+            )
             # print("❌ Error encoding state:", e)
             return
 
         payload = {
-            "user_id": session_info["Id_User"] , "encrypted": encrypted_String,  "name": scenario_name, "state": state_b64,  "state_stack": state_stack_b64    }
-        # print(  f"📋 [Handle_Save] Complete payload: {json.dumps(payload, indent=2, ensure_ascii=False)}" )
-        Settings.WRITE_LOG_DEV_FILE(f"Complete payload prepared for API call", "INFO")
+            "user_id": session_info["Id_User"],
+            "encrypted": encrypted_String,
+            "name": scenario_name,
+            "state": state_b64,
+            "state_stack": state_stack_b64,
+        }
+        # print(  f"📋 [handle_save] Complete payload: {json.dumps(payload, indent=2, ensure_ascii=False)}" )
+        Settings.write_log_dev_file(f"Complete payload prepared for API call", "INFO")
 
-        # print("🌐 [Handle_Save] Building API URL")
-        Settings.WRITE_LOG_DEV_FILE("Building API URL", "INFO")
+        # print("🌐 [handle_save] Building API URL")
+        Settings.write_log_dev_file("Building API URL", "INFO")
         # 7️⃣ API URL
         Api_Url = f"https://reporting.nrb-apps.com/pub/ReportingV4/senario.php?rv4=1&entity=IT&action=add&l={encrypted_String}"
 
-        # print(f"🔗 [Handle_Save] API URL: {Api_Url}")
-        Settings.WRITE_LOG_DEV_FILE(f"API URL: {Api_Url}", "INFO")
+        # print(f"🔗 [handle_save] API URL: {Api_Url}")
+        Settings.write_log_dev_file(f"API URL: {Api_Url}", "INFO")
         # return
 
-        # print("📡 [Handle_Save] Calling API...")
-        Settings.WRITE_LOG_DEV_FILE("Calling API...", "INFO")
+        # print("📡 [handle_save] Calling API...")
+        Settings.write_log_dev_file("Calling API...", "INFO")
         # 8️⃣ Call API
         try:
-            result = APIManager.handle_save_scenario(payload, Api_Url)
-            # print(f"📥 [Handle_Save] API response received: {result}")
-            Settings.WRITE_LOG_DEV_FILE(f"API response received: {result}", "INFO")
+            result = API_MANAGER.handleSaveScenario(payload, Api_Url)
+            # print(f"📥 [handle_save] API response received: {result}")
+            Settings.write_log_event(
+                "save_scenario_response_received",
+                "INFO",
+                response_type=type(result).__name__,
+                success=result.get("status") if isinstance(result, dict) else None,
+            )
 
             if result.get("status") is False:
-                # print("❌ [Handle_Save] API returned status=False, showing error message")
-                Settings.WRITE_LOG_DEV_FILE("API returned status=False, showing error message", "INFO")
-                UIManager.Show_Critical_Message(
+                # print("❌ [handle_save] API returned status=False, showing error message")
+                Settings.write_log_dev_file(
+                    "API returned status=False, showing error message", "INFO"
+                )
+                UIManager.showCriticalMessage(
                     self,
                     "Action Not Saved",
                     "❌ The action could not be saved.\n\n"
@@ -1568,107 +2321,137 @@ class MainWindow(QMainWindow):
                     "Please verify your session and make sure the name is unique, then try again.",
                     message_type="critical",
                 )
-                Settings.WRITE_LOG_DEV_FILE( "Save failed: session expired or action name already exists.", "ERROR" )
+                Settings.write_log_dev_file(
+                    "Save failed: session expired or action name already exists.",
+                    "ERROR",
+                )
                 return
 
             if result.get("status"):
-                # print("✅ [Handle_Save] API returned status=True, scenario saved successfully")
-                Settings.WRITE_LOG_DEV_FILE("API returned status=True, scenario saved successfully", "INFO")
-                self.Load_Scenarios_Into_Combobox()
-                UIManager.Show_Critical_Message(
+                # print("✅ [handle_save] API returned status=True, scenario saved successfully")
+                Settings.write_log_dev_file(
+                    "API returned status=True, scenario saved successfully", "INFO"
+                )
+                self.load_scenarios_into_combobox()
+                UIManager.showCriticalMessage(
                     self,
                     "Success",
                     "The scenario has been saved successfully.",
                     message_type="success",
                 )
-                Settings.WRITE_LOG_DEV_FILE("The scenario has been saved successfully.", "INFO")
+                Settings.write_log_dev_file(
+                    "The scenario has been saved successfully.", "INFO"
+                )
             else:
-                # print("⚠️ [Handle_Save] API returned status=None or unexpected, showing API error")
-                Settings.WRITE_LOG_DEV_FILE("API returned status=None or unexpected, showing API error", "INFO")
-                UIManager.Show_Critical_Message(
+                # print("⚠️ [handle_save] API returned status=None or unexpected, showing API error")
+                Settings.write_log_dev_file(
+                    "API returned status=None or unexpected, showing API error", "INFO"
+                )
+                UIManager.showCriticalMessage(
                     self,
                     "API Error",
                     "An error occurred while saving the scenario.",
                     message_type="critical",
                 )
-                Settings.WRITE_LOG_DEV_FILE("An error occurred while saving the scenario.", "ERROR")
+                Settings.write_log_dev_file(
+                    "An error occurred while saving the scenario.", "ERROR"
+                )
 
         except Exception as e:
-            # print(f"💥 [Handle_Save] Exception during API call: {e}")
-            Settings.WRITE_LOG_DEV_FILE(f"Exception during API call: {e}", "ERROR")
-            UIManager.Show_Critical_Message(
+            # print(f"💥 [handle_save] Exception during API call: {e}")
+            Settings.write_log_dev_file(f"Exception during API call: {e}", "ERROR")
+            UIManager.showCriticalMessage(
                 self,
                 "Error",
                 "An error occurred while saving the scenario.",
                 message_type="critical",
             )
-            Settings.WRITE_LOG_DEV_FILE(  f"An error occurred while saving the scenario: {str(e)}\n{traceback.format_exc()}",  "ERROR" )
+            Settings.write_log_dev_file(
+                f"An error occurred while saving the scenario: {str(e)}\n{traceback.format_exc()}",
+                "ERROR",
+            )
 
-        # print("🏁 [Handle_Save] Handle_Save function completed")
-        Settings.WRITE_LOG_DEV_FILE("Handle_Save function completed", "INFO")
+        # print("🏁 [handle_save] handle_save function completed")
+        Settings.write_log_dev_file("handle_save function completed", "INFO")
 
-    def Load_Scenarios_Into_Combobox(self):
-        # print("\n🔄 [LOAD_SCENARIOS] Starting Load_Scenarios_Into_Combobox()")
-        Settings.WRITE_LOG_DEV_FILE("Starting Load_Scenarios_Into_Combobox()", "INFO")
+    def load_scenarios_into_combobox(self):
+        # print("\n🔄 [LOAD_SCENARIOS] Starting load_scenarios_into_combobox()")
+        Settings.write_log_dev_file("Starting load_scenarios_into_combobox()", "INFO")
 
         if self.saveSanario is None:
             # print("❌ [ERROR] saveSanario is None")
-            Settings.WRITE_LOG_DEV_FILE("saveSanario is None", "ERROR")
+            Settings.write_log_dev_file("saveSanario is None", "ERROR")
             return
 
         if self.saveSanario is None:
             # print("❌ [ERROR] saveSanario is None")
-            Settings.WRITE_LOG_DEV_FILE("saveSanario is None", "ERROR")
+            Settings.write_log_dev_file("saveSanario is None", "ERROR")
             return
 
-        if not ValidationUtils.path_exists(Settings.SESSION_PATH):
+        if not ValidationUtils.pathExists(Settings.SESSION_PATH):
             # print("❌ [ERROR] Session file not found")
-            Settings.WRITE_LOG_DEV_FILE("Session file not found", "ERROR")
+            Settings.write_log_dev_file("Session file not found", "ERROR")
             return
 
         # print("📁 [OK] Session file exists")
-        Settings.WRITE_LOG_DEV_FILE("Session file exists", "INFO")
+        Settings.write_log_dev_file("Session file exists", "INFO")
 
         # 🔐 Vérification de session
         session_info = SessionManager.check_session()
         # print(f"🔐 [SESSION] Raw session info: {session_info}")
-        Settings.WRITE_LOG_DEV_FILE(f"Raw session info: {session_info}", "INFO")
+        Settings.write_log_event(
+            "session_checked",
+            "INFO",
+            valid=session_info.get("valid"),
+        )
 
         if not session_info.get("valid"):
             # print("⛔ [SESSION] Invalid session. Redirecting to login.")
-            Settings.WRITE_LOG_DEV_FILE("Session invalid. Redirecting to login.", "ERROR")
+            Settings.write_log_dev_file(
+                "Session invalid. Redirecting to login.", "ERROR"
+            )
             sys.exit()
             return False
 
         # 🔑 Chiffrement
-        encrypted_String = EncryptionService.encrypt_message( f"{session_info['Id_User']}::{session_info['username']}::{session_info['date']}::IT",  Settings.KEY)
+        encrypted_String = EncryptionService.encrypt_message(
+            f"{session_info['Id_User']}::{session_info['username']}::{session_info['date']}::IT",
+            Settings.KEY,
+        )
 
         # print(f"🔐 [ENCRYPT] Encrypted string: {encrypted_String}")
-        Settings.WRITE_LOG_DEV_FILE(f"Encrypted string: {encrypted_String}", "INFO")
+        Settings.write_log_dev_file(f"Encrypted string: {encrypted_String}", "INFO")
 
         Api_Url = f"https://reporting.nrb-apps.com/pub/ReportingV4/senario.php?rv4=1&action=get&entity=IT&l={encrypted_String}"
         # print(f"🌐 [API] URL: {Api_Url}")
 
         try:
             # print("📡 [API] Sending request to load scenarios...")
-            result = APIManager.load_scenarios(Api_Url)  # Peut retourner une liste ou un dict
+            result = API_MANAGER.fetchScenarios(
+                Api_Url
+            )  # Peut retourner une liste ou un dict
             # print(f"📥 [API] Raw result: {result}")
-            # Settings.WRITE_LOG_DEV_FILE(f"[API RESULT] {result}", "DEBUG")
+            # Settings.write_log_dev_file(f"[API RESULT] {result}", "DEBUG")
 
             # 🔹 Si c'est un dict et contient status=False → erreur
             if isinstance(result, dict) and result.get("status") is False:
                 # print(f"❌ [API ERROR] {result.get('error', 'Unknown error')}")
-                Settings.WRITE_LOG_DEV_FILE(f"API returned error: {result.get('error', 'Unknown error')}", "ERROR")
+                Settings.write_log_dev_file(
+                    f"API returned error: {result.get('error', 'Unknown error')}",
+                    "ERROR",
+                )
 
                 # Ajouter None directement à la combobox
                 self.saveSanario.clear()
                 self.saveSanario.addItem("None")
-                return # Ne pas continuer l'ajout de scénarios
+                return  # Ne pas continuer l'ajout de scénarios
 
             # 🔹 Si c'est une liste → traitement direct
             scenarios = result if isinstance(result, list) else []
             # print(f"ℹ️ [API] Nombre de scénarios: {len(scenarios)}")
-            Settings.WRITE_LOG_DEV_FILE(f"Number of scenarios loaded: {len(scenarios)}", "INFO")
+            Settings.write_log_dev_file(
+                f"Number of scenarios loaded: {len(scenarios)}", "INFO"
+            )
 
             # Mettre à jour la combobox
             self.saveSanario.clear()
@@ -1678,32 +2461,41 @@ class MainWindow(QMainWindow):
                 for index, scenario in enumerate(scenarios, 1):
                     name = scenario.get("name", f"Scénario {index}")
                     # print(f"➕ [ADD] Scenario {index}: {name}")
-                    Settings.WRITE_LOG_DEV_FILE(f"Adding scenario {index}: {name}", "INFO")
+                    Settings.write_log_dev_file(
+                        f"Adding scenario {index}: {name}", "INFO"
+                    )
                     self.saveSanario.addItem(name)
             else:
                 # print("⚠️ [API] No scenarios found, added 'None' only")
-                Settings.WRITE_LOG_DEV_FILE("No scenarios found, added 'None' only", "INFO")
+                Settings.write_log_dev_file(
+                    "No scenarios found, added 'None' only", "INFO"
+                )
 
             # print("✅ [LOAD_SCENARIOS] Combobox updated successfully")
-            Settings.WRITE_LOG_DEV_FILE("Combobox updated successfully", "INFO")
+            Settings.write_log_dev_file("Combobox updated successfully", "INFO")
 
         except Exception as e:
             # print(f"🔥 [EXCEPTION] Error while loading scenarios: {e}")
-            Settings.WRITE_LOG_DEV_FILE( f"An error occurred while loading scenarios: {str(e)}\n{traceback.format_exc()}",  "CRITICAL")
+            Settings.write_log_dev_file(
+                f"An error occurred while loading scenarios: {str(e)}\n{traceback.format_exc()}",
+                "CRITICAL",
+            )
 
-    def Copy_Logs_To_Clipboard(self):
-        UIManager.Copy_Logs_To_Clipboard(self)
+    def copy_logs_to_clipboard(self):
+        UIManager.copyLogsToClipboard(self)
 
-    def logOut(self):
+    def log_out(self):
         global SELECTED_BROWSER_GLOBAL
         try:
             SessionManager.clear_session()
 
             if SELECTED_BROWSER_GLOBAL:
-                Stop_All_Processes(self)
+                stopAllProcesses(self)
 
-            self.login_window = LoginWindow()
-            self.login_window.setFixedSize(Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT)
+            self.login_window = AuthenticationWindow()
+            self.login_window.setFixedSize(
+                Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT
+            )
 
             screen = QGuiApplication.primaryScreen()
             screen_geometry = screen.availableGeometry()
@@ -1715,20 +2507,25 @@ class MainWindow(QMainWindow):
 
         except Exception as e:
             # log_message(f"[LOGOUT ERROR] {e}")
-            Settings.WRITE_LOG_DEV_FILE( f"An error occurred while logging out: {str(e)}\n{traceback.format_exc()}", "ERROR" )
+            Settings.write_log_dev_file(
+                f"An error occurred while logging out: {str(e)}\n{traceback.format_exc()}",
+                "ERROR",
+            )
 
-    def Update_Logs_Display(self, log_entry):
-        UIManager.Update_Logs_Display(log_entry, self.log_text_edit)
+    def update_logs_display(self, log_entry):
+        UIManager.updateLogsDisplay(log_entry, self.log_text_edit)
 
-    def Extraction_Finished(self, window):
-        self.LOGS_THREAD.stop()
+    def extraction_finished(self, window):
+        self.LOGS_THREAD.stopThread()
         self.LOGS_THREAD.wait()
         # print("🎶​🎶​🎶​🎶​🎶​🎶​🎶​🎶​🎶​🎶​🎶​🎶​🎶​🎶​📗​📗​📗​📗​📗​📗​📗​📗​📗​📗​📗​📗​📗​Extraction Finished ​")
-        Settings.WRITE_LOG_DEV_FILE("Extraction Finished", "INFO")
-        QTimer.singleShot( 100, lambda: UIManager.Read_Result_Update_List(window, NOTIFICATION_BADGES) )
+        Settings.write_log_dev_file("Extraction Finished", "INFO")
+        QTimer.singleShot(
+            100, lambda: UIManager.readResultUpdateList(window, NOTIFICATION_BADGES)
+        )
 
     def verify_required_paths(self):
-        Settings.WRITE_LOG_DEV_FILE("Starting required path verification", "INFO")
+        Settings.write_log_dev_file("Starting required path verification", "INFO")
 
         paths = [
             (Settings.CONFIG_PROFILE, False),
@@ -1751,34 +2548,50 @@ class MainWindow(QMainWindow):
                 f"| type_ok={type_ok}"
             )
             # print(detail_msg)
-            Settings.WRITE_LOG_DEV_FILE(detail_msg, "INFO")
+            Settings.write_log_dev_file(detail_msg, "INFO")
 
-            valid = ValidationUtils.validate_path(path, must_exist=True, is_file=is_file)
+            valid = ValidationUtils.validate_path(
+                path, must_exist=True, is_file=is_file
+            )
 
             if not valid:
-                reason = "missing" if not exists else ("wrong type" if not type_ok else "unknown")
+                reason = (
+                    "missing"
+                    if not exists
+                    else ("wrong type" if not type_ok else "unknown")
+                )
 
                 # print(f"❌ Invalid path: {normalized_path} | expected={path_type} | exists={exists} | type_ok={type_ok} | reason={reason}")
-                Settings.WRITE_LOG_DEV_FILE(f"❌ Invalid path: {normalized_path} | expected={path_type} | exists={exists} | type_ok={type_ok} | reason={reason}", "ERROR")
-                invalid_paths.append(f"❌ Invalid path: {normalized_path} | expected={path_type} | exists={exists} | type_ok={type_ok} | reason={reason}")
+                Settings.write_log_dev_file(
+                    f"❌ Invalid path: {normalized_path} | expected={path_type} | exists={exists} | type_ok={type_ok} | reason={reason}",
+                    "ERROR",
+                )
+                invalid_paths.append(
+                    f"❌ Invalid path: {normalized_path} | expected={path_type} | exists={exists} | type_ok={type_ok} | reason={reason}"
+                )
 
         if invalid_paths:
-            Settings.WRITE_LOG_DEV_FILE( f"Required path verification failed: {len(invalid_paths)} invalid path(s)", "ERROR"  )
+            Settings.write_log_dev_file(
+                f"Required path verification failed: {len(invalid_paths)} invalid path(s)",
+                "ERROR",
+            )
         else:
-            Settings.WRITE_LOG_DEV_FILE("All required paths are valid", "SUCCESS")
+            Settings.write_log_dev_file("All required paths are valid", "SUCCESS")
 
         return len(invalid_paths) == 0, invalid_paths
 
-    def Submit_Button_Clicked(self, window):
+    def submit_button_clicked(self, window):
         global LOGS_RUNNING, NOTIFICATION_BADGES
 
-        UIManager.disable_button(self.submitButton)
+        UIManager.disableButton(self.submitButton)
 
         # Vérification de session
         session_info = SessionManager.check_session()
         if not session_info["valid"]:
-            self.login_window = LoginWindow()
-            self.login_window.setFixedSize(Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT)
+            self.login_window = AuthenticationWindow()
+            self.login_window.setFixedSize(
+                Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT
+            )
 
             screen = QGuiApplication.primaryScreen()
             screen_geometry = screen.availableGeometry()
@@ -1794,11 +2607,16 @@ class MainWindow(QMainWindow):
                     f.write("")
             except Exception as e:
                 # print(f"[ERREUR NETTOYAGE SESSION] ❌ {e}")
-                Settings.WRITE_LOG_DEV_FILE(  f"An error occurred while cleaning the session: {str(e)}\n{traceback.format_exc()}", "ERROR")
-            UIManager.enable_button(self.submitButton)
+                Settings.write_log_dev_file(
+                    f"An error occurred while cleaning the session: {str(e)}\n{traceback.format_exc()}",
+                    "ERROR",
+                )
+            UIManager.enableButton(self.submitButton)
             return
 
-        auth_result = SessionManager.check_api_credentials( session_info.get("username"), session_info.get("password"))
+        auth_result = SessionManager.check_api_credentials(
+            session_info.get("username"), session_info.get("password")
+        )
         if isinstance(auth_result, int):
             messages = {
                 -1: "Invalid credentials. Please login again.",
@@ -1808,56 +2626,65 @@ class MainWindow(QMainWindow):
                 -5: "Unknown authentication error.",
             }
 
-            self.erreur_label.setText(messages.get(auth_result, "Authentication failed."))
+            self.erreur_label.setText(
+                messages.get(auth_result, "Authentication failed.")
+            )
             self.erreur_label.show()
 
-            # Settings.WRITE_LOG_DEV_FILE(
+            # Settings.write_log_dev_file(
             #     f"Authentication failed (code {auth_result}): {msg}",
             #     "ERROR"
             # )
-            UIManager.enable_button(self.submitButton)
+            UIManager.enableButton(self.submitButton)
             return
         else:
-            Settings.WRITE_LOG_DEV_FILE("Authentication successful", "INFO")
+            Settings.write_log_dev_file("Authentication successful", "INFO")
 
         is_valid, errors = self.verify_required_paths()
 
         if is_valid:
             # print("Tous les chemins sont valides.")
-            Settings.WRITE_LOG_DEV_FILE("All required paths are valid.", "INFO")
+            Settings.write_log_dev_file("All required paths are valid.", "INFO")
         else:
             # print("Erreur avec les chemins.")
-            Settings.WRITE_LOG_DEV_FILE("Error with required paths.", "ERROR")
+            Settings.write_log_dev_file("Error with required paths.", "ERROR")
 
             # 🔹 Construire message détaillé
             error_details = "\n".join(errors)
 
-            UIManager.Show_Critical_Message(
+            UIManager.showCriticalMessage(
                 window,
                 "Invalid Paths",
                 f"The following paths are invalid:\n\n{error_details}",
                 message_type="critical",
             )
 
-            UIManager.enable_button(self.submitButton)
+            UIManager.enableButton(self.submitButton)
             return
 
         try:
             # print("🔄 [BADGES] Début suppression des badges existants")
-            Settings.WRITE_LOG_DEV_FILE("Start badge cleanup", "INFO")
+            Settings.write_log_dev_file("Start badge cleanup", "INFO")
             if self.result_tab_widget:
                 # print( f"📌 [BADGES] Nombre de tabs dans result_tab_widget = {self.result_tab_widget.count()}"  )
-                Settings.WRITE_LOG_DEV_FILE( f"Number of tabs in result_tab_widget = {self.result_tab_widget.count()}",  "INFO" )
+                Settings.write_log_dev_file(
+                    f"Number of tabs in result_tab_widget = {self.result_tab_widget.count()}",
+                    "INFO",
+                )
 
                 # Supprimer badges existants
                 for tab_index, badge in NOTIFICATION_BADGES.items():
                     if badge:
                         # print(f"🗑️ [BADGES] Suppression badge tab_index={tab_index}")
-                        Settings.WRITE_LOG_DEV_FILE(f"Badge removed tab_index={tab_index}", "INFO")
+                        Settings.write_log_dev_file(
+                            f"Badge removed tab_index={tab_index}", "INFO"
+                        )
                         badge.deleteLater()
                 NOTIFICATION_BADGES.clear()
                 # print("✅ [BADGES] Tous les badges existants supprimés et dictionnaire vidé")
-                Settings.WRITE_LOG_DEV_FILE( "All existing badges removed and dictionary cleared", "INFO" )
+                Settings.write_log_dev_file(
+                    "All existing badges removed and dictionary cleared", "INFO"
+                )
 
                 # Vider tous les QListWidget dans les tabs
                 for i in range(self.result_tab_widget.count()):
@@ -1871,40 +2698,51 @@ class MainWindow(QMainWindow):
 
             else:
                 # print("⚠️ [BADGES] result_tab_widget est None")
-                Settings.WRITE_LOG_DEV_FILE("result_tab_widget is None", "WARNING")
+                Settings.write_log_dev_file("result_tab_widget is None", "WARNING")
 
         except Exception as e:
             # print(f"❌ [BADGES ERROR] Erreur pendant la suppression des badges: {type(e).__name__} : {e}")
-            Settings.WRITE_LOG_DEV_FILE(  f"An error occurred while removing badges: {str(e)}\n{traceback.format_exc()}", "ERROR" )
-            UIManager.enable_button(self.submitButton)
+            Settings.write_log_dev_file(
+                f"An error occurred while removing badges: {str(e)}\n{traceback.format_exc()}",
+                "ERROR",
+            )
+            UIManager.enableButton(self.submitButton)
             return
 
         # 🔹 Vérification complète des mises à jour du programme
         try:
             # Appel de la fonction check_and_update
-            update_ok = UpdateManager.check_and_update(self)
+            update_ok = UpdateManager.checkAndUpdate(self)
             # print(f"🔄 [UPDATE] Update check result: {update_ok}")
-            Settings.WRITE_LOG_DEV_FILE(f"Update check result: {update_ok}", "INFO")
+            Settings.write_log_dev_file(f"Update check result: {update_ok}", "INFO")
 
             if not update_ok:
                 # S'il y a une erreur ou si la mise à jour a échoué → arrêter le traitement immédiatement
                 # print("❌ Update failed or application not up-to-date, exiting process.")
-                UIManager.enable_button(self.submitButton)
-                Settings.WRITE_LOG_DEV_FILE( "Update failed or application not up-to-date, exiting process.", "ERROR"  )
+                UIManager.enableButton(self.submitButton)
+                Settings.write_log_dev_file(
+                    "Update failed or application not up-to-date, exiting process.",
+                    "ERROR",
+                )
 
                 return
 
         except SystemExit:
-            Settings.WRITE_LOG_DEV_FILE("Application update triggered, exiting for update.", "INFO")
-            UIManager.enable_button(self.submitButton)
+            Settings.write_log_dev_file(
+                "Application update triggered, exiting for update.", "INFO"
+            )
+            UIManager.enableButton(self.submitButton)
             # Si la fonction check_and_update a fait sys.exit (update programme)
             return
 
         except Exception as e:
             # Tous les autres erreurs critiques
             # print(f"[UPDATE ERROR] {e}")
-            Settings.WRITE_LOG_DEV_FILE(  f"An error occurred while checking for updates: {str(e)}\n{traceback.format_exc()}",  "ERROR" )
-            UIManager.enable_button(self.submitButton)
+            Settings.write_log_dev_file(
+                f"An error occurred while checking for updates: {str(e)}\n{traceback.format_exc()}",
+                "ERROR",
+            )
+            UIManager.enableButton(self.submitButton)
             return
 
         selected_Browser = self.browser.currentText()
@@ -1913,57 +2751,78 @@ class MainWindow(QMainWindow):
 
         # if selected_Browser:
         #     if not BrowserManager.validate_and_setup_browser(self, selected_Browser):
-        #         Settings.WRITE_LOG_DEV_FILE(f"Browser not processed: {selected_Browser}", "WARNING")
+        #         Settings.write_log_dev_file(f"Browser not processed: {selected_Browser}", "WARNING")
         #         UIManager.enable_button(self.submitButton)
         #         return
-        QApplication.processEvents()  
+        QApplication.processEvents()
 
         browser_path = (
-            BrowserManager.get_browser_path("chrome.exe")
+            BrowserManager.getBrowserExecutablePath("chrome.exe")
             if selected_Browser.lower() == "chrome"
             else (
-                BrowserManager.get_browser_path("firefox")
+                BrowserManager.getBrowserExecutablePath("firefox")
                 if selected_Browser.lower() == "firefox"
                 else (
-                    BrowserManager.get_browser_path("msedge.exe")
+                    BrowserManager.getBrowserExecutablePath("msedge.exe")
                     if selected_Browser.lower() == "edge"
-                    else BrowserManager.get_browser_path("dragon.exe")
+                    else BrowserManager.getBrowserExecutablePath("dragon.exe")
                 )
             )
         )
 
         if browser_path is None:
-            Settings.WRITE_LOG_DEV_FILE( f"Unable to find path for browser: {selected_Browser}", "ERROR"  )
-            UIManager.Show_Critical_Message( window, "Browser Not Found",  f"Unable to find the path for the selected browser: {selected_Browser}.\n\nPlease ensure the browser is installed and try again.", message_type="critical" )
-            UIManager.enable_button(self.submitButton)
+            Settings.write_log_dev_file(
+                f"Unable to find path for browser: {selected_Browser}", "ERROR"
+            )
+            UIManager.showCriticalMessage(
+                window,
+                "Browser Not Found",
+                f"Unable to find the path for the selected browser: {selected_Browser}.\n\nPlease ensure the browser is installed and try again.",
+                message_type="critical",
+            )
+            UIManager.enableButton(self.submitButton)
             return
 
         if self.INTERFACE:
             for i in range(self.INTERFACE.count()):
-                if UIManager.Is_Result_Tab(self.INTERFACE, i):
-                    UIManager.Reset_Result_Tab_Label(self.INTERFACE, i)
+                if UIManager.isResultTab(self.INTERFACE, i):
+                    UIManager.resetResultTabLabel(self.INTERFACE, i)
         LOGS_RUNNING = True
 
         if self.scenario_layout.count() == 0:
-            UIManager.Show_Critical_Message(   window, "Empty Scenario",  "No actions have been added. Please add actions before submitting.",  message_type="warning")
-            UIManager.enable_button(self.submitButton)
-            Settings.WRITE_LOG_DEV_FILE( "No actions have been added. Please add actions before submitting.", "WARNING")
+            UIManager.showCriticalMessage(
+                window,
+                "Empty Scenario",
+                "No actions have been added. Please add actions before submitting.",
+                message_type="warning",
+            )
+            UIManager.enableButton(self.submitButton)
+            Settings.write_log_dev_file(
+                "No actions have been added. Please add actions before submitting.",
+                "WARNING",
+            )
             return
 
         try:
-            result = ValidationUtils.generate_user_input_data(window)
+            result = ValidationUtils.generateUserInputData(window)
 
             # =======================
             # 🔴 Check result structure
             # =======================
             if not isinstance(result, dict):
-                Settings.WRITE_LOG_DEV_FILE(  "Invalid result format returned from ValidationUtils.generate_user_input_data", "ERROR" )
-                UIManager.enable_button(self.submitButton)
+                Settings.write_log_dev_file(
+                    "Invalid result format returned from ValidationUtils.generateUserInputData",
+                    "ERROR",
+                )
+                UIManager.enableButton(self.submitButton)
                 return
 
             if not result.get("valid"):
-                Settings.WRITE_LOG_DEV_FILE("❌ [DATA ERROR] Invalid proxy API response detected, stopping all active processing threads.", "ERROR")
-                Stop_All_Processes(window)
+                Settings.write_log_dev_file(
+                    "❌ [DATA ERROR] Invalid proxy API response detected, stopping all active processing threads.",
+                    "ERROR",
+                )
+                stopAllProcesses(window)
 
                 # 🔹 Affichage dans la console pour debug
                 # print(f"❌ [DATA ERROR] {result.get('error', 'Unknown error')}")
@@ -1979,15 +2838,24 @@ class MainWindow(QMainWindow):
 
                 # print(f" Title: {title.strip()}")
                 # print(f" Detail: {detail_text.strip()}")
-                Settings.WRITE_LOG_DEV_FILE(f"Data error: {result.get('error', 'Unknown error')}", "ERROR")
-                Settings.WRITE_LOG_DEV_FILE(f"Title: {title.strip()} | Detail: {detail_text.strip()}", "ERROR")
+                Settings.write_log_dev_file(
+                    f"Data error: {result.get('error', 'Unknown error')}", "ERROR"
+                )
+                Settings.write_log_dev_file(
+                    f"Title: {title.strip()} | Detail: {detail_text.strip()}", "ERROR"
+                )
 
                 # 🔹 Log complet pour le développeur
-                Settings.WRITE_LOG_DEV_FILE( f"Generate_User_Input_Data failed: {result.get('error', 'Unknown error')}", "ERROR"  )
+                Settings.write_log_dev_file(
+                    f"Generate_User_Input_Data failed: {result.get('error', 'Unknown error')}",
+                    "ERROR",
+                )
 
                 # 🔹 Affichage QMessageBox pro pour l'utilisateur
-                UIManager.Show_Critical_Message(   window,  title.strip(), detail_text.strip(), message_type="warning" )
-                UIManager.enable_button(self.submitButton)
+                UIManager.showCriticalMessage(
+                    window, title.strip(), detail_text.strip(), message_type="warning"
+                )
+                UIManager.enableButton(self.submitButton)
                 return
             # =======================
             # 🟢 Extract data safely
@@ -1997,14 +2865,17 @@ class MainWindow(QMainWindow):
 
             # Protection supplémentaire
             if not isinstance(data_list, list):
-                Settings.WRITE_LOG_DEV_FILE("Data list is not a list", "ERROR")
-                UIManager.enable_button(self.submitButton)
+                Settings.write_log_dev_file("Data list is not a list", "ERROR")
+                UIManager.enableButton(self.submitButton)
                 return
 
             # =======================
             # 📊 Enregistrement
             # =======================
-            Settings.WRITE_LOG_DEV_FILE(  f"User input processed successfully | Records: {len(data_list)} | Entered number: {entered_number}","INFO")
+            Settings.write_log_dev_file(
+                f"User input processed successfully | Records: {len(data_list)} | Entered number: {entered_number}",
+                "INFO",
+            )
 
             # =======================
             # 👉 Continuer le traitement ici
@@ -2013,30 +2884,48 @@ class MainWindow(QMainWindow):
             # process_final_data(data_list)
 
         except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE(f"Processing error: {e}\n{traceback.format_exc()}", "ERROR")
-            UIManager.Show_Critical_Message( window,  "Unexpected Error", "Something went wrong while processing your request.\n\nPlease try again or contact support.",  message_type="critical" )
-            UIManager.enable_button(self.submitButton)
+            Settings.write_log_dev_file(
+                f"Processing error: {e}\n{traceback.format_exc()}", "ERROR"
+            )
+            UIManager.showCriticalMessage(
+                window,
+                "Unexpected Error",
+                "Something went wrong while processing your request.\n\nPlease try again or contact support.",
+                message_type="critical",
+            )
+            UIManager.enableButton(self.submitButton)
             return
 
         # current_time = datetime.datetime.now()
         # CURRENT_DATE = current_time.strftime("%Y-%m-%d")
         # CURRENT_HOUR = current_time.strftime("%H-%M-%S")
         # print("✅ Current date and hour set:", CURRENT_DATE, CURRENT_HOUR)
-        # Settings.WRITE_LOG_DEV_FILE(f"Current date and hour set: {CURRENT_DATE} {CURRENT_HOUR}", "INFO")
+        # Settings.write_log_dev_file(f"Current date and hour set: {CURRENT_DATE} {CURRENT_HOUR}", "INFO")
 
         # print("📦 JSON Final:")
-        Settings.WRITE_LOG_DEV_FILE("Final JSON:", "INFO")
-        result_json = JsonManager.generate(self.scenario_layout, selected_Browser)
+        Settings.write_log_dev_file("Final JSON:", "INFO")
+        result_json = JsonManager.generateJson(self.scenario_layout, selected_Browser)
         # print(json.dumps(result_json, indent=2, ensure_ascii=False))
         # print( "✅ Final JSON generated. Data:", json.dumps(result_json, indent=2, ensure_ascii=False) )
-        Settings.WRITE_LOG_DEV_FILE(  f"Final JSON generated. Data: {json.dumps(result_json, indent=2, ensure_ascii=False)}",  "INFO" )
-        Settings.WRITE_LOG_DEV_FILE("The final JSON has been generated.", "INFO")
+        Settings.write_log_dev_file(
+            f"Final JSON generated. Data: {json.dumps(result_json, indent=2, ensure_ascii=False)}",
+            "INFO",
+        )
+        Settings.write_log_dev_file("The final JSON has been generated.", "INFO")
         QApplication.processEvents()  # Traite les événements UI en attente pour garder l'interface réactive
 
         if not result_json or result_json == []:
-            UIManager.Show_Critical_Message(window, "Error - Save Configuration", "No valid actions could be generated or an error occurred while saving the configuration file.\n\nIf the problem persists, contact Support.", message_type="critical")
-            Settings.WRITE_LOG_DEV_FILE( "No valid actions could be generated or an error occurred while saving the configuration file.",  "ERROR" )
-            UIManager.enable_button(self.submitButton)
+            UIManager.showCriticalMessage(
+                window,
+                "Error - Save Configuration",
+                "No valid actions could be generated or an error occurred while saving the configuration file.\n\nIf the problem persists, contact Support.",
+                message_type="critical",
+            )
+            Settings.write_log_dev_file(
+                "No valid actions could be generated or an error occurred while saving the configuration file.",
+                "ERROR",
+            )
+            UIManager.enableButton(self.submitButton)
 
             return
 
@@ -2046,11 +2935,13 @@ class MainWindow(QMainWindow):
             with open(Settings.FILE_ISP, "w", encoding="utf-8") as f:
                 f.write(self.Isp.currentText().strip())
         except Exception as e:
-            UIManager.enable_button(self.submitButton)
+            UIManager.enableButton(self.submitButton)
 
             # print("❌ Error writing to Isp.txt:", e)
             # print(f"❌ Erreur lors de l'écriture dans Isp.txt : {e}")
-            Settings.WRITE_LOG_DEV_FILE(  f"Error writing to Isp.txt: {e}\n{traceback.format_exc()}", "ERROR" )
+            Settings.write_log_dev_file(
+                f"Error writing to Isp.txt: {e}\n{traceback.format_exc()}", "ERROR"
+            )
         QApplication.processEvents()  # Traite les événements UI après écriture du fichier ISP
 
         json_string = json.dumps(result_json)
@@ -2065,25 +2956,41 @@ class MainWindow(QMainWindow):
             "p_browser": self.browser.currentText(),
         }
 
-        unique_id = self.Save_Process(parameters)
+        unique_id = self.save_process(parameters)
 
         if unique_id == -1:
-            UIManager.Show_Critical_Message(window, "Error - Process Save", "Failed to save the process in the database.\n\nPlease check your connection and try again.", message_type="critical")
-            Settings.WRITE_LOG_DEV_FILE("Failed to save the process in the database.", "ERROR")
-            UIManager.enable_button(self.submitButton)
+            UIManager.showCriticalMessage(
+                window,
+                "Error - Process Save",
+                "Failed to save the process in the database.\n\nPlease check your connection and try again.",
+                message_type="critical",
+            )
+            Settings.write_log_dev_file(
+                "Failed to save the process in the database.", "ERROR"
+            )
+            UIManager.enableButton(self.submitButton)
 
             return
 
-        QApplication.processEvents() 
+        QApplication.processEvents()
 
         with ThreadPoolExecutor(max_workers=2) as executor:
-            executor.submit(  Start_Extraction,  window,  data_list,  entered_number, selected_Browser,   self.Isp.currentText(),  unique_id,  result_json,  session_info["username"] )
+            executor.submit(
+                startExtraction,
+                window,
+                data_list,
+                entered_number,
+                selected_Browser,
+                self.Isp.currentText(),
+                unique_id,
+                result_json,
+                session_info["username"],
+            )
             executor.submit(self.LOGS_THREAD.start)
-        EXTRACTION_THREAD.finished.connect(lambda: self.Extraction_Finished(window))
-        QApplication.processEvents()  
+        EXTRACTION_THREAD.finished.connect(lambda: self.extraction_finished(window))
+        QApplication.processEvents()
 
-
-    def Load_Initial_Options(self):
+    def load_initial_options(self):
         while self.reset_options_layout.count() > 0:
             item = self.reset_options_layout.takeAt(0)
             if item.widget():
@@ -2091,9 +2998,9 @@ class MainWindow(QMainWindow):
 
         for key, state in self.states.items():
             if state.get("showOnInit", False):
-                self.Create_Option_Button(state)
+                self.create_option_button(state)
 
-    def Create_Option_Button(self, state):
+    def create_option_button(self, state):
         default_icon_path = os.path.join(Settings.ICONS_DIR, "icon.png")
         default_icon_path_Templete2 = os.path.join(Settings.ICONS_DIR, "next.png")
         is_multi = state.get("isMultiSelect", False)
@@ -2105,46 +3012,52 @@ class MainWindow(QMainWindow):
             template_button = self.template_button
             icon_path = default_icon_path
 
-        button = QPushButton(state.get("label", "Unnamed"), self.reset_options_container)
+        button = QPushButton(
+            state.get("label", "Unnamed"), self.reset_options_container
+        )
         button.setStyleSheet(template_button.styleSheet())
         button.setFixedSize(template_button.size())
 
         button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         button.setLayoutDirection(Qt.LayoutDirection.RightToLeft)
-        button.clicked.connect(lambda _, s=state: self.Load_State(s))
+        button.clicked.connect(lambda _, s=state: self.load_state(s))
 
-        if ValidationUtils.path_exists(icon_path):
+        if ValidationUtils.pathExists(icon_path):
             button.setIcon(QIcon(icon_path))
         else:
-            Settings.WRITE_LOG_DEV_FILE(f"[Warning] Icon not found at: {icon_path}", "WARNING")
+            Settings.write_log_dev_file(
+                f"[Warning] Icon not found at: {icon_path}", "WARNING"
+            )
 
         self.reset_options_layout.addWidget(button)
 
-    def Load_State(self, state):
-        UIManager.Display_State_Stack_As_Table(self)
+    def load_state(self, state):
+        UIManager.displayStateStackAsTable(self)
         is_multi = state.get("isMultiSelect", False)
         if not is_multi:
             self.STATE_STACK.append(state)
 
-        UIManager.Display_State_Stack_As_Table(self)
+        UIManager.displayStateStackAsTable(self)
 
         if not is_multi:
             template = state.get("Template", "")
-            UIManager.Update_Scenario(self, template, state)
+            UIManager.updateScenario(self, template, state)
 
         actions = state.get("actions", [])
-        self.Update_Reset_Options(actions)
-        self.Update_Actions_Color_Handle_Last_Button()
+        self.update_reset_options(actions)
+        self.update_actions_color_handle_last_button()
 
-        UIManager.Remove_Copier(self.scenario_layout, self.reset_options_layout)
-        UIManager.Remove_Initaile(self.scenario_layout, self.reset_options_layout)
+        UIManager.removeCopier(self.scenario_layout, self.reset_options_layout)
+        UIManager.removeInitial(self.scenario_layout, self.reset_options_layout)
 
-        UIManager.Display_State_Stack_As_Table(self)
+        UIManager.displayStateStackAsTable(self)
 
-    def Update_Actions_Color_Handle_Last_Button(self):
-        UIManager.Update_Actions_Color_Handle_Last_Button(  self.scenario_layout, self.Go_To_Previous_State )
+    def update_actions_color_handle_last_button(self):
+        UIManager.updateActionsColorHandleLastButton(
+            self.scenario_layout, self.go_to_previous_state
+        )
 
-    def Update_Reset_Options(self, actions):
+    def update_reset_options(self, actions):
         count = self.reset_options_layout.count()
         for i in reversed(range(count)):
             widget = self.reset_options_layout.itemAt(i).widget()
@@ -2152,28 +3065,29 @@ class MainWindow(QMainWindow):
                 widget.deleteLater()
 
         if not actions:
-            self.Load_Initial_Options()
+            self.load_initial_options()
             return
 
         for action_key in actions:
             state = self.states.get(action_key)
             if state:
                 label = state.get("label", action_key)
-                self.Create_Option_Button(state)
+                self.create_option_button(state)
 
-    def Go_To_Previous_State(self):
-        UIManager.Display_State_Stack_As_Table(self)
+    def go_to_previous_state(self):
+        UIManager.displayStateStackAsTable(self)
         if len(self.STATE_STACK) > 1:
-
             if self.scenario_layout.count() > 0:
-                last_item = self.scenario_layout.takeAt(self.scenario_layout.count() - 1)
+                last_item = self.scenario_layout.takeAt(
+                    self.scenario_layout.count() - 1
+                )
                 if last_item.widget():
                     last_item.widget().deleteLater()
 
             self.STATE_STACK.pop()
             previous_state = self.STATE_STACK[-1]
 
-            self.Update_Reset_Options(previous_state.get("actions", []))
+            self.update_reset_options(previous_state.get("actions", []))
         else:
             self.STATE_STACK.clear()
 
@@ -2182,46 +3096,56 @@ class MainWindow(QMainWindow):
                 if last_item.widget():
                     last_item.widget().deleteLater()
 
-            self.Load_Initial_Options()
+            self.load_initial_options()
 
-        self.Update_Actions_Color_Handle_Last_Button()
+        self.update_actions_color_handle_last_button()
 
-        UIManager.Remove_Copier(self.scenario_layout, self.reset_options_layout)
-        UIManager.Display_State_Stack_As_Table(self)
+        UIManager.removeCopier(self.scenario_layout, self.reset_options_layout)
+        UIManager.displayStateStackAsTable(self)
 
-    def Clear_Button_Clicked(self):
-        self.log_text_edit.clear() 
+    def clear_button_clicked(self):
+        self.log_text_edit.clear()
         global LOGS
         LOGS = []
 
-    def Scenario_Changed(self, name_selected):
+    def scenario_changed(self, name_selected):
 
         session_info = SessionManager.check_session()
 
         if not session_info.get("valid"):
-            Settings.WRITE_LOG_DEV_FILE("Session invalid. Redirecting to login.", "ERROR")
+            Settings.write_log_dev_file(
+                "Session invalid. Redirecting to login.", "ERROR"
+            )
             sys.exit()
             return False
 
-        encrypted_string = EncryptionService.encrypt_message( f"{session_info['Id_User']}::{session_info['username']}::{session_info['date']}::IT", Settings.KEY )
+        encrypted_string = EncryptionService.encrypt_message(
+            f"{session_info['Id_User']}::{session_info['username']}::{session_info['date']}::IT",
+            Settings.KEY,
+        )
 
         api_url = f"https://reporting.nrb-apps.com/pub/ReportingV4/senario.php?rv4=1&action=get&entity=IT&l={encrypted_string}"
 
         payload = {"name": name_selected}
 
         try:
-            raw_result = APIManager.handle_save_scenario(payload, api_url)
+            raw_result = API_MANAGER.handleSaveScenario(payload, api_url)
         except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE( f"API call failed: {e} \n {traceback.format_exc()}", "ERROR"  )
+            Settings.write_log_dev_file(
+                f"API call failed: {e} \n {traceback.format_exc()}", "ERROR"
+            )
             return
 
         if isinstance(raw_result, dict) and raw_result.get("status") is False:
-            Settings.WRITE_LOG_DEV_FILE( f"API returned error: {raw_result.get('error', 'Unknown API error')}",  "ERROR" )
+            Settings.write_log_dev_file(
+                f"API returned error: {raw_result.get('error', 'Unknown API error')}",
+                "ERROR",
+            )
             return
 
         if isinstance(raw_result, list):
-            if not raw_result: 
-                Settings.WRITE_LOG_DEV_FILE("No scenario returned from API.", "WARNING")
+            if not raw_result:
+                Settings.write_log_dev_file("No scenario returned from API.", "WARNING")
                 # self.STATE_STACK = []  # clear state stack
                 return
             else:  # list with data -> case 1
@@ -2230,13 +3154,17 @@ class MainWindow(QMainWindow):
             data_list = raw_result["data"]
             if not data_list:
                 # print("⚠️ No scenario returned in 'data'.")
-                Settings.WRITE_LOG_DEV_FILE("No scenario returned in 'data'.", "WARNING")
+                Settings.write_log_dev_file(
+                    "No scenario returned in 'data'.", "WARNING"
+                )
                 # self.STATE_STACK = []
                 return
             scenario = data_list[0]
         else:
             # print(f"❌ Unexpected API result format: {type(raw_result)}")
-            Settings.WRITE_LOG_DEV_FILE( f"Unexpected API result format: {type(raw_result)}", "ERROR" )
+            Settings.write_log_dev_file(
+                f"Unexpected API result format: {type(raw_result)}", "ERROR"
+            )
             return
 
         # 🧹 Clear previous widgets
@@ -2245,8 +3173,14 @@ class MainWindow(QMainWindow):
             if item:
                 widget = item.widget()
                 if widget:
-                    widget_name = ( widget.objectName() if widget.objectName() else widget.__class__.__name__ )
-                    Settings.WRITE_LOG_DEV_FILE(f"🗑️ Removing widget: {widget_name}", "INFO")
+                    widget_name = (
+                        widget.objectName()
+                        if widget.objectName()
+                        else widget.__class__.__name__
+                    )
+                    Settings.write_log_dev_file(
+                        f"🗑️ Removing widget: {widget_name}", "INFO"
+                    )
                     widget.deleteLater()
 
         # 🔄 Process scenario's state_stack
@@ -2257,11 +3191,16 @@ class MainWindow(QMainWindow):
                 # print(f"✅ state_stack loaded from string; length={len(state_stack)}")
             except Exception as e:
                 # print(f"❌ Failed to parse state_stack: {e}")
-                Settings.WRITE_LOG_DEV_FILE( f"Failed to parse state_stack: {e}\n{traceback.format_exc()}", "WARNING" )
+                Settings.write_log_dev_file(
+                    f"Failed to parse state_stack: {e}\n{traceback.format_exc()}",
+                    "WARNING",
+                )
                 return
 
         self.STATE_STACK = state_stack
-        Settings.WRITE_LOG_DEV_FILE(  f"📥 Scenario loaded with {len(self.STATE_STACK)} states.", "INFO" )
+        Settings.write_log_dev_file(
+            f"📥 Scenario loaded with {len(self.STATE_STACK)} states.", "INFO"
+        )
 
         # Deep copy to safely iterate
         state_stack_copy = copy.deepcopy(self.STATE_STACK)
@@ -2276,17 +3215,25 @@ class MainWindow(QMainWindow):
 
             try:
                 t0 = time.time()
-                self.Load_State(state)
+                self.load_state(state)
                 t1 = time.time()
-                Settings.WRITE_LOG_DEV_FILE( f"✅ Load_State for #{index} succeeded in {t1 - t0:.3f}s", "INFO" )
+                Settings.write_log_dev_file(
+                    f"✅ load_state for #{index} succeeded in {t1 - t0:.3f}s", "INFO"
+                )
                 try:
-                    self.Update_Actions_Color_Handle_Last_Button()
+                    self.update_actions_color_handle_last_button()
                 except Exception as e:
-                    # print(f"⚠️ Update_Actions_Color_Handle_Last_Button failed after state #{index}: {e}")
-                    Settings.WRITE_LOG_DEV_FILE( f"⚠️ Update_Actions_Color_Handle_Last_Button failed after state #{index}: {e} \n {traceback.format_exc()}",  "WARNING")
+                    # print(f"⚠️ update_actions_color_handle_last_button failed after state #{index}: {e}")
+                    Settings.write_log_dev_file(
+                        f"⚠️ update_actions_color_handle_last_button failed after state #{index}: {e} \n {traceback.format_exc()}",
+                        "WARNING",
+                    )
             except Exception as e:
-                # print(f"❌ Error during Load_State() for state #{index}: {e}")
-                Settings.WRITE_LOG_DEV_FILE( f"❌ Error during Load_State() for state #{index}: {e}\n{traceback.format_exc()}",  "WARNING" )
+                # print(f"❌ Error during load_state() for state #{index}: {e}")
+                Settings.write_log_dev_file(
+                    f"❌ Error during load_state() for state #{index}: {e}\n{traceback.format_exc()}",
+                    "WARNING",
+                )
                 continue
 
         # Remove duplicates
@@ -2295,7 +3242,9 @@ class MainWindow(QMainWindow):
             seen = set()
             for state in self.STATE_STACK:
                 try:
-                    state_key = json.dumps(state, sort_keys=True, ensure_ascii=False, default=str)
+                    state_key = json.dumps(
+                        state, sort_keys=True, ensure_ascii=False, default=str
+                    )
                 except Exception:
                     state_key = repr(state)
                 if state_key not in seen:
@@ -2303,14 +3252,13 @@ class MainWindow(QMainWindow):
                     unique_states.append(state)
             self.STATE_STACK = unique_states
         except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE( f"⚠️ Failed to deduplicate STATE_STACK: {e}\n{traceback.format_exc()}", "ERROR" )
-
-
-
+            Settings.write_log_dev_file(
+                f"⚠️ Failed to deduplicate STATE_STACK: {e}\n{traceback.format_exc()}",
+                "ERROR",
+            )
 
 
 class EntitySelectionDialog(QDialog):
-
     def __init__(self, pattern=None, default_entity=None, parent=None):
         super().__init__(parent)
         # self.setObjectName("EntitySelectionDialog")
@@ -2318,7 +3266,7 @@ class EntitySelectionDialog(QDialog):
         self.setModal(True)
         self.setFixedSize(500, 320)
         self.setWindowIcon(QIcon(os.path.join(Settings.ICONS_DIR, "logo.jpg")))
-        self.pattern = pattern  
+        self.pattern = pattern
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(25, 25, 25, 25)
         main_layout.setSpacing(12)
@@ -2330,7 +3278,9 @@ class EntitySelectionDialog(QDialog):
             margin-bottom: 10px;
         """)
         main_layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignCenter)
-        instruction_label = QLabel("Please enter the entity you want to use for this session:")
+        instruction_label = QLabel(
+            "Please enter the entity you want to use for this session:"
+        )
         instruction_label.setStyleSheet("""
             font-size: 14px;
             color: #555;
@@ -2452,7 +3402,9 @@ class EntitySelectionDialog(QDialog):
 
         if self.pattern:
             if not re.match(self.pattern, entity_text):
-                self.error_label.setText( f"Invalid entity format. Expected format: opm followed by digits (e.g., opm74)" )
+                self.error_label.setText(
+                    f"Invalid entity format. Expected format: opm followed by digits (e.g., opm74)"
+                )
                 self.error_label.show()
                 return
 
@@ -2466,24 +3418,18 @@ class EntitySelectionDialog(QDialog):
         return None
 
 
-
-
-class LoginWindow(QMainWindow):
-
-
+class AuthenticationWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.ui_path = self.Select_Ui_File()
+        self.ui_path = self.select_ui_file()
         uic.loadUi(self.ui_path, self)
         if "Auth.ui" in self.ui_path:
-            self.Initialize_Login_Ui()
-            Settings.WRITE_LOG_DEV_FILE("Login UI initialized", "INFO")
+            self.initialize_login_ui()
+            Settings.write_log_dev_file("Login UI initialized", "INFO")
         self.setWindowTitle("AutoMailPro")
 
-
-
-    def Select_Ui_File(self) -> str:
+    def select_ui_file(self) -> str:
 
         try:
             session_info = SessionManager.check_session()
@@ -2491,13 +3437,14 @@ class LoginWindow(QMainWindow):
             if session_info["valid"]:
                 return Settings.INTERFACE_UI
         except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE(f"[SESSION ERROR] {e}\n{traceback.format_exc()}", "WARNING")
+            Settings.write_log_dev_file(
+                f"[SESSION ERROR] {e}\n{traceback.format_exc()}", "WARNING"
+            )
             sys.exit()
 
         return Settings.AUTH_UI
 
-
-    def Initialize_Login_Ui(self):
+    def initialize_login_ui(self):
         self.login_input = self.findChild(QLineEdit, "loginInput")
         self.password_input = self.findChild(QLineEdit, "passwordInput")
         self.login_button = self.findChild(QPushButton, "loginButton")
@@ -2505,15 +3452,21 @@ class LoginWindow(QMainWindow):
         self.erreur_label = self.findChild(QLabel, "erreur")
 
         if self.erreur_label:
-            Settings.WRITE_LOG_DEV_FILE( f"[INFO] Erreur label found: {self.erreur_label.text()}", "INFO"  )
+            Settings.write_log_dev_file(
+                f"[INFO] Erreur label found: {self.erreur_label.text()}", "INFO"
+            )
             self.erreur_label.hide()
 
         if self.title:
-            self.title.clicked.connect(self.Handle_Show_Session_Date)
-            Settings.WRITE_LOG_DEV_FILE(f"[INFO] Title label found: {self.title.text()}", "INFO")
+            self.title.clicked.connect(self.handle_show_session_date)
+            Settings.write_log_dev_file(
+                f"[INFO] Title label found: {self.title.text()}", "INFO"
+            )
         if self.login_button:
-            self.login_button.clicked.connect(self.Handle_Login)
-            Settings.WRITE_LOG_DEV_FILE( f"[INFO] Login button found: {self.login_button.text()}", "INFO" )
+            self.login_button.clicked.connect(self.handle_login)
+            Settings.write_log_dev_file(
+                f"[INFO] Login button found: {self.login_button.text()}", "INFO"
+            )
 
         right_frame = self.findChild(QWidget, "rightFrame")
         if right_frame:
@@ -2537,7 +3490,7 @@ class LoginWindow(QMainWindow):
             """)
             self.background_label.setScaledContents(True)
             self.background_label.lower()
-            self.Update_Background_Image()
+            self.update_background_image()
 
             self.logoFrame = self.findChild(QFrame, "logoFrame")
 
@@ -2561,44 +3514,59 @@ class LoginWindow(QMainWindow):
                 user_pixmap = QPixmap(user_path)
                 if not user_pixmap.isNull():
                     self.user_label.setPixmap(user_pixmap)
-                    self.user_label.setGeometry(0, 0, self.UseFrame.width(), self.UseFrame.height())
+                    self.user_label.setGeometry(
+                        0, 0, self.UseFrame.width(), self.UseFrame.height()
+                    )
                     self.user_label.show()
 
-
-
-    def Update_Background_Image(self):
+    def update_background_image(self):
         if hasattr(self, "background_frame") and hasattr(self, "background_label"):
             pixmap = QPixmap(self.background_image_path)
             if not pixmap.isNull():
                 self.background_label.resize(self.background_frame.size())
                 self.background_label.setPixmap(pixmap)
 
-
-
-    def Handle_Login(self):
-        UIManager.disable_button(self.login_button)
-        username = ( self.login_input.text().strip()  if hasattr(self.login_input, "text")  else str(self.login_input).strip())
-        password = ( self.password_input.text().strip()  if hasattr(self.password_input, "text")  else str(self.password_input).strip() )
+    def handle_login(self):
+        UIManager.disableButton(self.login_button)
+        username = (
+            self.login_input.text().strip()
+            if hasattr(self.login_input, "text")
+            else str(self.login_input).strip()
+        )
+        password = (
+            self.password_input.text().strip()
+            if hasattr(self.password_input, "text")
+            else str(self.password_input).strip()
+        )
 
         if len(username) <= 4:
-            Settings.WRITE_LOG_DEV_FILE(  f"❌ Username must contain more than 4 characters.", "WARNING")
+            Settings.write_log_dev_file(
+                f"❌ Username must contain more than 4 characters.", "WARNING"
+            )
             self.erreur_label.setText("Username must contain more than 4 characters.")
             self.erreur_label.show()
             return
 
         if len(password) <= 4:
-            Settings.WRITE_LOG_DEV_FILE(  f"❌ Password must contain more than 4 characters.", "WARNING"  )
+            Settings.write_log_dev_file(
+                f"❌ Password must contain more than 4 characters.", "WARNING"
+            )
             self.erreur_label.setText("Password must contain more than 4 characters.")
             self.erreur_label.show()
             return
 
         # 3️⃣ Call check_api_credentials
-        Settings.WRITE_LOG_DEV_FILE("Calling check_api_credentials...", "INFO")
+        Settings.write_log_dev_file("Calling check_api_credentials...", "INFO")
         auth_result = SessionManager.check_api_credentials(username, password)
-        Settings.WRITE_LOG_DEV_FILE(f"API result: {auth_result}", "INFO")
+        Settings.write_log_event(
+            "authentication_response",
+            "INFO",
+            response_type=type(auth_result).__name__,
+            success=not isinstance(auth_result, int) or auth_result == 0,
+        )
 
         if isinstance(auth_result, int):
-            UIManager.enable_button(self.login_button)
+            UIManager.enableButton(self.login_button)
 
             messages = {
                 -1: "Invalid credentials. Please try again.",
@@ -2609,68 +3577,88 @@ class LoginWindow(QMainWindow):
             }
 
             error_message = messages.get(auth_result, "Unknown error occurred.")
-            Settings.WRITE_LOG_DEV_FILE( f"Authentication error code: {auth_result} → {error_message}", "WARNING" )
+            Settings.write_log_dev_file(
+                f"Authentication error code: {auth_result} → {error_message}", "WARNING"
+            )
             self.erreur_label.setText(error_message)
             self.erreur_label.show()
             return
 
-
-
         id_user, p_entity_Origine = auth_result
         if username == "rep.test":
-
             entity_pattern = r"^opm\d+$"
 
-            dialog = EntitySelectionDialog(  pattern=entity_pattern, default_entity=p_entity_Origine, parent=self  )
+            dialog = EntitySelectionDialog(
+                pattern=entity_pattern, default_entity=p_entity_Origine, parent=self
+            )
             selected_entity = dialog.get_selected_entity()
 
             if selected_entity is None:
-                UIManager.enable_button(self.login_button)
-                Settings.WRITE_LOG_DEV_FILE("Entity selection canceled. Login aborted.", "WARNING")
-                self.erreur_label.setText(  "Entity selection is required for this user. Login aborted."  )
+                UIManager.enableButton(self.login_button)
+                Settings.write_log_dev_file(
+                    "Entity selection canceled. Login aborted.", "WARNING"
+                )
+                self.erreur_label.setText(
+                    "Entity selection is required for this user. Login aborted."
+                )
                 self.erreur_label.show()
                 return
 
             p_entity_Nouveau = selected_entity
-            Settings.WRITE_LOG_DEV_FILE(f"✅ Entity overridden to: {p_entity_Nouveau}", "INFO")
+            Settings.write_log_dev_file(
+                f"✅ Entity overridden to: {p_entity_Nouveau}", "INFO"
+            )
         else:
             p_entity_Nouveau = p_entity_Origine
 
-
         try:
-            valid_session = SessionManager.create_session(  username, password, p_entity_Origine, p_entity_Nouveau, id_user  )
+            valid_session = SessionManager.create_session(
+                username, password, p_entity_Origine, p_entity_Nouveau, id_user
+            )
             if not valid_session:
-                Settings.WRITE_LOG_DEV_FILE( "Failed to create user session for unknown reasons.", "ERROR" )
+                Settings.write_log_dev_file(
+                    "Failed to create user session for unknown reasons.", "ERROR"
+                )
                 self.erreur_label.setText("Failed to create user session.")
                 self.erreur_label.show()
                 return
         except Exception as e:
-            UIManager.enable_button(self.login_button)
-            Settings.WRITE_LOG_DEV_FILE( f"Exception during session creation: {str(e)}\n{traceback.format_exc()}", "ERROR"  )
-            self.erreur_label.setText( f"Exception during session creation: {str(e)}\n{traceback.format_exc()}" )
+            UIManager.enableButton(self.login_button)
+            Settings.write_log_dev_file(
+                f"Exception during session creation: {str(e)}\n{traceback.format_exc()}",
+                "ERROR",
+            )
+            self.erreur_label.setText(
+                f"Exception during session creation: {str(e)}\n{traceback.format_exc()}"
+            )
             self.erreur_label.show()
             return
-
 
         try:
             with open(Settings.FILE_ACTIONS_JSON, "r", encoding="utf-8") as file:
                 json_data = json.load(file)
             if not json_data:
-                Settings.WRITE_LOG_DEV_FILE("Configuration file is empty.", "ERROR")
+                Settings.write_log_dev_file("Configuration file is empty.", "ERROR")
                 raise ValueError("Configuration file is empty.")
         except Exception as e:
-            UIManager.enable_button(self.login_button)
-            Settings.WRITE_LOG_DEV_FILE(f"Configuration error: {str(e)}\n{traceback.format_exc()}", "ERROR" )
-            self.erreur_label.setText(f"Configuration error: {str(e)}\n{traceback.format_exc()}")
+            UIManager.enableButton(self.login_button)
+            Settings.write_log_dev_file(
+                f"Configuration error: {str(e)}\n{traceback.format_exc()}", "ERROR"
+            )
+            self.erreur_label.setText(
+                f"Configuration error: {str(e)}\n{traceback.format_exc()}"
+            )
             self.erreur_label.show()
             return
 
-        # 8️⃣ Initialize and show MainWindow
-        UIManager.enable_button(self.login_button) 
-        self.main_window = MainWindow(json_data)
+        # 8️⃣ Initialize and show AutomationMainWindow
+        UIManager.enableButton(self.login_button)
+        self.main_window = AutomationMainWindow(json_data)
         self.main_window.setFixedSize(Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT)
         self.main_window.setWindowTitle("AutoMailPro")
-        self.main_window.stopButton.clicked.connect(lambda: Stop_All_Processes(self.main_window))
+        self.main_window.stopButton.clicked.connect(
+            lambda: stopAllProcesses(self.main_window)
+        )
 
         # Center the window
         screen = QGuiApplication.primaryScreen()
@@ -2682,110 +3670,137 @@ class LoginWindow(QMainWindow):
         # Show main window and close login
         self.main_window.show()
         self.close()
-        Settings.WRITE_LOG_DEV_FILE("Main window displayed, login completed successfully.", "INFO")
+        Settings.write_log_dev_file(
+            "Main window displayed, login completed successfully.", "INFO"
+        )
 
-
-
-    def Handle_Show_Session_Date(self):
-        if not ValidationUtils.path_exists(Settings.SESSION_PATH):
-            Settings.WRITE_LOG_DEV_FILE("Session file not found at expected path.", "WARNING")
+    def handle_show_session_date(self):
+        if not ValidationUtils.pathExists(Settings.SESSION_PATH):
+            Settings.write_log_dev_file(
+                "Session file not found at expected path.", "WARNING"
+            )
             self.erreur_label.setText("Session file not found .")
             self.erreur_label.show()
             return
 
-        is_valid, session_data = ValidationUtils.validate_session_file(Settings.SESSION_PATH)
+        is_valid, session_data = ValidationUtils.validate_session_file(
+            Settings.SESSION_PATH
+        )
 
         if is_valid:
-            Settings.WRITE_LOG_DEV_FILE(f"Session data retrieved: {session_data}", "INFO")
+            Settings.write_log_dev_file(
+                f"Session data retrieved: {session_data}", "INFO"
+            )
             self.erreur_label.setText(f"Session data: {session_data}")
         else:
-            Settings.WRITE_LOG_DEV_FILE("Session file is not valid.", "WARNING")
+            Settings.write_log_dev_file("Session file is not valid.", "WARNING")
             self.erreur_label.setText(f"Session file is not valid.")
         self.erreur_label.show()
 
 
-    
-
-
 def main():
-    Settings.WRITE_LOG_DEV_FILE("\n\n========== [APP START] ==========\n", "INFO")
-    Settings.WRITE_LOG_DEV_FILE("Application starting...", "INFO")
+    Settings.write_log_dev_file("\n\n========== [APP START] ==========\n", "INFO")
+    Settings.write_log_dev_file("Application starting...", "INFO")
     # 1️⃣ Vérification des arguments
-    Settings.WRITE_LOG_DEV_FILE(f"Received arguments: {sys.argv}", "DEBUG")
+    Settings.write_log_dev_file(f"Received arguments: {sys.argv}", "DEBUG")
 
     if len(sys.argv) < 3:
-        Settings.WRITE_LOG_DEV_FILE(  "Insufficient arguments provided. Expected encrypted_key and secret_key.", "ERROR" )
-        Settings.WRITE_LOG_DEV_FILE(  "Usage: python AppV2.py <encrypted_key> <secret_key>", "ERROR" )
+        Settings.write_log_dev_file(
+            "Insufficient arguments provided. Expected encrypted_key and secret_key.",
+            "ERROR",
+        )
+        Settings.write_log_dev_file(
+            "Usage: python AppV2.py <encrypted_key> <secret_key>", "ERROR"
+        )
         sys.exit(1)
 
     encrypted_key = sys.argv[1]
     secret_key = sys.argv[2]
 
-
-    Settings.WRITE_LOG_DEV_FILE(f"Encrypted key and secret key received.", "DEBUG")
-    Settings.WRITE_LOG_DEV_FILE("Arguments parsed successfully.", "DEBUG")
+    Settings.write_log_dev_file(f"Encrypted key and secret key received.", "DEBUG")
+    Settings.write_log_dev_file("Arguments parsed successfully.", "DEBUG")
 
     # 2️⃣ Vérification de la clé
-    Settings.WRITE_LOG_DEV_FILE("Verifying key...", "DEBUG")
+    Settings.write_log_dev_file("Verifying key...", "DEBUG")
     if not EncryptionService.verify_key(encrypted_key, secret_key):
-        Settings.WRITE_LOG_DEV_FILE("Invalid key. Access denied.", "ERROR")
+        Settings.write_log_dev_file("Invalid key. Access denied.", "ERROR")
         sys.exit(1)
     else:
-        Settings.WRITE_LOG_DEV_FILE("Key is valid.", "INFO")
+        Settings.write_log_dev_file("Key is valid.", "INFO")
 
     # 3️⃣ Vérification session
-    Settings.WRITE_LOG_DEV_FILE("Checking user session...", "DEBUG")
+    Settings.write_log_dev_file("Checking user session...", "DEBUG")
     session_info = SessionManager.check_session_full()
     session_valid = session_info.get("valid", False)
 
-    Settings.WRITE_LOG_DEV_FILE(f"Session valid: {session_valid}", "DEBUG")
-    Settings.WRITE_LOG_DEV_FILE(f"Session info: {session_info}", "DEBUG")
+    Settings.write_log_dev_file(f"Session valid: {session_valid}", "DEBUG")
+    Settings.write_log_event(
+        "application_session_checked",
+        "DEBUG",
+        valid=session_valid,
+    )
 
     # 4️⃣ Initialisation app Qt
     app = QApplication(sys.argv)
-    Settings.WRITE_LOG_DEV_FILE("QApplication initialized.", "DEBUG")
+    Settings.write_log_dev_file("QApplication initialized.", "DEBUG")
 
     # 5️⃣ Icône application
     icon_path = Path(Settings.APP_ICON)
 
-    if ValidationUtils.path_exists(icon_path):
+    if ValidationUtils.pathExists(icon_path):
         app.setWindowIcon(QIcon(str(icon_path)))
-        Settings.WRITE_LOG_DEV_FILE("Application icon set successfully.", "INFO")
+        Settings.write_log_dev_file("Application icon set successfully.", "INFO")
     else:
-        Settings.WRITE_LOG_DEV_FILE(f"Icon file not found at: {icon_path}", "WARNING")
+        Settings.write_log_dev_file(f"Icon file not found at: {icon_path}", "WARNING")
 
     # 6️⃣ Choix de la fenêtre
     window = None
 
     if session_valid:
-        Settings.WRITE_LOG_DEV_FILE("Valid session found. Attempting to open MainWindow.", "INFO")
+        Settings.write_log_dev_file(
+            "Valid session found. Attempting to open AutomationMainWindow.", "INFO"
+        )
         try:
-            Settings.WRITE_LOG_DEV_FILE(  f"Loading config file: {Settings.FILE_ACTIONS_JSON}", "DEBUG" )
+            Settings.write_log_dev_file(
+                f"Loading config file: {Settings.FILE_ACTIONS_JSON}", "DEBUG"
+            )
             with open(Settings.FILE_ACTIONS_JSON, "r", encoding="utf-8") as file:
                 json_data = json.load(file)
 
             if not json_data:
-                Settings.WRITE_LOG_DEV_FILE( f"Configuration file is empty: {Settings.FILE_ACTIONS_JSON}", "WARNING" )
+                Settings.write_log_dev_file(
+                    f"Configuration file is empty: {Settings.FILE_ACTIONS_JSON}",
+                    "WARNING",
+                )
                 raise ValueError("Fichier de configuration vide")
 
-            Settings.WRITE_LOG_DEV_FILE("Configuration file loaded successfully.", "INFO")
+            Settings.write_log_dev_file(
+                "Configuration file loaded successfully.", "INFO"
+            )
 
-            window = MainWindow(json_data)
-            Settings.WRITE_LOG_DEV_FILE("MainWindow initialized.", "INFO")
+            window = AutomationMainWindow(json_data)
+            Settings.write_log_dev_file("AutomationMainWindow initialized.", "INFO")
 
         except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE( f"An error occurred while loading MainWindow: {e}\n{traceback.format_exc()}",  "ERROR" )
-            SessionManager.clear_session()  
-            window = LoginWindow()
+            Settings.write_log_dev_file(
+                f"An error occurred while loading AutomationMainWindow: {e}\n{traceback.format_exc()}",
+                "ERROR",
+            )
+            SessionManager.clear_session()
+            window = AuthenticationWindow()
 
     else:
-        Settings.WRITE_LOG_DEV_FILE("No valid session found. Opening LoginWindow.", "INFO")
-        SessionManager.clear_session()  
-        window = LoginWindow()
+        Settings.write_log_dev_file(
+            "No valid session found. Opening AuthenticationWindow.", "INFO"
+        )
+        SessionManager.clear_session()
+        window = AuthenticationWindow()
 
     # 7️⃣ Vérification sécurité
     if window is None:
-        Settings.WRITE_LOG_DEV_FILE("Critical error: No window could be created.", "CRITICAL")
+        Settings.write_log_dev_file(
+            "Critical error: No window could be created.", "CRITICAL"
+        )
         sys.exit(1)
 
     # 8️⃣ Taille et position
@@ -2799,28 +3814,35 @@ def main():
 
     window.move(x, y)
 
-
     # 9️⃣ Connexion stop button
     if hasattr(window, "stopButton"):
-        Settings.WRITE_LOG_DEV_FILE("stopButton detected in window. Attempting to connect.", "DEBUG")
-        Settings.WRITE_LOG_DEV_FILE("stopButton found. Connecting to Stop_All_Processes.", "DEBUG")
+        Settings.write_log_dev_file(
+            "stopButton detected in window. Attempting to connect.", "DEBUG"
+        )
+        Settings.write_log_dev_file(
+            "stopButton found. Connecting to stopAllProcesses.", "DEBUG"
+        )
         try:
-            window.stopButton.clicked.connect(lambda: Stop_All_Processes(window))
-            Settings.WRITE_LOG_DEV_FILE("stopButton connected successfully.", "INFO")
+            window.stopButton.clicked.connect(lambda: stopAllProcesses(window))
+            Settings.write_log_dev_file("stopButton connected successfully.", "INFO")
         except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE( f"An error occurred while connecting stopButton: {e}\n{traceback.format_exc()}", "ERROR"  )
+            Settings.write_log_dev_file(
+                f"An error occurred while connecting stopButton: {e}\n{traceback.format_exc()}",
+                "ERROR",
+            )
     else:
-        Settings.WRITE_LOG_DEV_FILE("No stopButton found in window.", "INFO")
+        Settings.write_log_dev_file("No stopButton found in window.", "INFO")
 
     # 🔟 Finalisation
     window.setWindowTitle("AutoMailPro")
     window.show()
-    Settings.WRITE_LOG_DEV_FILE("Application started successfully, window displayed.", "INFO")
-    Settings.WRITE_LOG_DEV_FILE("\n\n========== [APP RUNNING] ==========\n", "INFO")
-    Settings.WRITE_LOG_DEV_FILE("Application is now running.", "INFO")
+    Settings.write_log_dev_file(
+        "Application started successfully, window displayed.", "INFO"
+    )
+    Settings.write_log_dev_file("\n\n========== [APP RUNNING] ==========\n", "INFO")
+    Settings.write_log_dev_file("Application is now running.", "INFO")
     sys.exit(app.exec())
 
 
 if __name__ == "__main__":
     main()
-

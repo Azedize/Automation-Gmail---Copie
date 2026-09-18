@@ -5,44 +5,120 @@ import datetime
 import traceback
 import subprocess
 import shutil
+import hashlib
+import json
+import logging
+import re
+import threading
+import uuid
+from logging.handlers import RotatingFileHandler
 
 
 class Settings:
-
-    API_KEY_PROXY = "Gmf15dfVD61G8gZQg"
-
-    AUTHORISED_PORTS = ["5836", "0000", "8080", "3128", "1111", "16666"]
-
     # ═══════════════════════════════════════════════════════════
-    #  DATA AUTH
+    #  CONFIGURATION STRUCTURÉE
     # ═══════════════════════════════════════════════════════════
+    SECURITY_CONFIG = {
+        "API_KEY_PROXY": "Gmf15dfVD61G8gZQg",
+        "AUTHORISED_PORTS": ["5836", "0000", "8080", "3128", "1111", "16666"],
+        "KEY_HEX": "f564292a5740af4fc4819c6e22f64765232ad35f56079854a0ad3996c68ee7a2",
+        "HEADER": {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/117.0.0.0 Safari/537.36",
+            "Accept": "application/json, text/javascript, */*; q=0.01",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Connection": "keep-alive",
+        },
+    }
 
-    KEY_HEX = "f564292a5740af4fc4819c6e22f64765232ad35f56079854a0ad3996c68ee7a2"
+    BROWSER_CONFIG = {
+        "SUPPORTED_BROWSERS": {
+            "chrome": {"exe_name": "chrome.exe"},
+            "firefox": {"exe_name": "firefox.exe"},
+            "edge": {"exe_name": "msedge.exe"},
+            "icedragon": {"exe_name": "dragon.exe"},
+            "comodo": {"exe_name": "chrome.exe"},
+        },
+        "CHROME_FAMILY_BROWSERS": {"chrome", "edge", "msedge", "icedragon", "comodo"},
+        "BROWSER_OPTIONS": (
+            ("Chrome", "chrome.png"),
+            ("Firefox", "firefox.png"),
+            ("Edge", "edge.png"),
+            ("Comodo", "comodo.png"),
+        ),
+        "PROCESS_PATTERNS": {
+            "chrome": ("chrome", "chromium"),
+            "edge": ("edge", "msedge"),
+            "icedragon": ("dragon", "icedragon", "chromium"),
+            "comodo": ("comodo", "chrome"),
+        },
+    }
+
+    PROCESS_CONFIG = {
+        "GOOGLE_PREFIX": "google",
+        "YOUTUBE_PREFIX": "youtube",
+        "EXCLUDED_PROCESSES": frozenset(
+            {"google_maps_actions", "save_location", "search_activities"}
+        ),
+        "ALLOWED_ITEMS": {
+            "open_inbox": ("report_spam", "delete", "archive"),
+            "open_spam": ("not_spam", "delete", "report_spam"),
+        },
+    }
+
+    ISP_MAPPING = {"gmail": "Gmail", "hotmail": "Hotmail", "yahoo": "Yahoo"}
+
+    VALIDATION_CONFIG = {
+        "EMAIL": r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
+        "NUMERIC_RANGE": r"^\s*(\d+)(?:\s*,\s*(\d+))?\s*$",
+        "IP_ADDRESS": r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$",
+    }
+
+    UI_CONFIG = {
+        "WINDOW_WIDTH": 1710,
+        "WINDOW_HEIGHT": 1005,
+        "PRIMARY_COLOR": "#669bbc",
+        "SECONDARY_COLOR": "#b2cddd",
+        "ACCENT_COLOR": "#d90429",
+        "SUCCESS_COLOR": "#2e7d32",
+        "WARNING_COLOR": "#ed6c02",
+        "ERROR_COLOR": "#d32f2f",
+        "INFO_COLOR": "#0288d1",
+        "FONT_FAMILY": "Times, Times New Roman, serif",
+        "FONT_SIZE_SMALL": 12,
+        "FONT_SIZE_MEDIUM": 14,
+        "FONT_SIZE_LARGE": 16,
+    }
+
+    API_KEY_PROXY = SECURITY_CONFIG["API_KEY_PROXY"]
+    AUTHORISED_PORTS = SECURITY_CONFIG["AUTHORISED_PORTS"]
+    KEY_HEX = SECURITY_CONFIG["KEY_HEX"]
     KEY = bytes.fromhex(KEY_HEX)
+    HEADER = SECURITY_CONFIG["HEADER"]
+    SUPPORTED_BROWSERS = BROWSER_CONFIG["SUPPORTED_BROWSERS"]
+    CHROME_FAMILY_BROWSERS = BROWSER_CONFIG["CHROME_FAMILY_BROWSERS"]
+    BROWSER_OPTIONS = BROWSER_CONFIG["BROWSER_OPTIONS"]
+    BROWSER_PROCESS_PATTERNS = BROWSER_CONFIG["PROCESS_PATTERNS"]
 
-    # ═══════════════════════════════════════════════════════════
-    #  Sopport des navigateurs
-    # ═══════════════════════════════════════════════════════════
+    GOOGLE_PREFIX = PROCESS_CONFIG["GOOGLE_PREFIX"]
+    YOUTUBE_PREFIX = PROCESS_CONFIG["YOUTUBE_PREFIX"]
+    EXCLUDED_PROCESSES = PROCESS_CONFIG["EXCLUDED_PROCESSES"]
+    ALLOWED_ITEMS = PROCESS_CONFIG["ALLOWED_ITEMS"]
 
-    SUPPORTED_BROWSERS = {
-        "chrome": {"exe_name": "chrome.exe"},
-        "firefox": {"exe_name": "firefox.exe"},
-        "edge": {"exe_name": "msedge.exe"},
-        "icedragon": {"exe_name": "dragon.exe"},
-        "comodo": {"exe_name": "chrome.exe"},
-    }
-
-    # ═══════════════════════════════════════════════════════════
-    # 🌐 Header
-    # ═══════════════════════════════════════════════════════════
-    HEADER = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/117.0.0.0 Safari/537.36",
-        "Accept": "application/json, text/javascript, */*; q=0.01",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Connection": "keep-alive",
-    }
+    WINDOW_WIDTH = UI_CONFIG["WINDOW_WIDTH"]
+    WINDOW_HEIGHT = UI_CONFIG["WINDOW_HEIGHT"]
+    PRIMARY_COLOR = UI_CONFIG["PRIMARY_COLOR"]
+    SECONDARY_COLOR = UI_CONFIG["SECONDARY_COLOR"]
+    ACCENT_COLOR = UI_CONFIG["ACCENT_COLOR"]
+    SUCCESS_COLOR = UI_CONFIG["SUCCESS_COLOR"]
+    WARNING_COLOR = UI_CONFIG["WARNING_COLOR"]
+    ERROR_COLOR = UI_CONFIG["ERROR_COLOR"]
+    INFO_COLOR = UI_CONFIG["INFO_COLOR"]
+    FONT_FAMILY = UI_CONFIG["FONT_FAMILY"]
+    FONT_SIZE_SMALL = UI_CONFIG["FONT_SIZE_SMALL"]
+    FONT_SIZE_MEDIUM = UI_CONFIG["FONT_SIZE_MEDIUM"]
+    FONT_SIZE_LARGE = UI_CONFIG["FONT_SIZE_LARGE"]
 
     API_ENDPOINTS = {
         "_APIACCESS_API": "https://reporting.nrb-apps.com/pub/chk_usr1.php?rv4=1",
@@ -59,7 +135,9 @@ class Settings:
     # 🔐 Paramètres de chiffrement
     # ═══════════════════════════════════════════════════════════
 
-    ENCRYPTION_KEY_HEX = "f564292a5740af4fc4819c6e22f64765232ad35f56079854a0ad3996c68ee7a2"
+    ENCRYPTION_KEY_HEX = (
+        "f564292a5740af4fc4819c6e22f64765232ad35f56079854a0ad3996c68ee7a2"
+    )
 
     AES_BLOCK_SIZE = 128
     AES_KEY_LENGTH = 32
@@ -89,27 +167,14 @@ class Settings:
     ICEDRAGON_PROFILES = PROFILES_DIR / "icedragon"
     COMODO_PROFILES = PROFILES_DIR / "comodo"
 
-  
-
     # VERSION_LOCAL_EXT = os.path.join(EXTENSIONS_DIR_TEMPLETE, "version.txt")
     VERSION_LOCAL_PROGRAMM = os.path.join(BASE_DIR, "config", "version.txt")
 
-
- 
-
     CHROMIUM_BROWSER_PATHS = {
-        "edge": {
-            "profiles": EDGE_PROFILES
-        },
-        "icedragon": {
-            "profiles": ICEDRAGON_PROFILES
-        },
-        "comodo": {
-            "profiles": COMODO_PROFILES
-        },
+        "edge": {"profiles": EDGE_PROFILES},
+        "icedragon": {"profiles": ICEDRAGON_PROFILES},
+        "comodo": {"profiles": COMODO_PROFILES},
     }
-
-    CHROME_FAMILY_BROWSERS = {"chrome", "edge", "msedge", "icedragon", "comodo"}
 
     BROWSER_PROFILE_PATHS = {
         "chrome": CHROME_PROFILES,
@@ -127,22 +192,26 @@ class Settings:
     # ═══════════════════════════════════════════════════════════
 
     CONFIG_PROFILE = r"C:\RepProxy\template_Profile"
-    SECURE_PREFERENCES_TEMPLATE = r"C:\RepProxy\template_Profile\default\Secure Preferences"
+    SECURE_PREFERENCES_TEMPLATE = (
+        r"C:\RepProxy\template_Profile\default\Secure Preferences"
+    )
     FICHIER_LOCAL_STATE = r"C:\RepProxy\template_Profile\Local State"
     FICHIER_VARIATIONS = r"C:\RepProxy\template_Profile\Variations"
-
 
     EXTENTION_EX3_FIREFOX = r"C:\RepProxy\Ext3_Firefoxtest"
     VERSION_LOCAL_EX3_FIREFOX = os.path.join(EXTENTION_EX3_FIREFOX, "version.txt")
     MANIFEST_PATH_EX3_FIREFOX = os.path.join(EXTENTION_EX3_FIREFOX, "manifest.json")
 
-    
     EXTENTION_EX3_CHROMIUM = r"C:\RepProxy\Ext3"
     MANIFEST_PATH_EX3 = os.path.join(EXTENTION_EX3_CHROMIUM, "manifest.json")
     VERSION_LOCAL_EX3 = os.path.join(EXTENTION_EX3_CHROMIUM, "version.txt")
 
-    TEMPLATE_DIRECTORY_FIREFOX = os.path.join( TOOLS_DIR, "extensions Templete", "ExtensionTemplateFirefox" )
-    TEMPLATE_DIRECTORY_CHROMIUM = os.path.join(  TOOLS_DIR, "extensions Templete", "Extention_Family_Chrome" )
+    TEMPLATE_DIRECTORY_FIREFOX = os.path.join(
+        TOOLS_DIR, "extensions Templete", "ExtensionTemplateFirefox"
+    )
+    TEMPLATE_DIRECTORY_CHROMIUM = os.path.join(
+        TOOLS_DIR, "extensions Templete", "Extention_Family_Chrome"
+    )
 
     LOGS_DIRECTORY = os.path.join(TOOLS_DIR, "logs")
     RESULT_FILE_PATH = os.path.join(TOOLS_DIR, "result.txt")
@@ -212,7 +281,9 @@ class Settings:
     # 📂 Déclaration des chemins UI globaux Interface
     # ═══════════════════════════════════════════════════════════
 
-    INTERFACE_UI = os.path.abspath(os.path.join(BASE_DIR, "resources", "ui", "interface.ui"))
+    INTERFACE_UI = os.path.abspath(
+        os.path.join(BASE_DIR, "resources", "ui", "interface.ui")
+    )
     AUTH_UI = os.path.abspath(os.path.join(BASE_DIR, "resources", "ui", "Auth.ui"))
     FILE_ACTIONS_JSON = os.path.join(BASE_DIR, "config", "action.json")
     AUTH_BACKGROUND = os.path.join(BASE_DIR, "resources", "icons", "baghround.jpg")
@@ -232,43 +303,164 @@ class Settings:
         "others",
     ]
 
-    LOG_DEV_FILE = os.path.abspath(os.path.join(BASE_DIR, "Log/LogDev/my_project.log"))
+    LOG_DEV_FILE = os.path.abspath(
+        os.path.join(BASE_DIR, "Log/LogDev/my_project.jsonl")
+    )
+    LOG_MAX_BYTES = 10 * 1024 * 1024
+    LOG_BACKUP_COUNT = 5
+    _LOGGER_NAME = "automailpro.application"
+    _LOGGER = None
+    _LOGGER_LOCK = threading.Lock()
+    _LOG_SEQUENCE = 0
+    _LOG_RUN_ID = uuid.uuid4().hex[:12]
+    _MAX_LOG_MESSAGE_LENGTH = 800
+
+    _SENSITIVE_KEY_PATTERN = re.compile(
+        r"(?i)([\"']?)(password|passwd|pass|secret|token|api[_-]?key|authorization|cookie|"
+        r"proxy[_-]?login|private[_-]?key|access[_-]?key|session[_-]?(?:data|id)|"
+        r"inserted[_-]?id|key[_-]?hex|encrypted)"
+        r"\1\s*([:=])\s*([\"']?)([^,;\s}\]]+)"
+    )
+    _SENSITIVE_BLOCK_PATTERN = re.compile(
+        r"(?is)(payload|command)\s*([:=])\s*(.+?)(?=(?:\s+\w[\w -]*\s*[:=])|$)"
+    )
+    _EMAIL_PATTERN = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")
+    _IP_PATTERN = re.compile(r"\b(?:25[0-5]\.){3}(?:25[0-5])\b")
+    _URL_PATTERN = re.compile(r"\bhttps?://[^\s\]}>,]+", re.IGNORECASE)
+    _PATH_PATTERN = re.compile(r"(?<![A-Za-z0-9])(?:[A-Za-z]:\\)[^\n\r|,;]+")
 
     @classmethod
-    def WRITE_LOG_DEV_FILE(cls, message: str, level: str = "INFO"):
-        try:
-            # Génération de la date et heure actuelle pour le timestamp
-            timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            log_line = f"[{timestamp}] [{level}] {message}\n"
+    def _stable_identifier(cls, value: str, label: str) -> str:
+        digest = hashlib.sha256(value.encode("utf-8", errors="replace")).hexdigest()[
+            :12
+        ]
+        return f"<{label}:{digest}>"
 
-            # Vérifie que le dossier contenant le fichier de log existe, sinon le crée
+    @classmethod
+    def _redact_log_message(cls, message) -> str:
+        text = str(message)
+
+        def redact_key_value(match):
+            return f"{match.group(1)}{match.group(2)}{match.group(3)}<redacted>"
+
+        text = cls._SENSITIVE_KEY_PATTERN.sub(redact_key_value, text)
+        text = cls._SENSITIVE_BLOCK_PATTERN.sub(
+            lambda match: f"{match.group(1)}{match.group(2)}<redacted>", text
+        )
+        text = cls._URL_PATTERN.sub("<url:redacted>", text)
+        text = cls._EMAIL_PATTERN.sub(
+            lambda match: cls._stable_identifier(match.group(0).lower(), "email"), text
+        )
+        text = cls._IP_PATTERN.sub(
+            lambda match: cls._stable_identifier(match.group(0), "ip"), text
+        )
+        text = cls._PATH_PATTERN.sub(
+            lambda match: cls._stable_identifier(match.group(0), "path"), text
+        )
+        return " ".join(text.split())
+
+    @classmethod
+    def _prepare_log_message(cls, message) -> str:
+        safe_message = cls._redact_log_message(message)
+        if len(safe_message) <= cls._MAX_LOG_MESSAGE_LENGTH:
+            return safe_message
+        return (
+            f"{safe_message[: cls._MAX_LOG_MESSAGE_LENGTH]}... "
+            f"[truncated_length={len(safe_message)}]"
+        )
+
+    @classmethod
+    def _get_logger(cls):
+        if cls._LOGGER is not None:
+            return cls._LOGGER
+
+        with cls._LOGGER_LOCK:
+            if cls._LOGGER is not None:
+                return cls._LOGGER
+
+            logger = logging.getLogger(cls._LOGGER_NAME)
+            logger.setLevel(logging.DEBUG)
+            logger.propagate = False
             log_path = Path(cls.LOG_DEV_FILE)
             log_path.parent.mkdir(parents=True, exist_ok=True)
+            handler = RotatingFileHandler(
+                log_path,
+                maxBytes=cls.LOG_MAX_BYTES,
+                backupCount=cls.LOG_BACKUP_COUNT,
+                encoding="utf-8",
+            )
+            handler.setFormatter(logging.Formatter("%(message)s"))
+            if not logger.handlers:
+                logger.addHandler(handler)
+            cls._LOGGER = logger
+            return logger
 
-            # Ouvre le fichier en mode "append" pour ajouter la ligne de log à la fin
-            with open(cls.LOG_DEV_FILE, "a", encoding="utf-8") as f:
-                f.write(log_line)
-
-        except Exception as e:
-
-            print(f"❌ [LOG] Erreur lors de l'écriture du log: {e}")
+    @classmethod
+    def write_log_event(cls, event: str, level: str = "INFO", **context):
+        try:
+            safe_context = {
+                str(key): cls._prepare_log_message(value)
+                for key, value in context.items()
+            }
+            cls._write_log_record(
+                {"event": event, "context": safe_context},
+                level,
+            )
+        except (OSError, TypeError, ValueError):
             pass
+
+    @classmethod
+    def _write_log_record(cls, fields, level: str):
+        with cls._LOGGER_LOCK:
+            cls._LOG_SEQUENCE += 1
+            sequence = cls._LOG_SEQUENCE
+        record = {
+            "sequence": sequence,
+            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "level": str(level).upper(),
+            "run_id": cls._LOG_RUN_ID,
+            "process_id": os.getpid(),
+            "thread": threading.current_thread().name,
+            **fields,
+        }
+        cls._get_logger().log(
+            getattr(logging, str(level).upper(), logging.INFO),
+            json.dumps(record, ensure_ascii=False, separators=(",", ":")),
+        )
+
+    @classmethod
+    def write_log_dev_file(cls, message: str, level: str = "INFO"):
+        try:
+            cls._write_log_record( {"message": cls._prepare_log_message(message)}, level )
+        except (OSError, TypeError, ValueError):
+            pass
+
+    @classmethod
+    def writeLogDevFile(cls, message: str, level: str = "INFO"):
+        cls.write_log_dev_file(message, level)
 
     @classmethod
     def clear_log(cls):
         try:
+            if cls._LOGGER is not None:
+                for handler in cls._LOGGER.handlers:
+                    handler.flush()
             log_path = Path(cls.LOG_DEV_FILE)
             if log_path.exists():
-                # Ouvre le fichier en mode "write" pour effacer tout son contenu
                 open(log_path, "w", encoding="utf-8").close()
-                # print(f"✅ [LOG] Fichier log vidé: {cls.LOG_DEV_FILE}")
             else:
-                #print(f"⚠️ [LOG] Fichier log inexistant: {cls.LOG_DEV_FILE}")
-                settings.WRITE_LOG_DEV_FILE("Fichier log inexistant", "WARNING")
-        except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE(   f"Exception while clearing log: {traceback.format_exc()}", "ERROR"  )
-            # print(f"❌ [LOG] Erreur lors de la suppression du fichier log: {e}")
-            pass
+                cls.write_log_dev_file("Fichier log inexistant", "WARNING")
+        except Exception as exc:
+            cls.write_log_event(
+                "log_clear_failed",
+                "ERROR",
+                exception_type=type(exc).__name__,
+                error=str(exc),
+            )
+
+    @classmethod
+    def clearLog(cls):
+        cls.clear_log()
 
     @classmethod
     def ensure_directories(cls):
@@ -281,23 +473,33 @@ class Settings:
             cls.FIREFOX_PROFILES,
             cls.EDGE_PROFILES,
             cls.ICEDRAGON_PROFILES,
-            cls.COMODO_PROFILES
+            cls.COMODO_PROFILES,
         ]
         for directory in directories:
             path = Path(directory)
             if not path.exists():
                 try:
                     path.mkdir(parents=True, exist_ok=True)
-                    # print(f"✅ Dossier créé: {path}")
-                except Exception as e:
-                    Settings.WRITE_LOG_DEV_FILE(  f"Exception while creating directory {path}: {traceback.format_exc()}",   "ERROR" )
-                    # print(f"💥 Erreur lors de la création du dossier {path}: {e}")
-            # else:
-            #     print(f"ℹ️ Dossier déjà existant: {path}")
+                except Exception as exc:
+                    cls.write_log_event(
+                        "directory_creation_failed",
+                        "ERROR",
+                        directory=str(path),
+                        exception_type=type(exc).__name__,
+                        error=str(exc),
+                    )
+
+    @classmethod
+    def ensureDirectories(cls):
+        cls.ensure_directories()
 
     @classmethod
     def get_encryption_key_bytes(cls) -> bytes:
         return bytes.fromhex(cls.ENCRYPTION_KEY_HEX)
+
+    @classmethod
+    def getEncryptionKeyBytes(cls) -> bytes:
+        return cls.get_encryption_key_bytes()
 
     @classmethod
     def find_pythonw(cls):
@@ -314,13 +516,15 @@ class Settings:
     @classmethod
     def ensure_node_installed(cls):
         if shutil.which("node") is not None:
-            cls.WRITE_LOG_DEV_FILE("Node.js already installed", "INFO")
+            cls.write_log_dev_file("Node.js already installed", "INFO")
             return True
 
-        cls.WRITE_LOG_DEV_FILE("Node.js not installed. Trying to install via Chocolatey...", "INFO")
+        cls.write_log_dev_file(
+            "Node.js not installed. Trying to install via Chocolatey...", "INFO"
+        )
 
         if shutil.which("choco") is None:
-            cls.WRITE_LOG_DEV_FILE("Chocolatey not found. Installing...", "INFO")
+            cls.write_log_dev_file("Chocolatey not found. Installing...", "INFO")
             try:
                 subprocess.run(
                     [
@@ -336,15 +540,27 @@ class Settings:
                     ],
                     check=True,
                 )
-            except subprocess.CalledProcessError:
-                cls.WRITE_LOG_DEV_FILE(f"Error installing Chocolatey{traceback.format_exc()}", "ERROR")
+            except subprocess.CalledProcessError as exc:
+                cls.write_log_event(
+                    "node_setup_failed",
+                    "ERROR",
+                    action="choco_install",
+                    exception_type=type(exc).__name__,
+                    error=str(exc),
+                )
                 return False
 
         try:
             subprocess.run(["choco", "install", "nodejs-lts", "-y"], check=True)
             return True
-        except subprocess.CalledProcessError as e:
-            cls.WRITE_LOG_DEV_FILE(f"Error installing Node.js via Chocolatey: {e}\n{traceback.format_exc()}", "ERROR")
+        except subprocess.CalledProcessError as exc:
+            cls.write_log_event(
+                "node_setup_failed",
+                "ERROR",
+                action="choco_install_node",
+                exception_type=type(exc).__name__,
+                error=str(exc),
+            )
             return False
 
     @classmethod
@@ -357,18 +573,28 @@ class Settings:
     @classmethod
     def ensure_web_ext_installed(cls):
         if not cls.ensure_node_installed():
-            cls.WRITE_LOG_DEV_FILE("Unable to continue without Node.js.", "WARNING")
+            cls.write_log_dev_file("Unable to continue without Node.js.", "WARNING")
             return
         if shutil.which("npm") is None:
-            cls.WRITE_LOG_DEV_FILE("npm is not installed.", "ERROR")
+            cls.write_log_dev_file("npm is not installed.", "ERROR")
             return
         if shutil.which("web-ext") is not None:
-            cls.WRITE_LOG_DEV_FILE("web-ext already installed", "INFO")
+            cls.write_log_dev_file("web-ext already installed", "INFO")
             return
         try:
             subprocess.run("npm install --global web-ext", check=True, shell=True)
-        except subprocess.CalledProcessError as e:
-            cls.WRITE_LOG_DEV_FILE(f"Error installing web-ext via npm: {e}\n{traceback.format_exc()}", "ERROR")
+        except subprocess.CalledProcessError as exc:
+            cls.write_log_event(
+                "web_ext_install_failed",
+                "ERROR",
+                action="npm_install",
+                exception_type=type(exc).__name__,
+                error=str(exc),
+            )
+
+    @classmethod
+    def ensureWebExtInstalled(cls):
+        cls.ensure_web_ext_installed()
 
 
 # Création d’une instance unique utilisée dans tout le projet

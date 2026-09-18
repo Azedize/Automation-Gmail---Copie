@@ -1,0 +1,17 @@
+EXTENSION SESSION REPORT
+timestamp=2026-09-18T17:31:00.184Z
+session_id=b9149
+email=ArimasBloom@gmail.com
+status=validation_capcha
+------------------------------------------------------------
+{"timestamp":"2026-09-18T17:30:51.712Z","level":"WARNING","component":"ReportingActions","event":"Action non gérée","details":{"action":"startProcess"}}
+{"timestamp":"2026-09-18T17:30:52.164Z","level":"WARNING","component":"ReportingActions","event":"Action non gérée","details":{"action":"startProcess"}}
+{"timestamp":"2026-09-18T17:30:52.165Z","level":"WARNING","component":"chrome.runtime.onMessage","event":"Processus déjà en cours, rejet de la demande"}
+{"timestamp":"2026-09-18T17:30:52.172Z","level":"WARNING","component":"ReportingActions","event":"Action non gérée","details":{"action":"startProcess"}}
+{"timestamp":"2026-09-18T17:30:52.172Z","level":"WARNING","component":"chrome.runtime.onMessage","event":"Processus déjà en cours, rejet de la demande"}
+{"timestamp":"2026-09-18T17:30:52.759Z","level":"WARNING","component":"createPopup","event":"Aucun reply_message trouvé"}
+{"timestamp":"2026-09-18T17:30:52.828Z","level":"WARNING","component":"ReportingProcess","event":"Réinitialisation de completedActions pour le process login"}
+{"timestamp":"2026-09-18T17:30:55.873Z","level":"INFO","component":"extension","event":"❌ [ABSENT] Élément introuvable : //a[starts-with(@href,'[REDACTED_URL]')]"}
+{"timestamp":"2026-09-18T17:30:55.872Z","level":"WARNING","component":"ReportingActions","event":"Élément introuvable","details":"//a[starts-with(@href,'[REDACTED_URL]')]"}
+{"timestamp":"2026-09-18T17:31:00.176Z","level":"INFO","component":"extension","event":"❌ [ABSENT] Élément introuvable : //a[@aria-label='Try to restore' or @aria-label='Essayer de restaurer']"}
+{"timestamp":"2026-09-18T17:31:00.176Z","level":"WARNING","component":"ReportingActions","event":"Élément introuvable","details":"//a[@aria-label='Try to restore' or @aria-label='Essayer de restaurer']"}

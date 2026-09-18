@@ -31,12 +31,9 @@ except ImportError as e:
 # test
 
 
-
 # QTabBar personnalisé pour un affichage vertical avec des styles adaptés.
 # Affiche les onglets avec icônes, couleurs personnalisées et texte formaté.
 class VerticalTabBar(QtWidgets.QTabBar):
-
-
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setShape(QtWidgets.QTabBar.Shape.RoundedWest)
@@ -47,16 +44,13 @@ class VerticalTabBar(QtWidgets.QTabBar):
         self.left_margin = 0
         self.right_margin = 0
 
-
     def mousePressEvent(self, event):
         super().mousePressEvent(event)
         self.update()
 
-
     def mouseReleaseEvent(self, event):
         super().mouseReleaseEvent(event)
         self.update()
-
 
     def tabSizeHint(self, index):
         size_hint = super().tabSizeHint(index)
@@ -65,12 +59,12 @@ class VerticalTabBar(QtWidgets.QTabBar):
         size_hint.setHeight(60)
         return size_hint
 
-
     def tabRect(self, index):
         rect = super().tabRect(index)
-        rect.adjust(self.left_margin, self.tab_margin, -self.right_margin, -self.tab_margin)
+        rect.adjust(
+            self.left_margin, self.tab_margin, -self.right_margin, -self.tab_margin
+        )
         return rect
-
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -175,13 +169,15 @@ class VerticalTabBar(QtWidgets.QTabBar):
                     tab_rect.height() - 16,
                 )
 
-                painter.drawText(text_rect, QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignLeft, text)
+                painter.drawText(
+                    text_rect,
+                    QtCore.Qt.AlignmentFlag.AlignVCenter
+                    | QtCore.Qt.AlignmentFlag.AlignLeft,
+                    text,
+                )
                 painter.restore()
 
         painter.end()
-
-
-
 
 
 class VerticalTabWidget(QtWidgets.QTabWidget):
@@ -191,9 +187,7 @@ class VerticalTabWidget(QtWidgets.QTabWidget):
         self.setTabPosition(QtWidgets.QTabWidget.TabPosition.West)
 
 
-
 class CustomTextDialog(QDialog):
-    
     def __init__(self, parent=None, texte_initial=""):
         super().__init__(parent)
         self.setWindowTitle("Update Text")
@@ -281,21 +275,17 @@ class CustomTextDialog(QDialog):
             }}
         """)
 
-
         # IDs pour styles séparés
         self.btn_ok.setObjectName("btn_ok")
         self.btn_cancel.setObjectName("btn_cancel")
 
-    def get_text(self):
+    def getText(self):
         return self.text_edit.toPlainText()
 
 
 class UIManager:
-    
-
-
     @staticmethod
-    def Reset_Result_Tab_Label(tab_widget, index):
+    def resetResultTabLabel(tab_widget, index):
         """Reset a Result tab to its default plain state before Submit starts."""
         if tab_widget is None or index < 0 or index >= tab_widget.count():
             return
@@ -327,9 +317,8 @@ class UIManager:
         tab_bar.update()
         tab_widget.update()
 
-
     @staticmethod
-    def Log_Tab_Debug_Info(tab_widget, prefix=""):
+    def logTabDebugInfo(tab_widget, prefix=""):
         """Log tab names, tabData and custom button states for debugging."""
         if tab_widget is None:
             return
@@ -346,20 +335,20 @@ class UIManager:
             tab_data = tab_bar.tabData(i) if hasattr(tab_bar, "tabData") else None
             left_button = tab_bar.tabButton(i, QTabBar.ButtonPosition.LeftSide)
             right_button = tab_bar.tabButton(i, QTabBar.ButtonPosition.RightSide)
-            message.append(  f"index={i} text={tab_text!r} data={tab_data!r} "
+            message.append(
+                f"index={i} text={tab_text!r} data={tab_data!r} "
                 f"left={type(left_button).__name__} right={type(right_button).__name__}"
             )
 
         log_text = " | ".join(message)
         # print(f"[UI TRACE] {log_text}")
         try:
-            Settings.WRITE_LOG_DEV_FILE(f"[UI TRACE] {log_text}", "DEBUG")
+            Settings.write_log_dev_file(f"[UI TRACE] {log_text}", "DEBUG")
         except Exception:
             pass
 
-
     @staticmethod
-    def Is_Result_Tab(tab_widget, index):
+    def isResultTab(tab_widget, index):
         """Return True when the tab at index is the Result tab.
 
         This uses tabData when available to support custom rendered tab labels.
@@ -370,25 +359,28 @@ class UIManager:
         tab_bar = tab_widget.tabBar()
         if tab_bar is not None and hasattr(tab_bar, "tabData"):
             tab_data = tab_bar.tabData(index)
-            if isinstance(tab_data, dict) and "completed" in tab_data and "not_completed" in tab_data:
+            if (
+                isinstance(tab_data, dict)
+                and "completed" in tab_data
+                and "not_completed" in tab_data
+            ):
                 return True
 
         tab_text = tab_widget.tabText(index)
         return isinstance(tab_text, str) and tab_text.startswith("Result")
 
-
     @staticmethod
-    def Set_Custom_Colored_Tab(tab_widget, index, completed_count, not_completed_count):
+    def setCustomColoredTab(tab_widget, index, completed_count, not_completed_count):
         main_color = Settings.PRIMARY_COLOR or "#669bbc"
         accent_color = Settings.ACCENT_COLOR or "#dc3545"
 
         # النص HTML داخل التبويب
         html_text = (
             f'<div style="text-align:center; margin:0; padding:0;">'
-            f'<span style="font-family:\'Times\', \'Times New Roman\', serif; font-size:14px;">Result ('
+            f"<span style=\"font-family:'Times', 'Times New Roman', serif; font-size:14px;\">Result ("
             f'<span style="color:#008000;">{completed_count} completed</span> / '
             f'<span style="color:{accent_color};">{not_completed_count} not completed</span>)</span>'
-            f'</div>'
+            f"</div>"
         )
 
         # إزالة النص الافتراضي للتبويب
@@ -400,7 +392,7 @@ class UIManager:
         label.setText(html_text)
         label.setAlignment(Qt.AlignmentFlag.AlignCenter)  # توسيط النص
         label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        
+
         # ضبط الألوان والخط مع hover آمن
         label.setStyleSheet(
             f"""
@@ -429,7 +421,9 @@ class UIManager:
         layout.setSpacing(0)
         layout.addWidget(label)
 
-        wrapper.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        wrapper.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred
+        )
 
         # ضبط حجم wrapper حسب حجم التبويب
         tab_rect = tab_widget.tabBar().tabRect(index)
@@ -445,10 +439,13 @@ class UIManager:
 
         if hasattr(tab_bar, "setTabData"):
             try:
-                tab_bar.setTabData(index, {
-                    "completed": completed_count,
-                    "not_completed": not_completed_count,
-                })
+                tab_bar.setTabData(
+                    index,
+                    {
+                        "completed": completed_count,
+                        "not_completed": not_completed_count,
+                    },
+                )
             except Exception:
                 pass
 
@@ -456,45 +453,44 @@ class UIManager:
         # print(f"[DEBUG] Tab {index} set with text: Result ({completed_count} completed / {not_completed_count} not completed)")
         # print(f"[DEBUG] Main color: {main_color}, Hover color: #ffffff")
 
-
-
-
     @staticmethod
-    def clear_result_file():
+    def clearResultFile():
         try:
             # Vérifier si le fichier existe, sinon le créer
             if not os.path.exists(Settings.RESULT_FILE_PATH):
-                with open(Settings.RESULT_FILE_PATH, 'w', encoding='utf-8') as f:
+                with open(Settings.RESULT_FILE_PATH, "w", encoding="utf-8") as f:
                     f.write("")  # Créer le fichier vide
             else:
                 # Ouvrir le fichier en mode 'w' pour le vider
-                with open(Settings.RESULT_FILE_PATH, 'w', encoding='utf-8') as f:
+                with open(Settings.RESULT_FILE_PATH, "w", encoding="utf-8") as f:
                     f.write("")  # Effacer le contenu actuel
 
             # print(f"🗑️ Le fichier {Settings.RESULT_FILE_PATH} a été vidé avec succès")
-            Settings.WRITE_LOG_DEV_FILE(f"Le fichier {Settings.RESULT_FILE_PATH} a été vidé avec succès", "INFO")
+            Settings.write_log_dev_file(
+                f"Le fichier {Settings.RESULT_FILE_PATH} a été vidé avec succès", "INFO"
+            )
 
         except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE(f"Error clearing result file: {e}\n{traceback.format_exc()}", "ERROR")
+            Settings.write_log_dev_file(
+                f"Error clearing result file: {e}\n{traceback.format_exc()}", "ERROR"
+            )
             # print(f"⚠️ Erreur lors du vidage du fichier : {e}")
-
-
 
     # -----------------------------
     # Read email results and update the UI
     # -----------------------------
     @staticmethod
-    def Read_Result_Update_List(window ,NOTIFICATION_BADGES):
+    def readResultUpdateList(window, NOTIFICATION_BADGES):
         # print("📌 [START] Lecture et mise à jour des résultats")
 
         # 🔹 Vérifier si le fichier existe
-        if not ValidationUtils.path_exists(Settings.RESULT_FILE_PATH):
+        if not ValidationUtils.pathExists(Settings.RESULT_FILE_PATH):
             # print(f"⚠️ [FILE] {Settings.RESULT_FILE_PATH} introuvable")
-            UIManager.Show_Critical_Message(
+            UIManager.showCriticalMessage(
                 window,
                 "Information",
                 "No emails have been processed yet.\nPlease check the filters or new data.",
-                message_type="info"
+                message_type="info",
             )
             return
 
@@ -503,7 +499,7 @@ class UIManager:
 
         try:
             # 🔹 Lire toutes les lignes non vides
-            with open(Settings.RESULT_FILE_PATH, 'r', encoding='utf-8') as f:
+            with open(Settings.RESULT_FILE_PATH, "r", encoding="utf-8") as f:
                 lines = [line.strip() for line in f if line.strip()]
 
             # print(f"📄 [FILE] {Settings.RESULT_FILE_PATH} lu avec {len(lines)} lignes")
@@ -512,7 +508,9 @@ class UIManager:
             # 🔹 Vérification si le fichier est vide
             if not lines:
                 # print("⚠️ [FILE] Fichier vide, aucun résultat à afficher")
-                UIManager.Show_Critical_Message(window, "Warning", "No results available.", message_type="warning")
+                UIManager.showCriticalMessage(
+                    window, "Warning", "No results available.", message_type="warning"
+                )
                 return
 
             completed_count = 0
@@ -542,25 +540,37 @@ class UIManager:
             interface_tab_widget = window.findChild(QTabWidget, "interface_2")
             if interface_tab_widget:
                 # print(f"📌 [UI] Mise à jour du tab principal")
-                UIManager.Log_Tab_Debug_Info(interface_tab_widget, prefix="Before Result update")
+                UIManager.logTabDebugInfo(
+                    interface_tab_widget, prefix="Before Result update"
+                )
                 found = False
                 for i in range(interface_tab_widget.count()):
-                    if UIManager.Is_Result_Tab(interface_tab_widget, i):
+                    if UIManager.isResultTab(interface_tab_widget, i):
                         found = True
-                        UIManager.Set_Custom_Colored_Tab(interface_tab_widget, i, completed_count, no_completed_count)
+                        UIManager.setCustomColoredTab(
+                            interface_tab_widget, i, completed_count, no_completed_count
+                        )
                         break
 
                 if not found:
                     # print("[UI WARNING] Result tab non trouvé dans interface_2")
                     try:
-                        Settings.WRITE_LOG_DEV_FILE("[UI WARNING] Result tab non trouvé dans interface_2", "WARNING")
-                        UIManager.Log_Tab_Debug_Info(interface_tab_widget, prefix="Result tab non trouvé")
+                        Settings.write_log_dev_file(
+                            "[UI WARNING] Result tab non trouvé dans interface_2",
+                            "WARNING",
+                        )
+                        UIManager.logTabDebugInfo(
+                            interface_tab_widget, prefix="Result tab non trouvé"
+                        )
                     except Exception:
                         pass
             else:
                 # print("[UI WARNING] interface_2 introuvable pour la mise à jour du tab Result")
                 try:
-                    Settings.WRITE_LOG_DEV_FILE("[UI WARNING] interface_2 introuvable pour la mise à jour du tab Result", "WARNING")
+                    Settings.write_log_dev_file(
+                        "[UI WARNING] interface_2 introuvable pour la mise à jour du tab Result",
+                        "WARNING",
+                    )
                 except Exception:
                     pass
             QApplication.processEvents()  # تحديث الواجهة بعد تحديث التبويب الرئيسي
@@ -569,20 +579,28 @@ class UIManager:
             result_tab_widget = window.findChild(QTabWidget, "tabWidgetResult")
             if not result_tab_widget:
                 # print("⚠️ [UI] TabWidgetResult introuvable, arrêt")
-                Settings.WRITE_LOG_DEV_FILE("TabWidgetResult introuvable dans la fenêtre pour mise à jour des résultats", "ERROR")
+                Settings.write_log_dev_file(
+                    "TabWidgetResult introuvable dans la fenêtre pour mise à jour des résultats",
+                    "ERROR",
+                )
                 return
 
             for status in Settings.STATUS_LIST:
                 tab_widget = result_tab_widget.findChild(QWidget, status)
                 if not tab_widget:
                     # print(f"⚠️ [UI] Tab pour le statut '{status}' introuvable, ignoré")
-                    Settings.WRITE_LOG_DEV_FILE(f"Tab pour le statut '{status}' introuvable dans tabWidgetResult", "WARNING")
+                    Settings.write_log_dev_file(
+                        f"Tab pour le statut '{status}' introuvable dans tabWidgetResult",
+                        "WARNING",
+                    )
                     continue
 
                 list_widgets = tab_widget.findChildren(QListWidget)
                 if not list_widgets:
                     # print(f"⚠️ [UI] QListWidget introuvable dans le tab '{status}', ignoré")
-                    Settings.WRITE_LOG_DEV_FILE(f"QListWidget introuvable dans le tab '{status}'", "WARNING")
+                    Settings.write_log_dev_file(
+                        f"QListWidget introuvable dans le tab '{status}'", "WARNING"
+                    )
                     continue
 
                 list_widget = list_widgets[0]
@@ -592,16 +610,25 @@ class UIManager:
                 if emails:
                     list_widget.addItems(emails)
                     list_widget.scrollToBottom()
-                    UIManager.Add_Notification_Badge(result_tab_widget, result_tab_widget.indexOf(tab_widget), len(emails), NOTIFICATION_BADGES)
+                    UIManager.addNotificationBadge(
+                        result_tab_widget,
+                        result_tab_widget.indexOf(tab_widget),
+                        len(emails),
+                        NOTIFICATION_BADGES,
+                    )
                     # print(f"🟢 [UI] {len(emails)} emails ajoutés au tab '{status}'")
-                    Settings.WRITE_LOG_DEV_FILE(f"{len(emails)} emails ajoutés au tab '{status}'", "INFO")
+                    Settings.write_log_dev_file(
+                        f"{len(emails)} emails ajoutés au tab '{status}'", "INFO"
+                    )
                     # Supprimer le message "no data" si présent
                     message_label = tab_widget.findChild(QLabel, "no_data_message")
                     if message_label:
                         message_label.deleteLater()
                         # print(f"🗑️ [UI] Message 'no data' supprimé dans le tab '{status}'")
                 else:
-                    list_widget.addItem("⚠ No email data available for this category currently.")
+                    list_widget.addItem(
+                        "⚠ No email data available for this category currently."
+                    )
                     list_widget.show()
                     # print(f"⚠️ [UI] Aucun email pour le tab '{status}', message affiché")
 
@@ -610,34 +637,27 @@ class UIManager:
 
         except Exception as e:
             # print(f"❌ [ERROR] Une erreur est survenue: {type(e).__name__} : {e}")
-            # Settings.WRITE_LOG_DEV_FILE(f"Une erreur est survenue: {type(e).__name__} : {e}", "ERROR")
-            # UIManager.Show_Critical_Message(window, "Error", f"An error occurred while displaying results: {e}")
-            Settings.WRITE_LOG_DEV_FILE(f"Une erreur est survenue: {type(e).__name__} : {e}\n{traceback.format_exc()}", "ERROR")
+            # Settings.write_log_dev_file(f"Une erreur est survenue: {type(e).__name__} : {e}", "ERROR")
+            # UIManager.show_critical_message(window, "Error", f"An error occurred while displaying results: {e}")
+            Settings.write_log_dev_file(
+                f"Une erreur est survenue: {type(e).__name__} : {e}\n{traceback.format_exc()}",
+                "ERROR",
+            )
         finally:
-            UIManager.clear_result_file()
-
-
-
-
-
-
+            UIManager.clearResultFile()
 
     # -----------------------------
     # Gestion des badges de notification sur les onglets
     # -----------------------------
 
     @staticmethod
-    def Remove_Notification( index , NOTIFICATION_BADGES):
+    def removeNotification(index, NOTIFICATION_BADGES):
         badge = NOTIFICATION_BADGES.pop(index, None)
         if badge:
             badge.deleteLater()
 
-
-
-
-
     @staticmethod
-    def Add_Notification_Badge( tab_widget, tab_index, count , NOTIFICATION_BADGES):
+    def addNotificationBadge(tab_widget, tab_index, count, NOTIFICATION_BADGES):
         old_badge = NOTIFICATION_BADGES.get(tab_index)
         if old_badge:
             old_badge.deleteLater()
@@ -669,15 +689,14 @@ class UIManager:
             tab_bar.update()
         except Exception as e:
             # print(f"Error adding notification badge: {e}")
-            Settings.WRITE_LOG_DEV_FILE(f"Error adding notification badge: {e}\n{traceback.format_exc()}", "ERROR")
-            # UIManager.Show_Critical_Message(tab_widget, "Error", f"Error adding notification badge: {e}")
-
-
-
-
+            Settings.write_log_dev_file(
+                f"Error adding notification badge: {e}\n{traceback.format_exc()}",
+                "ERROR",
+            )
+            # UIManager.show_critical_message(tab_widget, "Error", f"Error adding notification badge: {e}")
 
     @staticmethod
-    def Show_Critical_Message(window, title, message, message_type="critical"):
+    def showCriticalMessage(window, title, message, message_type="critical"):
         dialog = QMessageBox(window)
 
         # Couleurs professionnelles
@@ -687,29 +706,29 @@ class UIManager:
                 "icon_color": "#d32f2f",
                 "button_start": "#ef5350",
                 "button_end": "#b71c1c",
-                "icon": QMessageBox.Icon.Critical
+                "icon": QMessageBox.Icon.Critical,
             },
             "warning": {
                 "icon_bg": "#fff3e0",
                 "icon_color": "#f57c00",
                 "button_start": "#ffb74d",
                 "button_end": "#e65100",
-                "icon": QMessageBox.Icon.Warning
+                "icon": QMessageBox.Icon.Warning,
             },
             "info": {
                 "icon_bg": "#e1f5fe",
                 "icon_color": "#0288d1",
                 "button_start": "#4fc3f7",
                 "button_end": "#01579b",
-                "icon": QMessageBox.Icon.Information
+                "icon": QMessageBox.Icon.Information,
             },
             "success": {
                 "icon_bg": "#e8f5e9",
                 "icon_color": "#388e3c",
                 "button_start": "#81c784",
                 "button_end": "#1b5e20",
-                "icon": QMessageBox.Icon.Information
-            }
+                "icon": QMessageBox.Icon.Information,
+            },
         }
 
         c = colors.get(message_type, colors["info"])
@@ -718,14 +737,14 @@ class UIManager:
 
         # Texte avec fond icône, style pro (sans arrondi)
         dialog.setText(f"""
-            <div style='background-color:{c['icon_bg']}; 
+            <div style='background-color:{c["icon_bg"]}; 
                         padding:20px; 
-                        color:{c['icon_color']}; 
+                        color:{c["icon_color"]}; 
                         font-size:15px;
                         font-weight:600;
                         line-height:1.5;
                         font-family: "Segoe UI", Roboto, sans-serif;
-                        border: 1px solid {UIManager.Darken_Color(c['icon_color'], 30)}'>
+                        border: 1px solid {UIManager.darkenColor(c["icon_color"], 30)}'>
                 {message}
             </div>
         """)
@@ -741,7 +760,7 @@ class UIManager:
         dialog.setStyleSheet(f"""
             /* Style général de la fenêtre */
             QMessageBox {{
-                background-color: {c['icon_bg']};
+                background-color: {c["icon_bg"]};
                 padding: 20px;
                 min-width: 450px;
                 font-family: "Segoe UI", "Roboto", "Helvetica Neue", sans-serif; /* Police professionnelle */
@@ -750,19 +769,19 @@ class UIManager:
 
             /* Texte principal */
             QMessageBox QLabel#qt_msgbox_label {{
-                background-color: {c['icon_bg']};
+                background-color: {c["icon_bg"]};
                 padding: 20px;
                 font-family: "Segoe UI", "Roboto", "Helvetica Neue", sans-serif;
                 font-size: 15px;
                 font-weight: 600;
-                color: {c['icon_color']};
+                color: {c["icon_color"]};
                 line-height: 1.5;
             }}
 
             /* Style des boutons */
             QMessageBox QPushButton {{
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 {c['button_start']}, stop:1 {c['button_end']});
+                    stop:0 {c["button_start"]}, stop:1 {c["button_end"]});
                 border: none;
                 color: #fff;
                 font-family: "Segoe UI", "Roboto", "Helvetica Neue", sans-serif;
@@ -776,14 +795,14 @@ class UIManager:
 
             QMessageBox QPushButton:hover {{
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 {UIManager.Lighten_Color(c['button_start'], 15)},
-                    stop:1 {UIManager.Lighten_Color(c['button_end'], 15)});
+                        stop:0 {UIManager.lightenColor(c["button_start"], 15)},
+                        stop:1 {UIManager.lightenColor(c["button_end"], 15)});
             }}
 
             QMessageBox QPushButton:pressed {{
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 {UIManager.Darken_Color(c['button_start'], 15)},
-                    stop:1 {UIManager.Darken_Color(c['button_end'], 15)});
+                        stop:0 {UIManager.darkenColor(c["button_start"], 15)},
+                        stop:1 {UIManager.darkenColor(c["button_end"], 15)});
                 padding: 11px 25px;
             }}
         """)
@@ -803,42 +822,27 @@ class UIManager:
 
         return dialog.exec()
 
-
-
-
-
     # -----------------------------
     # Ajustement de la couleur HEX (assombrir / éclaircir)
     # -----------------------------
 
-
     @staticmethod
-    def Darken_Color( hex_color, percent):
-        r, g, b = [int(hex_color[i:i+2], 16) for i in (1, 3, 5)]
+    def darkenColor(hex_color, percent):
+        r, g, b = [int(hex_color[i : i + 2], 16) for i in (1, 3, 5)]
         factor = 1 - percent / 100
         r, g, b = [max(0, min(255, int(c * factor))) for c in (r, g, b)]
         return f"#{r:02x}{g:02x}{b:02x}"
 
-
-
-
-
-
     @staticmethod
-    def Lighten_Color(hex_color, percent):
-        r, g, b = [int(hex_color[i:i+2], 16) for i in (1, 3, 5)]
+    def lightenColor(hex_color, percent):
+        r, g, b = [int(hex_color[i : i + 2], 16) for i in (1, 3, 5)]
         r = min(255, int(r + (255 - r) * percent / 100))
         g = min(255, int(g + (255 - g) * percent / 100))
         b = min(255, int(b + (255 - b) * percent / 100))
         return f"#{r:02x}{g:02x}{b:02x}"
 
-
-
-
-
-
     @staticmethod
-    def Copy_Result_From_Tab(window, tab_index ):
+    def copyResultFromTab(window, tab_index):
         tab_widget = window.result_tab_widget.widget(tab_index)
         list_widgets = tab_widget.findChildren(QListWidget)
         if list_widgets:
@@ -848,53 +852,50 @@ class UIManager:
             clipboard = QApplication.clipboard()
             clipboard.setText(text_to_copy)
             # print(f"[DEBUG] 📋 {len(items)} éléments copiés dans le presse-papiers.")
-            Settings.WRITE_LOG_DEV_FILE(f"[DEBUG] 📋 {len(items)} éléments copiés dans le presse-papiers.", "INFO")
+            Settings.write_log_dev_file(
+                f"[DEBUG] 📋 {len(items)} éléments copiés dans le presse-papiers.",
+                "INFO",
+            )
         else:
             # print("[DEBUG] ⚠️ Aucun QListWidget trouvé dans cet onglet.")
-            Settings.WRITE_LOG_DEV_FILE("[DEBUG] ⚠️ Aucun QListWidget rencontré dans cet onglet.", "INFO")
-
-
+            Settings.write_log_dev_file(
+                "[DEBUG] ⚠️ Aucun QListWidget rencontré dans cet onglet.", "INFO"
+            )
 
     @staticmethod
-    def Copy_Logs_To_Clipboard(self):
-            log_box = self.findChild(QGroupBox, "log")
-            if not log_box:
-                #print("[DEBUG] ❌ QGroupBox 'log' introuvable.")
-                Settings.WRITE_LOG_DEV_FILE("[DEBUG] ❌ QGroupBox 'log' introuvable.", "INFO")
-                return
+    def copyLogsToClipboard(self):
+        log_box = self.findChild(QGroupBox, "log")
+        if not log_box:
+            # print("[DEBUG] ❌ QGroupBox 'log' introuvable.")
+            Settings.write_log_dev_file(
+                "[DEBUG] ❌ QGroupBox 'log' introuvable.", "INFO"
+            )
+            return
 
-            labels = log_box.findChildren(QLabel)
+        labels = log_box.findChildren(QLabel)
 
-            if not labels:
-                #print("[DEBUG] ⚠️ Aucun QLabel trouvé dans 'log'.")
-                Settings.WRITE_LOG_DEV_FILE("[DEBUG] ⚠️ Aucun QLabel rencontré dans 'log'.", "INFO")
-                return
+        if not labels:
+            # print("[DEBUG] ⚠️ Aucun QLabel trouvé dans 'log'.")
+            Settings.write_log_dev_file(
+                "[DEBUG] ⚠️ Aucun QLabel rencontré dans 'log'.", "INFO"
+            )
+            return
 
-            log_lines = [label.text() for label in labels]
-            text_to_copy = "\n".join(log_lines)
+        log_lines = [label.text() for label in labels]
+        text_to_copy = "\n".join(log_lines)
 
-            QApplication.clipboard().setText(text_to_copy)
-            #print(f"[DEBUG] 📋 {len(log_lines)} lignes de LOGS copiées dans le presse-papiers.")
+        QApplication.clipboard().setText(text_to_copy)
+        # print(f"[DEBUG] 📋 {len(log_lines)} lignes de LOGS copiées dans le presse-papiers.")
 
+    # Ajoute une nouvelle ligne de log dans la zone de log (interface utilisateur).
+    # Chaque log est stylisé pour rester lisible avec fond transparent.
 
-        #Ajoute une nouvelle ligne de log dans la zone de log (interface utilisateur).
-    #Chaque log est stylisé pour rester lisible avec fond transparent.
-    
-    
-    
-    
-    
     @staticmethod
-    def Update_Logs_Display( log_entry ,log_text_edit):
-        timestamp = datetime.datetime.now().strftime('%H:%M:%S')
+    def updateLogsDisplay(log_entry, log_text_edit):
+        timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         formatted_entry = f"[{timestamp}] {log_entry}"
         log_text_edit.appendPlainText(formatted_entry)
         log_text_edit.moveCursor(QtGui.QTextCursor.MoveOperation.End)
-
-    
-
-    
-
 
     # Met à jour dynamiquement le style de tous les widgets enfants dans le layout du scénario.
     # Différencie le dernier bloc des autres :
@@ -902,14 +903,20 @@ class UIManager:
     # - Cache le dernier bouton dans chaque bloc sauf le dernier, où il devient visible et fonctionnel.
     # - Applique des styles conditionnels selon les icônes disponibles.
     @staticmethod
-    def Update_Actions_Color_Handle_Last_Button( scenario_layout , Go_To_Previous_State):
+    def updateActionsColorHandleLastButton(scenario_layout, go_to_previous_state):
         for i in range(scenario_layout.count()):
             widget = scenario_layout.itemAt(i).widget()
 
             if widget:
                 if i != scenario_layout.count() - 1:
-                    widget.setStyleSheet(f"background-color: #ffffff; border: 1px solid {Settings.SECONDARY_COLOR}; border-radius: 8px;")
-                    label_list = [child for child in widget.children() if isinstance(child, QLabel)]
+                    widget.setStyleSheet(
+                        f"background-color: #ffffff; border: 1px solid {Settings.SECONDARY_COLOR}; border-radius: 8px;"
+                    )
+                    label_list = [
+                        child
+                        for child in widget.children()
+                        if isinstance(child, QLabel)
+                    ]
                     if label_list:
                         first_label = label_list[0]
 
@@ -927,7 +934,6 @@ class UIManager:
                             }}
                         """)
 
-
                         # 🎯 Si elle commence par "Random", remplacer le style
                         if first_label.text().startswith("Random"):
                             first_label.setStyleSheet(f"""
@@ -943,7 +949,7 @@ class UIManager:
                                     border:None;
                                 }}
                             """)
-                            #print(f"[🎯] Style appliqué sur QLabel (index 0): '{first_label.text()}'")
+                            # print(f"[🎯] Style appliqué sur QLabel (index 0): '{first_label.text()}'")
 
                         # 🎨 Appliquer style aux autres QLabels
                         for label in label_list[1:]:
@@ -974,16 +980,22 @@ class UIManager:
                                         border:None;
                                     }}
                                 """)
-                                #print(f"[🎯] Style appliqué sur QLabel: '{label.text()}'")
+                                # print(f"[🎯] Style appliqué sur QLabel: '{label.text()}'")
 
-
-                    buttons = [child for child in widget.children() if isinstance(child, QPushButton)]
+                    buttons = [
+                        child
+                        for child in widget.children()
+                        if isinstance(child, QPushButton)
+                    ]
                     if buttons:
                         last_button = buttons[-1]
-                        last_button.setVisible(False)  
+                        last_button.setVisible(False)
 
-
-                    spin_boxes = [child for child in widget.children() if isinstance(child, QSpinBox)]
+                    spin_boxes = [
+                        child
+                        for child in widget.children()
+                        if isinstance(child, QSpinBox)
+                    ]
                     if spin_boxes and Settings.DOWN_EXISTS and Settings.UP_EXISTS:
                         new_style = f"""
                             QSpinBox {{
@@ -1008,13 +1020,15 @@ class UIManager:
                                 border-bottom-left-radius: 5px;
                             }}
                         """
-                        spin_boxes[0].setStyleSheet(new_style)  
+                        spin_boxes[0].setStyleSheet(new_style)
 
-
-
-                    QCheckBox_list = [child for child in widget.children() if isinstance(child, QCheckBox)]
-                    if QCheckBox_list:  
-                        checkbox = QCheckBox_list[0]                
+                    QCheckBox_list = [
+                        child
+                        for child in widget.children()
+                        if isinstance(child, QCheckBox)
+                    ]
+                    if QCheckBox_list:
+                        checkbox = QCheckBox_list[0]
                         if checkbox.isChecked():
                             additional_style = f"""
                                 QCheckBox::indicator:checked  {{
@@ -1032,10 +1046,18 @@ class UIManager:
                             """
 
                         current_style = checkbox.styleSheet()
-                        new_style = f"{current_style} {additional_style}" if current_style else additional_style
+                        new_style = (
+                            f"{current_style} {additional_style}"
+                            if current_style
+                            else additional_style
+                        )
                         checkbox.setStyleSheet(new_style)
 
-                    QComboBox_list = [child for child in widget.children() if isinstance(child, PyQt6.QtWidgets.QComboBox)]
+                    QComboBox_list = [
+                        child
+                        for child in widget.children()
+                        if isinstance(child, PyQt6.QtWidgets.QComboBox)
+                    ]
 
                     if QComboBox_list:
                         QComboBox = QComboBox_list[0]
@@ -1090,9 +1112,15 @@ class UIManager:
                             QComboBox.setStyleSheet(combined_style)
 
                 if i == scenario_layout.count() - 1:
-                    widget.setStyleSheet(f"""background-color: {Settings.PRIMARY_COLOR}; border-radius: 8px;""")
+                    widget.setStyleSheet(
+                        f"""background-color: {Settings.PRIMARY_COLOR}; border-radius: 8px;"""
+                    )
 
-                    label_list = [child for child in widget.children() if isinstance(child, QLabel)]
+                    label_list = [
+                        child
+                        for child in widget.children()
+                        if isinstance(child, QLabel)
+                    ]
 
                     if label_list:
                         # 🎯 Première QLabel (souvent le titre)
@@ -1124,7 +1152,7 @@ class UIManager:
                                     border:None;
                                 }}
                             """)
-                            #print(f"[🎯] Dernier widget - QLabel (0) spéciale: '{label_list[0].text()}'")
+                            # print(f"[🎯] Dernier widget - QLabel (0) spéciale: '{label_list[0].text()}'")
 
                         # 🎨 Toutes les autres QLabels
                         for label in label_list[1:]:
@@ -1155,11 +1183,13 @@ class UIManager:
                                         border:None;
                                     }
                                 """)
-                                #print(f"[🎯] Dernier widget - QLabel Random: '{label.text()}'")
+                                # print(f"[🎯] Dernier widget - QLabel Random: '{label.text()}'")
 
-
-
-                    buttons = [child for child in widget.children() if isinstance(child, QPushButton)]
+                    buttons = [
+                        child
+                        for child in widget.children()
+                        if isinstance(child, QPushButton)
+                    ]
                     if buttons:
                         last_button = buttons[0]
                         last_button.setVisible(True)
@@ -1168,10 +1198,14 @@ class UIManager:
                         try:
                             last_button.clicked.disconnect()
                         except TypeError:
-                            pass  
-                        last_button.clicked.connect(Go_To_Previous_State)
-            
-                    spin_boxes = [child for child in widget.children() if isinstance(child, QSpinBox)]
+                            pass
+                        last_button.clicked.connect(go_to_previous_state)
+
+                    spin_boxes = [
+                        child
+                        for child in widget.children()
+                        if isinstance(child, QSpinBox)
+                    ]
                     if spin_boxes and Settings.DOWN_EXISTS_W and Settings.UP_EXISTS_W:
                         new_style = f"""
                             QSpinBox {{
@@ -1196,14 +1230,16 @@ class UIManager:
                                 border-bottom-left-radius: 5px;
                             }}
                         """
-                        spin_boxes[0].setStyleSheet(new_style)  
+                        spin_boxes[0].setStyleSheet(new_style)
 
-
-
-                    QCheckBox_list_last = [child for child in widget.children() if isinstance(child, QCheckBox)]
-                    if QCheckBox_list_last:  
+                    QCheckBox_list_last = [
+                        child
+                        for child in widget.children()
+                        if isinstance(child, QCheckBox)
+                    ]
+                    if QCheckBox_list_last:
                         checkbox = QCheckBox_list_last[0]
-                        
+
                         if checkbox.isChecked():
                             additional_style = f"""
                                 QCheckBox::indicator:checked  {{
@@ -1220,13 +1256,19 @@ class UIManager:
                                 }
                             """
 
-
                         current_style = checkbox.styleSheet()
-                        new_style = f"{current_style} {additional_style}" if current_style else additional_style
+                        new_style = (
+                            f"{current_style} {additional_style}"
+                            if current_style
+                            else additional_style
+                        )
                         checkbox.setStyleSheet(new_style)
 
-
-                QComboBox_list = [child for child in widget.children() if isinstance(child, PyQt6.QtWidgets.QComboBox)]
+                QComboBox_list = [
+                    child
+                    for child in widget.children()
+                    if isinstance(child, PyQt6.QtWidgets.QComboBox)
+                ]
                 if QComboBox_list:
                     QComboBox = QComboBox_list[0]
 
@@ -1281,108 +1323,123 @@ class UIManager:
                         combined_style = old_style + new_style
                         QComboBox.setStyleSheet(combined_style)
 
-            
-
-
-
-
                 # Récupérer tous les QTextEdit dans le widget
-                QTextEdits = [child for child in widget.children() if isinstance(child, QTextEdit)]
-                #print(f"[🔍] Nombre de QTextEdit détectés : {len(QTextEdits)}")
+                QTextEdits = [
+                    child for child in widget.children() if isinstance(child, QTextEdit)
+                ]
+                # print(f"[🔍] Nombre de QTextEdit détectés : {len(QTextEdits)}")
 
                 for idx, qtextedit in enumerate(QTextEdits):
-                    #print(f"[➡️] Préparation du QTextEdit numéro {idx}")
+                    # print(f"[➡️] Préparation du QTextEdit numéro {idx}")
 
-                
-                    qtextedit.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-                    qtextedit.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-
+                    qtextedit.setVerticalScrollBarPolicy(
+                        Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+                    )
+                    qtextedit.setHorizontalScrollBarPolicy(
+                        Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+                    )
 
                     def create_handler(te, index):
                         def handler(event):
-                            #print(f"[🖱️] Clic détecté sur le QTextEdit numéro {index}")
+                            # print(f"[🖱️] Clic détecté sur le QTextEdit numéro {index}")
                             try:
-                                dialog = CustomTextDialog(te, texte_initial=te.toPlainText())
-                                if dialog.exec():  # Si l’utilisateur clique sur "Enregistrer"
+                                dialog = CustomTextDialog(
+                                    te, texte_initial=te.toPlainText()
+                                )
+                                if (
+                                    dialog.exec()
+                                ):  # Si l’utilisateur clique sur "Enregistrer"
                                     new_text = dialog.get_text()
                                     te.setPlainText(new_text)
-                                    #print(f"[✅] Nouveau texte saisi pour QTextEdit {index} :\n{new_text}")
+                                    # print(f"[✅] Nouveau texte saisi pour QTextEdit {index} :\n{new_text}")
                                 # else:
-                                    #print(f"[⚠️] Modification annulée (QTextEdit {index})")
+                                # print(f"[⚠️] Modification annulée (QTextEdit {index})")
                                 # ✅ دايمًا ننحي الفوكس سواء سجل أو لغى
                                 te.clearFocus()
                             except Exception as e:
                                 # print(f"[❌] Erreur lors de l’ouverture de la boîte de dialogue : {e}")
-                                Settings.WRITE_LOG_DEV_FILE(f"[❌] Erreur lors de l’ouverture de la boîte de dialogue : {e}\n{traceback.format_exc()}", "ERROR")
+                                Settings.write_log_dev_file(
+                                    f"[❌] Erreur lors de l’ouverture de la boîte de dialogue : {e}\n{traceback.format_exc()}",
+                                    "ERROR",
+                                )
 
                         return handler
 
                     qtextedit.mousePressEvent = create_handler(qtextedit, idx)
-                    #print(f"[🔗] Gestionnaire de clic associé au QTextEdit numéro {idx}")
+                    # print(f"[🔗] Gestionnaire de clic associé au QTextEdit numéro {idx}")
 
-
-
-
-                                                    
-
-
-                qlineedits = [child for child in widget.children() if isinstance(child, QLineEdit)]
+                qlineedits = [
+                    child for child in widget.children() if isinstance(child, QLineEdit)
+                ]
                 checkbox_qlineedit = None  # ⚠️ تخزين QLineEdit المرتبط بـ QCheckBox
 
-                #print("[🔍] Total QLineEdits détectés:", len(qlineedits))
+                # print("[🔍] Total QLineEdits détectés:", len(qlineedits))
 
                 # إذا كان آخر QLineEdit داخل widget يحتوي على QCheckBox، نحذفه من القائمة
                 if qlineedits:
                     last_qlineedit = qlineedits[-1]
                     parent_widget = last_qlineedit.parent()
                     if parent_widget:
-                        contains_checkbox = any(isinstance(child, QCheckBox) for child in parent_widget.children())
-                        #print(f"[🧩] Dernier QLineEdit détecté. Contient QCheckBox ? {contains_checkbox}")
+                        contains_checkbox = any(
+                            isinstance(child, QCheckBox)
+                            for child in parent_widget.children()
+                        )
+                        # print(f"[🧩] Dernier QLineEdit détecté. Contient QCheckBox ? {contains_checkbox}")
                         if contains_checkbox:
-                            checkbox_qlineedit = last_qlineedit  # ✅ نحفظه ولكن لا نحذفه
+                            checkbox_qlineedit = (
+                                last_qlineedit  # ✅ نحفظه ولكن لا نحذفه
+                            )
                             qlineedits.pop()  # حذف العنصر الأخير
-                            #print("[📦] QLineEdit avec QCheckBox stocké séparément.")
+                            # print("[📦] QLineEdit avec QCheckBox stocké séparément.")
 
                 # ربط المحققين للـ QLineEdits العادية
                 for idx, qlineedit in enumerate(qlineedits):
+
                     def create_validator(line_edit, default_val):
                         def validator():
-                            #print(f"[📝] Validation déclenchée pour QLineEdit[{idx}] avec valeur par défaut: {default_val}")
-                            ValidationUtils.validate_qlineedit_with_range(line_edit, default_val)
+                            # print(f"[📝] Validation déclenchée pour QLineEdit[{idx}] avec valeur par défaut: {default_val}")
+                            ValidationUtils.validate_qlineedit_with_range(
+                                line_edit, default_val
+                            )
+
                         return validator
 
                     if len(qlineedits) > 1 and idx == 0:
-                        qlineedit.editingFinished.connect(create_validator(qlineedit, "50,50"))
+                        qlineedit.editingFinished.connect(
+                            create_validator(qlineedit, "50,50")
+                        )
                     else:
-                        qlineedit.editingFinished.connect(create_validator(qlineedit, "1,1"))
+                        qlineedit.editingFinished.connect(
+                            create_validator(qlineedit, "1,1")
+                        )
 
                 # ربط المحقق الخاص بـ QLineEdit مع QCheckBox
                 if checkbox_qlineedit:
-                    #print("[🔗] Connexion du QLineEdit contenant QCheckBox à une validation personnalisée.")
+                    # print("[🔗] Connexion du QLineEdit contenant QCheckBox à une validation personnalisée.")
                     def validate_checkbox_qlineedit():
-                        #print("[✅] Validation personnalisée déclenchée pour QLineEdit avec QCheckBox.")
-                        UIManager.Validate_Checkbox_Linked_Qlineedit(checkbox_qlineedit)
+                        # print("[✅] Validation personnalisée déclenchée pour QLineEdit avec QCheckBox.")
+                        UIManager.validateCheckboxLinkedQlineEdit(checkbox_qlineedit)
 
-                    checkbox_qlineedit.editingFinished.connect(validate_checkbox_qlineedit)
+                    checkbox_qlineedit.editingFinished.connect(
+                        validate_checkbox_qlineedit
+                    )
                 # else:
-                    # #print("[⚠️] Aucun QLineEdit avec QCheckBox détecté.")
-
-
-
-
+                # #print("[⚠️] Aucun QLineEdit avec QCheckBox détecté.")
 
     @staticmethod
-    def Validate_Checkbox_Linked_Qlineedit( qlineedit: QLineEdit):
+    def validateCheckboxLinkedQlineEdit(qlineedit: QLineEdit):
         if qlineedit is None:
-            #print("[❌ ERREUR] Le QLineEdit est None. Validation ignorée.")
-            Settings.WRITE_LOG_DEV_FILE("Le QLineEdit est None. Validation ignorée.", "ERROR")
+            # print("[❌ ERREUR] Le QLineEdit est None. Validation ignorée.")
+            Settings.write_log_dev_file(
+                "Le QLineEdit est None. Validation ignorée.", "ERROR"
+            )
             return
 
         parent_widget = qlineedit.parent()
         full_state = parent_widget.property("full_state") if parent_widget else None
 
         text = qlineedit.text().strip()
-        #print(f"[🔍 INFO] Texte saisi dans QLineEdit associé à QCheckBox : '{text}'")
+        # print(f"[🔍 INFO] Texte saisi dans QLineEdit associé à QCheckBox : '{text}'")
 
         old_style = qlineedit.styleSheet()
         cleaned_style = ValidationUtils.remove_border_from_style(old_style)
@@ -1393,52 +1450,66 @@ class UIManager:
             sub_label = full_state.get("label", "Google")
 
             # Chercher le QCheckBox associé dans le même parent
-            checkbox = next((child for child in parent_widget.children() if isinstance(child, QCheckBox)), None)
+            checkbox = next(
+                (
+                    child
+                    for child in parent_widget.children()
+                    if isinstance(child, QCheckBox)
+                ),
+                None,
+            )
 
             if sub_id in ["open_spam", "open_inbox"]:
                 if checkbox and checkbox.isChecked():
-                    if text :
-                        #print("[✅ CONDITION VALIDE] Checkbox cochée et texte valide.")
+                    if text:
+                        # print("[✅ CONDITION VALIDE] Checkbox cochée et texte valide.")
                         def apply_ok():
                             qlineedit.setStyleSheet(cleaned_style)
                             qlineedit.setToolTip("")
-                            #print("[🔔 INFO] Bordure retirée et tooltip supprimé.")
+                            # print("[🔔 INFO] Bordure retirée et tooltip supprimé.")
+
                         QTimer.singleShot(0, apply_ok)
                         return
                     else:
-                        #print("[⚠️ TEXTE INVALIDE] Champ vide ou numérique malgré checkbox cochée.")
+                        # print("[⚠️ TEXTE INVALIDE] Champ vide ou numérique malgré checkbox cochée.")
                         qlineedit.setText(sub_label or "Google")
 
                         def apply_error():
-                            new_style = ValidationUtils.inject_border_into_style(cleaned_style)
+                            new_style = ValidationUtils.inject_border_into_style(
+                                cleaned_style
+                            )
                             qlineedit.setStyleSheet(new_style)
-                            qlineedit.setToolTip("Texte invalide. Valeur remplacée par défaut depuis full_state.")
-                            #print("[🔔 INFO] Erreur appliquée avec bordure rouge.")
+                            qlineedit.setToolTip(
+                                "Texte invalide. Valeur remplacée par défaut depuis full_state."
+                            )
+                            # print("[🔔 INFO] Erreur appliquée avec bordure rouge.")
+
                         QTimer.singleShot(0, apply_error)
                         return
 
         # 🧾 Sinon: validation classique (ancienne logique)
         if text.isdigit() or len(text) < 4:
-            #print("[⚠️ INVALIDE] Le texte est un nombre ou trop court (<4).")
+            # print("[⚠️ INVALIDE] Le texte est un nombre ou trop court (<4).")
             qlineedit.setText("Google")
 
             def apply_error():
                 new_style = ValidationUtils.inject_border_into_style(cleaned_style)
                 qlineedit.setStyleSheet(new_style)
-                qlineedit.setToolTip("Le texte est un nombre ou trop court, veuillez corriger la saisie.")
-                #print("[🔔 INFO] Bordure rouge appliquée et tooltip invitant à corriger la saisie.")
+                qlineedit.setToolTip(
+                    "Le texte est un nombre ou trop court, veuillez corriger la saisie."
+                )
+                # print("[🔔 INFO] Bordure rouge appliquée et tooltip invitant à corriger la saisie.")
+
             QTimer.singleShot(0, apply_error)
         else:
-            #print("[✅ VALIDE] Texte non numérique et au moins 4 caractères.")
+            # print("[✅ VALIDE] Texte non numérique et au moins 4 caractères.")
 
             def apply_ok():
                 qlineedit.setStyleSheet(cleaned_style)
                 qlineedit.setToolTip("")
-                #print("[🔔 INFO] Bordure retirée et tooltip supprimé.")
+                # print("[🔔 INFO] Bordure retirée et tooltip supprimé.")
+
             QTimer.singleShot(0, apply_ok)
-
-
-
 
     # Supprime tous les boutons de réinitialisation liés aux blocs ajoutés *après* le dernier bloc contenant une checkbox.
     # Cette fonction :
@@ -1447,7 +1518,7 @@ class UIManager:
     # - Compare avec les boutons existants dans le layout des options de reset.
     # - Supprime ceux qui sont déjà couverts par les labels détectés.
     @staticmethod
-    def Remove_Copier(scenario_layout,reset_options_layout):
+    def removeCopier(scenario_layout, reset_options_layout):
         lastactionLoop = None
         scenarioContainertableauAdd = []
         resetOptionsContainertableauALL = []
@@ -1458,17 +1529,20 @@ class UIManager:
             if widget:
                 for child in widget.children():
                     if isinstance(child, QCheckBox):
-                        lastactionLoop = i 
+                        lastactionLoop = i
                         found_checkbox = True
-        
+
         if not found_checkbox:
             return
-
 
         for i in range(lastactionLoop + 1, scenario_layout.count()):
             widget = scenario_layout.itemAt(i).widget()
             if widget:
-                labels = [child.text() for child in widget.children() if isinstance(child, QLabel)]
+                labels = [
+                    child.text()
+                    for child in widget.children()
+                    if isinstance(child, QLabel)
+                ]
                 if labels:
                     scenarioContainertableauAdd.append(labels[0])
 
@@ -1477,7 +1551,11 @@ class UIManager:
             if widget and isinstance(widget, QPushButton):
                 resetOptionsContainertableauALL.append(widget.text())
 
-        diff_texts = [text for text in resetOptionsContainertableauALL if text not in scenarioContainertableauAdd]
+        diff_texts = [
+            text
+            for text in resetOptionsContainertableauALL
+            if text not in scenarioContainertableauAdd
+        ]
 
         for i in reversed(range(reset_options_layout.count())):
             widget = reset_options_layout.itemAt(i).widget()
@@ -1486,14 +1564,11 @@ class UIManager:
                     widget.deleteLater()
                     reset_options_layout.removeWidget(widget)
 
-
-    
-    
     @staticmethod
-    def Remove_Initaile( scenario_layout,reset_options_layout):
+    def removeInitial(scenario_layout, reset_options_layout):
 
-        scenarioContainertableauAdd = []  
-        resetOptionsContainertableauALL = []  
+        scenarioContainertableauAdd = []
+        resetOptionsContainertableauALL = []
 
         for i in range(scenario_layout.count()):
             widget = scenario_layout.itemAt(i).widget()
@@ -1501,17 +1576,18 @@ class UIManager:
                 sub_full_state = widget.property("full_state")
                 sub_hidden_id = sub_full_state.get("INITAILE")
                 if sub_hidden_id:
-                    scenarioContainertableauAdd.append(sub_full_state.get("label"))  
-
-
+                    scenarioContainertableauAdd.append(sub_full_state.get("label"))
 
         for i in range(reset_options_layout.count()):
             widget = reset_options_layout.itemAt(i).widget()
             if widget and isinstance(widget, QPushButton):
                 resetOptionsContainertableauALL.append(widget.text())
 
-
-        diff_texts = [text for text in resetOptionsContainertableauALL if text not in scenarioContainertableauAdd]
+        diff_texts = [
+            text
+            for text in resetOptionsContainertableauALL
+            if text not in scenarioContainertableauAdd
+        ]
 
         for i in reversed(range(reset_options_layout.count())):
             widget = reset_options_layout.itemAt(i).widget()
@@ -1520,132 +1596,141 @@ class UIManager:
                     widget.deleteLater()
                     reset_options_layout.removeWidget(widget)
 
-
-    
-    
     @staticmethod
-    def read_file_content(file_path):
-        if not ValidationUtils.path_exists(file_path):
+    def readFileContent(file_path):
+        if not ValidationUtils.pathExists(file_path):
             return None
-
         try:
             with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read().strip()
             if not content:
                 return None
             return content
-        except Exception:
-            Settings.WRITE_LOG_DEV_FILE(f"Error reading file content: {file_path}\n{traceback.format_exc()}", "ERROR")
+        except Exception as exc:
+            Settings.write_log_event(
+                "file_read_failed",
+                "ERROR",
+                file_path=file_path,
+                exception_type=type(exc).__name__,
+                error=str(exc),
+            )
             return None
 
-    
-    
     @staticmethod
-    def _find_widget(window, name, widget_type=None):
+    def findWidget(window, name, widget_type=None):
         """Find child widget with optional type"""
-        return window.findChild(widget_type, name) if widget_type else window.findChild(QWidget, name)
+        return (
+            window.findChild(widget_type, name)
+            if widget_type
+            else window.findChild(QWidget, name)
+        )
 
-
-
-    
-    
-    
     @staticmethod
-    def _setup_containers(window):
+    def setupContainers(window):
         """Setup container widgets and layouts"""
         # Reset options container
-        window.reset_options_container = UIManager._find_widget(window, "resetOptionsContainer")
+        window.reset_options_container = UIManager.findWidget( window, "resetOptionsContainer" )
         if window.reset_options_container:
             window.reset_options_layout = QVBoxLayout(window.reset_options_container)
             window.reset_options_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        
+
         # Scenario container
-        window.scenario_container = UIManager._find_widget(window, "scenarioContainer")
+        window.scenario_container = UIManager.findWidget(window, "scenarioContainer")
         if window.scenario_container:
             window.scenario_layout = QVBoxLayout(window.scenario_container)
             window.scenario_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-
-
-    
     @staticmethod
-    def _setup_template_widgets(window):
+    def setupTemplateWidgets(window):
         templates = {
-            'template_button': 'TemepleteButton',
-            'Temeplete_Button_2': 'TemepleteButton_2',
-            'template_Frame1': 'Template1',
-            'template_Frame2': 'Template2',
-            'template_Frame3': 'Template3',
-            'template_Frame4': 'Template4',
-            'template_Frame5': 'Template5'
+            "template_button": "TemepleteButton",
+            "Temeplete_Button_2": "TemepleteButton_2",
+            "template_Frame1": "Template1",
+            "template_Frame2": "Template2",
+            "template_Frame3": "Template3",
+            "template_Frame4": "Template4",
+            "template_Frame5": "Template5",
         }
 
         for attr_name, widget_name in templates.items():
-            widget = UIManager._find_widget(window, widget_name)
+            widget = UIManager.findWidget(window, widget_name)
             setattr(window, attr_name, widget)
             if widget:
                 widget.hide()
 
-
-    
-    
-    
     @staticmethod
-    def _setup_icon_button(window, button_name, icon_file, callback, icon_size=None, button_size=None):
+    def setupIconButton(  window, button_name, icon_file, callback, icon_size=None, button_size=None):
         """Helper to setup icon button with detailed debug output"""
 
         # print(f"[DEBUG] Initialisation du bouton: {button_name}")
 
         # 1️⃣ Recherche du bouton
-        button = UIManager._find_widget(window, button_name, QPushButton)
+        button = UIManager.findWidget(window, button_name, QPushButton)
         if not button:
             # print(f"[ERROR] Bouton '{button_name}' introuvable.")
-            Settings.WRITE_LOG_DEV_FILE(f"Bouton '{button_name}' introuvable.", "ERROR")
+            Settings.write_log_dev_file(f"Bouton '{button_name}' introuvable.", "ERROR")
             return None
         else:
             # print(f"[DEBUG] Bouton '{button_name}' trouvé.")
-            Settings.WRITE_LOG_DEV_FILE(f"Bouton '{button_name}' trouvé.", "DEBUG")
+            Settings.write_log_dev_file(f"Bouton '{button_name}' trouvé.", "DEBUG")
 
         # 2️⃣ Construction du chemin de l'icône
         icon_path = os.path.join(Settings.ICONS_DIR, icon_file).replace("\\", "/")
         # print(f"[DEBUG] Chemin icône: {icon_path}")
-        Settings.WRITE_LOG_DEV_FILE(f"Chemin icône pour '{button_name}': {icon_path}", "DEBUG")
+        Settings.write_log_dev_file(
+            f"Chemin icône pour '{button_name}': {icon_path}", "DEBUG"
+        )
 
         # 3️⃣ Vérification et application de l'icône
-        if ValidationUtils.path_exists(icon_path):
+        if ValidationUtils.pathExists(icon_path):
             # print(f"[DEBUG] Icône trouvée.")
-            Settings.WRITE_LOG_DEV_FILE(f"Icône trouvée pour '{button_name}': {icon_path}", "DEBUG")
+            Settings.write_log_dev_file(
+                f"Icône trouvée pour '{button_name}': {icon_path}", "DEBUG"
+            )
             icon = QIcon(icon_path)
 
             if icon_size:
                 # print(f"[DEBUG] Taille icône: {icon_size}")
-                Settings.WRITE_LOG_DEV_FILE(f"Taille icône pour '{button_name}': {icon_size}", "DEBUG")
+                Settings.write_log_dev_file(
+                    f"Taille icône pour '{button_name}': {icon_size}", "DEBUG"
+                )
                 button.setIconSize(QSize(*icon_size))
 
             button.setIcon(icon)
         else:
             # print(f"[WARNING] Icône introuvable: {icon_path}")
-            Settings.WRITE_LOG_DEV_FILE(f"Icône introuvable pour '{button_name}': {icon_path}", "WARNING")
+            Settings.write_log_dev_file(
+                f"Icône introuvable pour '{button_name}': {icon_path}", "WARNING"
+            )
 
         # 4️⃣ Connexion du callback
         try:
             button.clicked.connect(callback)
-            Settings.WRITE_LOG_DEV_FILE(f"Callback connecté pour '{button_name}'", "INFO")
+            Settings.write_log_dev_file(
+                f"Callback connecté pour '{button_name}'", "INFO"
+            )
             # print(f"[DEBUG] Callback connecté pour '{button_name}'")
         except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE(f"Error connecting callback: {button_name}\n{traceback.format_exc()}", "ERROR")
+            Settings.write_log_dev_file(
+                f"Error connecting callback: {button_name}\n{traceback.format_exc()}",
+                "ERROR",
+            )
             # print(f"[ERROR] Erreur connexion callback: {e}")
 
         # 5️⃣ Taille du bouton
         if button_size:
             # print(f"[DEBUG] Taille bouton: {button_size}")
-            Settings.WRITE_LOG_DEV_FILE(f"Taille bouton pour '{button_name}': {button_size}", "DEBUG")
+            Settings.write_log_dev_file(
+                f"Taille bouton pour '{button_name}': {button_size}", "DEBUG"
+            )
             button.setFixedSize(*button_size)
 
         # 6️⃣ Style spécifique pour certains boutons
         if button_name in ("ClearButton", "CopyButton"):
             # print(f"[DEBUG] Application style spécial pour: {button_name}")
-            Settings.WRITE_LOG_DEV_FILE(f"Application style spéciale pour '{button_name}'", "DEBUG")
+            Settings.write_log_dev_file(
+                f"Application style spéciale pour '{button_name}'", "DEBUG"
+            )
             button.setText("")
             button.setStyleSheet("""
                 QPushButton {
@@ -1660,117 +1745,126 @@ class UIManager:
             """)
 
         # print(f"[SUCCESS] Bouton '{button_name}' configuré avec succès.\n")
-        Settings.WRITE_LOG_DEV_FILE(f"Bouton '{button_name}' configuré avec succès.", "SUCCESS")
+        Settings.write_log_dev_file(
+            f"Bouton '{button_name}' configuré avec succès.", "SUCCESS"
+        )
 
         return button
 
-
-    
-    
     @staticmethod
-    def _setup_button(window, widget_name, callback):
+    def setupButton(window, widget_name, callback):
         """Setup simple button with connection + debug"""
 
         # print(f"[DEBUG] Recherche du bouton: {widget_name}")
 
         # 1️⃣ Trouver le bouton
-        button = UIManager._find_widget(window, widget_name, QPushButton)
+        button = UIManager.findWidget(window, widget_name, QPushButton)
 
         if not button:
             # print(f"[ERROR] Bouton '{widget_name}' introuvable.")
-            Settings.WRITE_LOG_DEV_FILE(f"Bouton '{widget_name}' introuvable.", "ERROR")
+            Settings.write_log_dev_file(f"Bouton '{widget_name}' introuvable.", "ERROR")
             return None
         else:
             # print(f"[DEBUG] Bouton '{widget_name}' trouvé.")
-            Settings.WRITE_LOG_DEV_FILE(f"Bouton '{widget_name}' trouvé.", "DEBUG")
+            Settings.write_log_dev_file(f"Bouton '{widget_name}' trouvé.", "DEBUG")
 
         # 2️⃣ Vérifier callback
         if not callback:
             # print(f"[WARNING] Aucun callback fourni pour '{widget_name}'")
-            Settings.WRITE_LOG_DEV_FILE(f"Aucun callback fourni pour '{widget_name}'", "WARNING")
+            Settings.write_log_dev_file(
+                f"Aucun callback fourni pour '{widget_name}'", "WARNING"
+            )
             return button
 
         # 3️⃣ Connecter le signal
         try:
             button.clicked.connect(callback)
             # print(f"[SUCCESS] Callback connecté pour '{widget_name}'")
-            Settings.WRITE_LOG_DEV_FILE(f"Callback connecté pour '{widget_name}'", "SUCCESS")
+            Settings.write_log_dev_file(
+                f"Callback connecté pour '{widget_name}'", "SUCCESS"
+            )
         except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE(f"Error connecting callback: {widget_name}\n{traceback.format_exc()}", "ERROR")
+            Settings.write_log_dev_file(
+                f"Error connecting callback: {widget_name}\n{traceback.format_exc()}",
+                "ERROR",
+            )
             # print(f"[ERROR] Erreur lors de la connexion du callback: {e}")
 
         return button
 
-
-        
     @staticmethod
-    def _setup_browser_combobox(window):
+    def setupBrowserCombobox(window):
         """Setup browser selection combobox with debug"""
 
         # print("[DEBUG] Initialisation du QComboBox 'browsers'")
-        Settings.WRITE_LOG_DEV_FILE("Initialisation du QComboBox 'browsers'", "DEBUG")
+        Settings.write_log_dev_file("Initialisation du QComboBox 'browsers'", "DEBUG")
 
         # 1️⃣ Trouver le combobox
-        window.browser = UIManager._find_widget(window, "browsers", QComboBox)
+        window.browser = UIManager.findWidget(window, "browsers", QComboBox)
 
         if window.browser is None:
             # print("[ERROR] QComboBox 'browsers' introuvable.")
-            Settings.WRITE_LOG_DEV_FILE("QComboBox 'browsers' introuvable.", "ERROR")
+            Settings.write_log_dev_file("QComboBox 'browsers' introuvable.", "ERROR")
             return
         else:
             # print("[DEBUG] QComboBox trouvé.")
-            Settings.WRITE_LOG_DEV_FILE("QComboBox trouvé.", "DEBUG")
+            Settings.write_log_dev_file("QComboBox trouvé.", "DEBUG")
 
         # 2️⃣ Appliquer style
         try:
-            UIManager._apply_combobox_style(window, window.browser)
+            UIManager.applyComboboxStyle(window, window.browser)
             # print("[DEBUG] Style appliqué au QComboBox.")
-            Settings.WRITE_LOG_DEV_FILE("Style appliqué au QComboBox.", "DEBUG")
+            Settings.write_log_dev_file("Style appliqué au QComboBox.", "DEBUG")
         except Exception as e:
-            Settings.WRITE_LOG_DEV_FILE(f"Error applying style to browsers combobox\n{traceback.format_exc()}", "ERROR")
+            Settings.write_log_dev_file(
+                f"Error applying style to browsers combobox\n{traceback.format_exc()}",
+                "ERROR",
+            )
             # print(f"[ERROR] Erreur application style: {e}")
 
         # 3️⃣ Nettoyage (éviter doublons)
         # print("[DEBUG] Nettoyage des anciens éléments...")
-        Settings.WRITE_LOG_DEV_FILE("[DEBUG] Nettoyage des anciens éléments...", "DEBUG")
+        Settings.write_log_dev_file(
+            "[DEBUG] Nettoyage des anciens éléments...", "DEBUG"
+        )
         window.browser.clear()
 
         # 4️⃣ Liste des navigateurs
-        browsers = [
-            ("Chrome", "chrome.png"),
-            ("Firefox", "firefox.png"),
-            ("Edge", "edge.png"),
-            ("Comodo", "comodo.png"),
-        ]
+        browsers = Settings.BROWSER_OPTIONS
 
         # print(f"[DEBUG] Nombre de navigateurs à ajouter: {len(browsers)}")
-        Settings.WRITE_LOG_DEV_FILE(f"Nombre de navigateurs à ajouter: {len(browsers)}", "DEBUG")
+        Settings.write_log_dev_file(
+            f"Nombre de navigateurs à ajouter: {len(browsers)}", "DEBUG"
+        )
         # 5️⃣ Ajout des items
         for name, icon_file in browsers:
             icon_path = os.path.join(Settings.ICONS_DIR, icon_file).replace("\\", "/")
             # print(f"[DEBUG] Traitement: {name} | Icône: {icon_path}")
-            Settings.WRITE_LOG_DEV_FILE(f"Traitement: {name} | Icône: {icon_path}", "DEBUG")
+            Settings.write_log_dev_file(
+                f"Traitement: {name} | Icône: {icon_path}", "DEBUG"
+            )
 
-            if ValidationUtils.path_exists(icon_path):
+            if ValidationUtils.pathExists(icon_path):
                 # print(f"[DEBUG] Icône trouvée pour {name}")
                 window.browser.addItem(QIcon(icon_path), name)
             else:
                 # print(f"[WARNING] Icône introuvable pour {name}")
-                Settings.WRITE_LOG_DEV_FILE(f"Icône introuvable pour {name}: {icon_path}", "WARNING")
+                Settings.write_log_dev_file(
+                    f"Icône introuvable pour {name}: {icon_path}", "WARNING"
+                )
                 window.browser.addItem(name)
 
         # 6️⃣ Vérification finale
         count = window.browser.count()
         # print(f"[SUCCESS] QComboBox configuré avec {count} éléments.\n")
-        Settings.WRITE_LOG_DEV_FILE(f"QComboBox configuré avec {count} éléments.", "SUCCESS")
-        
-        
-        
-        
+        Settings.write_log_dev_file(
+            f"QComboBox configuré avec {count} éléments.", "SUCCESS"
+        )
+
     @staticmethod
-    def _apply_combobox_style(window, combobox):
+    def applyComboboxStyle(window, combobox):
         """Apply custom arrow style to combobox"""
-        if not ValidationUtils.path_exists(Settings.ARROW_DOWN_PATH):
+        if not ValidationUtils.pathExists(Settings.ARROW_DOWN_PATH):
             return
 
         style = f'''
@@ -1783,172 +1877,140 @@ class UIManager:
         old_style = combobox.styleSheet()
         combobox.setStyleSheet(old_style + style)
 
-
-
-
-
-
     @staticmethod
-    def _setup_isp_combobox(window):
+    def setupIspCombobox(window):
         """Setup ISP selection combobox"""
-        window.Isp = UIManager._find_widget(window, "Isps", QComboBox)
+        window.Isp = UIManager.findWidget(window, "Isps", QComboBox)
         if window.Isp is None:
-            #print("🔧 [DEBUG] Combobox des ISPs introuvable")
+            # print("🔧 [DEBUG] Combobox des ISPs introuvable")
             return
-        
-        #print("🔧 [DEBUG] Configuration du combobox des ISPs")
-        
+
+        # print("🔧 [DEBUG] Configuration du combobox des ISPs")
+
         # Appliquer le style
-        UIManager._apply_combobox_style(window, window.Isp)
-        
+        UIManager.applyComboboxStyle(window, window.Isp)
+
         # Nettoyer pour éviter les doublons
         window.Isp.clear()
-        
+
         # Ajouter les ISP disponibles
         for name, icon_file in Settings.SERVICES.items():
             icon_path = os.path.join(Settings.ICONS_DIR, icon_file)
-            if ValidationUtils.path_exists(icon_path):
+            if ValidationUtils.pathExists(icon_path):
                 window.Isp.addItem(QIcon(icon_path), name)
             else:
                 window.Isp.addItem(name)
-        
+
         # Définir l'ISP par défaut à partir du fichier
-        UIManager._set_default_isp(window)
+        UIManager.setDefaultIsp(window)
 
-
-    
-    
-    
-    
-    
     @staticmethod
-    def _set_default_isp(window):
+    def setDefaultIsp(window):
         """Set the default ISP based on the content of FILE_ISP"""
-        if not ValidationUtils.path_exists(Settings.FILE_ISP):
+        if not ValidationUtils.pathExists(Settings.FILE_ISP):
             return
-        
-        with open(Settings.FILE_ISP, 'r', encoding='utf-8') as f:
+
+        with open(Settings.FILE_ISP, "r", encoding="utf-8") as f:
             line = f.readline().strip().lower()
-        
-        isp_mapping = {
-            'gmail': 'Gmail',
-            'hotmail': 'Hotmail',
-            'yahoo': 'Yahoo'
-        }
-        
-        # التأكد أن combobox موجود
+
         if not hasattr(window, "Isp") or window.Isp is None:
             return
-        
-        for key, value in isp_mapping.items():
+
+        for key, value in Settings.ISP_MAPPING.items():
             if key in line:
                 index = window.Isp.findText(value)
                 if index >= 0:
                     window.Isp.setCurrentIndex(index)
                 break
 
-
-    
-    
-    
-    
     @staticmethod
-    def _setup_scenario_combobox(window):
+    def setupScenarioCombobox(window):
         """Setup scenario selection combobox"""
-        window.saveSanario = UIManager._find_widget(window , "saveSanario", QComboBox)
-        if  window.saveSanario is  None:
+        window.saveSanario = UIManager.findWidget(window, "saveSanario", QComboBox)
+        if window.saveSanario is None:
             # print("🔧 [DEBUG] Le save scenario not found")
-            Settings.WRITE_LOG_DEV_FILE("🔧 [DEBUG] Le save scenario not found", "DEBUG")
+            Settings.write_log_dev_file(
+                "🔧 [DEBUG] Le save scenario not found", "DEBUG"
+            )
             return
         # print("🔧 [DEBUG] Le save scenario  found ")
-        Settings.WRITE_LOG_DEV_FILE("🔧 [DEBUG] Le save scenario  found ", "DEBUG")
+        Settings.write_log_dev_file("🔧 [DEBUG] Le save scenario  found ", "DEBUG")
 
-        UIManager._apply_combobox_style(window ,window.saveSanario)
-        window.saveSanario.currentTextChanged.connect(window.Scenario_Changed)
+        UIManager.applyComboboxStyle(window, window.saveSanario)
+        window.saveSanario.currentTextChanged.connect(window.scenario_changed)
 
-    
-
-    
-    
     @staticmethod
-    def _setup_logout_button(window, callback):
-        button = UIManager._find_widget(window, "LogOut", QPushButton)
+    def setupLogoutButton(window, callback):
+        button = UIManager.findWidget(window, "LogOut", QPushButton)
         if not button:
-            #print("⚠️ [DEBUG] Logout button not found")
+            # print("⚠️ [DEBUG] Logout button not found")
             return None
-        
+
         button.setLayoutDirection(Qt.LayoutDirection.RightToLeft)
-        
+
         if callback:
             button.clicked.connect(callback)
-            #print(f"✅ [DEBUG] Logout button connected to {callback}")
-        
+            # print(f"✅ [DEBUG] Logout button connected to {callback}")
+
         icon_path = os.path.join(Settings.ICONS_DIR, "LogOut4.png")
-        if ValidationUtils.path_exists(icon_path):
+        if ValidationUtils.pathExists(icon_path):
             button.setIcon(QIcon(icon_path))
             button.setIconSize(QSize(18, 18))
-            #print(f"✅ [DEBUG] Icon applied to Logout button: {icon_path}")
-        
+            # print(f"✅ [DEBUG] Icon applied to Logout button: {icon_path}")
+
         return button
 
-
-
-    
     @staticmethod
-    def _setup_result_tab_widget(window):
+    def setupResultTabWidget(window):
         """Setup result tab widget with vertical tabs"""
-        window.tabWidgetResult = UIManager._find_widget(window, "tabWidgetResult", QTabWidget)
+        window.tabWidgetResult = UIManager.findWidget(
+            window, "tabWidgetResult", QTabWidget
+        )
         if window.tabWidgetResult is None:
             return
 
         window.tabWidgetResult.tabBar().setCursor(Qt.CursorShape.PointingHandCursor)
 
         # Set tab icons
-        UIManager._set_tab_icons(window, window.tabWidgetResult)
+        UIManager.setTabIcons(window, window.tabWidgetResult)
 
         # Connect clicks to ensure tabs are active when the user clicks them
         try:
             window.tabWidgetResult.tabBar().tabBarClicked.connect(
-                lambda index: UIManager._on_result_tab_clicked(window, index)
+                lambda index: UIManager.handleResultTabClicked(window, index)
             )
         except Exception:
             pass
 
         window.tabWidgetResult.currentChanged.connect(
-            lambda index: UIManager._on_result_tab_changed(window, index)
+            lambda index: UIManager.handleResultTabChanged(window, index)
         )
 
         # Convert to vertical tab widget
-        UIManager._convert_to_vertical_tabs(window)
-        
-        # Set icons for existing buttons in tabs
-        UIManager.Set_Icon_For_Existing_Buttons(window)
+        UIManager.convertToVerticalTabs(window)
 
+        # Set icons for existing buttons in tabs
+        UIManager.setIconsForExistingButtons(window)
 
     @staticmethod
-    def _on_result_tab_clicked(window, index):
-        if not hasattr(window, 'tabWidgetResult') or window.tabWidgetResult is None:
+    def handleResultTabClicked(window, index):
+        if not hasattr(window, "tabWidgetResult") or window.tabWidgetResult is None:
             return
         if index < 0 or index >= window.tabWidgetResult.count():
             return
         window.tabWidgetResult.setCurrentIndex(index)
 
-
     @staticmethod
-    def _on_result_tab_changed(window, index):
-        if not hasattr(window, 'tabWidgetResult') or window.tabWidgetResult is None:
+    def handleResultTabChanged(window, index):
+        if not hasattr(window, "tabWidgetResult") or window.tabWidgetResult is None:
             return
         if index < 0 or index >= window.tabWidgetResult.count():
             return
         tab_text = window.tabWidgetResult.tabText(index)
-        Settings.WRITE_LOG_DEV_FILE(f"Result tab switched to: {tab_text}", "INFO")
+        Settings.write_log_dev_file(f"Result tab switched to: {tab_text}", "INFO")
 
-
-
-        
-        
     @staticmethod
-    def Set_Icon_For_Existing_Buttons(window):
+    def setIconsForExistingButtons(window):
         """Set copy icons for all copy buttons in result tabs"""
         if not hasattr(window, "tabWidgetResult") or window.tabWidgetResult is None:
             return
@@ -1973,21 +2035,26 @@ class UIManager:
                         button.clicked.disconnect()
                     except TypeError:
                         # لا توجد إشارات متصلة، هذا طبيعي
-                        Settings.WRITE_LOG_DEV_FILE( f"No signals to disconnect for copy button in tab {i}", "INFO" )
+                        Settings.write_log_dev_file(
+                            f"No signals to disconnect for copy button in tab {i}",
+                            "INFO",
+                        )
                     except Exception:
                         # أي خطأ غير متوقع
-                        Settings.WRITE_LOG_DEV_FILE( f"Unexpected error disconnecting copy button in tab {i}:\n{traceback.format_exc()}",   "ERROR" )
+                        Settings.write_log_dev_file(
+                            f"Unexpected error disconnecting copy button in tab {i}:\n{traceback.format_exc()}",
+                            "ERROR",
+                        )
 
                     # --- Connect the new signal ---
-                    button.clicked.connect(partial(UIManager.Copy_Result_From_Tab, window, i))
+                    button.clicked.connect(
+                        partial(UIManager.copyResultFromTab, window, i)
+                    )
 
-
-    
-    
     @staticmethod
-    def _set_tab_icons(window, tab_widget):
+    def setTabIcons(window, tab_widget):
         """Set icons for tabs based on tab text"""
-        if not ValidationUtils.path_exists(Settings.ICONS_DIR):
+        if not ValidationUtils.pathExists(Settings.ICONS_DIR):
             return
 
         icon_size = (40, 40)
@@ -1998,16 +2065,13 @@ class UIManager:
             icon_name = tab_text.lower().replace(" ", "_") + ".png"
             icon_path = os.path.join(Settings.ICONS_DIR, icon_name)
 
-            if ValidationUtils.path_exists(icon_path):
+            if ValidationUtils.pathExists(icon_path):
                 icon = QIcon(icon_path)
                 icon_pixmap = icon.pixmap(icon_size[0], icon_size[1])
                 tab_widget.setTabIcon(i, QIcon(icon_pixmap))
 
-
-
-    
     @staticmethod
-    def _convert_to_vertical_tabs(window):
+    def convertToVerticalTabs(window):
         if not hasattr(window, "tabWidgetResult") or window.tabWidgetResult is None:
             return
 
@@ -2021,8 +2085,12 @@ class UIManager:
             icon = window.tabWidgetResult.tabIcon(0)
 
             vertical_tab_widget.addTab(widget, icon, text)
-            vertical_tab_widget.widget(vertical_tab_widget.count() - 1).setStyleSheet(widget.styleSheet())
-            vertical_tab_widget.widget(vertical_tab_widget.count() - 1).setObjectName(widget.objectName())
+            vertical_tab_widget.widget(vertical_tab_widget.count() - 1).setStyleSheet(
+                widget.styleSheet()
+            )
+            vertical_tab_widget.widget(vertical_tab_widget.count() - 1).setObjectName(
+                widget.objectName()
+            )
 
         window.tabWidgetResult.setParent(None)
         vertical_tab_widget.setParent(parent_widget)
@@ -2033,19 +2101,19 @@ class UIManager:
         window.tabWidgetResult = vertical_tab_widget
         window.tabWidgetResult.tabBar().setCursor(Qt.CursorShape.PointingHandCursor)
         try:
-            window.tabWidgetResult.tabBar().tabBarClicked.connect( lambda index: UIManager._on_result_tab_clicked(window, index) )
+            window.tabWidgetResult.tabBar().tabBarClicked.connect(
+                lambda index: UIManager.handleResultTabClicked(window, index)
+            )
         except Exception:
             pass
-        window.tabWidgetResult.currentChanged.connect(  lambda index: UIManager._on_result_tab_changed(window, index) )
+        window.tabWidgetResult.currentChanged.connect(
+            lambda index: UIManager.handleResultTabChanged(window, index)
+        )
 
-    
-
-    
-    
     @staticmethod
-    def _setup_interface_tab_widget(window):
+    def setupInterfaceTabWidget(window):
         """Setup main interface tab widget"""
-        window.INTERFACE = UIManager._find_widget(window, "interface_2", QTabWidget)
+        window.INTERFACE = UIManager.findWidget(window, "interface_2", QTabWidget)
         if window.INTERFACE is None:
             return
 
@@ -2053,12 +2121,14 @@ class UIManager:
         try:
             window.INTERFACE.tabBar().setCursor(Qt.CursorShape.PointingHandCursor)
         except Exception:
-            Settings.WRITE_LOG_DEV_FILE(f"Error setting cursor for TabBar\n{traceback.format_exc()}", "ERROR")
+            Settings.write_log_dev_file(
+                f"Error setting cursor for TabBar\n{traceback.format_exc()}", "ERROR"
+            )
             pass
 
         # Chercher le tab commençant par "Result" et ajouter un frame
         for i in range(window.INTERFACE.count()):
-            if UIManager.Is_Result_Tab(window.INTERFACE, i):
+            if UIManager.isResultTab(window.INTERFACE, i):
                 tab_widget = window.INTERFACE.widget(i)
                 if tab_widget is None:
                     continue
@@ -2071,31 +2141,31 @@ class UIManager:
                 frame.setGeometry(0, 660, 179, 300)
                 frame.show()
                 break
-        
-    
-    
-    
-    
+
     @staticmethod
-    def _setup_miscellaneous(window):
+    def setupMiscellaneous(window):
         """Setup miscellaneous UI elements"""
 
         # Search line edit
-        window.lineEdit_search = UIManager._find_widget(window, "lineEdit_search", QLineEdit)
+        window.lineEdit_search = UIManager.findWidget(
+            window, "lineEdit_search", QLineEdit
+        )
         if window.lineEdit_search:
             window.lineEdit_search.hide()
 
         # TextEdit placeholders
-        window.textEdit_3 = UIManager._find_widget(window, "textEdit_3", QTextEdit)
+        window.textEdit_3 = UIManager.findWidget(window, "textEdit_3", QTextEdit)
         if window.textEdit_3:
             window.textEdit_3.setPlaceholderText(
                 "Please enter the data in the following format : \n"
                 "Email* ; passwordEmail* ; ipAddress* ; port* ; login ; password ; recovery_email , new_recovery_email"
             )
 
-        window.textEdit_4 = UIManager._find_widget(window, "textEdit_4", QTextEdit)
+        window.textEdit_4 = UIManager.findWidget(window, "textEdit_4", QTextEdit)
         if window.textEdit_4:
-            window.textEdit_4.setPlaceholderText(  "Specify the maximum number of operations to process"  )
+            window.textEdit_4.setPlaceholderText(
+                "Specify the maximum number of operations to process"
+            )
 
         # Stretch table columns
         tables = window.findChildren(QTableWidget)
@@ -2106,25 +2176,27 @@ class UIManager:
                 )
 
         try:
-            UIManager._style_spin_boxes(window)
+            UIManager.styleSpinBoxes(window)
         except Exception:
-            Settings.WRITE_LOG_DEV_FILE(f"Error styling spin boxes\n{traceback.format_exc()}", "ERROR")
+            Settings.write_log_dev_file(
+                f"Error styling spin boxes\n{traceback.format_exc()}", "ERROR"
+            )
             pass
 
         # Initialize result tab widget reference
-        window.result_tab_widget = UIManager._find_widget(window, "tabWidgetResult", QTabWidget)
+        window.result_tab_widget = UIManager.findWidget(
+            window, "tabWidgetResult", QTabWidget
+        )
 
-
-    
-    
-    
-    @staticmethod  
-    def _style_spin_boxes(window):
+    @staticmethod
+    def styleSpinBoxes(window):
         if not (Settings.DOWN_EXISTS and Settings.UP_EXISTS):
             return
         for spin_box in window.findChildren(QSpinBox):
             old_style = spin_box.styleSheet()
-            spin_box.setStyleSheet(old_style + f"""
+            spin_box.setStyleSheet(
+                old_style
+                + f"""
                 QSpinBox::down-button {{
                     image: url("{Settings.ARROW_DOWN_PATH}");
                     width: 13px;
@@ -2139,14 +2211,11 @@ class UIManager:
                     border-top-left-radius: 5px;
                     border-bottom-left-radius: 5px;
                 }}
-            """)
-        
-    
-    
-    
-    
+            """
+            )
+
     @staticmethod
-    def Update_Scenario(window, template_name, state):
+    def updateScenario(window, template_name, state):
         template_frame = None
 
         if template_name == "Template1":
@@ -2167,7 +2236,7 @@ class UIManager:
             new_template.setStyleSheet(template_frame.styleSheet())
             new_template.setMaximumHeight(51)
             new_template.setMinimumHeight(51)
-            new_template.setMaximumWidth(780)  
+            new_template.setMaximumWidth(780)
 
             lineedits = []
             checkboxes = []
@@ -2214,7 +2283,9 @@ class UIManager:
                 elif isinstance(child, QComboBox):
                     new_combobox = QComboBox(new_template)
                     new_combobox.setCurrentIndex(child.currentIndex())
-                    new_combobox.addItems([child.itemText(i) for i in range(child.count())])
+                    new_combobox.addItems(
+                        [child.itemText(i) for i in range(child.count())]
+                    )
                     new_combobox.setGeometry(child.geometry())
                     new_combobox.setStyleSheet(child.styleSheet())
 
@@ -2223,44 +2294,43 @@ class UIManager:
                     linked_lineedit = lineedits[-1]
                     linked_lineedit.hide()
                     checkbox.stateChanged.connect(
-                        lambda state, lineedit=linked_lineedit: UIManager.Handle_Checkbox_State(state, lineedit)
+                        lambda state, lineedit=linked_lineedit: (
+                            UIManager.handleCheckboxState(state, lineedit)
+                        )
                     )
             new_template.setProperty("full_state", state)
             window.scenario_layout.addWidget(new_template)
 
-    
-    
-    
     @staticmethod
-    def Handle_Checkbox_State( state, lineedit):
-        if lineedit:  
-            if state == 2: 
+    def handleCheckboxState(state, lineedit):
+        if lineedit:
+            if state == 2:
                 lineedit.show()
-            else:  
+            else:
                 lineedit.hide()
 
-
-    
-    
     @staticmethod
-    def Display_State_Stack_As_Table(window):
+    def displayStateStackAsTable(window):
         if not window.STATE_STACK:
             return
 
-    
     @staticmethod
-    def disable_button(button, disabled_style=None):
+    def disableButton(button, disabled_style=None):
         """Désactive un bouton avec un style personnalisé"""
         # print("🟢 [DEBUG] Désactivation bouton...")
-        Settings.WRITE_LOG_DEV_FILE("Attempting to disable button...", "INFO")
+        Settings.write_log_dev_file("Attempting to disable button...", "INFO")
         if button is None:
             # print("⚠️ Bouton inexistant !")
-            Settings.WRITE_LOG_DEV_FILE("Attempted to disable a non-existent button", "WARNING")
+            Settings.write_log_dev_file(
+                "Attempted to disable a non-existent button", "WARNING"
+            )
             return
 
         if not button.isEnabled():
             # print("⚠️ Bouton déjà désactivé !")
-            Settings.WRITE_LOG_DEV_FILE("Attempted to disable an already disabled button", "WARNING")
+            Settings.write_log_dev_file(
+                "Attempted to disable an already disabled button", "WARNING"
+            )
             return
 
         # Sauvegarder style dans le bouton (pas de global)
@@ -2281,17 +2351,22 @@ class UIManager:
         button.setStyleSheet(disabled_style)
         button.repaint()
         QApplication.processEvents()
-        Settings.WRITE_LOG_DEV_FILE(f"Button '{button.objectName()}' disabled with style: {disabled_style}", "INFO")
+        Settings.write_log_dev_file(
+            f"Button '{button.objectName()}' disabled with style: {disabled_style}",
+            "INFO",
+        )
         # print(f"🟢 [DEBUG] {button.objectName()} désactivé")
 
     @staticmethod
-    def enable_button(button):
+    def enableButton(button):
         """Réactive un bouton et restaure l'ancien style"""
         # print("🟩 [DEBUG] Réactivation bouton...")
-        Settings.WRITE_LOG_DEV_FILE("Attempting to enable button...", "INFO")
+        Settings.write_log_dev_file("Attempting to enable button...", "INFO")
 
         if button is None:
-            Settings.WRITE_LOG_DEV_FILE("Attempted to enable a non-existent button", "WARNING")
+            Settings.write_log_dev_file(
+                "Attempted to enable a non-existent button", "WARNING"
+            )
             # print("⚠️ Bouton inexistant !")
             return
 
@@ -2302,9 +2377,14 @@ class UIManager:
         old_style = button.property("old_style")
 
         if old_style:
-            Settings.WRITE_LOG_DEV_FILE(f"Button '{button.objectName()}' enabled, restoring old style.", "INFO")
+            Settings.write_log_dev_file(
+                f"Button '{button.objectName()}' enabled, restoring old style.", "INFO"
+            )
             button.setStyleSheet(old_style)
             # print(f"🟩 [DEBUG] {button.objectName()} restauré")
         else:
-            Settings.WRITE_LOG_DEV_FILE(f"Button '{button.objectName()}' enabled, but no old style found to restore.", "WARNING")
+            Settings.write_log_dev_file(
+                f"Button '{button.objectName()}' enabled, but no old style found to restore.",
+                "WARNING",
+            )
             # print("⚠️ Aucun ancien style trouvé")
