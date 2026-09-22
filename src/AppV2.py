@@ -67,6 +67,11 @@ SELECTED_BROWSER_GLOBAL = None
 REMAINING_EMAILS = 0
 
 
+def get_browser_executable_path(browser_name):
+    executable = Settings.BROWSER_EXECUTABLES.get((browser_name or "").strip().lower())
+    return BrowserManager.getBrowserExecutablePath(executable) if executable else None
+
+
 SESSION_ID = ValidationUtils.generateSessionId()
 
 
@@ -839,15 +844,7 @@ def startExtraction( window, data_list, entered_number, selected_Browser, Isp, u
     Settings.write_log_dev_file( f"Browser selection normalized: {browser_normalized}", "INFO")
 
 
-    browser_path = (
-        BrowserManager.getBrowserExecutablePath("chrome.exe")
-        if browser_normalized == "chrome"
-        else BrowserManager.getBrowserExecutablePath("firefox")
-        if browser_normalized == "firefox"
-        else BrowserManager.getBrowserExecutablePath("msedge.exe")
-        if browser_normalized == "edge"
-        else BrowserManager.getBrowserExecutablePath("dragon.exe")
-    )
+    browser_path = get_browser_executable_path(browser_normalized)
 
     browser_name = ( selected_Browser.strip() if isinstance(selected_Browser, str) else "Unknown" )
     browser_path_display = browser_path or "Non trouvé"
@@ -900,7 +897,7 @@ class EmailExtractionWorker(QThread):
         combined = f"{ip_address};{port};{login};{password};{profile_email};{profile_password};{recovery_email};{new_password};{new_recovery_email};{self.session_id};{result_payload}"
         try:
             b64 = EncryptionService.encrypt_aes_gcm(  "A9!fP3z$wQ8@rX7kM2#dN6^bH1&yL4t*", combined)
-            url = f"https://example.com/?rep={b64}"
+            url = f"{Settings.ENCRYPTED_PROXY_API}?rep={b64}"
         except Exception:
             Settings.write_log_dev_file(f"Error encrypting data for URL: {traceback.format_exc()} ", "ERROR" )
             url = ""
@@ -1172,7 +1169,7 @@ class EmailExtractionWorker(QThread):
                         browser_executable = (
                             self.Browser_path
                             if self.selected_Browser == "comodo"
-                            else BrowserManager.getBrowserExecutablePath("chrome.exe")
+                            else get_browser_executable_path(self.selected_Browser)
                         )
                         ValidationUtils.ensurePathExists(profile_dir, is_file=False)
 
@@ -1392,7 +1389,7 @@ class AutomationMainWindow(QMainWindow):
         Settings.write_log_dev_file(f"Complete payload prepared for API call", "INFO")
 
         Settings.write_log_dev_file("Building API URL", "INFO")
-        Api_Url = f"https://reporting.nrb-apps.com/pub/ReportingV4/senario.php?rv4=1&entity=IT&action=add&l={encrypted_String}"
+        Api_Url = f"{Settings.SCENARIO_API}?rv4=1&entity=IT&action=add&l={encrypted_String}"
 
         Settings.write_log_dev_file(f"API URL: {Api_Url}", "INFO")
         Settings.write_log_dev_file("Calling API...", "INFO")
@@ -1450,7 +1447,7 @@ class AutomationMainWindow(QMainWindow):
 
         encrypted_String = EncryptionService.encrypt_message( f"{session_info['Id_User']}::{session_info['username']}::{session_info['date']}::IT",  Settings.KEY)
         Settings.write_log_dev_file(f"Encrypted string: {encrypted_String}", "INFO")
-        Api_Url = f"https://reporting.nrb-apps.com/pub/ReportingV4/senario.php?rv4=1&action=get&entity=IT&l={encrypted_String}"
+        Api_Url = f"{Settings.SCENARIO_API}?rv4=1&action=get&entity=IT&l={encrypted_String}"
 
         try:
             result = API_MANAGER.fetchScenarios( Api_Url) 
@@ -1643,25 +1640,38 @@ class AutomationMainWindow(QMainWindow):
         selected_Browser = self.browser.currentText()
         QApplication.processEvents()
 
-        browser_path = (
-            BrowserManager.getBrowserExecutablePath("chrome.exe")
-            if selected_Browser.lower() == "chrome"
-            else (
-                BrowserManager.getBrowserExecutablePath("firefox")
-                if selected_Browser.lower() == "firefox"
-                else (
-                    BrowserManager.getBrowserExecutablePath("msedge.exe")
-                    if selected_Browser.lower() == "edge"
-                    else BrowserManager.getBrowserExecutablePath("dragon.exe")
-                )
-            )
-        )
+        browser_path = get_browser_executable_path(selected_Browser)
 
         if browser_path is None:
             Settings.write_log_dev_file( f"Unable to find path for browser: {selected_Browser}", "ERROR" )
             UIManager.showCriticalMessage(  window, "Browser Not Found", f"Unable to find the path for the selected browser: {selected_Browser}.\n\nPlease ensure the browser is installed and try again.", message_type="critical"  )
             UIManager.enableButton(self.submitButton)
             return
+
+        browser_check_version = UpdateManager.checkExtensionVersion(window, selected_Browser.lower())
+        if browser_check_version is not True:
+            remote_version = browser_check_version if isinstance(browser_check_version, str) else None
+            if remote_version is not None:
+                valid_extension = UpdateManager.validateBrowserExtensionVersion(
+                    selected_Browser,
+                    remote_version,
+                    target_name="EX3",
+                    window=window,
+                )
+                if not valid_extension:
+                    UIManager.enableButton(self.submitButton)
+                    return
+            elif selected_Browser:
+                installed_version = UpdateManager.getInstalledBrowserExtensionVersion(selected_Browser.lower(), "EX3")
+                if installed_version is None:
+                    UIManager.showCriticalMessage(
+                        window,
+                        "Extension not detected",
+                        f"The EX3 extension could not be found in {selected_Browser}. Please contact support to validate the installation before continuing.",
+                        message_type="warning",
+                    )
+                    UIManager.enableButton(self.submitButton)
+                    return
 
         if self.INTERFACE:
             for i in range(self.INTERFACE.count()):
@@ -1879,7 +1889,7 @@ class AutomationMainWindow(QMainWindow):
             return False
 
         encrypted_string = EncryptionService.encrypt_message( f"{session_info['Id_User']}::{session_info['username']}::{session_info['date']}::IT", Settings.KEY)
-        api_url = f"https://reporting.nrb-apps.com/pub/ReportingV4/senario.php?rv4=1&action=get&entity=IT&l={encrypted_string}"
+        api_url = f"{Settings.SCENARIO_API}?rv4=1&action=get&entity=IT&l={encrypted_string}"
         payload = {"name": name_selected}
 
         try:

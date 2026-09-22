@@ -53,6 +53,49 @@ class Settings:
             "icedragon": ("dragon", "icedragon", "chromium"),
             "comodo": ("comodo", "chrome"),
         },
+        "EXECUTABLES": {
+            "chrome": "chrome.exe",
+            "firefox": "firefox",
+            "edge": "msedge.exe",
+            "icedragon": "dragon.exe",
+            "comodo": "dragon.exe",
+        },
+    }
+
+    EXTENSION_CONFIG = {
+        "TARGET_NAME": "EX3",
+        "FIREFOX_ID": "gmail.automation.proxy@azedine.dev",
+    }
+
+    UPDATE_CONFIG = {
+        "PROGRAM_CHECK_ENDPOINT": "https://reporting.nrb-apps.com/APP_R/redirect.php",
+        "PROGRAM_CHECK_EXTENSION": "Script",
+        "EXTENSION_CHECK_EXTENSION": "Ext3",
+        "PROGRAM_DOWNLOAD_URL": "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip",
+    }
+
+    BROWSER_EXTENSION_PATHS = {
+        "chrome": (
+            ("AppData", "Local", "Google", "Chrome", "User Data", "Default", "Extensions"),
+            ("AppData", "Local", "Google", "Chrome", "User Data", "Profile 1", "Extensions"),
+        ),
+        "edge": (
+            ("AppData", "Local", "Microsoft", "Edge", "User Data", "Default", "Extensions"),
+            ("AppData", "Local", "Microsoft", "Edge", "User Data", "Profile 1", "Extensions"),
+        ),
+        "comodo": (
+            ("AppData", "Local", "Comodo", "Browser", "User Data", "Default", "Extensions"),
+            ("AppData", "Local", "Comodo", "Dragon", "User Data", "Default", "Extensions"),
+            ("AppData", "Local", "Comodo", "Dragon", "User Data", "Profile 1", "Extensions"),
+            ("AppData", "Local", "Comodo", "Comodo Dragon", "User Data", "Default", "Extensions"),
+            ("AppData", "Roaming", "Comodo", "Dragon", "User Data", "Default", "Extensions"),
+        ),
+        "icedragon": (
+            ("AppData", "Local", "Icedragon", "User Data", "Default", "Extensions"),
+        ),
+        "firefox": (
+            ("AppData", "Roaming", "Mozilla", "Firefox", "Profiles"),
+        ),
     }
 
     PROCESS_CONFIG = {
@@ -100,6 +143,7 @@ class Settings:
     CHROME_FAMILY_BROWSERS = BROWSER_CONFIG["CHROME_FAMILY_BROWSERS"]
     BROWSER_OPTIONS = BROWSER_CONFIG["BROWSER_OPTIONS"]
     BROWSER_PROCESS_PATTERNS = BROWSER_CONFIG["PROCESS_PATTERNS"]
+    BROWSER_EXECUTABLES = BROWSER_CONFIG["EXECUTABLES"]
 
     GOOGLE_PREFIX = PROCESS_CONFIG["GOOGLE_PREFIX"]
     YOUTUBE_PREFIX = PROCESS_CONFIG["YOUTUBE_PREFIX"]
@@ -120,6 +164,14 @@ class Settings:
     FONT_SIZE_MEDIUM = UI_CONFIG["FONT_SIZE_MEDIUM"]
     FONT_SIZE_LARGE = UI_CONFIG["FONT_SIZE_LARGE"]
 
+    EXTENSION_TARGET_NAME = EXTENSION_CONFIG["TARGET_NAME"]
+    FIREFOX_EXTENSION_ID = EXTENSION_CONFIG["FIREFOX_ID"]
+    PROGRAM_CHECK_ENDPOINT = UPDATE_CONFIG["PROGRAM_CHECK_ENDPOINT"]
+    PROGRAM_CHECK_EXTENSION = UPDATE_CONFIG["PROGRAM_CHECK_EXTENSION"]
+    EXTENSION_CHECK_EXTENSION = UPDATE_CONFIG["EXTENSION_CHECK_EXTENSION"]
+    PROGRAM_DOWNLOAD_URL = UPDATE_CONFIG["PROGRAM_DOWNLOAD_URL"]
+    BROWSER_EXTENSION_CANDIDATES = BROWSER_EXTENSION_PATHS
+
     API_ENDPOINTS = {
         "_APIACCESS_API": "https://reporting.nrb-apps.com/pub/chk_usr1.php?rv4=1",
         "_SAVE_EMAIL_API": "https://reporting.nrb-apps.com/pub/h_new.php?k=mP5Q2XYrK9E67Y1&rID=1&rv4=1",
@@ -129,7 +181,12 @@ class Settings:
         "__CHECK_URL_PROGRAMM__": "https://www.dropbox.com/scl/fi/78a38bc4papwzlw80hxti/version.json?rlkey=n7dx5mb8tcctvprn0wq4ojw7m&st=z6vzw0ox&dl=1",
         "__SERVER_ZIP_URL_PROGRAM__": "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/master.zip",
         "__GET_PROXY_INFO__": "https://reporting.nrb-apps.com/pub/getInfoProxy.php",
+        "SCENARIO_API": "https://reporting.nrb-apps.com/pub/ReportingV4/senario.php",
+        "ENCRYPTED_PROXY_API": "https://example.com/",
     }
+
+    SCENARIO_API = API_ENDPOINTS["SCENARIO_API"]
+    ENCRYPTED_PROXY_API = API_ENDPOINTS["ENCRYPTED_PROXY_API"]
 
     # ═══════════════════════════════════════════════════════════
     # 🔐 Paramètres de chiffrement

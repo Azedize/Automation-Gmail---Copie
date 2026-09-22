@@ -470,7 +470,7 @@ class UIManager:
         shadow.setColor(QColor(0, 0, 0, 80))
         shadow.setOffset(0, 5)
         dialog.setGraphicsEffect(shadow)
-        dialog.setStyleSheet(f"QMessageBox {{ background-color: {c['icon_bg']}; padding: 20px; min-width: 450px; font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif; font-size: 14px; }} QMessageBox QLabel#qt_msgbox_label {{ background-color: {c['icon_bg']}; padding: 20px; font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif; font-size: 15px; font-weight: 600; color: {c['icon_color']}; line-height: 1.5; }} QMessageBox QPushButton {{ background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 {c['button_start']}, stop:1 {c['button_end']}); border: none; color: #fff; font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif; font-weight: 600; font-size: 14px; padding: 10px 25px; min-width: 100px; text-align: center; qproperty-alignment: AlignCenter; }} QMessageBox QPushButton:hover {{ background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 {UIManager.lightenColor(c['button_start'], 15)}, stop:1 {UIManager.lightenColor(c['button_end'], 15)}); }} QMessageBox QPushButton:pressed {{ background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 {UIManager.darkenColor(c['button_start'], 15)}, stop:1 {UIManager.darkenColor(c['button_end'], 15)}); padding: 11px 25px; }}")
+        dialog.setStyleSheet(f"QMessageBox {{ background-color: {c['icon_bg']}; padding: 20px; min-width: 450px; font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif; font-size: 14px; }} QMessageBox QLabel#qt_msgbox_label {{ background-color: {c['icon_bg']}; padding: 20px; font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif; font-size: 15px; font-weight: 600; color: {c['icon_color']}; line-height: 1.5; }} QMessageBox QPushButton {{ background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 {c['button_start']}, stop:1 {c['button_end']}); border: none; color: #fff; font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif; font-weight: 600; font-size: 14px; padding: 10px 25px; min-width: 100px; text-align: center; }} QMessageBox QPushButton:hover {{ background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 {UIManager.lightenColor(c['button_start'], 15)}, stop:1 {UIManager.lightenColor(c['button_end'], 15)}); }} QMessageBox QPushButton:pressed {{ background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 {UIManager.darkenColor(c['button_start'], 15)}, stop:1 {UIManager.darkenColor(c['button_end'], 15)}); padding: 11px 25px; }}")
         dialog.setStandardButtons(QMessageBox.StandardButton.Ok)
 
         button_box = dialog.findChild(QDialogButtonBox)
@@ -905,7 +905,7 @@ class UIManager:
         if button_name in ("ClearButton", "CopyButton"):
             Settings.write_log_dev_file( f"Application style spéciale pour '{button_name}'", "DEBUG")
             button.setText("")
-            button.setStyleSheet("QPushButton { border: none; background-color: transparent; padding: 0px; margin: 0px; } QPushButton::icon { alignment: center; }")
+            button.setStyleSheet("QPushButton { border: none; background-color: transparent; padding: 0px; margin: 0px; }")
         Settings.write_log_dev_file( f"Bouton '{button_name}' configuré avec succès.", "SUCCESS")
 
         return button

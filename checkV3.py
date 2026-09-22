@@ -28,7 +28,6 @@ TOOLS_DIR = ROOT_DIR / "Tools"
 LOG_DEV_FILE = ROOT_DIR / "Log" / "LogDev" / "my_project.json"
 
 
-print("🚀 [INIT] Initialisation du script principal...")
 KEY = bytes.fromhex("f564292a5740af4fc4819c6e22f64765232ad35f56079854a0ad3996c68ee7a2")
 HEADER = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
@@ -178,37 +177,43 @@ def encrypt_message(plaintext: str, key_bytes: bytes):
 class UpdateManager:
     @staticmethod
     def _read_local_version(path):
+        write_log_dev_file(f"Lecture de la version locale du programme: path={path}", "DEBUG")
         if not path or not os.path.exists(path):
-            write_log_dev_file("Local version not found", "ERROR")
+            write_log_dev_file(f"Version locale du programme introuvable: path={path}", "ERROR")
             return None
         try:
-            return open(path, "r", encoding="utf-8").read().strip()
-        except Exception:
-            write_log_dev_file("Error reading local version", "ERROR")
+            version = open(path, "r", encoding="utf-8").read().strip()
+            write_log_dev_file(f"Version locale du programme lue: {version}", "INFO")
+            return version
+        except Exception as e:
+            write_log_dev_file(f"Erreur lecture version locale du programme: {e}", "ERROR")
             return None
 
     @staticmethod
     def _download_and_extract(zip_url, target_dir, clean_target=False, extract_subdir=None):
         try:
-            write_log_dev_file("Downloading update from server", "INFO")
+            write_log_dev_file( f"Début téléchargement mise à jour programme: url={zip_url}, target={target_dir}, clean_target={clean_target}, extract_subdir={extract_subdir}", "INFO")
             with tempfile.TemporaryDirectory() as tmpdir:
                 zip_path = os.path.join(tmpdir, "update.zip")
                 import requests
                 r = requests.get(zip_url, stream=True, headers=HEADER, timeout=60, verify=False)
                 r.raise_for_status()
+                write_log_dev_file(f"Réponse téléchargement programme: status={r.status_code}, content_length={r.headers.get('content-length')}", "DEBUG")
                 with open(zip_path, "wb") as f:
                     for chunk in r.iter_content(8192):
                         if chunk:
                             f.write(chunk)
-                write_log_dev_file("ZIP downloaded successfully", "INFO")
+                write_log_dev_file(f"ZIP programme téléchargé avec succès: path={zip_path}", "INFO")
                 if clean_target and os.path.exists(target_dir):
                     shutil.rmtree(target_dir)
-                    write_log_dev_file("Old target directory removed", "INFO")
+                    write_log_dev_file(f"Ancien dossier cible supprimé: {target_dir}", "INFO")
                 with zipfile.ZipFile(zip_path, "r") as z:
+                    write_log_dev_file(f"Contenu ZIP programme: {len(z.namelist())} éléments", "DEBUG")
                     z.extractall(tmpdir)
-                write_log_dev_file("Temporary ZIP extraction completed", "INFO")
+                write_log_dev_file("Extraction temporaire du ZIP programme terminée.", "INFO")
                 extracted_root = next(os.path.join(tmpdir, d) for d in os.listdir(tmpdir) if os.path.isdir(os.path.join(tmpdir, d)))
                 extracted_dir = extracted_root if not extract_subdir else os.path.join(extracted_root, extract_subdir) if os.path.exists(os.path.join(extracted_root, extract_subdir)) else extracted_root
+                write_log_dev_file(f"Dossier source programme sélectionné: {extracted_dir}", "DEBUG")
                 if not os.path.exists(target_dir):
                     os.makedirs(target_dir)
                 for item in os.listdir(extracted_dir):
@@ -220,42 +225,58 @@ class UpdateManager:
                         shutil.move(src, dst)
                     else:
                         shutil.move(src, dst)
-                write_log_dev_file(f"Extraction completed in: {target_dir}", "INFO")
+                write_log_dev_file(f"Mise à jour programme extraite dans: {target_dir}", "INFO")
                 return True
-        except Exception:
-            write_log_dev_file("Error downloading/extracting update", "ERROR")
+        except Exception as e:
+            write_log_dev_file(f"Erreur téléchargement/extraction mise à jour programme: {e}", "ERROR")
+            write_log_dev_file(traceback.format_exc(), "DEBUG")
             raise
 
     @staticmethod
     def check_and_update():
-        write_log_dev_file("Checking for updates", "INFO")
+        write_log_dev_file("=== CHECK PROGRAM UPDATE START ===", "INFO")
         import requests
-        date_encrypted = encrypt_message(datetime.datetime.now().strftime("%Y-%m-%d"), KEY)
+        session_date = datetime.datetime.now().strftime("%Y-%m-%d")
+        write_log_dev_file(f"Date utilisée pour le check programme: {session_date}", "DEBUG")
+        date_encrypted = encrypt_message(session_date, KEY)
         if not date_encrypted:
-            write_log_dev_file("Date encryption failed", "ERROR")
+            write_log_dev_file("Échec chiffrement date pour le check programme.", "ERROR")
             sys.exit("❌ Encryption failed, exiting program.")
         url = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Script&k={date_encrypted}"
         download_files = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Script&k={date_encrypted}"
+        write_log_dev_file(f"URL check version programme: {url}", "INFO")
+        write_log_dev_file(f"URL téléchargement programme: {download_files}", "DEBUG")
         for attempt in range(1, 4):
             try:
+                write_log_dev_file(f"Tentative check version programme: {attempt}/3", "INFO")
                 response = requests.get(url, headers=HEADER, timeout=10)
+                write_log_dev_file(f"Réponse serveur programme: status={response.status_code}, content_length={response.headers.get('content-length')}", "DEBUG")
                 if response.status_code != 200:
-                    write_log_dev_file(f"Attempt {attempt}: Failed to fetch version.json (status {response.status_code})", "ERROR")
+                    write_log_dev_file(f"Échec récupération version programme: tentative={attempt}, status={response.status_code}", "ERROR")
                     if attempt < 3:
                         time.sleep(2)
                         continue
                     sys.exit("❌ Server unreachable or error, exiting program.")
                 data = response.json()
+                write_log_dev_file(f"Données version programme reçues: {data}", "DEBUG")
                 local_program = UpdateManager._read_local_version(os.path.join("config", "version.txt"))
+                remote_program = data.get("version")
+                remote_extension = data.get("version_Extention")
+                write_log_dev_file( f"Comparaison versions - programme: local={local_program}, remote={remote_program}; extension distante={remote_extension}",  "INFO" )
                 if not local_program or local_program != data.get("version"):
-                    write_log_dev_file("Required program update", "INFO")
+                    write_log_dev_file(f"Mise à jour programme requise: local={local_program}, remote={remote_program}", "INFO")
                     if not UpdateManager._download_and_extract(download_files, ROOT_DIR, clean_target=False, extract_subdir=None):
+                        write_log_dev_file("Échec de la mise à jour programme après téléchargement/extraction.", "ERROR")
                         sys.exit("❌ Program update failed, exiting program.")
+                    write_log_dev_file("Mise à jour programme terminée avec succès.", "INFO")
+                    write_log_dev_file("=== CHECK PROGRAM UPDATE END (UPDATED) ===", "INFO")
                     return True
-                write_log_dev_file("Application up-to-date", "INFO")
+                write_log_dev_file(f"Programme à jour: local={local_program}, remote={remote_program}", "INFO")
+                write_log_dev_file("=== CHECK PROGRAM UPDATE END (OK) ===", "INFO")
                 return False
             except Exception as e:
-                write_log_dev_file(f"Attempt {attempt}: Critical update error: {e}", "ERROR")
+                write_log_dev_file(f"Erreur critique check programme: tentative={attempt}, erreur={e}", "ERROR")
+                write_log_dev_file(traceback.format_exc(), "DEBUG")
                 if attempt < 3:
                     time.sleep(2)
                     continue
@@ -290,25 +311,27 @@ def main():
         clear_log()
         write_log_dev_file("Démarrage application principale", level="INFO")
         initialize_dependencies()
+        write_log_dev_file("Initialisation des dépendances terminée.", "INFO")
         pythonw_path = find_pythonw()
         if not pythonw_path:
-            write_log_dev_file("pythonw.exe not found", "ERROR")
+            write_log_dev_file("pythonw.exe introuvable; lancement de l’application impossible.", "ERROR")
             sys.exit(1)
+        write_log_dev_file(f"pythonw.exe détecté: {pythonw_path}", "INFO")
         try:
             updated = UpdateManager.check_and_update()
-            write_log_dev_file("Update completed" if updated else "Application up-to-date", "INFO")
+            write_log_dev_file(f"Résultat check programme: {'mise à jour appliquée' if updated else 'programme déjà à jour'}", "INFO")
         except Exception as e:
             write_log_dev_file(f"Fatal error during update: {e}", "CRITICAL")
             sys.exit(1)
         if len(sys.argv) == 1:
-            write_log_dev_file("Launching main application", "INFO")
+            write_log_dev_file(f"Lancement application principale: script={SCRIPT_DIR / 'src' / 'AppV2.py'}", "INFO")
             encrypted_key, secret_key = generate_encrypted_key()
             script_path = SCRIPT_DIR / "src" / "AppV2.py"
             if script_path.is_file():
                 subprocess.run([sys.executable, str(script_path), encrypted_key, secret_key])
-                print("Application principale lancée avec succès")
+                write_log_dev_file("Application principale terminée.", "INFO")
             else:
-                write_log_dev_file("Main script not found", "ERROR")
+                write_log_dev_file(f"Script principal introuvable: {script_path}", "ERROR")
                 sys.exit(1)
     except Exception as e:
         write_log_dev_file("fatal_application_error", "ERROR", exception_type=type(e).__name__, error=str(e))
