@@ -119,11 +119,7 @@ class ValidationUtils:
 
         entered_number = int(entered_number_text)
         # print(f"✅ Entered number is valid: {entered_number}")
-        Settings.write_log_event(
-            "user_input_row_limit_validated",
-            "INFO",
-            requested_rows=entered_number,
-        )
+        Settings.write_log_event("user_input_row_limit_validated", "INFO", requested_rows=entered_number)
 
         # --------------------
         # 2️⃣ Parse input lines
@@ -141,12 +137,7 @@ class ValidationUtils:
 
             header = [k.strip() for k in lines[0].split(";")]
             data_lines = lines[1:]
-            Settings.write_log_event(
-                "user_input_parsing_started",
-                "INFO",
-                column_count=len(header),
-                row_count=len(data_lines),
-            )
+            Settings.write_log_event("user_input_parsing_started", "INFO", column_count=len(header), row_count=len(data_lines))
 
             # --------------------
             # 3️⃣ Validate required keys
@@ -288,12 +279,7 @@ class ValidationUtils:
                 Settings.write_log_dev_file(
                     f"Validation failed: {validation['error_message']}", "ERROR"
                 )
-                return {
-                    "valid": False,
-                    "data": None,
-                    "entered_number": None,
-                    "error": f"{validation['error_title']}:{validation['error_message']}",
-                }
+                return {"valid": False, "data": None, "entered_number": None, "error": f"{validation['error_title']}:{validation['error_message']}"}
 
             data_list = validation["data_list"]
             entered_number = validation["entered_number"]
@@ -306,47 +292,21 @@ class ValidationUtils:
 
             ports_result = ValidationUtils.processPorts(data_list)
             if not ports_result["valid"]:
-                Settings.write_log_dev_file(
-                    f"Ports processing failed: {ports_result['error_message']}", "ERROR"
-                )
-                Settings.write_log_event(
-                    "port_processing_failed",
-                    "ERROR",
-                    error_type=type(ports_result.get("error")).__name__,
-                )
-                return {
-                    "valid": False,
-                    "data": ports_result.get("data"),
-                    "entered_number": entered_number,
-                    "error": f"{ports_result['error_title']}:{ports_result['error_message']}",
-                }
+                Settings.write_log_dev_file( f"Ports processing failed: {ports_result['error_message']}", "ERROR" )
+                Settings.write_log_event("port_processing_failed",  "ERROR", error_type=type(ports_result.get("error")).__name__, )
+                return {"valid": False, "data": ports_result.get("data"), "entered_number": entered_number, "error": f"{ports_result['error_title']}:{ports_result['error_message']}"}
 
             filtered_accounts = ports_result["data"]["filtered"]
-            Settings.write_log_dev_file(
-                f"Ports processed - filtered count: {len(filtered_accounts)}", "INFO"
-            )
+            Settings.write_log_dev_file(f"Ports processed - filtered count: {len(filtered_accounts)}", "INFO" )
 
-            ip_result = ValidationUtils.collect_unique_proxy_addresses(
-                filtered_accounts
-            )
+            ip_result = ValidationUtils.collect_unique_proxy_addresses( filtered_accounts )
             if not ip_result["valid"]:
-                Settings.write_log_dev_file(
-                    f"IP extraction failed: {ip_result['error']}", "ERROR"
-                )
-                return {
-                    "valid": False,
-                    "data": None,
-                    "entered_number": entered_number,
-                    "error": f"{ip_result['error_title']}:{ip_result['error_message']}",
-                }
+                Settings.write_log_dev_file( f"IP extraction failed: {ip_result['error']}", "ERROR")
+                return {"valid": False, "data": None, "entered_number": entered_number, "error": f"{ip_result['error_title']}:{ip_result['error_message']}"}
 
             unique_ips = ip_result["data"]
-            Settings.write_log_dev_file(
-                f"Unique IPs extracted: {len(unique_ips)}", "INFO"
-            )
-            Settings.write_log_dev_file(
-                "Unique IP values intentionally omitted from logs", "DEBUG"
-            )
+            Settings.write_log_dev_file( f"Unique IPs extracted: {len(unique_ips)}", "INFO")
+            Settings.write_log_dev_file("Unique IP values intentionally omitted from logs", "DEBUG"  )
 
             from core import SessionManager
             from api import API_MANAGER
@@ -362,12 +322,7 @@ class ValidationUtils:
                     "ERROR",
                     error_code=session_info.get("error", "unknown"),
                 )
-                return {
-                    "valid": False,
-                    "data": None,
-                    "entered_number": entered_number,
-                    "error": "Your session is invalid. Please log in again.",
-                }
+                return {"valid": False, "data": None, "entered_number": entered_number, "error": "Your session is invalid. Please log in again."}
 
             entity_used = session_info.get("p_entity_Nouveau", "UNKNOWN")
             Settings.write_log_dev_file(
@@ -388,12 +343,7 @@ class ValidationUtils:
                     "ERROR",
                     error_type=type(api_result.get("error")).__name__,
                 )
-                return {
-                    "valid": False,
-                    "data": None,
-                    "entered_number": entered_number,
-                    "error": api_error,
-                }
+                return {"valid": False, "data": None, "entered_number": entered_number, "error": api_error}
 
             Settings.write_log_dev_file(
                 f"API call success - returned entries: {len(api_result['data']) if api_result.get('data') else 0}",
@@ -410,12 +360,7 @@ class ValidationUtils:
                     "ERROR",
                     error=merge_error,
                 )
-                return {
-                    "valid": False,
-                    "data": None,
-                    "entered_number": entered_number,
-                    "error": merge_error,
-                }
+                return {"valid": False, "data": None, "entered_number": entered_number, "error": merge_error}
 
             final_data = merge_result["data"]
             Settings.write_log_dev_file(
@@ -429,12 +374,7 @@ class ValidationUtils:
                 "========== REQUEST COMPLETED SUCCESSFULLY ==========", "INFO"
             )
 
-            return {
-                "valid": True,
-                "data": final_data,
-                "entered_number": entered_number,
-                "error": None,
-            }
+            return {"valid": True, "data": final_data, "entered_number": entered_number, "error": None}
 
         except Exception as e:
             Settings.write_log_dev_file(
@@ -444,12 +384,7 @@ class ValidationUtils:
             Settings.write_log_dev_file(
                 "========== REQUEST FAILED WITH EXCEPTION ==========", "ERROR"
             )
-            return {
-                "valid": False,
-                "data": None,
-                "entered_number": None,
-                "error": "An unexpected error occurred. Please try again later.",
-            }
+            return {"valid": False, "data": None, "entered_number": None, "error": "An unexpected error occurred. Please try again later."}
 
     @staticmethod
     def getValueSafely(item: dict, key: str, default=None):
@@ -485,11 +420,7 @@ class ValidationUtils:
                     Settings.write_log_event(
                         "proxy_address_invalid", "ERROR", reason="malformed_format"
                     )
-                    return {
-                        "valid": False,
-                        "data": None,
-                        "error": f"Malformed IP: {formatted}",
-                    }
+                    return {"valid": False, "data": None, "error": f"Malformed IP: {formatted}"}
 
                 ip, port = ip_parts
 
@@ -497,11 +428,7 @@ class ValidationUtils:
                     Settings.write_log_event(
                         "proxy_address_invalid", "ERROR", reason="invalid_port"
                     )
-                    return {
-                        "valid": False,
-                        "data": None,
-                        "error": f"Invalid port in IP: {formatted}",
-                    }
+                    return {"valid": False, "data": None, "error": f"Invalid port in IP: {formatted}"}
 
             Settings.write_log_event("proxy_address_normalized", "INFO")
             return {"valid": True, "data": formatted, "error": None}
@@ -730,9 +657,7 @@ class ValidationUtils:
     # ==================== VALIDATION DE FICHIERS ET CHEMINS ====================
 
     @staticmethod
-    def validate_path(
-        path: str, must_exist: bool = True, is_file: bool = False
-    ) -> bool:
+    def validate_path(path: str, must_exist: bool = True, is_file: bool = False) -> bool:
         # print(f"[DEBUG] Checking path: {path}")
         Settings.write_log_dev_file(f"Validating path: {path}", "INFO")
 
@@ -855,12 +780,7 @@ class ValidationUtils:
     # ==================== VALIDATION D'INTERFACE UTILISATEUR ====================
 
     @staticmethod
-    def validate_qlineedit_text(
-        input_data: Union[QLineEdit, str],
-        validator_type: str = "any",
-        min_length: int = 0,
-        max_length: int = 1000,
-    ) -> Tuple[bool, str]:
+    def validate_qlineedit_text(input_data: Union[QLineEdit, str], validator_type: str = "any", min_length: int = 0, max_length: int = 1000) -> Tuple[bool, str]:
 
         try:
             # Get the text
@@ -913,9 +833,7 @@ class ValidationUtils:
             return default
 
     @staticmethod
-    def validate_and_correct_qlineedit(
-        qlineedit: QLineEdit, default_value: str = "50,50"
-    ) -> None:
+    def validate_and_correct_qlineedit(qlineedit: QLineEdit, default_value: str = "50,50") -> None:
         text = qlineedit.text().strip()
         pattern = r"^\s*(\d+)(?:\s*,\s*(\d+))?\s*$"
         match = re.match(pattern, text)
@@ -955,11 +873,7 @@ class ValidationUtils:
             QTimer.singleShot(0, apply_error)
 
     @staticmethod
-    def validate_qlineedit_with_range(
-        qlineedit: QLineEdit,
-        default_value: str = "50,50",
-        callback: Optional[Callable] = None,
-    ) -> Tuple[bool, Optional[Tuple[int, int]]]:
+    def validate_qlineedit_with_range(qlineedit: QLineEdit, default_value: str = "50,50", callback: Optional[Callable] = None) -> Tuple[bool, Optional[Tuple[int, int]]]:
 
         # Utilise la méthode validate_and_correct_qlineedit pour la validation
         ValidationUtils.validate_and_correct_qlineedit(qlineedit, default_value)
@@ -978,9 +892,7 @@ class ValidationUtils:
     # === Méthodes pour la gestion des styles CSS ===
 
     @staticmethod
-    def inject_border_into_style(
-        old_style: str, border_line: str = "border: 2px solid #cc4c4c;"
-    ) -> str:
+    def inject_border_into_style(old_style: str, border_line: str = "border: 2px solid #cc4c4c;") -> str:
         pattern = r"(QLineEdit\s*{[^}]*?)\s*}"
         match = re.search(pattern, old_style, re.DOTALL)
 
@@ -1066,9 +978,7 @@ class ValidationUtils:
             return None
 
     @staticmethod
-    def collect_unique_proxy_addresses(
-        data_list: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+    def collect_unique_proxy_addresses(data_list: List[Dict[str, Any]]) -> Dict[str, Any]:
         try:
             if not data_list:
                 Settings.write_log_dev_file(

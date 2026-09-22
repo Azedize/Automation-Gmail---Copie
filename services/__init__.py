@@ -2,6 +2,4 @@
 from .json_manager import JsonManager
 
 # Classes exportées
-__all__ = [
-    'JsonManager'
-]
+__all__ = ["JsonManager"]

@@ -303,9 +303,7 @@ class Settings:
         "others",
     ]
 
-    LOG_DEV_FILE = os.path.abspath(
-        os.path.join(BASE_DIR, "Log/LogDev/my_project.jsonl")
-    )
+    LOG_DEV_FILE = os.path.abspath(os.path.join(BASE_DIR, "Log/LogDev/my_project.json"))
     LOG_MAX_BYTES = 10 * 1024 * 1024
     LOG_BACKUP_COUNT = 5
     _LOGGER_NAME = "automailpro.application"
@@ -402,10 +400,7 @@ class Settings:
                 str(key): cls._prepare_log_message(value)
                 for key, value in context.items()
             }
-            cls._write_log_record(
-                {"event": event, "context": safe_context},
-                level,
-            )
+            cls._write_log_record({"event": event, "context": safe_context}, level)
         except (OSError, TypeError, ValueError):
             pass
 
@@ -431,7 +426,7 @@ class Settings:
     @classmethod
     def write_log_dev_file(cls, message: str, level: str = "INFO"):
         try:
-            cls._write_log_record( {"message": cls._prepare_log_message(message)}, level )
+            cls._write_log_record({"message": cls._prepare_log_message(message)}, level)
         except (OSError, TypeError, ValueError):
             pass
 
@@ -519,9 +514,7 @@ class Settings:
             cls.write_log_dev_file("Node.js already installed", "INFO")
             return True
 
-        cls.write_log_dev_file(
-            "Node.js not installed. Trying to install via Chocolatey...", "INFO"
-        )
+        cls.write_log_dev_file("Node.js not installed. Trying to install via Chocolatey...", "INFO")
 
         if shutil.which("choco") is None:
             cls.write_log_dev_file("Chocolatey not found. Installing...", "INFO")
