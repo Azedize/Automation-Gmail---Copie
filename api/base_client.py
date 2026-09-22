@@ -40,7 +40,6 @@ class ApiClient:
     # --------------------- Requête HTTP ---------------------
 
     def makeRequest( self,  endpoint: str, method: str = "POST",  data: Optional[Dict] = None,  json_data: Optional[Dict] = None, params: Optional[Dict] = None,  headers: Optional[Dict] = None, timeout: int = 30 ) -> Dict[str, Any]:
-
         url = ( Settings.API_ENDPOINTS.get(endpoint, endpoint) if endpoint.startswith("_")   else endpoint  )
         req_headers = self.session.headers.copy()
         if headers:
@@ -48,13 +47,10 @@ class ApiClient:
 
         Settings.write_log_event("http_request_prepared", "INFO", endpoint=endpoint,  method=method.upper(),  has_data=bool(data),  has_json=bool(json_data),   has_params=bool(params), timeout_seconds=timeout )
         last_exception = None
-
         for attempt in range(1, self.MAX_REQUEST_ATTEMPTS + 1):
             try:
                 Settings.write_log_event(  "http_request_started",  "INFO",  endpoint=endpoint,   method=method.upper(),   attempt=attempt,  max_attempts=self.MAX_REQUEST_ATTEMPTS )
                 response = self.session.request(  method=method.upper(),   url=url,  data=data, json=json_data,  params=params,   headers=req_headers,timeout=timeout, )
-
-
                 Settings.write_log_event( "http_response_received", "INFO",  method=method.upper(),   status_code=response.status_code, response_size=len(response.content),  content_type=response.headers.get("Content-Type", "unknown"),)
 
                 if response.status_code == 200:
@@ -65,7 +61,6 @@ class ApiClient:
                     except json.JSONDecodeError:
                         Settings.write_log_event( "http_json_decode_failed", "WARNING"  )
                         return {"status": "success", "data": response.text, "status_code": 200}
-
                 elif response.status_code in (401, 403):
                     Settings.write_log_event( "http_authentication_failed", "WARNING", endpoint=endpoint, status_code=response.status_code,  action="verify credentials or session" )
                     return {"status": "error", "error": f"HTTP {response.status_code}: Access denied / session expired", "status_code": response.status_code}
@@ -73,7 +68,6 @@ class ApiClient:
                 else:
                     last_exception = f"HTTP {response.status_code}"
                     Settings.write_log_event(  "http_request_failed", "WARNING",  status_code=response.status_code,  response_size=len(response.content) )
-
             except requests.RequestException as e:
                 Settings.write_log_event(  "http_request_exception", "ERROR",  endpoint=endpoint, attempt=attempt,  exception_type=type(e).__name__ ,   error=str(e))
                 last_exception = str(e)
@@ -85,7 +79,9 @@ class ApiClient:
         Settings.write_log_event( "http_request_failed_final", "ERROR", endpoint=endpoint, attempts=self.MAX_REQUEST_ATTEMPTS, error=last_exception )
         return {"status": "error", "error": f"Failed after 5 attempts: {last_exception}", "status_code": None}
 
-    # --------------------- Gestion de réponse ---------------------
+
+
+
 
     def handleResponse(self, result: Dict[str, Any], success_default: Any = None, failure_default: Any = None):
         try:

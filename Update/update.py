@@ -7,13 +7,14 @@ import zipfile
 import tempfile
 import traceback
 import subprocess
-from typing import Optional
+from typing import Any, Optional
 import requests
 import datetime
 import urllib.parse
 
 
-from config import settings
+from config import settings as Settings
+settings = Settings
 
 
 
@@ -23,7 +24,6 @@ if BASE_DIR not in sys.path:
 
 
 try:
-    from config import settings as Settings
     from core import EncryptionService
     from core import SessionManager
     from api.base_client import API_MANAGER
@@ -32,6 +32,8 @@ try:
 except ImportError as e:
     Settings.write_log_dev_file(f"❌ Erreur d'importation dans file {__file__}: {e}\n{traceback.format_exc()}", level="ERROR")
     sys.exit(1)
+
+SessionManager: Any
 
 
 
@@ -107,9 +109,8 @@ class UpdateManager:
                 if extracted_root is None:
                     Settings.write_log_dev_file("Aucun dossier trouvé dans l'archive", "ERROR")
                     return False
-
+                
                 extracted_dir = (   os.path.join(extracted_root, extract_subdir) if extract_subdir  and os.path.exists(os.path.join(extracted_root, extract_subdir)) else extracted_root  )
-
                 os.makedirs(target_dir, exist_ok=True)
 
                 for item in os.listdir(extracted_dir):
@@ -604,4 +605,3 @@ class UpdateManager:
 
 
 
-UpdateManager = UpdateManager()

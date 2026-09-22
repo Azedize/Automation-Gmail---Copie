@@ -154,7 +154,8 @@ class Settings:
     BASE_DIR = Path(__file__).resolve().parent.parent
     RESOURCES_DIR = BASE_DIR / "resources"
 
-    DATA_DIR = Path(os.getenv("APPDATA")) / "AutoMailPro"
+    APPDATA = os.getenv("APPDATA") or str(Path.home() / "AppData" / "Roaming")
+    DATA_DIR = Path(APPDATA) / "AutoMailPro"
     SESSION_FILE = DATA_DIR / "session.txt"
 
     TOOLS_DIR = BASE_DIR / "Tools"
@@ -192,9 +193,7 @@ class Settings:
     # ═══════════════════════════════════════════════════════════
 
     CONFIG_PROFILE = r"C:\RepProxy\template_Profile"
-    SECURE_PREFERENCES_TEMPLATE = (
-        r"C:\RepProxy\template_Profile\default\Secure Preferences"
-    )
+    SECURE_PREFERENCES_TEMPLATE = ( r"C:\RepProxy\template_Profile\default\Secure Preferences" )
     FICHIER_LOCAL_STATE = r"C:\RepProxy\template_Profile\Local State"
     FICHIER_VARIATIONS = r"C:\RepProxy\template_Profile\Variations"
 
@@ -206,17 +205,12 @@ class Settings:
     MANIFEST_PATH_EX3 = os.path.join(EXTENTION_EX3_CHROMIUM, "manifest.json")
     VERSION_LOCAL_EX3 = os.path.join(EXTENTION_EX3_CHROMIUM, "version.txt")
 
-    TEMPLATE_DIRECTORY_FIREFOX = os.path.join(
-        TOOLS_DIR, "extensions Templete", "ExtensionTemplateFirefox"
-    )
-    TEMPLATE_DIRECTORY_CHROMIUM = os.path.join(
-        TOOLS_DIR, "extensions Templete", "Extention_Family_Chrome"
-    )
+    TEMPLATE_DIRECTORY_FIREFOX = os.path.join(  TOOLS_DIR, "extensions Templete", "ExtensionTemplateFirefox" )
+    TEMPLATE_DIRECTORY_CHROMIUM = os.path.join( TOOLS_DIR, "extensions Templete", "Extention_Family_Chrome"  )
 
     LOGS_DIRECTORY = os.path.join(TOOLS_DIR, "logs")
     RESULT_FILE_PATH = os.path.join(TOOLS_DIR, "result.txt")
 
-    APPDATA = os.getenv("APPDATA")
     APP_NAME = "SecureDesk"
     APPDATA_DIR = os.path.join(APPDATA, APP_NAME)
     FIREFOX_PROFILES_INI = os.path.join(APPDATA, "Mozilla", "Firefox", "profiles.ini")

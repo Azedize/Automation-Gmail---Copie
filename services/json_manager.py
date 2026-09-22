@@ -92,7 +92,7 @@ class JsonManager:
                     if not sub_widget:
                         break
                     sub_state = sub_widget.property("full_state") or {}
-                    sub_id = sub_state.get("id")
+                    sub_id = sub_state.get("id") or ""
                     if sub_state.get("showOnInit") or sub_id.startswith( (Settings.GOOGLE_PREFIX, Settings.YOUTUBE_PREFIX) ):
                         break
                     sleep_txt = next( (  c.text() for c in JsonManager.getChildWidgets(sub_widget, QLineEdit) ), "0" )

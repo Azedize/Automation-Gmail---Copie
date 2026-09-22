@@ -70,9 +70,7 @@ REMAINING_EMAILS = 0
 SESSION_ID = ValidationUtils.generateSessionId()
 
 
-# ==========================================================
-# 🔹 FUNCTION LOG MESSAGE
-# ==========================================================
+
 
 
 def logMessage(text):
@@ -80,9 +78,7 @@ def logMessage(text):
     LOGS.append(text)
 
 
-# ==========================================================
-# 🔹 FUNCTION STOP ALL PROCESSES
-# ==========================================================
+
 
 
 def stopAllProcesses(window):
@@ -1358,7 +1354,7 @@ class AutomationMainWindow(QMainWindow):
             self.log_text_edit.setFrameShape(QFrame.Shape.NoFrame)
             self.log_text_edit.setVerticalScrollBarPolicy( Qt.ScrollBarPolicy.ScrollBarAsNeeded )
             self.log_text_edit.setHorizontalScrollBarPolicy( Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-            self.log_text_edit.document().setMaximumBlockCount(1000)
+            self.log_text_edit.document().setMaximumBlockCount(1000) 
 
             rect = self.log_container.rect()
             width = rect.width() if rect.width() > 0 else 1600
