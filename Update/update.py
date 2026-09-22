@@ -134,6 +134,7 @@ class UpdateManager:
             traceback.print_exc()
             return False
 
+
     @staticmethod
     def checkAndUpdate(window=None) -> bool:
 
@@ -227,21 +228,6 @@ class UpdateManager:
 
                 UpdateManager.launchNewWindow()
                 return True
-
-            # 🟡 Update Tools
-            # if not local_tools or local_tools != server_tools:
-            #     # print("🟡 UPDATE TOOLS NECESSAIRE")
-            #     Settings.write_log_dev_file("Mise à jour des outils nécessaires", "INFO")
-
-            #     os.makedirs(Settings.TOOLS_DIR, exist_ok=True)
-
-            #     success = UpdateManager._download_and_extract(  SERVER_ZIP_URL_PROGRAM, Settings.TOOLS_DIR,  clean_target=True, extract_subdir="tools" )
-
-            #     if success:
-            #         Settings.write_log_dev_file("Outils mis à jour avec succès", "INFO")
-            #     else:
-            #         Settings.write_log_dev_file("Échec de la mise à jour des outils", "ERROR")
-            #         return False
 
             Settings.write_log_dev_file("Application à jour", "INFO")
             return True

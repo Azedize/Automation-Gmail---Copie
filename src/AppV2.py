@@ -196,28 +196,6 @@ class ApplicationLogDisplayThread(QThread):
         self.wait()
 
 
-# ==========================================================
-# THREAD DE SURVEILLANCE DE FERMETURE DU NAVIGATEUR
-#
-# Ce QThread surveille en continu le dossier de téléchargements
-# pour détecter et traiter les fichiers de session, les journaux
-# et les captures d'écran tout en suivant les processus du navigateur actifs.
-#
-# Responsabilités :
-# - Surveiller les changements du système de fichiers en temps réel
-# - Traiter les fichiers de session et les journaux avec des workers parallèles
-# - Suivre les processus actifs du navigateur (PROCESS_PIDS)
-# - Gérer proprement les conditions d'arrêt
-# - S'arrêter automatiquement quand il ne reste plus de travail actif
-#
-# Le thread est conçu pour être :
-# - Interrompu via stop_flag
-# - Efficace en CPU avec des cycles de sommeil contrôlés
-# - Thread-safe pour les ressources globales partagées
-# Exemples de noms de fichiers de session et de journaux :
-#         log_2026-06-03T10-15-30-123Z_test@gmail.com.txt
-#         ABC123_test@gmail.com_success.txt
-# ==========================================================
 
 
 class BrowserSessionMonitorThread(QThread):
@@ -351,26 +329,15 @@ class BrowserSessionMonitorThread(QThread):
         end_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         Settings.write_log_dev_file( f"Thread finished | End time: {end_time} | PROCESS_PIDS: {len(PROCESS_PIDS)} | REMAINING_EMAILS: {REMAINING_EMAILS}", "INFO" )
 
-    # ==========================================================
-    # PIPELINE DE TRAITEMENT DES FICHIERS DE JOURNAL
-    #
-    # Cette fonction traite les fichiers de journal générés par
-    # le navigateur dans le dossier de téléchargements.
-    #
-    # Responsabilités :
-    # - Arrêter proprement le traitement si le thread reçoit une demande d'arrêt
-    # - Extraire l'adresse e-mail depuis le contenu du fichier journal
-    # - Empêcher le traitement en double avec un verrou thread-safe
-    # - Organiser les journaux dans des dossiers structurés :
-    #     SESSION_DIR / Navigateur / Email /
-    # - Copier le contenu du journal dans un fichier persistant
-    # - Supprimer le fichier temporaire d'origine après traitement
-    #
-    # Cela permet :
-    # - de nettoyer le dossier de téléchargements
-    # - de stocker les sessions de manière structurée
-    # - d'éviter le traitement multiple du même e-mail
-    # ==========================================================
+
+
+
+
+
+
+
+
+
 
     def resolveBrowserSessionFromProfile(self, email):
         if not email:
@@ -519,7 +486,7 @@ class BrowserSessionMonitorThread(QThread):
             with open(target_log, "a", encoding="utf-8") as tf:
                 tf.write(content + "\n")
             Settings.write_log_dev_file(f"[LOG] Appended log to target file: {target_log}", "DEBUG" )
-
+            
             self.moveAssociatedScreenshot(email, email_folder)
 
             if status and session_id and email:
@@ -534,19 +501,12 @@ class BrowserSessionMonitorThread(QThread):
         except Exception as e:
             Settings.write_log_dev_file( f"❌ [LOG] Erreur processing log file {full_path}: {e}\n{traceback.format_exc()}", "ERROR" )
 
-    # ==========================================================
-    # GESTIONNAIRE DE NETTOYAGE DES PROCESSUS FIREFOX
-    #
-    # Cette fonction est responsable de la terminaison propre de tous
-    # les processus Firefox associés à une session.
-    #
-    # Responsabilités :
-    # - Tuer tous les PID Firefox liés à un profil ou à une session
-    # - Terminer proprement le processus web-ext (exécuteur de l'extension)
-    # - Retirer les PID nettoyés du registre global PROCESS_PIDS
-    # - Gérer les processus absents ou déjà terminés de manière sûre
-    # - Éviter les fuites de processus après la fin d'une session
-    # ==========================================================
+
+
+
+
+
+
 
     def closeFirefoxSession(self, firefox_pids, web_ext_pid, email, flow_label=""):
         if firefox_pids:
