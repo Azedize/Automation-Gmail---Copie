@@ -2064,7 +2064,7 @@ class EntitySelectionDialog(QDialog):
         button_layout.addWidget(self.confirm_button)
         main_layout.addLayout(button_layout)
         self.setStyleSheet("QDialog { background-color: #f8f8f8; }")
-        
+
 
     def validate_and_accept(self):
         """Validate input against pattern and accept if valid."""
@@ -2103,7 +2103,6 @@ class AuthenticationWindow(QMainWindow):
         self.setWindowTitle("AutoMailPro")
 
     def select_ui_file(self) -> str:
-
         try:
             session_info = SessionManager.check_session()
             if session_info["valid"]:
@@ -2111,8 +2110,8 @@ class AuthenticationWindow(QMainWindow):
         except Exception as e:
             Settings.write_log_dev_file( f"[SESSION ERROR] {e}\n{traceback.format_exc()}", "WARNING")
             sys.exit()
-
         return Settings.AUTH_UI
+
 
     def initialize_login_ui(self):
         self.login_input = self.findChild(QLineEdit, "loginInput")
@@ -2263,7 +2262,7 @@ class AuthenticationWindow(QMainWindow):
             self.erreur_label.setText( f"Configuration error: {str(e)}\n{traceback.format_exc()}" )
             self.erreur_label.show()
             return
-
+        
         UIManager.enableButton(self.login_button)
         self.main_window = AutomationMainWindow(json_data)
         self.main_window.setFixedSize(Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT)
@@ -2280,13 +2279,13 @@ class AuthenticationWindow(QMainWindow):
         self.close()
         Settings.write_log_dev_file("Main window displayed, login completed successfully.", "INFO")
 
+
     def handle_show_session_date(self):
         if not ValidationUtils.pathExists(Settings.SESSION_PATH):
             Settings.write_log_dev_file("Session file not found at expected path.", "WARNING")
             self.erreur_label.setText("Session file not found .")
             self.erreur_label.show()
             return
-
         is_valid, session_data = ValidationUtils.validate_session_file( Settings.SESSION_PATH )
 
         if is_valid:
@@ -2314,7 +2313,6 @@ def main():
     Settings.write_log_dev_file(f"Encrypted key and secret key received.", "DEBUG")
     Settings.write_log_dev_file("Arguments parsed successfully.", "DEBUG")
 
-    # 2️⃣ Vérification de la clé
     Settings.write_log_dev_file("Verifying key...", "DEBUG")
     if not EncryptionService.verify_key(encrypted_key, secret_key):
         Settings.write_log_dev_file("Invalid key. Access denied.", "ERROR")
@@ -2322,7 +2320,6 @@ def main():
     else:
         Settings.write_log_dev_file("Key is valid.", "INFO")
 
-    # 3️⃣ Vérification session
     Settings.write_log_dev_file("Checking user session...", "DEBUG")
     session_info = SessionManager.check_session_full()
     session_valid = session_info.get("valid", False)
@@ -2330,11 +2327,9 @@ def main():
     Settings.write_log_dev_file(f"Session valid: {session_valid}", "DEBUG")
     Settings.write_log_event( "application_session_checked", "DEBUG", valid=session_valid )
 
-    # 4️⃣ Initialisation app Qt
     app = QApplication(sys.argv)
     Settings.write_log_dev_file("QApplication initialized.", "DEBUG")
 
-    # 5️⃣ Icône application
     icon_path = Path(Settings.APP_ICON)
 
     if ValidationUtils.pathExists(icon_path):
