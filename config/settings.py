@@ -22,6 +22,7 @@ class Settings:
         "API_KEY_PROXY": "Gmf15dfVD61G8gZQg",
         "AUTHORISED_PORTS": ["5836", "0000", "8080", "3128", "1111", "16666"],
         "KEY_HEX": "f564292a5740af4fc4819c6e22f64765232ad35f56079854a0ad3996c68ee7a2",
+        "VERIFY_SSL": True,
         "HEADER": {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
             "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -138,6 +139,7 @@ class Settings:
     AUTHORISED_PORTS = SECURITY_CONFIG["AUTHORISED_PORTS"]
     KEY_HEX = SECURITY_CONFIG["KEY_HEX"]
     KEY = bytes.fromhex(KEY_HEX)
+    VERIFY_SSL = SECURITY_CONFIG["VERIFY_SSL"]
     HEADER = SECURITY_CONFIG["HEADER"]
     SUPPORTED_BROWSERS = BROWSER_CONFIG["SUPPORTED_BROWSERS"]
     CHROME_FAMILY_BROWSERS = BROWSER_CONFIG["CHROME_FAMILY_BROWSERS"]
@@ -185,8 +187,21 @@ class Settings:
         "ENCRYPTED_PROXY_API": "https://example.com/",
     }
 
+    SESSION_API_CONFIG = {
+        "KEY": "mP5QXYrK9E67Y",
+        "VALIDATION_REQUEST_ID": "4",
+        "AUTHENTICATION_REQUEST_ID": "1",
+        "APP_VERSION": "1",
+        "AUTHENTICATION_LOGIN": "1",
+    }
+
     SCENARIO_API = API_ENDPOINTS["SCENARIO_API"]
     ENCRYPTED_PROXY_API = API_ENDPOINTS["ENCRYPTED_PROXY_API"]
+    SESSION_API_KEY = SESSION_API_CONFIG["KEY"]
+    SESSION_VALIDATION_REQUEST_ID = SESSION_API_CONFIG["VALIDATION_REQUEST_ID"]
+    SESSION_AUTHENTICATION_REQUEST_ID = SESSION_API_CONFIG["AUTHENTICATION_REQUEST_ID"]
+    SESSION_APP_VERSION = SESSION_API_CONFIG["APP_VERSION"]
+    SESSION_AUTHENTICATION_LOGIN = SESSION_API_CONFIG["AUTHENTICATION_LOGIN"]
 
     # ═══════════════════════════════════════════════════════════
     # 🔐 Paramètres de chiffrement
@@ -626,15 +641,10 @@ class Settings:
             cls.write_log_dev_file("web-ext already installed", "INFO")
             return
         try:
-            subprocess.run("npm install --global web-ext", check=True, shell=True)
+            npm_path = shutil.which("npm")
+            subprocess.run([npm_path, "install", "--global", "web-ext"], check=True)
         except subprocess.CalledProcessError as exc:
-            cls.write_log_event(
-                "web_ext_install_failed",
-                "ERROR",
-                action="npm_install",
-                exception_type=type(exc).__name__,
-                error=str(exc),
-            )
+            cls.write_log_event( "web_ext_install_failed",  "ERROR",  action="npm_install",   exception_type=type(exc).__name__,  error=str(exc) )
 
     @classmethod
     def ensureWebExtInstalled(cls):

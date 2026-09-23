@@ -19,7 +19,6 @@ try:
     from core.encryption import EncryptionService
     from config import settings
     from utils.validation_utils import ValidationUtils
-    from api.base_client import API_MANAGER
 except ImportError as e:
     print(f"❌ Erreur d'importation dans file {__file__}: {e}")
     sys.exit(1)  
@@ -52,8 +51,9 @@ class SessionManager:
 
     def check_session(self) -> Dict:
         session_info = {  "valid": False, "username": None, "password": None, "date": None, "p_entity_Origine": None, "p_entity_Nouveau": None, "error": None }
-        settings.write_log_event("session_validation_started", "INFO", session_file_present=ValidationUtils.pathExists(self.session_path))
-        if not ValidationUtils.pathExists(self.session_path):
+        session_file_present = ValidationUtils.pathExists(self.session_path)
+        settings.write_log_event("session_validation_started", "INFO", session_file_present=session_file_present)
+        if not session_file_present:
             settings.write_log_event("session_validation_failed", "WARNING", reason="file_not_found")
             session_info["error"] = "FileNotFound"
             return session_info
@@ -71,13 +71,28 @@ class SessionManager:
                 settings.write_log_event("session_validation_failed", "WARNING", reason="invalid_format")
                 session_info["error"] = "InvalidFormat"
                 return session_info
+            required_fields = (
+                "username",
+                "password",
+                "p_entity_Origine",
+                "p_entity_Nouveau",
+                "Id_User",
+            )
+            if not all(data.get(field) for field in required_fields):
+                settings.write_log_event("session_validation_failed", "WARNING", reason="empty_required_field")
+                session_info["error"] = "EmptyRequiredField"
+                return session_info
             ( username, password, date_str, p_p_entity_Origine, p_entity_Nouveau, Id_User, ) = ( data["username"], data["password"],  data["date"], data["p_entity_Origine"],  data["p_entity_Nouveau"],  data["Id_User"]  )
             last_session = datetime.datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
             last_session = self.timezone.localize(last_session)
             now = datetime.datetime.now(self.timezone)
-            if (now - last_session) < datetime.timedelta(days=2):
+            session_age = now - last_session
+            if datetime.timedelta(0) <= session_age < datetime.timedelta(days=2):
                 session_info.update( {  "valid": True, "username": username, "password": password, "date": last_session,  "p_entity_Origine": p_p_entity_Origine, "p_entity_Nouveau": p_entity_Nouveau ,   "Id_User": Id_User } )
                 settings.write_log_event("session_validation_succeeded", "INFO", has_username=bool(username), has_entity=bool(p_entity_Nouveau))
+            elif session_age < datetime.timedelta(0):
+                settings.write_log_event("session_validation_failed", "WARNING", reason="future_date")
+                session_info["error"] = "FutureDate"
             else:
                 settings.write_log_event("session_validation_failed", "WARNING", reason="expired")
                 session_info["error"] = "Expired"
@@ -87,11 +102,17 @@ class SessionManager:
 
         return session_info
 
+
+
+
     def create_session(  self,  username: str, password: str,  p_p_entity_Origine: str, p_entity_New: str,  Id_USER, ) -> bool:
         try:
             now = datetime.datetime.now(self.timezone)
             session_data = f"{username}::{password}::{now.strftime('%Y-%m-%d %H:%M:%S')}::{p_p_entity_Origine}::{p_entity_New}::{Id_USER}"
             encrypted = EncryptionService.encrypt_message(session_data, self.key)
+            if not encrypted:
+                settings.write_log_event("session_creation_failed", "ERROR", reason="encryption_empty")
+                return False
             os.makedirs(os.path.dirname(self.session_path), exist_ok=True)
             with open(self.session_path, "w", encoding="utf-8") as f:
                 f.write(encrypted)
@@ -115,8 +136,19 @@ class SessionManager:
 
     def validate_session_with_api(self, username: str, p_entity: str) -> Dict:
         try:
-            params = { "k": "mP5QXYrK9E67Y", "rID": "4","u": username,"entity": p_entity, "rv4": "1"}
+            from api.base_client import API_MANAGER
+
+            params = {
+                "k": settings.SESSION_API_KEY,
+                "rID": settings.SESSION_VALIDATION_REQUEST_ID,
+                "u": username,
+                "entity": p_entity,
+                "rv4": settings.SESSION_APP_VERSION,
+            }
             result = API_MANAGER.makeRequest( "_MAIN_API", method="GET", params=params, timeout=10)
+            if not isinstance(result, dict):
+                settings.write_log_event("session_api_validation_failed", "ERROR", reason="invalid_response_type", response_type=type(result).__name__)
+                return {"valid": False, "error": "ApiRequestFailed"}
             if result.get("status") != "success":
                 settings.write_log_event( "session_api_validation_failed", "ERROR",   reason="api_request_failed", status=result.get("status"), status_code=result.get("status_code") )
                 return {"valid": False, "error": result.get("error", "ApiRequestFailed")}
@@ -128,6 +160,8 @@ class SessionManager:
             if not data or not isinstance(data, (str, bytes)):
                 return {"valid": False, "error": "ApiRejected"}
             try:
+                if isinstance(data, bytes):
+                    data = data.decode("utf-8")
                 decrypted = EncryptionService.decrypt_message(data, self.key)
                 if ";" not in decrypted:
                     settings.write_log_event("session_api_validation_failed", "WARNING", reason="invalid_decrypted_format")
@@ -170,6 +204,8 @@ class SessionManager:
 
     def check_api_credentials(self, username: str, password: str) -> Union[tuple, int]:
         try:
+            from api.base_client import API_MANAGER
+
             valid_user, msg_user = ValidationUtils.validate_qlineedit_text( username, validator_type="text", min_length=5 )
             if not valid_user:
                 settings.write_log_event( "credentials_validation_failed",  "ERROR", field="username", reason=str(msg_user))
@@ -179,7 +215,13 @@ class SessionManager:
                 settings.write_log_event( "credentials_validation_failed", "ERROR", field="password", reason=str(msg_pass))
                 return -1
             settings.write_log_event("credentials_validation_succeeded", "DEBUG")
-            payload = { "rID": "1",  "u": username, "p": password, "k": "mP5QXYrK9E67Y", "l": "1"  }
+            payload = {
+                "rID": settings.SESSION_AUTHENTICATION_REQUEST_ID,
+                "u": username,
+                "p": password,
+                "k": settings.SESSION_API_KEY,
+                "l": settings.SESSION_AUTHENTICATION_LOGIN,
+            }
             settings.write_log_event( "authentication_request_prepared", "DEBUG", parameter_count=len(payload) )
             resp = None
             for attempt in range(1, 6):
@@ -192,7 +234,8 @@ class SessionManager:
                         break
                 except Exception as e:
                     settings.write_log_event( "credentials_api_request_failed", "ERROR", attempt=attempt , exception_type=type(e).__name__ , error=str(e) )
-                time.sleep(2)
+                if attempt < 5:
+                    time.sleep(2)
             else:
                 settings.write_log_event(  "credentials_api_request_failed", "ERROR", reason="max_attempts_exceeded",  attempts=5 )
                 return -3

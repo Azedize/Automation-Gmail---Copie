@@ -1,21 +1,15 @@
 import datetime
 import importlib
 import json
+import io
 import os
-import sys
-import shutil
-import zipfile
-import importlib
 import subprocess
 import sys
+import shutil
 import tempfile
 import time
 import zipfile
 from pathlib import Path
-import tempfile
-import io
-import datetime
-import json
 import traceback
 
 
@@ -196,7 +190,7 @@ class UpdateManager:
             with tempfile.TemporaryDirectory() as tmpdir:
                 zip_path = os.path.join(tmpdir, "update.zip")
                 import requests
-                r = requests.get(zip_url, stream=True, headers=HEADER, timeout=60, verify=False)
+                r = requests.get(zip_url, stream=True, headers=HEADER, timeout=60, verify=True)
                 r.raise_for_status()
                 write_log_dev_file(f"Réponse téléchargement programme: status={r.status_code}, content_length={r.headers.get('content-length')}", "DEBUG")
                 with open(zip_path, "wb") as f:

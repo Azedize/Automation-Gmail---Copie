@@ -273,18 +273,47 @@ class UpdateManager:
 
         return None
 
-    
-    
-    
+    @staticmethod
+    def _normalize_extension_target(browser_name, target_name):
+        browser_name = (browser_name or "").strip().lower()
+        if browser_name == "firefox" and target_name == Settings.EXTENSION_TARGET_NAME:
+            target_name = Settings.FIREFOX_EXTENSION_ID
+        return browser_name, target_name
+
+    @staticmethod
+    def _iter_extension_roots(candidate):
+        candidate = Path(candidate)
+        roots = []
+        if candidate.is_dir():
+            roots.append(candidate)
+
+        user_data_root = candidate.parent.parent
+        if user_data_root.is_dir():
+            try:
+                roots.extend(
+                    profile_dir / "Extensions"
+                    for profile_dir in user_data_root.iterdir()
+                    if profile_dir.is_dir()
+                )
+            except OSError as e:
+                Settings.write_log_dev_file(
+                    f"Impossible de parcourir les profils Chromium {user_data_root}: {e}",
+                    "WARNING",
+                )
+
+        seen = set()
+        for root in roots:
+            root_key = str(root).lower()
+            if root_key not in seen:
+                seen.add(root_key)
+                yield root
+
     @staticmethod
     def getInstalledBrowserExtensionVersion(browser_name, target_name="EX3"):
-        browser_name = (browser_name or "").strip().lower()
+        browser_name, target_name = UpdateManager._normalize_extension_target(browser_name, target_name)
         if not browser_name:
             Settings.write_log_dev_file("Aucun navigateur fourni pour la détection de version de l'extension.", "WARNING")
             return None
-
-        if browser_name == "firefox" and target_name == Settings.EXTENSION_TARGET_NAME:
-            target_name = Settings.FIREFOX_EXTENSION_ID
 
         Settings.write_log_dev_file(f"Début détection extension {target_name} pour navigateur: {browser_name}", "INFO")
 
@@ -314,10 +343,14 @@ class UpdateManager:
                             return version
                 continue
 
-            version = UpdateManager._find_version_in_extension_root(str(candidate), target_name)
-            if version:
-                Settings.write_log_dev_file(f"Version extension {target_name} détectée dans {browser_name}: {version}", "INFO")
-                return version
+            for extension_root in UpdateManager._iter_extension_roots(candidate):
+                version = UpdateManager._find_version_in_extension_root(extension_root, target_name)
+                if version:
+                    Settings.write_log_dev_file(
+                        f"Version extension {target_name} détectée dans {browser_name} via {extension_root}: {version}",
+                        "INFO",
+                    )
+                    return version
 
         Settings.write_log_dev_file(f"Aucune version de l'extension {target_name} détectée pour {browser_name} dans les chemins connus.", "WARNING")
         return None
@@ -327,9 +360,7 @@ class UpdateManager:
 
     @staticmethod
     def validateBrowserExtensionVersion(browser_name, remote_version, target_name="EX3", window=None):
-        browser_name = (browser_name or "").strip().lower()
-        if browser_name == "firefox" and target_name == Settings.EXTENSION_TARGET_NAME:
-            target_name = Settings.FIREFOX_EXTENSION_ID
+        browser_name, target_name = UpdateManager._normalize_extension_target(browser_name, target_name)
         Settings.write_log_dev_file(f"=== VALIDATION VERSION EXTENSION START === browser={browser_name} remote={remote_version} target={target_name}", "INFO")
         installed_version = UpdateManager.getInstalledBrowserExtensionVersion(browser_name, target_name)
 
@@ -365,7 +396,6 @@ class UpdateManager:
         SESSION_INFO = SessionManager.check_session()
         if not SESSION_INFO.get("valid"):
             Settings.write_log_dev_file("Session invalide. Impossible de continuer la vérification de l’extension.", "ERROR")
-            sys.exit()
             return False
 
         # ================================================
@@ -374,7 +404,7 @@ class UpdateManager:
         session_dt = SESSION_INFO.get("date")
         if not isinstance(session_dt, datetime.datetime):
             settings.write_log_dev_file(f"SESSION date type incorrect pour l’extension: {type(session_dt)}", "ERROR")
-            return
+            return False
 
         settings.write_log_dev_file("Session d’extension valide: type datetime détecté.", "INFO")
 
@@ -394,7 +424,7 @@ class UpdateManager:
 
         if not date_encrypted:
             Settings.write_log_dev_file("Chiffrement de la date de session pour l’extension impossible.", "ERROR")
-            sys.exit("❌ Encryption failed, exiting program.")
+            return False
 
         encrypted_safe = urllib.parse.quote(date_encrypted)
         CHECK_URL_EX3 = f"{Settings.PROGRAM_CHECK_ENDPOINT}?nv=1&rv4=1&event=check&type=V4&ext={Settings.EXTENSION_CHECK_EXTENSION}&k={encrypted_safe}"
@@ -405,7 +435,7 @@ class UpdateManager:
         # ================================================
         try:
             settings.write_log_dev_file("Appel API pour récupérer la version distante de l’extension...", "INFO")
-            response = requests.get(CHECK_URL_EX3, headers=Settings.HEADER, verify=False, timeout=10)
+            response = requests.get(CHECK_URL_EX3, headers=Settings.HEADER, verify=Settings.VERIFY_SSL, timeout=10)
             response.raise_for_status()
             settings.write_log_dev_file(f"Réponse API extension: {response.text[:500]}", "DEBUG")
 
@@ -417,7 +447,11 @@ class UpdateManager:
                     settings.write_log_dev_file("Content-Type non standard, mais le JSON a été parsé correctement.", "WARNING")
                 except Exception as e:
                     settings.write_log_dev_file(f"Échec de parsing JSON de la réponse extension: {e}\n{traceback.format_exc()}", level="ERROR")
-                    return False
+                    return None
+
+            if not isinstance(data, dict):
+                settings.write_log_dev_file("Réponse API extension invalide: objet JSON attendu.", "ERROR")
+                return None
 
             remote_version = data.get("version_Extention")
             settings.write_log_dev_file(f"Version distante extension reçue: {remote_version}", "INFO")
@@ -427,11 +461,11 @@ class UpdateManager:
             traceback.print_exc()
             if window:
                 UIManager.showCriticalMessage(window, "Network Error", "Unable to check for updates. Please check your internet connection.", message_type="critical")
-            return False
+            return None
 
         if remote_version is None:
             settings.write_log_dev_file("Version distante extension absente: version_Extention non trouvé dans la réponse API.", "ERROR")
-            return False
+            return None
 
         # ================================================
         # 🔹 Version locale détectée depuis le navigateur installé
@@ -456,7 +490,7 @@ class UpdateManager:
 
         if local_version is None:
             settings.write_log_dev_file("Version locale non détectée depuis l’extension installée du navigateur.", "ERROR")
-            return False
+            return None
 
         settings.write_log_dev_file(f"Version locale détectée depuis {detected_browser}: {local_version}, version distante: {remote_version}", "INFO")
 

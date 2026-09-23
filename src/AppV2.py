@@ -25,9 +25,9 @@ from pathlib import Path
 from PyQt6.QtWidgets import QInputDialog
 import base64
 import requests
-import json
 from typing import List, Dict, Any, Set
 import traceback
+from collections import deque
 
 
 warnings.simplefilter("ignore", urllib3.exceptions.InsecureRequestWarning)
@@ -56,7 +56,7 @@ except ImportError as e:
 
 file_lock = Lock()
 FIREFOX_SESSIONS: Dict[str, Any] = {}
-LOGS = []
+LOGS = deque()
 PROCESS_PIDS = []
 NOTIFICATION_BADGES = {}
 EXTRACTION_THREAD = None
@@ -191,7 +191,7 @@ class ApplicationLogDisplayThread(QThread):
         global LOGS_RUNNING
         while LOGS_RUNNING:
             if self.LOGS:
-                log_entry = self.LOGS.pop(0)
+                log_entry = self.LOGS.popleft()
                 self.log_signal.emit(log_entry)
             else:
                 time.sleep(1)
@@ -219,6 +219,7 @@ class BrowserSessionMonitorThread(QThread):
         os.makedirs(self.SESSION_DIR, exist_ok=True)
         self.completed_emails = set()
         self.lock = threading.Lock()
+        self.file_executor = ThreadPoolExecutor(max_workers=4)
         Settings.write_log_dev_file( f"Thread created | Browser={selected_Browser} | User={username} | downloads_folder={self.downloads_folder} | session_id={self.session_id} | session_dir={self.SESSION_DIR}", "INFO" )
 
     @staticmethod
@@ -279,15 +280,17 @@ class BrowserSessionMonitorThread(QThread):
 
                 for file_name in all_files:
                     lower_name = file_name.lower()
-                    metadata = self.parseFilenameMetadata(file_name)
+                    is_text_file = lower_name.endswith(".txt")
+                    is_image_file = lower_name.endswith((".png", ".jpg", ".jpeg"))
+                    metadata = self.parseFilenameMetadata(file_name) if is_text_file or is_image_file else None
 
-                    if lower_name.endswith(".txt") and (  file_name.startswith("log_")  or (metadata and metadata.get("status"))  or file_name.startswith(self.session_id) ):
+                    if is_text_file and (  file_name.startswith("log_")  or (metadata and metadata.get("status"))  or file_name.startswith(self.session_id) ):
                         if file_name.startswith("log_"):
                             log_files.append(file_name)
                         else:
                             session_files.append(file_name)
 
-                    if lower_name.endswith((".png", ".jpg", ".jpeg")) and (  file_name.startswith("capture_")  or (metadata and metadata.get("status")) or "@" in file_name  ):
+                    if is_image_file and (  file_name.startswith("capture_")  or (metadata and metadata.get("status")) or "@" in file_name  ):
                         screenshots.append(file_name)
 
                 current_time = time.strftime("%H:%M:%S", time.localtime())
@@ -299,14 +302,15 @@ class BrowserSessionMonitorThread(QThread):
 
                     if log_files:
                         Settings.write_log_dev_file( f"Processing log files: {len(log_files)} -> {log_files}", "DEBUG"  )
-                        with ThreadPoolExecutor(max_workers=4) as executor:
-                            executor.map(self.processLogFile, log_files)
+                        self.file_executor.map(self.processLogFile, log_files)
                         Settings.write_log_dev_file( "Finished processing log files", "DEBUG"  )
 
                     if session_files:
                         Settings.write_log_dev_file( f"Processing session files: {len(session_files)} -> {session_files}", "DEBUG"  )
-                        with ThreadPoolExecutor(max_workers=4) as executor:
-                            executor.map( lambda f: self.processSessionFile(f, screenshots),  session_files )
+                        self.file_executor.map(
+                            lambda file_name: self.processSessionFile(file_name, screenshots),
+                            session_files,
+                        )
                         Settings.write_log_dev_file( "Finished processing session files", "DEBUG" )
 
                     Settings.write_log_dev_file(  f"PROCESS_PIDS after processing: {len(PROCESS_PIDS)} | REMAINING_EMAILS: {REMAINING_EMAILS}", "DEBUG"  )
@@ -332,6 +336,7 @@ class BrowserSessionMonitorThread(QThread):
                 Settings.write_log_dev_file(  f"❌ [THREAD] Erreur: {e}\n{traceback.format_exc()}", "ERROR"  )
 
         end_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        self.file_executor.shutdown(wait=True)
         Settings.write_log_dev_file( f"Thread finished | End time: {end_time} | PROCESS_PIDS: {len(PROCESS_PIDS)} | REMAINING_EMAILS: {REMAINING_EMAILS}", "INFO" )
 
 
@@ -724,7 +729,7 @@ class BrowserSessionMonitorThread(QThread):
                 else "received",
             )
 
-            if result == -1:
+            if result == "-1":
                 Settings.write_log_dev_file(f"API returned -1 for {email}", level="ERROR")
                 raise RuntimeError(f"API returned -1 for {email}")
 
@@ -857,15 +862,18 @@ def startExtraction( window, data_list, entered_number, selected_Browser, Isp, u
 
     EXTRACTION_THREAD.finished.connect(lambda: window.extraction_finished(window))
     EXTRACTION_THREAD.progress.connect(lambda msg: print(msg))
-    EXTRACTION_THREAD.stopped.connect(lambda msg: QMessageBox.warning(window, "Arrêté", msg) )
-    EXTRACTION_THREAD.finished.connect( lambda: QMessageBox.information(window, "Terminé", "L'extraction est terminée."))
+    EXTRACTION_THREAD.stopped.connect( lambda msg: UIManager.showCriticalMessage(window, "Arrêté", msg, message_type="warning"))
+    EXTRACTION_THREAD.finished.connect(  lambda: UIManager.showCriticalMessage(  window, "Terminé", "L'extraction est terminée.", message_type="success"  ) )
     EXTRACTION_THREAD.start()
 
-    time.sleep(10)
-    Settings.write_log_dev_file("Launching BrowserSessionMonitorThread...", "INFO")
-    CLOSE_BROWSER_THREAD = BrowserSessionMonitorThread(selected_Browser, username)
-    CLOSE_BROWSER_THREAD.progress.connect(lambda msg: print(msg))
-    CLOSE_BROWSER_THREAD.start()
+    def launch_browser_session_monitor():
+        global CLOSE_BROWSER_THREAD
+        Settings.write_log_dev_file("Launching BrowserSessionMonitorThread...", "INFO")
+        CLOSE_BROWSER_THREAD = BrowserSessionMonitorThread(selected_Browser, username)
+        CLOSE_BROWSER_THREAD.progress.connect(lambda msg: print(msg))
+        CLOSE_BROWSER_THREAD.start()
+
+    QTimer.singleShot(10_000, launch_browser_session_monitor)
 
 
 class EmailExtractionWorker(QThread):
@@ -884,9 +892,7 @@ class EmailExtractionWorker(QThread):
         self.stop_flag = False
         self.emails_processed = 0
         self.selected_Browser = (  selected_Browser.strip().lower()
-            if isinstance(selected_Browser, str)
-            else "unknown"
-        )
+            if isinstance(selected_Browser, str) else "unknown"  )
         self.main_window = main_window
         self.Isp = Isp
         self.unique_id = unique_id
@@ -930,7 +936,7 @@ class EmailExtractionWorker(QThread):
     def run(self):
         global PROCESS_PIDS, LOGS_RUNNING, SELECTED_BROWSER_GLOBAL, REMAINING_EMAILS
         SELECTED_BROWSER_GLOBAL = self.selected_Browser
-        REMAINING_EMAILS_QUEUE = self.data_list[:]
+        REMAINING_EMAILS_QUEUE = deque(self.data_list)
         REMAINING_EMAILS = len(REMAINING_EMAILS_QUEUE)
 
         logMessage("[INFO] Processing started")
@@ -967,7 +973,7 @@ class EmailExtractionWorker(QThread):
                 break
 
             if len(PROCESS_PIDS) < self.entered_number and REMAINING_EMAILS_QUEUE:
-                next_email = REMAINING_EMAILS_QUEUE.pop(0)
+                next_email = REMAINING_EMAILS_QUEUE.popleft()
                 REMAINING_EMAILS = len(REMAINING_EMAILS_QUEUE)
                 email_value = ValidationUtils.getValueFromDictionary( next_email, ["email", "Email"] )
                 logMessage(f"[INFO] Processing the email:  {email_value}")
@@ -1202,10 +1208,7 @@ class EmailExtractionWorker(QThread):
                             "--disable-features=DownloadBubble",
                         ]
                         process = subprocess.Popen(command)
-                        time.sleep(3)
-                        time.sleep(3)
-                        time.sleep(3)
-                        time.sleep(3)
+                        time.sleep(12)
 
                         process1 = subprocess.Popen(command1)
                         PROCESS_PIDS.append(process.pid)
@@ -1217,7 +1220,7 @@ class EmailExtractionWorker(QThread):
                             self.session_id,
                             self.selected_Browser.lower(),
                             inserted_id,
-                            profile_path=os.path.join( Settings.CHROME_PROFILES, profile_email )
+                            profile_path=os.path.join(profile_dir, profile_email)
                         )
 
                     self.emails_processed += 1
@@ -1556,11 +1559,12 @@ class AutomationMainWindow(QMainWindow):
             self.login_window.move(x, y)
             self.login_window.show()
             self.close()
+
             try:
                 with open(Settings.SESSION_PATH, "w", encoding="utf-8") as f:
                     f.write("")
             except Exception as e:
-                Settings.write_log_dev_fNETTOYAGEile( f"An error occurred while cleaning the session: {str(e)}\n{traceback.format_exc()}","ERROR")
+                Settings.write_log_dev_file( f"An error occurred while cleaning the session: {str(e)}\n{traceback.format_exc()}", "ERROR")
             UIManager.enableButton(self.submitButton)
             return
 
@@ -1648,30 +1652,25 @@ class AutomationMainWindow(QMainWindow):
             UIManager.enableButton(self.submitButton)
             return
 
-        browser_check_version = UpdateManager.checkExtensionVersion(window, selected_Browser.lower())
-        if browser_check_version is not True:
-            remote_version = browser_check_version if isinstance(browser_check_version, str) else None
-            if remote_version is not None:
-                valid_extension = UpdateManager.validateBrowserExtensionVersion(
-                    selected_Browser,
-                    remote_version,
-                    target_name="EX3",
-                    window=window,
-                )
-                if not valid_extension:
-                    UIManager.enableButton(self.submitButton)
-                    return
-            elif selected_Browser:
-                installed_version = UpdateManager.getInstalledBrowserExtensionVersion(selected_Browser.lower(), "EX3")
-                if installed_version is None:
-                    UIManager.showCriticalMessage(
-                        window,
-                        "Extension not detected",
-                        f"The EX3 extension could not be found in {selected_Browser}. Please contact support to validate the installation before continuing.",
-                        message_type="warning",
-                    )
-                    UIManager.enableButton(self.submitButton)
-                    return
+        # browser_check_version = UpdateManager.checkExtensionVersion(window, selected_Browser.lower())
+        # if browser_check_version is False:
+        #     Settings.write_log_dev_file(f"Extension check bloqué pour le navigateur sélectionné: {selected_Browser}","ERROR")
+        #     UIManager.enableButton(self.submitButton)
+        #     return
+
+        # if browser_check_version is not True:
+        #     remote_version = browser_check_version if isinstance(browser_check_version, str) else None
+        #     if remote_version is not None:
+        #         valid_extension = UpdateManager.validateBrowserExtensionVersion(  selected_Browser, remote_version,  target_name="EX3",  window=window)
+        #         if not valid_extension:
+        #             UIManager.enableButton(self.submitButton)
+        #             return
+        #     elif selected_Browser:
+        #         installed_version = UpdateManager.getInstalledBrowserExtensionVersion(selected_Browser.lower(), "EX3")
+        #         if installed_version is None:
+        #             UIManager.showCriticalMessage( window, "Extension not detected",  f"The EX3 extension could not be found in {selected_Browser}. Please contact support to validate the installation before continuing.",  message_type="warning")
+        #             UIManager.enableButton(self.submitButton)
+        #             return
 
         if self.INTERFACE:
             for i in range(self.INTERFACE.count()):
@@ -1736,12 +1735,12 @@ class AutomationMainWindow(QMainWindow):
         result_json = JsonManager.generateJson(self.scenario_layout, selected_Browser)
         Settings.write_log_dev_file( f"Final JSON generated. Data: {json.dumps(result_json, indent=2, ensure_ascii=False)}", "INFO" )
         Settings.write_log_dev_file("The final JSON has been generated.", "INFO")
-        QApplication.processEvents()  
+        QApplication.processEvents()
+
         if not result_json or result_json == []:
             UIManager.showCriticalMessage( window, "Error - Save Configuration","No valid actions could be generated or an error occurred while saving the configuration file.\n\nIf the problem persists, contact Support.",  message_type="critical"  )
             Settings.write_log_dev_file( "No valid actions could be generated or an error occurred while saving the configuration file.",  "ERROR")
             UIManager.enableButton(self.submitButton)
-
             return
 
         QApplication.processEvents()  
@@ -1757,15 +1756,7 @@ class AutomationMainWindow(QMainWindow):
         QApplication.processEvents()  
         json_string = json.dumps(result_json)
 
-        parameters = {
-            "p_owner": session_info["username"],
-            "p_entity": session_info["p_entity_Origine"],
-            "p_isp": self.Isp.currentText(),
-            "p_action_name": json_string,
-            "p_app": "V4",
-            "p_python_version": f"{sys.version_info.major}.{sys.version_info.minor}",
-            "p_browser": self.browser.currentText(),
-        }
+        parameters = { "p_owner": session_info["username"], "p_entity": session_info["p_entity_Origine"], "p_isp": self.Isp.currentText(), "p_action_name": json_string , "p_app": "V4",  "p_python_version": f"{sys.version_info.major}.{sys.version_info.minor}", "p_browser": self.browser.currentText() }
 
         unique_id = self.save_process(parameters)
         if unique_id == -1:
@@ -1776,10 +1767,8 @@ class AutomationMainWindow(QMainWindow):
         
         QApplication.processEvents()
 
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            executor.submit(  startExtraction, window, data_list, entered_number, selected_Browser,  self.Isp.currentText(), unique_id, result_json, session_info["username"] )
-            executor.submit(self.LOGS_THREAD.start)
-        EXTRACTION_THREAD.finished.connect(lambda: self.extraction_finished(window))
+        startExtraction(  window,  data_list, entered_number,  selected_Browser, self.Isp.currentText(), unique_id,  result_json , session_info["username"]  )
+        self.LOGS_THREAD.start()
         QApplication.processEvents()
 
 
@@ -1819,12 +1808,10 @@ class AutomationMainWindow(QMainWindow):
 
 
     def load_state(self, state):
-        UIManager.displayStateStackAsTable(self)
         is_multi = state.get("isMultiSelect", False)
         if not is_multi:
             self.STATE_STACK.append(state)
 
-        UIManager.displayStateStackAsTable(self)
         if not is_multi:
             template = state.get("Template", "")
             UIManager.updateScenario(self, template, state)
@@ -1834,7 +1821,6 @@ class AutomationMainWindow(QMainWindow):
         self.update_actions_color_handle_last_button()
         UIManager.removeCopier(self.scenario_layout, self.reset_options_layout)
         UIManager.removeInitial(self.scenario_layout, self.reset_options_layout)
-        UIManager.displayStateStackAsTable(self)
 
     def update_actions_color_handle_last_button(self):
         UIManager.updateActionsColorHandleLastButton(self.scenario_layout, self.go_to_previous_state)
@@ -1855,7 +1841,6 @@ class AutomationMainWindow(QMainWindow):
                 self.create_option_button(state)
 
     def go_to_previous_state(self):
-        UIManager.displayStateStackAsTable(self)
         if len(self.STATE_STACK) > 1:
             if self.scenario_layout.count() > 0:
                 last_item = self.scenario_layout.takeAt( self.scenario_layout.count() - 1)
@@ -1874,12 +1859,10 @@ class AutomationMainWindow(QMainWindow):
             self.load_initial_options()
         self.update_actions_color_handle_last_button()
         UIManager.removeCopier(self.scenario_layout, self.reset_options_layout)
-        UIManager.displayStateStackAsTable(self)
 
     def clear_button_clicked(self):
         self.log_text_edit.clear()
-        global LOGS
-        LOGS = []
+        LOGS.clear()
 
     def scenario_changed(self, name_selected):
         session_info = SessionManager.check_session()

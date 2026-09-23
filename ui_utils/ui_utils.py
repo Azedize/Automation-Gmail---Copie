@@ -459,18 +459,75 @@ class UIManager:
     def showCriticalMessage(window, title, message, message_type="critical"):
         dialog = QMessageBox(window)
 
-        colors = {"critical": {"icon_bg": "#ffebee", "icon_color": "#d32f2f", "button_start": "#ef5350", "button_end": "#b71c1c", "icon": QMessageBox.Icon.Critical}, "warning": {"icon_bg": "#fff3e0", "icon_color": "#f57c00", "button_start": "#ffb74d", "button_end": "#e65100", "icon": QMessageBox.Icon.Warning}, "info": {"icon_bg": "#e1f5fe", "icon_color": "#0288d1", "button_start": "#4fc3f7", "button_end": "#01579b", "icon": QMessageBox.Icon.Information}, "success": {"icon_bg": "#e8f5e9", "icon_color": "#388e3c", "button_start": "#81c784", "button_end": "#1b5e20", "icon": QMessageBox.Icon.Information}}
+        colors = {
+            "critical": {
+                "icon_bg": "#ffebee",
+                "icon_color": "#d32f2f",
+                "button_start": "#ef5350",
+                "button_end": "#b71c1c",
+                "icon": QMessageBox.Icon.Critical,
+            },
+            "warning": {
+                "icon_bg": "#fff3e0",
+                "icon_color": "#f57c00",
+                "button_start": "#ffb74d",
+                "button_end": "#e65100",
+                "icon": QMessageBox.Icon.Warning,
+            },
+            "info": {
+                "icon_bg": "#e1f5fe",
+                "icon_color": "#0288d1",
+                "button_start": "#4fc3f7",
+                "button_end": "#01579b",
+                "icon": QMessageBox.Icon.Information,
+            },
+            "success": {
+                "icon_bg": "#e8f5e9",
+                "icon_color": "#388e3c",
+                "button_start": "#81c784",
+                "button_end": "#1b5e20",
+                "icon": QMessageBox.Icon.Information,
+            },
+        }
 
         c = colors.get(message_type, colors["info"])
         dialog.setIcon(c["icon"])
         dialog.setWindowTitle(title)
-        dialog.setText(f'<div style="background-color:{c["icon_bg"]}; padding:20px; color:{c["icon_color"]}; font-size:15px; font-weight:600; line-height:1.5; font-family: Segoe UI, Roboto, sans-serif; border: 1px solid {UIManager.darkenColor(c["icon_color"], 30)}">{message}</div>')
+        dialog.setTextFormat(Qt.TextFormat.RichText)
+        dialog.setText(
+            f'<div style="background-color:{c["icon_bg"]}; padding:20px; '
+            f'color:{c["icon_color"]}; font-size:15px; font-weight:600; '
+            f'line-height:1.5; font-family: Segoe UI, Roboto, sans-serif; '
+            f'border: 1px solid {UIManager.darkenColor(c["icon_color"], 30)}">'
+            f'{message}</div>'
+        )
         shadow = QGraphicsDropShadowEffect()
         shadow.setBlurRadius(20)
         shadow.setColor(QColor(0, 0, 0, 80))
         shadow.setOffset(0, 5)
         dialog.setGraphicsEffect(shadow)
-        dialog.setStyleSheet(f"QMessageBox {{ background-color: {c['icon_bg']}; padding: 20px; min-width: 450px; font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif; font-size: 14px; }} QMessageBox QLabel#qt_msgbox_label {{ background-color: {c['icon_bg']}; padding: 20px; font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif; font-size: 15px; font-weight: 600; color: {c['icon_color']}; line-height: 1.5; }} QMessageBox QPushButton {{ background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 {c['button_start']}, stop:1 {c['button_end']}); border: none; color: #fff; font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif; font-weight: 600; font-size: 14px; padding: 10px 25px; min-width: 100px; text-align: center; }} QMessageBox QPushButton:hover {{ background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 {UIManager.lightenColor(c['button_start'], 15)}, stop:1 {UIManager.lightenColor(c['button_end'], 15)}); }} QMessageBox QPushButton:pressed {{ background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 {UIManager.darkenColor(c['button_start'], 15)}, stop:1 {UIManager.darkenColor(c['button_end'], 15)}); padding: 11px 25px; }}")
+        dialog.setStyleSheet(
+            f"QMessageBox {{ background-color: {c['icon_bg']}; padding: 20px; "
+            f"min-width: 450px; font-family: 'Segoe UI', 'Roboto', "
+            f"'Helvetica Neue', sans-serif; font-size: 14px; }} "
+            f"QMessageBox QLabel, QMessageBox QLabel#qt_msgbox_label {{ "
+            f"background-color: {c['icon_bg']}; padding: 20px; "
+            f"font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif; "
+            f"font-size: 15px; font-weight: 600; color: {c['icon_color']}; }} "
+            f"QMessageBox QDialogButtonBox {{ padding-top: 12px; }} "
+            f"QMessageBox QPushButton {{ background: qlineargradient(x1:0, y1:0, "
+            f"x2:0, y2:1, stop:0 {c['button_start']}, stop:1 {c['button_end']}); "
+            f"border: none; color: #fff; font-family: 'Segoe UI', 'Roboto', "
+            f"'Helvetica Neue', sans-serif; font-weight: 600; font-size: 14px; "
+            f"padding: 10px 25px; min-width: 100px; min-height: 18px; "
+            f"text-align: center; border-radius: 4px; }} "
+            f"QMessageBox QPushButton:hover {{ background: qlineargradient(x1:0, "
+            f"y1:0, x2:0, y2:1, stop:0 {UIManager.lightenColor(c['button_start'], 15)}, "
+            f"stop:1 {UIManager.lightenColor(c['button_end'], 15)}); }} "
+            f"QMessageBox QPushButton:pressed {{ background: qlineargradient(x1:0, "
+            f"y1:0, x2:0, y2:1, stop:0 {UIManager.darkenColor(c['button_start'], 15)}, "
+            f"stop:1 {UIManager.darkenColor(c['button_end'], 15)}); }}"
+        )
         dialog.setStandardButtons(QMessageBox.StandardButton.Ok)
 
         button_box = dialog.findChild(QDialogButtonBox)
@@ -521,17 +578,20 @@ class UIManager:
 
     @staticmethod
     def copyLogsToClipboard(self):
-        log_box = self.findChild(QGroupBox, "log")
-        if not log_box:
-            Settings.write_log_dev_file("[DEBUG] ❌ QGroupBox 'log' introuvable.", "INFO")
+        log_text_edit = getattr(self, "log_text_edit", None)
+        if log_text_edit is None:
+            log_container = self.findChild(QWidget, "log")
+            log_text_edit = log_container.findChild(QPlainTextEdit) if log_container else None
+            
+        if log_text_edit is None:
+            Settings.write_log_dev_file("[DEBUG] ❌ Widget de logs introuvable.", "WARNING")
             return
-        labels = log_box.findChildren(QLabel)
-        if not labels:
-            Settings.write_log_dev_file("[DEBUG] ⚠️ Aucun QLabel rencontré dans 'log'.", "INFO")
+        text_to_copy = log_text_edit.toPlainText()
+        if not text_to_copy:
+            Settings.write_log_dev_file("[DEBUG] ⚠️ Aucun log disponible à copier.", "INFO")
             return
-        log_lines = [label.text() for label in labels]
-        text_to_copy = "\n".join(log_lines)
         QApplication.clipboard().setText(text_to_copy)
+        Settings.write_log_dev_file(f"[DEBUG] 📋 {len(text_to_copy.splitlines())} lignes de log copiées dans le presse-papiers.","INFO"  )
  
 
 
@@ -592,7 +652,7 @@ class UIManager:
                         QComboBox = QComboBox_list[0]
                         if Settings.DOWN_EXISTS:
                             old_style = QComboBox.styleSheet()
-                            new_style = f"QComboBox::down-arrow {{ image: url(\"{Settings.ARROW_DOWN_PATH}\"); width: 13px; height: 13px; border: 1px solid {Settings.PRIMARY_COLOR}; background-color: white; }} QComboBox::drop-down {{ border: 1px solid {Settings.PRIMARY_COLOR}; width: 20px; outline: none; }} QComboBox QAbstractItemView {{ min-width: 90px; border: 1px solid {Settings.PRIMARY_COLOR}; background: white; selection-background-color: {Settings.PRIMARY_COLOR}; selection-color: white; padding: 3px; margin: 0px; alignment: center; }} QComboBox {{ padding-left: 10px; font-size: 12px; font-family: {Settings.FONT_FAMILY}; border: 1px solid {Settings.PRIMARY_COLOR}; }} QComboBox QAbstractItemView::item {{ padding: 5px; font-size: 12px; color: #333; border: none; }} QComboBox QAbstractItemView::item:selected {{ background-color: {Settings.PRIMARY_COLOR}; color: white; border-radius: 3px; }} QComboBox:focus {{ border: 1px solid {Settings.PRIMARY_COLOR}; }}"
+                            new_style = UIManager.getScenarioComboboxStyle()
                             combined_style = old_style + new_style
                             QComboBox.setStyleSheet(combined_style)
 
@@ -636,15 +696,12 @@ class UIManager:
                         new_style = (  f"{current_style} {additional_style}"  if current_style  else additional_style)
                         checkbox.setStyleSheet(new_style)
 
-                QComboBox_list = [child for child in widget.children() if isinstance(child, PyQt6.QtWidgets.QComboBox)]
-                if QComboBox_list:
-                    QComboBox = QComboBox_list[0]
-
-                    if Settings.DOWN_EXISTS:
-                        old_style = QComboBox.styleSheet()
-                        new_style = f"QComboBox::down-arrow {{ image: url(\"{Settings.ARROW_DOWN_PATH}\"); width: 13px; height: 13px; border: none; background-color: white; }} QComboBox::drop-down {{ border: none; width: 20px; outline: none; }} QComboBox QAbstractItemView {{ min-width: 90px; border: none; background: white; selection-background-color: {Settings.PRIMARY_COLOR}; selection-color: white; padding: 3px; margin: 0px; alignment: center; }} QComboBox {{ padding-left: 10px; font-size: 12px; font-family: {Settings.FONT_FAMILY}; border: 1px solid {Settings.PRIMARY_COLOR}; outline: none; }} QComboBox QAbstractItemView::item {{ padding: 5px; font-size: 12px; color: #333; border: none; }} QComboBox QAbstractItemView::item:selected {{ background-color: {Settings.PRIMARY_COLOR}; color: white; border-radius: 3px; }} QComboBox:focus {{ border: 1px solid {Settings.PRIMARY_COLOR}; }}"
-                        combined_style = old_style + new_style
-                        QComboBox.setStyleSheet(combined_style)
+                    QComboBox_list = [child for child in widget.children() if isinstance(child, PyQt6.QtWidgets.QComboBox)]
+                    if QComboBox_list and Settings.DOWN_EXISTS:
+                        combo_box = QComboBox_list[0]
+                        combo_box.setStyleSheet(
+                            combo_box.styleSheet() + UIManager.getScenarioComboboxStyle(last_step=True)
+                        )
 
                 QTextEdits = [child for child in widget.children() if isinstance(child, QTextEdit)]
 
@@ -981,6 +1038,36 @@ class UIManager:
         combobox.setStyleSheet(old_style + style)
 
     @staticmethod
+    def getScenarioComboboxStyle(last_step=False):
+        """Return the shared style for scenario ComboBox widgets."""
+        if last_step:
+            arrow_style = "border: none; background-color: white;"
+            dropdown_style = "border: none;"
+            view_style = "border: none;"
+            combo_style = "border: 1px solid {0}; outline: none;".format(Settings.PRIMARY_COLOR)
+        else:
+            arrow_style = f"border: 1px solid {Settings.PRIMARY_COLOR}; background-color: white;"
+            dropdown_style = f"border: 1px solid {Settings.PRIMARY_COLOR};"
+            view_style = f"border: 1px solid {Settings.PRIMARY_COLOR};"
+            combo_style = f"border: 1px solid {Settings.PRIMARY_COLOR};"
+
+        return (
+            f'QComboBox::down-arrow {{ image: url("{Settings.ARROW_DOWN_PATH}"); '
+            f'width: 13px; height: 13px; {arrow_style} }} '
+            f'QComboBox::drop-down {{ {dropdown_style} width: 20px; outline: none; }} '
+            f'QComboBox QAbstractItemView {{ min-width: 90px; {view_style} '
+            f'background: white; selection-background-color: {Settings.PRIMARY_COLOR}; '
+            f'selection-color: white; padding: 3px; margin: 0px; }} '
+            f'QComboBox {{ padding-left: 10px; font-size: 12px; '
+            f'font-family: {Settings.FONT_FAMILY}; {combo_style} }} '
+            f'QComboBox QAbstractItemView::item {{ padding: 5px; font-size: 12px; '
+            f'color: #333; border: none; }} '
+            f'QComboBox QAbstractItemView::item:selected {{ background-color: {Settings.PRIMARY_COLOR}; '
+            f'color: white; border-radius: 3px; }} '
+            f'QComboBox:focus {{ border: 1px solid {Settings.PRIMARY_COLOR}; }}'
+        )
+
+    @staticmethod
     def setupIspCombobox(window):
         """Setup ISP selection combobox"""
         window.Isp = UIManager.findWidget(window, "Isps", QComboBox)
@@ -1274,8 +1361,8 @@ class UIManager:
                     checkboxes.append(new_checkbox)
                 elif isinstance(child, QComboBox):
                     new_combobox = QComboBox(new_template)
+                    new_combobox.addItems([child.itemText(i) for i in range(child.count())])
                     new_combobox.setCurrentIndex(child.currentIndex())
-                    new_combobox.addItems( [child.itemText(i) for i in range(child.count())]  )
                     new_combobox.setGeometry(child.geometry())
                     new_combobox.setStyleSheet(child.styleSheet())
 
@@ -1294,11 +1381,6 @@ class UIManager:
                 lineedit.show()
             else:
                 lineedit.hide()
-
-    @staticmethod
-    def displayStateStackAsTable(window):
-        if not window.STATE_STACK:
-            return
 
     @staticmethod
     def disableButton(button, disabled_style=None):

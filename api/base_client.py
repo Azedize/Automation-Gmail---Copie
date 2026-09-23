@@ -19,7 +19,7 @@ if ROOT_DIR not in sys.path:
 
 try:
     from config import Settings
-    from core import EncryptionService
+    from core.encryption import EncryptionService
 except ImportError as e:
     print(f"❌ Erreur d'importation dans file {__file__}: {e}")
     sys.exit(1)  
@@ -30,7 +30,7 @@ class ApiClient:
 
     def __init__(self):
         self.session = requests.Session()
-        self.session.verify = False  
+        self.session.verify = Settings.VERIFY_SSL
         retries = Retry(total=0)
         self.session.mount("https://", HTTPAdapter(max_retries=retries))
         self.session.mount("http://", HTTPAdapter(max_retries=retries))
@@ -77,7 +77,7 @@ class ApiClient:
                 time.sleep(2)
 
         Settings.write_log_event( "http_request_failed_final", "ERROR", endpoint=endpoint, attempts=self.MAX_REQUEST_ATTEMPTS, error=last_exception )
-        return {"status": "error", "error": f"Failed after 5 attempts: {last_exception}", "status_code": None}
+        return {"status": "error", "error": f"Failed after {self.MAX_REQUEST_ATTEMPTS} attempts: {last_exception}", "status_code": None}
 
 
 
@@ -85,6 +85,15 @@ class ApiClient:
 
     def handleResponse(self, result: Dict[str, Any], success_default: Any = None, failure_default: Any = None):
         try:
+            if not isinstance(result, dict):
+                Settings.write_log_event(
+                    "api_response_handler_failed",
+                    "ERROR",
+                    reason="invalid_response_type",
+                    response_type=type(result).__name__,
+                )
+                return failure_default
+
             status = result.get("status")
             if status == "success":
                 data = result.get("data", success_default)
@@ -186,12 +195,14 @@ class ApiClient:
                 Settings.write_log_event( "proxy_configuration_fetch_failed",  "ERROR",  stage="json_parse",  exception_type=type(json_error).__name__ ,  error=str(json_error) )
                 return {"valid": False, "data": None, "error": f"JSON parsing error: {str(json_error)}"}
 
+            if not isinstance(data, dict):
+                Settings.write_log_event( "proxy_configuration_fetch_failed",  "ERROR",  stage="validation",   reason="response_data_not_object",  response_type=type(data).__name__,)
+                return {"valid": False, "data": None, "error": "Invalid proxy response format"}
+
             api_ips = set(k.split("#")[0] for k in data.keys())
             missing = unique_ips - api_ips
             extra = api_ips - unique_ips
-
             Settings.write_log_event( "proxy_configuration_compared", "INFO",   expected_ip_count=len(unique_ips),  returned_ip_count=len(api_ips),  missing_ip_count=len(missing),  extra_ip_count=len(extra) )
-
             if missing:
                 Settings.write_log_event(  "proxy_configuration_fetch_failed", "ERROR", stage="validation",  reason="missing_expected_ips", missing_ip_count=len(missing), response_key_count=len(data) if isinstance(data, dict) else None)
                 return { "valid": False,  "data": data, "error": "Données du service non valides : certaines adresses IP attendues sont absentes de la réponse. Veuillez réessayer ou contacter le support si le problème persiste."}

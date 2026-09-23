@@ -1,10 +1,8 @@
 
 import os
 import sys
-import json
 import subprocess
 import configparser
-import datetime
 import traceback
 from typing import Optional, List, Dict, Any
 import psutil
@@ -12,12 +10,8 @@ import winreg
 import win32gui
 import win32process
 import win32con
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 import time
-import shutil
 from pathlib import Path
-from typing import List, Dict, Any, Optional
 
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -111,7 +105,6 @@ class BrowserManager:
 
             session_entry = f"{normalized_pid}:{email}:{SESSION_ID}:{inserted_id}"
             session_file = Path(Path_DiR) / email / "data.txt"
-            session_json_file = Path(Path_DiR) / email / "session_info.json"
 
             if browser_key in Settings.CHROME_FAMILY_BROWSERS:
                 browser_label = browser_key.upper()
