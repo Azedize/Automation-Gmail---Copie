@@ -869,7 +869,8 @@ class ValidationUtils:
                 min_val, max_val = map(int, text.split(","))
                 return random.randint(min_val, max_val)
             return int(text)
-        except (ValueError, TypeError):
+        except (ValueError, TypeError) as error:
+            Settings.write_log_dev_file(  f"Error parsing random range: {text}: {error}",  "ERROR" )
             return default
 
     @staticmethod

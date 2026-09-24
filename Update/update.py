@@ -64,12 +64,14 @@ class UpdateManager:
         Settings.write_log_dev_file(f"Browser window provided: {bool(window)}", "DEBUG")
 
         SESSION_INFO = SessionManager.check_session()
+
         if not SESSION_INFO.get("valid"):
             Settings.write_log_dev_file("Session invalide. Impossible de continuer la vérification de version du programme.", "ERROR")
             return False
 
  
         session_dt = SESSION_INFO.get("date")
+        
         if not isinstance(session_dt, datetime.datetime):
             Settings.write_log_dev_file(f"SESSION date type incorrect pour la mise à jour du programme: {type(session_dt)}", "ERROR")
             return False
@@ -119,8 +121,6 @@ class UpdateManager:
 
             data = response.get("data")
 
-
-
             if isinstance(data, str) and "Invalid token" in data:
                 Settings.write_log_dev_file(f"Invalid token détecté sur le check programme: {data}", "ERROR")
 
@@ -137,10 +137,10 @@ class UpdateManager:
                 return False
 
             server_program = data.get("version")
-            server_tools = data.get("version_Extention")
-
-
-            settings.write_log_dev_file( f"Versions serveur reçues - Programme: {server_program}, Extension: {server_tools}", "INFO")
+            settings.write_log_dev_file(
+                f"Version serveur du programme reçue: {server_program}",
+                "INFO",
+            )
 
             local_program = UpdateManager.readLocalVersion( Settings.VERSION_LOCAL_PROGRAMM)
 
@@ -174,7 +174,7 @@ class UpdateManager:
     @staticmethod
     def launchNewWindow() -> bool:
         """Lance une nouvelle instance de l'application"""
-        script_path = os.path.join(Settings.BASE_DIR, "checkV3.pyc")
+        script_path = os.path.join(Settings.BASE_DIR, "checkV3.py")
         if not os.path.isfile(script_path):
             return False
 
@@ -227,10 +227,7 @@ class UpdateManager:
                     extension_name = manifest.get("name") or manifest.get("short_name")
                     if extension_name == target_name or target_name.lower() in str(extension_name).lower():
                         version = manifest.get("version") or version_dir.name
-                        Settings.write_log_dev_file(
-                            f"Extension correspondante trouvée: name={extension_name}, manifest={manifest_path}, version={version}",
-                            "DEBUG",
-                        )
+                        Settings.write_log_dev_file( f"Extension correspondante trouvée: name={extension_name}, manifest={manifest_path}, version={version}", "DEBUG"  )
                         return version
         except (OSError, PermissionError) as e:
             Settings.write_log_dev_file(f"Erreur accès dossier extensions {extensions_root}: {e}", "ERROR")

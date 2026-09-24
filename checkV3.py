@@ -13,9 +13,7 @@ from pathlib import Path
 import traceback
 
 
-# ==========================================================
-# 🔹 VARIABLES GLOBALES
-# ==========================================================
+
 
 ROOT_DIR = Path(__file__).resolve().parent
 TOOLS_DIR = ROOT_DIR / "Tools"
@@ -69,6 +67,18 @@ def clear_log():
         pass
 
 
+def show_update_network_warning():
+    message = (
+        "Impossible de vérifier la version du programme.\n\n"
+        "L’application va continuer avec la version locale."
+    )
+    if sys.platform == "win32":
+        import ctypes
+        ctypes.windll.user32.MessageBoxW(None, message, "AutoMailPro - Mise à jour", 0x30)
+    else:
+        print(message)
+
+
 def find_pythonw():
     base_dir = os.path.dirname(sys.executable)
     candidate = os.path.join(base_dir, "pythonw.exe")
@@ -82,6 +92,7 @@ def find_pythonw():
 
 
 class DependencyManager:
+
     @staticmethod
     def install_and_verify_pywin32():
         if importlib.util.find_spec("win32api"):
@@ -148,6 +159,8 @@ class DependencyManager:
                 sys.exit(1)
 
 
+
+
 def encrypt_message(plaintext: str, key_bytes: bytes):
     import base64
     from cryptography.hazmat.primitives import padding
@@ -169,6 +182,7 @@ def encrypt_message(plaintext: str, key_bytes: bytes):
 
 
 class UpdateManager:
+
     @staticmethod
     def _read_local_version(path):
         write_log_dev_file(f"Lecture de la version locale du programme: path={path}", "DEBUG")
@@ -250,13 +264,19 @@ class UpdateManager:
                     if attempt < 3:
                         time.sleep(2)
                         continue
-                    sys.exit("❌ Server unreachable or error, exiting program.")
+                    write_log_dev_file(
+                        "Check version indisponible; utilisation de la version locale.",
+                        "WARNING",
+                    )
+                    return None
                 data = response.json()
                 write_log_dev_file(f"Données version programme reçues: {data}", "DEBUG")
                 local_program = UpdateManager._read_local_version(os.path.join("config", "version.txt"))
                 remote_program = data.get("version")
-                remote_extension = data.get("version_Extention")
-                write_log_dev_file( f"Comparaison versions - programme: local={local_program}, remote={remote_program}; extension distante={remote_extension}",  "INFO" )
+                write_log_dev_file(
+                    f"Comparaison versions programme: local={local_program}, remote={remote_program}",
+                    "INFO",
+                )
                 if not local_program or local_program != data.get("version"):
                     write_log_dev_file(f"Mise à jour programme requise: local={local_program}, remote={remote_program}", "INFO")
                     if not UpdateManager._download_and_extract(download_files, ROOT_DIR, clean_target=False, extract_subdir=None):
@@ -274,7 +294,11 @@ class UpdateManager:
                 if attempt < 3:
                     time.sleep(2)
                     continue
-                sys.exit(f"❌ Critical update error after 3 attempts, exiting program: {e}")
+                write_log_dev_file(
+                    "Check version indisponible après 3 tentatives; utilisation de la version locale.",
+                    "WARNING",
+                )
+                return None
 
 
 def initialize_dependencies():
@@ -292,6 +316,7 @@ def initialize_dependencies():
         "selenium": DependencyManager.install_and_import("selenium", required_import="webdriver", version="4.27.1"),
         "colorama": DependencyManager.install_and_import("colorama"),
         "sqlalchemy": DependencyManager.install_and_import("sqlalchemy"),
+        "watchdog": DependencyManager.install_and_import("watchdog", required_import="observers"),
     })
     if urllib3:
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -313,7 +338,14 @@ def main():
         write_log_dev_file(f"pythonw.exe détecté: {pythonw_path}", "INFO")
         try:
             updated = UpdateManager.check_and_update()
-            write_log_dev_file(f"Résultat check programme: {'mise à jour appliquée' if updated else 'programme déjà à jour'}", "INFO")
+            if updated is None:
+                write_log_dev_file("Check version ignoré à cause du réseau.", "WARNING")
+                show_update_network_warning()
+            else:
+                write_log_dev_file(
+                    f"Résultat check programme: {'mise à jour appliquée' if updated else 'programme déjà à jour'}",
+                    "INFO",
+                )
         except Exception as e:
             write_log_dev_file(f"Fatal error during update: {e}", "CRITICAL")
             sys.exit(1)

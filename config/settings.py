@@ -370,6 +370,18 @@ class Settings:
         "others",
     ]
 
+    FILENAME_METADATA_PATTERN = re.compile(
+        r"^(?:(?P<category>log|capture)_"
+        r"(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z)_"
+        r"(?P<session_id>[A-Za-z0-9]+)_"
+        r"(?P<email>[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})_"
+        r"(?P<status>[A-Za-z0-9_-]+)\.(?P<ext>txt|png|jpg|jpeg)"
+        r"|(?P<legacy_session_id>[A-Za-z0-9]+)_"
+        r"(?P<legacy_email>[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})_"
+        r"(?P<legacy_status>[A-Za-z0-9_-]+)\.(?P<legacy_ext>txt|png|jpg|jpeg))$",
+        re.IGNORECASE,
+    )
+
     LOG_DEV_FILE = os.path.abspath(os.path.join(BASE_DIR, "Log/LogDev/my_project.json"))
     LOG_MAX_BYTES = 10 * 1024 * 1024
     LOG_BACKUP_COUNT = 5

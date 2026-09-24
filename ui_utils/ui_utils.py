@@ -343,12 +343,18 @@ class UIManager:
 
             completed_count = 0
             no_completed_count = 0
+            seen_results = set()
 
             for idx, line in enumerate(lines, start=1):
                 parts = line.split(":")
                 if len(parts) != 4:
                     continue
                 _, _, email, status = [p.strip() for p in parts]
+                status = status.lower()
+                result_key = (email.casefold(), status)
+                if result_key in seen_results:
+                    continue
+                seen_results.add(result_key)
                 all_emails.append(email)
                 errors_dict[status].append(email)
 

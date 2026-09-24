@@ -1,6 +1,5 @@
 import random
 import os
-import traceback
 from PyQt6.QtWidgets import QCheckBox, QLineEdit, QComboBox
 import sys
 
@@ -10,6 +9,7 @@ if ROOT_DIR not in sys.path:
 
 try:
     from config import Settings
+    from utils import ValidationUtils
 except ImportError as e:
     print(f"❌ Erreur d'importation dans file {__file__}: {e}")
     sys.exit(1)
@@ -19,14 +19,7 @@ class JsonManager:
     
     @staticmethod
     def parseRandomRange(text: str) -> int:
-        try:
-            if "," in text:
-                a, b = map(int, text.split(","))
-                return random.randint(a, b)
-            return int(text)
-        except Exception:
-            Settings.write_log_dev_file(f"Error parsing random range: {text}\n{traceback.format_exc()}", level="ERROR")
-            return 0
+        return ValidationUtils.parse_random_range(text)
 
     @staticmethod
     def getChildWidgets(widget, cls):
@@ -56,19 +49,19 @@ class JsonManager:
 
             if (  hidden_id  and not show_on_init and not hidden_id.startswith(  (Settings.GOOGLE_PREFIX, Settings.YOUTUBE_PREFIX) ) ):
                 if len(qlineedits) > 1:
-                    limit = JsonManager.parseRandomRange(qlineedits[0].text())
-                    sleep = JsonManager.parseRandomRange(qlineedits[1].text())
+                    limit = ValidationUtils.parse_random_range(qlineedits[0].text())
+                    sleep = ValidationUtils.parse_random_range(qlineedits[1].text())
                     output_json.append({"process": hidden_id, "limit": limit, "sleep": sleep})
                 elif qlineedits:
-                    sleep = JsonManager.parseRandomRange(qlineedits[0].text())
+                    sleep = ValidationUtils.parse_random_range(qlineedits[0].text())
                     output_json.append({"process": hidden_id, "sleep": sleep})
                 i += 1
                 continue
 
 
             if ( hidden_id  and not show_on_init and hidden_id.startswith(Settings.YOUTUBE_PREFIX) ):
-                limit = JsonManager.parseRandomRange(qlineedits[0].text()) if len(qlineedits) > 1 else 0
-                sleep = JsonManager.parseRandomRange(qlineedits[1].text()) if len(qlineedits) > 1 else 0
+                limit = ValidationUtils.parse_random_range(qlineedits[0].text()) if len(qlineedits) > 1 else 0
+                sleep = ValidationUtils.parse_random_range(qlineedits[1].text()) if len(qlineedits) > 1 else 0
 
                 output_json.append({"process": "CheckLoginYoutube", "sleep": random.randint(1, 3)})
                 output_json.append({"process": hidden_id, "limit": limit, "sleep": sleep})
@@ -96,7 +89,7 @@ class JsonManager:
                     if sub_state.get("showOnInit") or sub_id.startswith( (Settings.GOOGLE_PREFIX, Settings.YOUTUBE_PREFIX) ):
                         break
                     sleep_txt = next( (  c.text() for c in JsonManager.getChildWidgets(sub_widget, QLineEdit) ), "0" )
-                    sleep = JsonManager.parseRandomRange(sleep_txt)
+                    sleep = ValidationUtils.parse_random_range(sleep_txt)
                     sub_process.append({"process": sub_id, "sleep": sleep})
                     i += 1
 
@@ -105,21 +98,21 @@ class JsonManager:
                 if sub_process:
                     sub_process.append({"process": action})
 
-                limit_loop = JsonManager.parseRandomRange(qlineedits[0].text()) if len(qlineedits) > 1 else 0
-                start_loop = JsonManager.parseRandomRange(qlineedits[1].text()) if len(qlineedits) > 1 else 0
+                limit_loop = ValidationUtils.parse_random_range(qlineedits[0].text()) if len(qlineedits) > 1 else 0
+                start_loop = ValidationUtils.parse_random_range(qlineedits[1].text()) if len(qlineedits) > 1 else 0
 
                 output_json.append({"process": "loop", "check": "is_empty_folder", "limit_loop": limit_loop, "start": start_loop, "sub_process": sub_process})
                 continue
 
             if show_on_init and not checkbox:
-                sleep = JsonManager.parseRandomRange(qlineedits[0].text()) if qlineedits else 0
+                sleep = ValidationUtils.parse_random_range(qlineedits[0].text()) if qlineedits else 0
                 output_json.append({"process": hidden_id, "sleep": sleep})
                 i += 1
                 continue
 
 
             if hidden_id and hidden_id.startswith((Settings.GOOGLE_PREFIX, Settings.YOUTUBE_PREFIX) ):
-                sleep = (  JsonManager.parseRandomRange(qlineedits[0].text()) if qlineedits  else 0 )
+                sleep = (  ValidationUtils.parse_random_range(qlineedits[0].text()) if qlineedits  else 0 )
                 action = {"process": hidden_id, "sleep": sleep}
                 if checkbox and checkbox.isChecked():
                     action["search"] = qlineedits[1].text() if len(qlineedits) > 1 else qlineedits[0].text()
