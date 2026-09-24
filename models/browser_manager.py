@@ -28,7 +28,11 @@ except ImportError as e:
 
 class BrowserManager:
 
-   
+    @staticmethod
+    def get_browser_executable_path(browser_name: str) -> Optional[str]:
+        executable = Settings.BROWSER_EXECUTABLES.get((browser_name or "").strip().lower())
+        return BrowserManager.getBrowserExecutablePath(executable) if executable else None
+
     @staticmethod
     def getBrowserExecutablePath(browser_name_or_exe: str) -> Optional[str]:
         exe_name = Settings.SUPPORTED_BROWSERS.get(browser_name_or_exe.lower(), {}).get( "exe_name", browser_name_or_exe  )

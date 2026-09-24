@@ -15,12 +15,12 @@ from logging.handlers import RotatingFileHandler
 
 
 class Settings:
-    # ═══════════════════════════════════════════════════════════
-    #  CONFIGURATION STRUCTURÉE
-    # ═══════════════════════════════════════════════════════════
+
+
     SECURITY_CONFIG = {
         "API_KEY_PROXY": "Gmf15dfVD61G8gZQg",
         "AUTHORISED_PORTS": ["5836", "0000", "8080", "3128", "1111", "16666"],
+        "PROXY_VALIDATION_PORTS": ["0000", "1111"],
         "KEY_HEX": "f564292a5740af4fc4819c6e22f64765232ad35f56079854a0ad3996c68ee7a2",
         "VERIFY_SSL": True,
         "HEADER": {
@@ -137,6 +137,7 @@ class Settings:
 
     API_KEY_PROXY = SECURITY_CONFIG["API_KEY_PROXY"]
     AUTHORISED_PORTS = SECURITY_CONFIG["AUTHORISED_PORTS"]
+    PROXY_VALIDATION_PORTS = SECURITY_CONFIG["PROXY_VALIDATION_PORTS"]
     KEY_HEX = SECURITY_CONFIG["KEY_HEX"]
     KEY = bytes.fromhex(KEY_HEX)
     VERIFY_SSL = SECURITY_CONFIG["VERIFY_SSL"]

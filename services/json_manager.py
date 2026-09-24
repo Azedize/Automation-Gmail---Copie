@@ -16,6 +16,7 @@ except ImportError as e:
 
 
 class JsonManager:
+    
     @staticmethod
     def parseRandomRange(text: str) -> int:
         try:

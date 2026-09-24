@@ -715,9 +715,8 @@ class UIManager:
                             try:
                                 dialog = CustomTextDialog(  te, texte_initial=te.toPlainText() )
                                 if ( dialog.exec()  ): 
-                                    new_text = dialog.get_text()
+                                    new_text = dialog.getText()
                                     te.setPlainText(new_text)
-
                                 te.clearFocus()
                             except Exception as e:
                                 Settings.write_log_dev_file(  f"[❌] Erreur lors de l’ouverture de la boîte de dialogue : {e}\n{traceback.format_exc()}",  "ERROR"  )

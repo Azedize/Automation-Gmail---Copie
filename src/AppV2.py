@@ -67,11 +67,6 @@ SELECTED_BROWSER_GLOBAL = None
 REMAINING_EMAILS = 0
 
 
-def get_browser_executable_path(browser_name):
-    executable = Settings.BROWSER_EXECUTABLES.get((browser_name or "").strip().lower())
-    return BrowserManager.getBrowserExecutablePath(executable) if executable else None
-
-
 SESSION_ID = ValidationUtils.generateSessionId()
 
 
@@ -86,7 +81,7 @@ def logMessage(text):
 
 
 
-def stopAllProcesses(window):
+def stopAllProcesses(window, show_idle_warning=True):
     UIManager.disableButton(window.stopButton)
     global EXTRACTION_THREAD, CLOSE_BROWSER_THREAD
     global PROCESS_PIDS, LOGS_RUNNING, FIREFOX_SESSIONS
@@ -116,7 +111,8 @@ def stopAllProcesses(window):
 
     if not SELECTED_BROWSER_GLOBAL:
         Settings.write_log_dev_file(  "Stop failed: No browser selected or no processes running.", "WARNING")
-        UIManager.showCriticalMessage(  window, "No Processes Running", "No processes are currently running.",  message_type="warning" )
+        if show_idle_warning:
+            UIManager.showCriticalMessage(  window, "No Processes Running", "No processes are currently running.",  message_type="warning" )
         UIManager.enableButton(window.submitButton)
         UIManager.enableButton(window.stopButton)
         return
@@ -225,15 +221,7 @@ class BrowserSessionMonitorThread(QThread):
     @staticmethod
     def parseFilenameMetadata(file_name):
         file_name = os.path.basename(file_name)
-        match = re.match(
-            r"^(?:"
-            r"(?P<category>log|capture)_(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z)_(?P<session_id>[A-Za-z0-9]+)_(?P<email>[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})_(?P<status>[A-Za-z0-9_-]+)\.(?P<ext>txt|png|jpg|jpeg)"
-            r"|(?P<legacy_session_id>[A-Za-z0-9]+)_(?P<legacy_email>[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})_(?P<legacy_status>[A-Za-z0-9_-]+)\.(?P<legacy_ext>txt|png|jpg|jpeg)"
-            r")$",
-            file_name,
-            re.IGNORECASE,
-        )
-
+        match = re.match( r"^(?:"  r"(?P<category>log|capture)_(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z)_(?P<session_id>[A-Za-z0-9]+)_(?P<email>[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})_(?P<status>[A-Za-z0-9_-]+)\.(?P<ext>txt|png|jpg|jpeg)" r"|(?P<legacy_session_id>[A-Za-z0-9]+)_(?P<legacy_email>[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})_(?P<legacy_status>[A-Za-z0-9_-]+)\.(?P<legacy_ext>txt|png|jpg|jpeg)" r")$",  file_name, re.IGNORECASE )
         if not match:
             return None
 
@@ -411,8 +399,9 @@ class BrowserSessionMonitorThread(QThread):
                             session_data["inserted_id"] = parts[3].strip() or None
                 except Exception as e:
                     Settings.write_log_dev_file( f"[LOG] Failed to read profile session data file {profile_data_file}: {e}", "WARNING")
-
         return session_data
+
+
 
     def moveAssociatedScreenshot(self, email, email_folder):
         try:
@@ -433,6 +422,8 @@ class BrowserSessionMonitorThread(QThread):
         except Exception as e:
             Settings.write_log_dev_file( f"⚠️ [SCREENSHOT] Error moving screenshot for {email}: {e}\n{traceback.format_exc()}", "ERROR" )
         return None
+
+
 
     def processLogFile(self, log_file):
         if self.stop_flag:
@@ -849,7 +840,7 @@ def startExtraction( window, data_list, entered_number, selected_Browser, Isp, u
     Settings.write_log_dev_file( f"Browser selection normalized: {browser_normalized}", "INFO")
 
 
-    browser_path = get_browser_executable_path(browser_normalized)
+    browser_path = BrowserManager.get_browser_executable_path(browser_normalized)
 
     browser_name = ( selected_Browser.strip() if isinstance(selected_Browser, str) else "Unknown" )
     browser_path_display = browser_path or "Non trouvé"
@@ -1067,7 +1058,7 @@ class EmailExtractionWorker(QThread):
                         ]
 
                         Settings.write_log_dev_file( f"Launching Firefox with command: {command}", "DEBUG" )
-                        Settings.write_log_dev_file( f"Firefox profile directory: {os.path.join(Settings.FOLDER_EXTENTIONS_FIREFOX, profile_email)}","DEBUG" )
+                        Settings.write_log_dev_file( f"Firefox profile directory: {os.path.join(Settings.FIREFOX_PROFILES, profile_email)}","DEBUG" )
 
                         process = subprocess.Popen( command,  stdout=subprocess.DEVNULL,  stderr=subprocess.DEVNULL,  )
                         PROCESS_PIDS.append(process.pid)
@@ -1108,7 +1099,7 @@ class EmailExtractionWorker(QThread):
                         FIREFOX_SESSIONS[profile_email] = firefox_session
                         Settings.write_log_dev_file( f"Firefox session map updated for {profile_email}: {json.dumps(firefox_session, ensure_ascii=False)}","DEBUG" )
 
-                        BrowserManager.persistBrowserSessionInfo(  firefox_pids,  Settings.FOLDER_EXTENTIONS_FIREFOX,  profile_email,  self.session_id, self.selected_Browser.lower(), inserted_id,  profile_path=firefox_profile_path, web_ext_pid=process.pid, profile_name=profile_email )
+                        BrowserManager.persistBrowserSessionInfo(  firefox_pids,  Settings.FIREFOX_PROFILES,  profile_email,  self.session_id, self.selected_Browser.lower(), inserted_id,  profile_path=firefox_profile_path, web_ext_pid=process.pid, profile_name=profile_email )
 
                     elif self.selected_Browser in ["edge", "icedragon"]:
                         url = self.buildEncryptedUrl(ip_address, port, login, password, profile_email, profile_password, recovery_email, new_password, new_recovery_email, self.output_json_final)
@@ -1175,7 +1166,7 @@ class EmailExtractionWorker(QThread):
                         browser_executable = (
                             self.Browser_path
                             if self.selected_Browser == "comodo"
-                            else get_browser_executable_path(self.selected_Browser)
+                            else BrowserManager.get_browser_executable_path(self.selected_Browser)
                         )
                         ValidationUtils.ensurePathExists(profile_dir, is_file=False)
 
@@ -1208,7 +1199,7 @@ class EmailExtractionWorker(QThread):
                             "--disable-features=DownloadBubble",
                         ]
                         process = subprocess.Popen(command)
-                        time.sleep(12)
+                        time.sleep(4)
 
                         process1 = subprocess.Popen(command1)
                         PROCESS_PIDS.append(process.pid)
@@ -1644,7 +1635,7 @@ class AutomationMainWindow(QMainWindow):
         selected_Browser = self.browser.currentText()
         QApplication.processEvents()
 
-        browser_path = get_browser_executable_path(selected_Browser)
+        browser_path = BrowserManager.get_browser_executable_path(selected_Browser)
 
         if browser_path is None:
             Settings.write_log_dev_file( f"Unable to find path for browser: {selected_Browser}", "ERROR" )
@@ -1693,9 +1684,7 @@ class AutomationMainWindow(QMainWindow):
                 return
 
             if not result.get("valid"):
-                Settings.write_log_dev_file( "❌ [DATA ERROR] Invalid proxy API response detected, stopping all active processing threads.", "ERROR")
-                stopAllProcesses(window)
-
+                Settings.write_log_dev_file( "❌ [DATA ERROR] Input or proxy validation failed before browser processes were started.", "ERROR")
 
                 title, detail_text = (
                     result.get("error", "Unknown error").split(":", 1)
@@ -1873,10 +1862,9 @@ class AutomationMainWindow(QMainWindow):
 
         encrypted_string = EncryptionService.encrypt_message( f"{session_info['Id_User']}::{session_info['username']}::{session_info['date']}::IT", Settings.KEY)
         api_url = f"{Settings.SCENARIO_API}?rv4=1&action=get&entity=IT&l={encrypted_string}"
-        payload = {"name": name_selected}
 
         try:
-            raw_result = API_MANAGER.handleSaveScenario(payload, api_url)
+            raw_result = API_MANAGER.fetchScenarios(api_url, params={"name": name_selected})
         except Exception as e:
             Settings.write_log_dev_file(f"API call failed: {e} \n {traceback.format_exc()}", "ERROR")
             return
@@ -1886,19 +1874,26 @@ class AutomationMainWindow(QMainWindow):
             return
 
         if isinstance(raw_result, list):
-            if not raw_result:
-                Settings.write_log_dev_file("No scenario returned from API.", "WARNING")
-                return
-            else: 
-                scenario = raw_result[0]  
+            data_list = raw_result
         elif isinstance(raw_result, dict) and "data" in raw_result:
             data_list = raw_result["data"]
-            if not data_list:
-                Settings.write_log_dev_file("No scenario returned in 'data'.", "WARNING")
-                return
-            scenario = data_list[0]
         else:
             Settings.write_log_dev_file(f"Unexpected API result format: {type(raw_result)}", "ERROR")
+            return
+
+        if not data_list:
+            Settings.write_log_dev_file("No scenario returned from API.", "WARNING")
+            return
+
+        scenario = next(
+            (item for item in data_list if item.get("name") == name_selected),
+            None,
+        )
+        if scenario is None:
+            Settings.write_log_dev_file(
+                f"Scenario not found in API response: {name_selected}",
+                "WARNING",
+            )
             return
 
         for i in reversed(range(self.scenario_layout.count())):
@@ -1912,11 +1907,21 @@ class AutomationMainWindow(QMainWindow):
 
         state_stack = scenario.get("state_stack", [])
         if isinstance(state_stack, str):
+            state_stack = state_stack.strip()
             try:
                 state_stack = json.loads(state_stack)
-            except Exception as e:
-                Settings.write_log_dev_file(f"Failed to parse state_stack: {e}\n{traceback.format_exc()}", "WARNING" )
-                return
+            except json.JSONDecodeError:
+                try:
+                    state_stack = json.loads(
+                        base64.b64decode(state_stack).decode("utf-8")
+                    )
+                except Exception as e:
+                    Settings.write_log_dev_file(f"Failed to parse state_stack: {e}\n{traceback.format_exc()}", "WARNING" )
+                    return
+
+        if not isinstance(state_stack, list):
+            Settings.write_log_dev_file("Scenario state_stack has an invalid format.", "WARNING")
+            return
 
         self.STATE_STACK = state_stack
         Settings.write_log_dev_file( f"📥 Scenario loaded with {len(self.STATE_STACK)} states.", "INFO" )
@@ -2235,14 +2240,22 @@ class AuthenticationWindow(QMainWindow):
             self.erreur_label.setText("Session file not found .")
             self.erreur_label.show()
             return
-        is_valid, session_data = ValidationUtils.validate_session_file( Settings.SESSION_PATH )
+        session_info = SessionManager.check_session()
 
-        if is_valid:
-            Settings.write_log_dev_file(f"Session data retrieved: {session_data}", "INFO")
-            self.erreur_label.setText(f"Session data: {session_data}")
+        if session_info.get("valid"):
+            session_data = (
+                f"Username: {session_info.get('username')}\n"
+                f"Entity: {session_info.get('p_entity_Nouveau')}\n"
+                f"Session date: {session_info.get('date')}"
+            )
+            Settings.write_log_dev_file("Session data retrieved without exposing credentials.", "INFO")
+            self.erreur_label.setText(f"Session data:\n{session_data}")
         else:
-            Settings.write_log_dev_file("Session file is not valid.", "WARNING")
-            self.erreur_label.setText(f"Session file is not valid.")
+            Settings.write_log_dev_file(
+                f"Session file is not valid: {session_info.get('error', 'Unknown error')}",
+                "WARNING",
+            )
+            self.erreur_label.setText("Session file is not valid.")
         self.erreur_label.show()
 
 

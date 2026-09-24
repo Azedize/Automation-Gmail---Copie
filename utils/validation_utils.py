@@ -28,6 +28,22 @@ class ValidationUtils:
     _PATTERN_EMAIL = re.compile(Settings.VALIDATION_CONFIG["EMAIL"])
     _PATTERN_NUMERIC_RANGE = re.compile(Settings.VALIDATION_CONFIG["NUMERIC_RANGE"])
     _PATTERN_IP = re.compile(Settings.VALIDATION_CONFIG["IP_ADDRESS"])
+    _INPUT_HEADER_ALIASES = {
+        "Email": "email",
+        "email": "email",
+        "passwordEmail": "passwordEmail",
+        "password_email": "passwordEmail",
+        "ipAddress": "ipAddress",
+        "ip_address": "ipAddress",
+        "port": "port",
+        "login": "login",
+        "password": "password",
+        "recoveryEmail": "recoveryEmail",
+        "recovery_email": "recoveryEmail",
+        "newrecoveryEmail": "new_recovery_email",
+        "New_recovery_email": "new_recovery_email",
+        "new_recovery_email": "new_recovery_email",
+    }
 
     @staticmethod
     def validate_email(email: str) -> bool:
@@ -135,22 +151,33 @@ class ValidationUtils:
                 )
                 return result
 
-            header = [k.strip() for k in lines[0].split(";")]
+            raw_header = [k.strip() for k in lines[0].split(";")]
+            header = [
+                ValidationUtils._INPUT_HEADER_ALIASES.get(column, column)
+                for column in raw_header
+            ]
             data_lines = lines[1:]
             Settings.write_log_event("user_input_parsing_started", "INFO", column_count=len(header), row_count=len(data_lines))
+
+            if len(set(header)) != len(header):
+                duplicate_columns = sorted({column for column in header if header.count(column) > 1}  )
+                result.update(
+                    {
+                        "error_title": "Column Validation Failed",
+                        "error_message": (
+                            "Duplicate columns were detected after normalization: "
+                            f"{', '.join(duplicate_columns)}. Please keep only one column per field."
+                        ),
+                    }
+                )
+                return result
 
             # --------------------
             # 3️⃣ Validate required keys
             # --------------------
-            mandatory_patterns = [
-                ["email", "passwordEmail", "ipAddress", "port"],
-                ["Email", "password_email", "ip_address", "port"],
-            ]
+            mandatory_patterns = [["email", "passwordEmail", "ipAddress", "port"]]
 
-            optional_patterns = [
-                ["login", "password", "recoveryEmail", "newrecoveryEmail"],
-                ["login", "password", "recovery_email", "New_recovery_email"],
-            ]
+            optional_patterns = [["login", "password", "recoveryEmail", "new_recovery_email"]]
 
             all_valid_keys = set(
                 k for pat in mandatory_patterns + optional_patterns for k in pat
@@ -464,13 +491,13 @@ class ValidationUtils:
                 )
                 return {
                     "valid": True,
-                    "data": {"filtered": [], "invalid": []},
+                    "data": {"filtered": [], "invalid": [], "suspicious": []},
                     "error": None,
                     "error_title": "No Data",
                     "error_message": "No account data was provided for port processing.",
                 }
 
-            all_ports = []
+            valid_accounts = []
             invalid_accounts = []
             suspicious_accounts = []
 
@@ -526,28 +553,37 @@ class ValidationUtils:
                         "error_message": f"IP address '{ip}' for item {index + 1} is not in a valid IPv4 format. Use e.g. 192.168.1.1.",
                     }
 
-                all_ports.append(port)
-
-                # ❌ Unauthorized ports
-                if port not in Settings.AUTHORISED_PORTS:
+                # ❌ Ports outside the two-port proxy validation flow
+                if port not in Settings.PROXY_VALIDATION_PORTS:
                     invalid_accounts.append(item)
+                    continue
+
+                valid_accounts.append(item)
 
                 # ⚠️ Suspicious ports
-                if port in ["0000", "1111"]:
+                if port in Settings.PROXY_VALIDATION_PORTS:
                     suspicious_accounts.append(item)
 
             # ❌ Stop if invalid accounts exist
             if invalid_accounts:
-                msg = f"Security and validation policy violation: {len(invalid_accounts)} account(s) contain invalid IP addresses or unauthorized port numbers. Please verify all configurations against approved Settings."
+                msg = (
+                    f"Port validation failed for {len(invalid_accounts)} account(s). "
+                    "Only ports 0000 and 1111 are authorized for this operation. "
+                    "Please review the port value and try again."
+                )
                 Settings.write_log_dev_file(
                     f"Validation failed: {len(invalid_accounts)} invalid accounts",
                     "ERROR",
                 )
                 return {
                     "valid": False,
-                    "data": invalid_accounts,
+                    "data": {
+                        "filtered": valid_accounts,
+                        "invalid": invalid_accounts,
+                        "suspicious": suspicious_accounts,
+                    },
                     "error": msg,
-                    "error_title": "Validation Failed",
+                    "error_title": "Invalid Port Configuration",
                     "error_message": msg,
                 }
 
@@ -557,7 +593,11 @@ class ValidationUtils:
 
             return {
                 "valid": True,
-                "data": {"filtered": suspicious_accounts, "invalid": []},
+                "data": {
+                    "filtered": valid_accounts,
+                    "invalid": [],
+                    "suspicious": suspicious_accounts,
+                },
                 "error": None,
                 "error_title": "Port Processing Successful",
                 "error_message": "All ports and IP addresses were validated successfully.",

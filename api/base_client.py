@@ -109,10 +109,10 @@ class ApiClient:
 
     
 
-    def fetchScenarios(self, Url_Api) -> Dict[str, Any]:
-        Settings.write_log_event( "scenarios_fetch_started",  "INFO", method="GET",  endpoint=Url_Api )
+    def fetchScenarios(self, Url_Api, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        Settings.write_log_event( "scenarios_fetch_started",  "INFO", method="GET",  endpoint=Url_Api, has_params=bool(params) )
         try:
-            result = self.makeRequest(Url_Api, "GET")
+            result = self.makeRequest(Url_Api, "GET", params=params)
         except Exception as e:
             Settings.write_log_event( "scenarios_fetch_failed",  "ERROR", exception_type=type(e).__name__, error=str(e))
             return {"session": False, "scenarios": []}

@@ -25,6 +25,9 @@ class EncryptionService:
     def decryptMessage(base64_data: str, key) -> str:
         return EncryptionService.decrypt_message(base64_data, key)
 
+
+
+
     @staticmethod
     def decrypt_message(base64_data: str, key) -> str:
         if isinstance(key, str):
@@ -70,12 +73,15 @@ class EncryptionService:
             settings.write_log_event("aes_cbc_decryption_failed", "ERROR", exception_type=type(e).__name__, error=str(e), payload_length=len(base64_data) if isinstance(base64_data, str) else 0)
             sys.exit(1)
 
-    # =========================
-    # 🔑 Key derivation (PBKDF2)
-    # =========================
+
+
+
     @staticmethod
     def deriveKey(password: str, salt: bytes) -> bytes:
         return EncryptionService.derive_key(password, salt)
+
+
+
 
     @staticmethod
     def derive_key(password: str, salt: bytes) -> bytes:
@@ -89,12 +95,12 @@ class EncryptionService:
             settings.write_log_event("pbkdf2_key_derivation_failed", "ERROR", exception_type=type(e).__name__, error=str(e), password_length=len(password))
             sys.exit(1)
 
-    # =========================
-    # 🔒 AES-CBC Encrypt
-    # =========================
+
     @staticmethod
     def encryptMessage(plaintext: str, key_bytes: bytes) -> str:
         return EncryptionService.encrypt_message(plaintext, key_bytes)
+
+
 
     @staticmethod
     def encrypt_message(plaintext: str, key_bytes: bytes) -> str:
@@ -115,12 +121,12 @@ class EncryptionService:
             settings.write_log_event( "aes_cbc_encryption_failed", "ERROR",  exception_type=type(e).__name__,  error=str(e),   plaintext_length=len(plaintext) )
             sys.exit(1)
 
-    # =========================
-    # 🔐 AES-GCM Encrypt
-    # =========================
+
     @staticmethod
     def encryptAesGcm(password: str, plaintext: str) -> str:
         return EncryptionService.encrypt_aes_gcm(password, plaintext)
+
+
 
     @staticmethod
     def encrypt_aes_gcm(password: str, plaintext: str) -> str:
@@ -138,12 +144,12 @@ class EncryptionService:
             settings.write_log_event( "aes_gcm_encryption_failed",  "ERROR",   exception_type=type(e).__name__, error=str(e),  password_length=len(password), plaintext_length=len(plaintext))
             sys.exit(1)
 
-    # =========================
-    # 🔑 Verify Fernet Key
-    # =========================
+
     @staticmethod
     def verifyKey(encrypted_key: str, secret_key: str) -> bool:
         return EncryptionService.verify_key(encrypted_key, secret_key)
+
+
 
     @staticmethod
     def verify_key(encrypted_key: str, secret_key: str) -> bool:

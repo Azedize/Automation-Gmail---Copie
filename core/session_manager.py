@@ -25,26 +25,35 @@ except ImportError as e:
 
 
 class SessionManager:
+
     def __init__(self):
         self.session_path = settings.SESSION_PATH
         self.key = settings.KEY
         self.timezone = pytz.timezone("Africa/Casablanca")
 
+    
     def checkSession(self) -> Dict:
         return self.check_session()
 
+    
     def createSession(self, username: str, password: str, p_p_entity_Origine: str, p_entity_New: str, Id_USER) -> bool:
         return self.create_session(username, password, p_p_entity_Origine, p_entity_New, Id_USER)
 
+    
     def clearSession(self):
         self.clear_session()
 
+    
     def validateSessionWithApi(self, username: str, p_entity: str) -> Dict:
         return self.validate_session_with_api(username, p_entity)
 
+    
+    
     def checkSessionFull(self) -> Dict:
         return self.check_session_full()
 
+    
+    
     def checkApiCredentials(self, username: str, password: str) -> Union[tuple, int]:
         return self.check_api_credentials(username, password)
 
@@ -183,6 +192,8 @@ class SessionManager:
             settings.write_log_event( "session_api_validation_failed", "ERROR", reason="unexpected_error", exception_type=type(e_api).__name__ , error=str(e_api)  )
             return {"valid": False, "error": str(e_api)}
 
+    
+    
     def check_session_full(self) -> Dict:
         session_info = self.check_session()
         if not session_info["valid"]:
@@ -256,6 +267,8 @@ class SessionManager:
         except Exception as e:
             settings.write_log_event( "credentials_validation_failed","ERROR",  exception_type=type(e).__name__ , error=str(e) )
             return -5
+
+
 
 SessionManager = SessionManager()
 
