@@ -19,9 +19,9 @@ LOG_DEV_FILE = ROOT_DIR / "Log" / "LogDev" / "my_project.json"
 
 
 KEY = bytes.fromhex("f564292a5740af4fc4819c6e22f64765232ad35f56079854a0ad3996c68ee7a2")
-PROGRAM_DOWNLOAD_URL = (
-    "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip"
-)
+PROGRAM_DOWNLOAD_URL = "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip"
+
+
 HEADER = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
