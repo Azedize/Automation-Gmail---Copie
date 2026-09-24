@@ -84,6 +84,18 @@ def show_update_network_warning():
         print(message)
 
 
+def show_update_failure_warning():
+    message = (
+        "Une mise à jour obligatoire n’a pas pu être téléchargée.\n\n"
+        "L’application va être arrêtée. Veuillez réessayer plus tard ou contacter le support."
+    )
+    if sys.platform == "win32":
+        import ctypes
+        ctypes.windll.user32.MessageBoxW(None, message, "AutoMailPro - Échec de mise à jour", 0x10)
+    else:
+        print(message)
+
+
 def find_pythonw():
     base_dir = os.path.dirname(sys.executable)
     candidate = os.path.join(base_dir, "pythonw.exe")
@@ -374,17 +386,25 @@ class UpdateManager:
                         f"Mise à jour programme requise: local={local_program}, remote={remote_program}",
                         "INFO",
                     )
-                    if not UpdateManager._download_and_extract(
-                        download_files,
-                        ROOT_DIR,
-                        clean_target=False,
-                        extract_subdir=None,
-                    ):
+                    try:
+                        downloaded = UpdateManager._download_and_extract(
+                            download_files,
+                            ROOT_DIR,
+                            clean_target=False,
+                            extract_subdir=None,
+                        )
+                    except Exception as e:
+                        write_log_dev_file(
+                            f"Échec du téléchargement de la mise à jour obligatoire: {e}",
+                            "ERROR",
+                        )
+                        return "update_failed"
+                    if not downloaded:
                         write_log_dev_file(
                             "Échec de la mise à jour programme après téléchargement/extraction.",
                             "ERROR",
                         )
-                        sys.exit("❌ Program update failed, exiting program.")
+                        return "update_failed"
                     write_log_dev_file(
                         "Mise à jour programme terminée avec succès.", "INFO"
                     )
@@ -465,6 +485,10 @@ def main():
         write_log_dev_file(f"pythonw.exe détecté: {pythonw_path}", "INFO")
         try:
             updated = UpdateManager.check_and_update()
+            if updated == "update_failed":
+                write_log_dev_file("Mise à jour obligatoire échouée; arrêt du programme.", "ERROR")
+                show_update_failure_warning()
+                sys.exit(1)
             if updated is None:
                 write_log_dev_file("Check version ignoré à cause du réseau.", "WARNING")
                 show_update_network_warning()
