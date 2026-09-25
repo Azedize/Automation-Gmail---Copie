@@ -19,9 +19,6 @@ LOG_DEV_FILE = ROOT_DIR / "Log" / "LogDev" / "my_project.json"
 
 
 KEY = bytes.fromhex("f564292a5740af4fc4819c6e22f64765232ad35f56079854a0ad3996c68ee7a2")
-PROGRAM_DOWNLOAD_URL = (
-    "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip"
-)
 
 # download_files = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Script&k={date_encrypted}"
 
@@ -338,20 +335,19 @@ class UpdateManager:
         import requests
 
         session_date = datetime.datetime.now().strftime("%Y-%m-%d")
-        write_log_dev_file(
-            f"Date utilisée pour le check programme: {session_date}", "DEBUG"
-        )
+        write_log_dev_file( f"Date utilisée pour le check programme: {session_date}", "DEBUG" )
         date_encrypted = encrypt_message(session_date, KEY)
         if not date_encrypted:
-            write_log_dev_file(
-                "Échec chiffrement date pour le check programme.", "ERROR"
-            )
+            write_log_dev_file( "Échec chiffrement date pour le check programme.", "ERROR"  )
             sys.exit("❌ Encryption failed, exiting program.")
 
         url = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Script&k={date_encrypted}"
         # download_files = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Script&k={date_encrypted}"
 
-        download_files = PROGRAM_DOWNLOAD_URL
+        download_files = (
+            "https://reporting.nrb-apps.com/APP_R/redirect.php?"
+            f"nv=1&rv4=1&event=download&type=V4&ext=Script&k={date_encrypted}"
+        )
 
         write_log_dev_file(f"URL check version programme: {url}", "INFO")
         write_log_dev_file(f"URL téléchargement programme: {download_files}", "DEBUG")
