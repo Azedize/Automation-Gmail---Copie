@@ -2263,9 +2263,7 @@ class AutomationMainWindow(QMainWindow):
         session_info = SessionManager.check_session()
         if not session_info["valid"]:
             self.login_window = AuthenticationWindow()
-            self.login_window.setFixedSize(
-                Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT
-            )
+            self.login_window.setFixedSize( Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT )
 
             screen = QGuiApplication.primaryScreen()
             screen_geometry = screen.availableGeometry()
@@ -2279,16 +2277,12 @@ class AutomationMainWindow(QMainWindow):
                 with open(Settings.SESSION_PATH, "w", encoding="utf-8") as f:
                     f.write("")
             except Exception as e:
-                Settings.write_log_dev_file(
-                    f"An error occurred while cleaning the session: {str(e)}\n{traceback.format_exc()}",
-                    "ERROR",
-                )
+                Settings.write_log_dev_file( f"An error occurred while cleaning the session: {str(e)}\n{traceback.format_exc()}", "ERROR")
             UIManager.enableButton(self.submitButton)
             return
 
-        auth_result = SessionManager.check_api_credentials(
-            session_info.get("username"), session_info.get("password")
-        )
+        auth_result = SessionManager.check_api_credentials(  session_info.get("username"), session_info.get("password") )
+        
         if isinstance(auth_result, int):
             messages = {
                 -1: "Invalid credentials. Please login again.",
@@ -2298,9 +2292,7 @@ class AutomationMainWindow(QMainWindow):
                 -5: "Unknown authentication error.",
             }
 
-            self.erreur_label.setText(
-                messages.get(auth_result, "Authentication failed.")
-            )
+            self.erreur_label.setText( messages.get(auth_result, "Authentication failed.") )
             self.erreur_label.show()
             UIManager.enableButton(self.submitButton)
             return
@@ -2313,33 +2305,22 @@ class AutomationMainWindow(QMainWindow):
         else:
             Settings.write_log_dev_file("Error with required paths.", "ERROR")
             error_details = "\n".join(errors)
-            UIManager.showCriticalMessage(
-                window,
-                "Invalid Paths",
-                f"The following paths are invalid:\n\n{error_details}",
-                message_type="critical",
-            )
+            UIManager.showCriticalMessage( window ,  "Invalid Paths",  f"The following paths are invalid:\n\n{error_details}",  message_type="critical" )
             UIManager.enableButton(self.submitButton)
             return
 
         try:
             Settings.write_log_dev_file("Start badge cleanup", "INFO")
             if self.result_tab_widget:
-                Settings.write_log_dev_file(
-                    f"Number of tabs in result_tab_widget = {self.result_tab_widget.count()}",
-                    "INFO",
-                )
+                Settings.write_log_dev_file( f"Number of tabs in result_tab_widget = {self.result_tab_widget.count()}",  "INFO")
 
                 for tab_index, badge in NOTIFICATION_BADGES.items():
                     if badge:
-                        Settings.write_log_dev_file(
-                            f"Badge removed tab_index={tab_index}", "INFO"
-                        )
+                        Settings.write_log_dev_file(  f"Badge removed tab_index={tab_index}", "INFO"   )
                         badge.deleteLater()
+                        
                 NOTIFICATION_BADGES.clear()
-                Settings.write_log_dev_file(
-                    "All existing badges removed and dictionary cleared", "INFO"
-                )
+                Settings.write_log_dev_file("All existing badges removed and dictionary cleared", "INFO"  )
 
                 for i in range(self.result_tab_widget.count()):
                     tab = self.result_tab_widget.widget(i)
@@ -2352,12 +2333,44 @@ class AutomationMainWindow(QMainWindow):
                 Settings.write_log_dev_file("result_tab_widget is None", "WARNING")
 
         except Exception as e:
-            Settings.write_log_dev_file(
-                f"An error occurred while removing badges: {str(e)}\n{traceback.format_exc()}",
-                "ERROR",
-            )
+            Settings.write_log_dev_file(  f"An error occurred while removing badges: {str(e)}\n{traceback.format_exc()}",  "ERROR" )
             UIManager.enableButton(self.submitButton)
             return
+
+        update_progress = QProgressDialog(
+            "Vérification de la version du programme...",
+            "",  0,  100,  self  )
+        update_progress.setWindowTitle("Mise à jour AutoMailPro")
+        update_progress.setWindowModality(Qt.WindowModality.ApplicationModal)
+        update_progress.setAutoClose(False)
+        update_progress.setAutoReset(False)
+        update_progress.setCancelButton(None)
+        update_progress.setValue(0)
+        update_progress.show()
+        QApplication.processEvents()
+
+        def update_progress_callback(message, value):
+            update_progress.setLabelText(message)
+            update_progress.setValue(value)
+            QApplication.processEvents()
+
+        update_result = UpdateManager.checkAndUpdate(
+            self,
+            progress_callback=update_progress_callback,
+        )
+        update_progress.close()
+
+        if update_result is False:
+            UIManager.enableButton(self.submitButton)
+            return
+
+        if update_result is None:
+            UIManager.showCriticalMessage(
+                self,
+                "Mise à jour indisponible",
+                "Impossible de vérifier la version du programme. L’application va continuer avec la version locale.",
+                message_type="warning",
+            )
 
         selected_Browser = self.browser.currentText()
         QApplication.processEvents()
