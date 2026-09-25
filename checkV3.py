@@ -19,7 +19,9 @@ LOG_DEV_FILE = ROOT_DIR / "Log" / "LogDev" / "my_project.json"
 
 
 KEY = bytes.fromhex("f564292a5740af4fc4819c6e22f64765232ad35f56079854a0ad3996c68ee7a2")
-PROGRAM_DOWNLOAD_URL = "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip"
+PROGRAM_DOWNLOAD_URL = (
+    "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip"
+)
 
 # download_files = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Script&k={date_encrypted}"
 
@@ -92,7 +94,10 @@ def show_update_failure_warning():
     )
     if sys.platform == "win32":
         import ctypes
-        ctypes.windll.user32.MessageBoxW(None, message, "AutoMailPro - Échec de mise à jour", 0x10)
+
+        ctypes.windll.user32.MessageBoxW(
+            None, message, "AutoMailPro - Échec de mise à jour", 0x10
+        )
     else:
         print(message)
 
@@ -173,6 +178,7 @@ class DependencyManager:
     def install_and_import(
         package, module_name=None, required_import=None, version=None
     ):
+
         module_to_import = module_name or package
         install_spec = f"{package}=={version}" if version else package
         try:
@@ -483,11 +489,14 @@ def main():
                 "ERROR",
             )
             sys.exit(1)
+
         write_log_dev_file(f"pythonw.exe détecté: {pythonw_path}", "INFO")
         try:
             updated = UpdateManager.check_and_update()
             if updated == "update_failed":
-                write_log_dev_file("Mise à jour obligatoire échouée; arrêt du programme.", "ERROR")
+                write_log_dev_file(
+                    "Mise à jour obligatoire échouée; arrêt du programme.", "ERROR"
+                )
                 show_update_failure_warning()
                 sys.exit(1)
             if updated is None:
