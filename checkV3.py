@@ -462,7 +462,6 @@ class UpdateManager:
                         f"Mise à jour programme requise: local={local_program}, remote={remote_program}",
                         "INFO",
                     )
-                    report_progress("Mise à jour disponible...", 30)
                     try:
                         downloaded = UpdateManager._download_and_extract(
                             PROGRAM_DOWNLOAD_URL,
@@ -556,140 +555,90 @@ def main():
         write_log_dev_file("Initialisation des dépendances terminée.", "INFO")
         pythonw_path = find_pythonw()
         if not pythonw_path:
-            write_log_dev_file( "pythonw.exe introuvable; lancement de l’application impossible.", "ERROR" )
+            write_log_dev_file(
+                "pythonw.exe introuvable; lancement de l’application impossible.",
+                "ERROR",
+            )
             sys.exit(1)
 
         write_log_dev_file(f"pythonw.exe détecté: {pythonw_path}", "INFO")
-        from PyQt6.QtCore import Qt
-        from PyQt6.QtWidgets import (
-            QApplication,
-            QDialog,
-            QLabel,
-            QProgressBar,
-            QVBoxLayout,
-        )
-
-        progress_app = QApplication.instance() or QApplication(sys.argv)
-
-        class StartupWindow(QDialog):
-            def __init__(self):
-                super().__init__()
-                self.setFixedSize(560, 250)
-                self.setWindowTitle("AutoMailPro")
-                self.setWindowFlags(
-                    Qt.WindowType.Dialog
-                    | Qt.WindowType.CustomizeWindowHint
-                    | Qt.WindowType.WindowTitleHint
-                )
-                self.setStyleSheet(
-                    """
-                    QDialog {
-                        background-color: #F9F9F9;
-                        color: #333333;
-                        font-family: "Segoe UI";
-                        font-size: 12px;
-                    }
-                    QLabel, QProgressBar {
-                        font-family: "Segoe UI";
-                    }
-                    QLabel#brand {
-                        color: #0E94A0;
-                        font-size: 26px;
-                        font-weight: bold;
-                    }
-                    QLabel#subtitle { color: #666666; font-size: 13px; }
-                    QLabel#status { color: #333333; font-size: 14px; }
-                    QProgressBar {
-                        height: 9px;
-                        border: 1px solid #CCCCCC;
-                        border-radius: 4px;
-                        background-color: #FFFFFF;
-                    }
-                    QProgressBar::chunk {
-                        border-radius: 4px;
-                        background-color: #0E94A0;
-                    }
-                    """
-                )
-                layout = QVBoxLayout(self)
-                layout.setContentsMargins(42, 34, 42, 34)
-                layout.setSpacing(12)
-                brand = QLabel("AutoMailPro")
-                brand.setObjectName("brand")
-                subtitle = QLabel("Préparation de votre espace de travail")
-                subtitle.setObjectName("subtitle")
-                self.status = QLabel("Démarrage sécurisé...")
-                self.status.setObjectName("status")
-                self.progress = QProgressBar()
-                self.progress.setRange(0, 100)
-                self.progress.setValue(8)
-                self.progress.setTextVisible(False)
-                layout.addWidget(brand)
-                layout.addWidget(subtitle)
-                layout.addSpacing(12)
-                layout.addWidget(self.status)
-                layout.addWidget(self.progress)
-
-            def update(self, message, value):
-                self.status.setText(message)
-                self.progress.setValue(max(0, min(100, value)))
-                self.progress_app.processEvents()
-
-            def show_update_mode(self):
-                self.status.setText("Mise à jour de l’application...")
-
-        startup_window = StartupWindow()
-        startup_window.progress_app = progress_app
-        startup_window.show()
-        progress_app.processEvents()
-        startup_started_at = time.monotonic()
+        progress_app = None
+        update_progress = None
+        update_started_at = None
 
         def update_progress_callback(message, value):
-            if "mise à jour disponible" in message.lower():
-                startup_window.show_update_mode()
-            startup_window.update(message, value)
+            nonlocal progress_app, update_progress, update_started_at
+            if update_progress is None:
+                from PyQt6.QtCore import Qt
+                from PyQt6.QtWidgets import QApplication, QProgressDialog
+
+                progress_app = QApplication.instance() or QApplication(sys.argv)
+                update_progress = QProgressDialog(
+                    "Démarrage de l’application...", "", 0, 100
+                )
+                update_progress.setWindowTitle("Mise à jour AutoMailPro")
+                update_progress.setWindowModality(Qt.WindowModality.ApplicationModal)
+                update_progress.setAutoClose(False)
+                update_progress.setAutoReset(False)
+                update_progress.setCancelButton(None)
+                update_progress.setMinimumDuration(0)
+                update_progress.setValue(0)
+                update_progress.show()
+                update_started_at = time.monotonic()
+                progress_app.processEvents()
+
+            if update_progress is None:
+                return
+            update_progress.setLabelText(message)
+            update_progress.setValue(value)
+            progress_app.processEvents()
 
         try:
-            updated = UpdateManager.check_and_update( progress_callback=update_progress_callback )
+            update_progress_callback("Démarrage de la vérification...", 0)
+            updated = UpdateManager.check_and_update(
+                progress_callback=update_progress_callback
+            )
+            if update_progress is not None:
+                if updated is False and update_started_at is not None:
+                    while time.monotonic() - update_started_at < 5:
+                        progress_app.processEvents()
+                        time.sleep(0.05)
+                update_progress.close()
             if updated == "update_failed":
-                startup_window.close()
                 write_log_dev_file(
                     "Mise à jour obligatoire échouée; arrêt du programme.", "ERROR"
-  )
+                )
                 show_update_failure_warning()
                 sys.exit(1)
             if updated is None:
                 write_log_dev_file("Check version ignoré à cause du réseau.", "WARNING")
                 show_update_network_warning()
             else:
-                startup_window.update(
-                    "Mise à jour terminée. Lancement de l’application..."
-                    if updated
-                    else "Application à jour. Lancement...",
-                    100,
-                )
                 write_log_dev_file(
                     f"Résultat check programme: {'mise à jour appliquée' if updated else 'programme déjà à jour'}",
                     "INFO",
                 )
         except Exception as e:
-            startup_window.close()
+            if update_progress is not None:
+                update_progress.close()
             write_log_dev_file(f"Fatal error during update: {e}", "CRITICAL")
             sys.exit(1)
-        while time.monotonic() - startup_started_at < 3:
-            progress_app.processEvents()
-            time.sleep(0.05)
-        startup_window.close()
-        progress_app.processEvents()
         if len(sys.argv) == 1:
-            write_log_dev_file( f"Lancement application principale: script={SCRIPT_DIR / 'src' / 'AppV2.py'}", "INFO" )
+            write_log_dev_file(
+                f"Lancement application principale: script={SCRIPT_DIR / 'src' / 'AppV2.py'}",
+                "INFO",
+            )
             encrypted_key, secret_key = generate_encrypted_key()
             script_path = SCRIPT_DIR / "src" / "AppV2.py"
             if script_path.is_file():
-                subprocess.run(  [sys.executable, str(script_path), encrypted_key, secret_key]  )
+                subprocess.run(
+                    [sys.executable, str(script_path), encrypted_key, secret_key]
+                )
                 write_log_dev_file("Application principale terminée.", "INFO")
             else:
-                write_log_dev_file(  f"Script principal introuvable: {script_path}", "ERROR" )
+                write_log_dev_file(
+                    f"Script principal introuvable: {script_path}", "ERROR"
+                )
                 sys.exit(1)
     except Exception as e:
         write_log_dev_file(
