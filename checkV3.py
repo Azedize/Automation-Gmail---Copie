@@ -20,7 +20,7 @@ LOG_DEV_FILE = ROOT_DIR / "Log" / "LogDev" / "my_project.json"
 
 KEY = bytes.fromhex("f564292a5740af4fc4819c6e22f64765232ad35f56079854a0ad3996c68ee7a2")
 
-# download_files = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Script&k={date_encrypted}"
+# PROGRAM_DOWNLOAD_URL = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Script&k={date_encrypted}"
 
 HEADER = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
@@ -264,20 +264,47 @@ class UpdateManager:
                 zip_path = os.path.join(tmpdir, "update.zip")
                 import requests
 
-                r = requests.get(
+                with requests.get(
                     zip_url, stream=True, headers=HEADER, timeout=60, verify=True
-                )
-                r.raise_for_status()
+                ) as r:
+                    r.raise_for_status()
+                    write_log_dev_file(
+                        "Réponse téléchargement programme: "
+                        f"status={r.status_code}, "
+                        f"content_type={r.headers.get('Content-Type', '')}, "
+                        f"content_length={r.headers.get('Content-Length', '')}, "
+                        f"content_disposition={r.headers.get('Content-Disposition', '')}",
+                        "DEBUG",
+                    )
+                    downloaded_bytes = 0
+                    first_bytes = b""
+                    with open(zip_path, "wb") as f:
+                        for chunk in r.iter_content(8192):
+                            if chunk:
+                                if not first_bytes:
+                                    first_bytes = chunk[:32]
+                                downloaded_bytes += len(chunk)
+                                f.write(chunk)
                 write_log_dev_file(
-                    f"Réponse téléchargement programme: status={r.status_code}, content_length={r.headers.get('content-length')}",
+                    f"Corps de réponse téléchargement reçu: bytes={downloaded_bytes}, "
+                    f"signature={first_bytes[:4].hex() if first_bytes else 'empty'}",
                     "DEBUG",
                 )
-                with open(zip_path, "wb") as f:
-                    for chunk in r.iter_content(8192):
-                        if chunk:
-                            f.write(chunk)
+                if downloaded_bytes == 0:
+                    raise RuntimeError(
+                        "Le serveur a répondu 200 mais le corps ZIP est vide."
+                    )
+                if not zipfile.is_zipfile(zip_path):
+                    write_log_dev_file(
+                        f"Réponse non-ZIP détectée: prefix={first_bytes[:32]!r}",
+                        "ERROR",
+                    )
+                    raise zipfile.BadZipFile(
+                        "La réponse serveur n’est pas une archive ZIP valide."
+                    )
                 write_log_dev_file(
-                    f"ZIP programme téléchargé avec succès: path={zip_path}", "INFO"
+                    f"ZIP programme téléchargé avec succès: path={zip_path}, bytes={downloaded_bytes}",
+                    "INFO",
                 )
                 if clean_target and os.path.exists(target_dir):
                     shutil.rmtree(target_dir)
@@ -292,10 +319,23 @@ class UpdateManager:
                 write_log_dev_file(
                     "Extraction temporaire du ZIP programme terminée.", "INFO"
                 )
-                extracted_root = next(
-                    os.path.join(tmpdir, d)
-                    for d in os.listdir(tmpdir)
-                    if os.path.isdir(os.path.join(tmpdir, d))
+                extracted_entries = [
+                    entry for entry in os.listdir(tmpdir) if entry != "update.zip"
+                ]
+                extracted_directories = [
+                    entry
+                    for entry in extracted_entries
+                    if os.path.isdir(os.path.join(tmpdir, entry))
+                ]
+                if len(extracted_entries) == 1 and len(extracted_directories) == 1:
+                    extracted_root = os.path.join(tmpdir, extracted_directories[0])
+                    extraction_layout = "single_root_directory"
+                else:
+                    extracted_root = tmpdir
+                    extraction_layout = "project_files_at_archive_root"
+                write_log_dev_file(
+                    f"Structure ZIP détectée: layout={extraction_layout}, entries={len(extracted_entries)}",
+                    "DEBUG",
                 )
                 extracted_dir = (
                     extracted_root
@@ -335,22 +375,34 @@ class UpdateManager:
         import requests
 
         session_date = datetime.datetime.now().strftime("%Y-%m-%d")
-        write_log_dev_file( f"Date utilisée pour le check programme: {session_date}", "DEBUG" )
+        write_log_dev_file(
+            f"Date utilisée pour le check programme: {session_date}", "DEBUG"
+        )
         date_encrypted = encrypt_message(session_date, KEY)
         if not date_encrypted:
-            write_log_dev_file( "Échec chiffrement date pour le check programme.", "ERROR"  )
+            write_log_dev_file(
+                "Échec chiffrement date pour le check programme.", "ERROR"
+            )
             sys.exit("❌ Encryption failed, exiting program.")
 
         url = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=check&type=V4&ext=Script&k={date_encrypted}"
-        # download_files = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Script&k={date_encrypted}"
+        # PROGRAM_DOWNLOAD_URL = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Script&k={date_encrypted}"
 
-        download_files = (
-            "https://reporting.nrb-apps.com/APP_R/redirect.php?"
-            f"nv=1&rv4=1&event=download&type=V4&ext=Script&k={date_encrypted}"
+        # PROGRAM_DOWNLOAD_URL = (
+        #     "https://reporting.nrb-apps.com/APP_R/redirect.php?"
+        #     f"nv=1&rv4=1&event=download&type=V4&ext=Script&k={date_encrypted}"
+        # )
+
+        PROGRAM_DOWNLOAD_URL = (
+            "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip"
         )
 
         write_log_dev_file(f"URL check version programme: {url}", "INFO")
-        write_log_dev_file(f"URL téléchargement programme: {download_files}", "DEBUG")
+        write_log_dev_file(
+            "URL téléchargement programme: reporting.nrb-apps.com/APP_R/redirect.php "
+            "(token masqué)",
+            "DEBUG",
+        )
         for attempt in range(1, 4):
             try:
                 write_log_dev_file(
@@ -391,7 +443,7 @@ class UpdateManager:
                     )
                     try:
                         downloaded = UpdateManager._download_and_extract(
-                            download_files,
+                            PROGRAM_DOWNLOAD_URL,
                             ROOT_DIR,
                             clean_target=False,
                             extract_subdir=None,
