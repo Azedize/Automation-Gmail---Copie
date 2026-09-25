@@ -562,23 +562,30 @@ def main():
             sys.exit(1)
 
         write_log_dev_file(f"pythonw.exe détecté: {pythonw_path}", "INFO")
-        from PyQt6.QtCore import Qt
-        from PyQt6.QtWidgets import QApplication, QProgressDialog
-
-        progress_app = QApplication.instance() or QApplication(sys.argv)
-        update_progress = QProgressDialog(
-            "Vérification de la version du programme...", "", 0, 100
-        )
-        update_progress.setWindowTitle("Mise à jour AutoMailPro")
-        update_progress.setWindowModality(Qt.WindowModality.ApplicationModal)
-        update_progress.setAutoClose(False)
-        update_progress.setAutoReset(False)
-        update_progress.setCancelButton(None)
-        update_progress.setValue(0)
-        update_progress.show()
-        progress_app.processEvents()
+        progress_app = None
+        update_progress = None
 
         def update_progress_callback(message, value):
+            nonlocal progress_app, update_progress
+            if update_progress is None and value >= 35:
+                from PyQt6.QtCore import Qt
+                from PyQt6.QtWidgets import QApplication, QProgressDialog
+
+                progress_app = QApplication.instance() or QApplication(sys.argv)
+                update_progress = QProgressDialog(
+                    "Mise à jour disponible...", "", 0, 100
+                )
+                update_progress.setWindowTitle("Mise à jour AutoMailPro")
+                update_progress.setWindowModality(Qt.WindowModality.ApplicationModal)
+                update_progress.setAutoClose(False)
+                update_progress.setAutoReset(False)
+                update_progress.setCancelButton(None)
+                update_progress.setValue(0)
+                update_progress.show()
+                progress_app.processEvents()
+
+            if update_progress is None:
+                return
             update_progress.setLabelText(message)
             update_progress.setValue(value)
             progress_app.processEvents()
@@ -587,7 +594,8 @@ def main():
             updated = UpdateManager.check_and_update(
                 progress_callback=update_progress_callback
             )
-            update_progress.close()
+            if update_progress is not None:
+                update_progress.close()
             if updated == "update_failed":
                 write_log_dev_file(
                     "Mise à jour obligatoire échouée; arrêt du programme.", "ERROR"
@@ -603,7 +611,8 @@ def main():
                     "INFO",
                 )
         except Exception as e:
-            update_progress.close()
+            if update_progress is not None:
+                update_progress.close()
             write_log_dev_file(f"Fatal error during update: {e}", "CRITICAL")
             sys.exit(1)
         if len(sys.argv) == 1:
