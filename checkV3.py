@@ -253,7 +253,11 @@ class UpdateManager:
 
     @staticmethod
     def _download_and_extract(
-        zip_url, target_dir, clean_target=False, extract_subdir=None
+        zip_url,
+        target_dir,
+        clean_target=False,
+        extract_subdir=None,
+        progress_callback=None,
     ):
         try:
             write_log_dev_file(
@@ -278,6 +282,7 @@ class UpdateManager:
                     )
                     downloaded_bytes = 0
                     first_bytes = b""
+                    content_length = int(r.headers.get("Content-Length") or 0)
                     with open(zip_path, "wb") as f:
                         for chunk in r.iter_content(8192):
                             if chunk:
@@ -285,6 +290,14 @@ class UpdateManager:
                                     first_bytes = chunk[:32]
                                 downloaded_bytes += len(chunk)
                                 f.write(chunk)
+                                if progress_callback and content_length:
+                                    progress_callback(
+                                        "Téléchargement de la mise à jour...",
+                                        min(
+                                            75,
+                                            int(downloaded_bytes * 75 / content_length),
+                                        ),
+                                    )
                 write_log_dev_file(
                     f"Corps de réponse téléchargement reçu: bytes={downloaded_bytes}, "
                     f"signature={first_bytes[:4].hex() if first_bytes else 'empty'}",
@@ -312,6 +325,8 @@ class UpdateManager:
                         f"Ancien dossier cible supprimé: {target_dir}", "INFO"
                     )
                 with zipfile.ZipFile(zip_path, "r") as z:
+                    if progress_callback:
+                        progress_callback("Installation de la mise à jour...", 85)
                     write_log_dev_file(
                         f"Contenu ZIP programme: {len(z.namelist())} éléments", "DEBUG"
                     )
@@ -361,6 +376,8 @@ class UpdateManager:
                 write_log_dev_file(
                     f"Mise à jour programme extraite dans: {target_dir}", "INFO"
                 )
+                if progress_callback:
+                    progress_callback("Mise à jour terminée.", 100)
                 return True
         except Exception as e:
             write_log_dev_file(
@@ -370,8 +387,13 @@ class UpdateManager:
             raise
 
     @staticmethod
-    def check_and_update():
+    def check_and_update(progress_callback=None):
+        def report_progress(message, value):
+            if progress_callback:
+                progress_callback(message, value)
+
         write_log_dev_file("=== CHECK PROGRAM UPDATE START ===", "INFO")
+        report_progress("Vérification de la version du programme...", 10)
         import requests
 
         session_date = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -393,9 +415,7 @@ class UpdateManager:
         #     f"nv=1&rv4=1&event=download&type=V4&ext=Script&k={date_encrypted}"
         # )
 
-        PROGRAM_DOWNLOAD_URL = (
-            "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip"
-        )
+        PROGRAM_DOWNLOAD_URL = "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip"
 
         write_log_dev_file(f"URL check version programme: {url}", "INFO")
         write_log_dev_file(
@@ -427,6 +447,7 @@ class UpdateManager:
                     )
                     return None
                 data = response.json()
+                report_progress("Version du programme reçue.", 25)
                 write_log_dev_file(f"Données version programme reçues: {data}", "DEBUG")
                 local_program = UpdateManager._read_local_version(
                     os.path.join("config", "version.txt")
@@ -447,6 +468,7 @@ class UpdateManager:
                             ROOT_DIR,
                             clean_target=False,
                             extract_subdir=None,
+                            progress_callback=report_progress,
                         )
                     except Exception as e:
                         write_log_dev_file(
@@ -471,6 +493,7 @@ class UpdateManager:
                     f"Programme à jour: local={local_program}, remote={remote_program}",
                     "INFO",
                 )
+                report_progress("Programme à jour.", 100)
                 write_log_dev_file("=== CHECK PROGRAM UPDATE END (OK) ===", "INFO")
                 return False
             except Exception as e:
@@ -539,8 +562,32 @@ def main():
             sys.exit(1)
 
         write_log_dev_file(f"pythonw.exe détecté: {pythonw_path}", "INFO")
+        from PyQt6.QtCore import Qt
+        from PyQt6.QtWidgets import QApplication, QProgressDialog
+
+        progress_app = QApplication.instance() or QApplication(sys.argv)
+        update_progress = QProgressDialog(
+            "Vérification de la version du programme...", "", 0, 100
+        )
+        update_progress.setWindowTitle("Mise à jour AutoMailPro")
+        update_progress.setWindowModality(Qt.WindowModality.ApplicationModal)
+        update_progress.setAutoClose(False)
+        update_progress.setAutoReset(False)
+        update_progress.setCancelButton(None)
+        update_progress.setValue(0)
+        update_progress.show()
+        progress_app.processEvents()
+
+        def update_progress_callback(message, value):
+            update_progress.setLabelText(message)
+            update_progress.setValue(value)
+            progress_app.processEvents()
+
         try:
-            updated = UpdateManager.check_and_update()
+            updated = UpdateManager.check_and_update(
+                progress_callback=update_progress_callback
+            )
+            update_progress.close()
             if updated == "update_failed":
                 write_log_dev_file(
                     "Mise à jour obligatoire échouée; arrêt du programme.", "ERROR"
@@ -556,6 +603,7 @@ def main():
                     "INFO",
                 )
         except Exception as e:
+            update_progress.close()
             write_log_dev_file(f"Fatal error during update: {e}", "CRITICAL")
             sys.exit(1)
         if len(sys.argv) == 1:

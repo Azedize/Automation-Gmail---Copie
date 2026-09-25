@@ -162,40 +162,23 @@ class UpdateManager:
 
                 try:
                     SessionManager.clear_session()
-                    settings.write_log_dev_file(
-                        "Session du programme effacée après token invalide.", "INFO"
-                    )
+                    settings.write_log_dev_file( "Session du programme effacée après token invalide.", "INFO" )
                 except Exception as e:
-                    Settings.write_log_dev_file(
-                        f"Erreur lors du nettoyage de session après token invalide\n{traceback.format_exc()}",
-                        "ERROR",
-                    )
+                    Settings.write_log_dev_file(  f"Erreur lors du nettoyage de session après token invalide\n{traceback.format_exc()}", "ERROR")
 
                 os._exit(1)
 
             if not isinstance(data, dict):
-                Settings.write_log_dev_file(
-                    f"Réponse serveur programme invalide: {data}", "ERROR"
-                )
+                Settings.write_log_dev_file( f"Réponse serveur programme invalide: {data}", "ERROR")
                 return False
 
             server_program = data.get("version")
-            settings.write_log_dev_file(
-                f"Version serveur du programme reçue: {server_program}",
-                "INFO",
-            )
+            settings.write_log_dev_file( f"Version serveur du programme reçue: {server_program}",  "INFO")
 
-            local_program = UpdateManager.readLocalVersion(
-                Settings.VERSION_LOCAL_PROGRAMM
-            )
+            local_program = UpdateManager.readLocalVersion(  Settings.VERSION_LOCAL_PROGRAMM )
 
-            settings.write_log_dev_file(
-                f"Version locale programme détectée: {local_program}", "INFO"
-            )
-            settings.write_log_dev_file(
-                f"Chemin version locale programme: {Settings.VERSION_LOCAL_PROGRAMM}",
-                "DEBUG",
-            )
+            settings.write_log_dev_file(  f"Version locale programme détectée: {local_program}", "INFO" )
+            settings.write_log_dev_file( f"Chemin version locale programme: {Settings.VERSION_LOCAL_PROGRAMM}", "DEBUG" )
 
             if not local_program or local_program != server_program:
                 Settings.write_log_dev_file(
