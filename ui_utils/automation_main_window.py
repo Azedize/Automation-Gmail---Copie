@@ -9,16 +9,7 @@ import traceback
 from PyQt6 import uic
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QCursor, QGuiApplication, QIcon
-from PyQt6.QtWidgets import (
-    QApplication,
-    QFrame,
-    QInputDialog,
-    QListWidget,
-    QMainWindow,
-    QPlainTextEdit,
-    QPushButton,
-    QWidget,
-)
+from PyQt6.QtWidgets import QApplication, QFrame, QInputDialog, QListWidget, QMainWindow, QPlainTextEdit, QPushButton, QWidget
 
 from api import API_MANAGER
 from config import Settings
@@ -66,14 +57,8 @@ class AutomationMainWindow(QMainWindow):
         self._setup_miscellaneous()
 
     def _find_widget(self, name, widget_type=None):
-        widget = (
-            self.findChild(widget_type, name)
-            if widget_type
-            else self.findChild(QWidget, name)
-        )
-        Settings.write_log_dev_file(
-            f"Searching for widget: {name} (type: {widget_type})", "INFO"
-        )
+        widget = self.findChild(widget_type, name) if widget_type else self.findChild(QWidget, name)
+        Settings.write_log_dev_file(f"Searching for widget: {name} (type: {widget_type})", "INFO")
         return widget
 
     def _setup_containers(self):
@@ -83,37 +68,15 @@ class AutomationMainWindow(QMainWindow):
         UIManager.setupTemplateWidgets(self)
 
     def _setup_buttons(self):
-        self.Button_Initaile_state = self._setup_button(
-            "Button_Initaile_state", self.load_initial_options
-        )
-        self.submit_button = self._setup_button(
-            "submitButton", lambda: self.submit_button_clicked(self)
-        )
-        self.ClearButton = self._setup_icon_button(
-            "ClearButton",
-            "clear.png",
-            self.clear_button_clicked,
-            icon_size=(32, 32),
-            button_size=(36, 36),
-        )
-        self.CopyButton = self._setup_icon_button(
-            "CopyButton",
-            "copyLog.png",
-            self.copy_logs_to_clipboard,
-            icon_size=(26, 26),
-            button_size=(38, 38),
-        )
-        self.SaveButton = self._setup_icon_button(
-            "saveButton", "save.png", self.handle_save, icon_size=(16, 16)
-        )
+        self.Button_Initaile_state = self._setup_button("Button_Initaile_state", self.load_initial_options)
+        self.submit_button = self._setup_button("submitButton", lambda: self.submit_button_clicked(self))
+        self.ClearButton = self._setup_icon_button("ClearButton", "clear.png", self.clear_button_clicked, icon_size=(32, 32), button_size=(36, 36))
+        self.CopyButton = self._setup_icon_button("CopyButton", "copyLog.png", self.copy_logs_to_clipboard, icon_size=(26, 26), button_size=(38, 38))
+        self.SaveButton = self._setup_icon_button("saveButton", "save.png", self.handle_save, icon_size=(16, 16))
         self.log_out_Button = UIManager.setupLogoutButton(self, self.log_out)
 
-    def _setup_icon_button(
-        self, button_name, icon_file, callback, icon_size=None, button_size=None
-    ):
-        return UIManager.setupIconButton(
-            self, button_name, icon_file, callback, icon_size, button_size
-        )
+    def _setup_icon_button(self, button_name, icon_file, callback, icon_size=None, button_size=None):
+        return UIManager.setupIconButton(self, button_name, icon_file, callback, icon_size, button_size)
 
     def _setup_button(self, widget_name, callback):
         return UIManager.setupButton(self, widget_name, callback)
@@ -141,16 +104,10 @@ class AutomationMainWindow(QMainWindow):
         if self.log_container is not None:
             self.log_text_edit = QPlainTextEdit(self.log_container)
             self.log_text_edit.setReadOnly(True)  # Lecture seule pour les logs
-            self.log_text_edit.setStyleSheet(
-                "QPlainTextEdit { background-color: #161a1d; color: #ffffff; font-size: 14px; font-family: 'Segoe UI'; border: none; padding: 8px; }"
-            )
+            self.log_text_edit.setStyleSheet("QPlainTextEdit { background-color: #161a1d; color: #ffffff; font-size: 14px; font-family: 'Segoe UI'; border: none; padding: 8px; }")
             self.log_text_edit.setFrameShape(QFrame.Shape.NoFrame)
-            self.log_text_edit.setVerticalScrollBarPolicy(
-                Qt.ScrollBarPolicy.ScrollBarAsNeeded
-            )
-            self.log_text_edit.setHorizontalScrollBarPolicy(
-                Qt.ScrollBarPolicy.ScrollBarAsNeeded
-            )
+            self.log_text_edit.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+            self.log_text_edit.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
             self.log_text_edit.document().setMaximumBlockCount(1000)
 
             rect = self.log_container.rect()
@@ -158,17 +115,9 @@ class AutomationMainWindow(QMainWindow):
             height = rect.height() if rect.height() > 0 else 9000
             margin_top = 60
             margin_side = 10
-            self.log_text_edit.setGeometry(
-                margin_side,
-                margin_top,
-                max(0, width - 2 * margin_side),
-                max(0, height - margin_top - margin_side),
-            )
+            self.log_text_edit.setGeometry(margin_side, margin_top, max(0, width - 2 * margin_side), max(0, height - margin_top - margin_side))
 
-        self.LOGS_THREAD = ApplicationLogDisplayThread(
-            self.logs,
-            lambda: self.runtime_state.logs_running,
-        )
+        self.LOGS_THREAD = ApplicationLogDisplayThread(self.logs, lambda: self.runtime_state.logs_running)
         self.LOGS_THREAD.log_signal.connect(self.update_logs_display)
 
     def _setup_miscellaneous(self):
@@ -182,25 +131,13 @@ class AutomationMainWindow(QMainWindow):
         return API_MANAGER.saveProcess(params)
 
     def handle_save(self):
-        Settings.write_log_dev_file(
-            f"Checking STATE_STACK: {len(self.STATE_STACK) if self.STATE_STACK else 0} items",
-            "INFO",
-        )
+        Settings.write_log_dev_file(f"Checking STATE_STACK: {len(self.STATE_STACK) if self.STATE_STACK else 0} items", "INFO")
         if not self.STATE_STACK:
-            UIManager.showCriticalMessage(
-                self,
-                "No Data",
-                "No actions to save. Please add actions before saving.",
-                message_type="critical",
-            )
-            Settings.write_log_dev_file(
-                "No actions to save. Please add actions before saving.", "ERROR"
-            )
+            UIManager.showCriticalMessage(self, "No Data", "No actions to save. Please add actions before saving.", message_type="critical")
+            Settings.write_log_dev_file("No actions to save. Please add actions before saving.", "ERROR")
             return
 
-        scenario_name, ok = QInputDialog.getText(
-            self, "Save Scenario", "Enter scenario name:"
-        )
+        scenario_name, ok = QInputDialog.getText(self, "Save Scenario", "Enter scenario name:")
 
         if not ok:
             Settings.write_log_dev_file("User cancelled scenario name input", "INFO")
@@ -211,39 +148,19 @@ class AutomationMainWindow(QMainWindow):
 
         if not scenario_name:
             Settings.write_log_dev_file("Scenario name cannot be empty", "ERROR")
-            UIManager.showCriticalMessage(
-                self,
-                "Invalid Name",
-                "Scenario name cannot be empty.",
-                message_type="critical",
-            )
+            UIManager.showCriticalMessage(self, "Invalid Name", "Scenario name cannot be empty.", message_type="critical")
             return
 
-        Settings.write_log_dev_file(
-            "Scenario name is valid, checking session file", "INFO"
-        )
+        Settings.write_log_dev_file("Scenario name is valid, checking session file", "INFO")
         if not ValidationUtils.pathExists(Settings.SESSION_PATH):
-            Settings.write_log_dev_file(
-                f"Session file not found at: {Settings.SESSION_PATH}", "ERROR"
-            )
-            UIManager.showCriticalMessage(
-                self,
-                "Session Not Found",
-                "[❌] Your session file is missing. Please restart the application.",
-                message_type="critical",
-            )
-            Settings.write_log_dev_file(
-                "Your session file is missing. Please restart the application.", "ERROR"
-            )
+            Settings.write_log_dev_file(f"Session file not found at: {Settings.SESSION_PATH}", "ERROR")
+            UIManager.showCriticalMessage(self, "Session Not Found", "[❌] Your session file is missing. Please restart the application.", message_type="critical")
+            Settings.write_log_dev_file("Your session file is missing. Please restart the application.", "ERROR")
             return
 
-        Settings.write_log_dev_file(
-            "Session file exists, checking session validity", "INFO"
-        )
+        Settings.write_log_dev_file("Session file exists, checking session validity", "INFO")
         session_info = SessionManager.check_session()
-        Settings.write_log_event(
-            "session_checked", "INFO", valid=session_info.get("valid")
-        )
+        Settings.write_log_event("session_checked", "INFO", valid=session_info.get("valid"))
 
         if not session_info["valid"]:
             Settings.write_log_dev_file("Session is invalid, exiting", "ERROR")
@@ -251,113 +168,58 @@ class AutomationMainWindow(QMainWindow):
             return False
 
         Settings.write_log_dev_file("Session is valid, encrypting session info", "INFO")
-        encrypted_String = EncryptionService.encrypt_message(
-            f"{session_info['Id_User']}::{session_info['username']}::{session_info['date']}::IT",
-            Settings.KEY,
-        )
-        Settings.write_log_dev_file(
-            f"Encrypted string generated (length: {len(encrypted_String)})", "INFO"
-        )
+        encrypted_String = EncryptionService.encrypt_message(f"{session_info['Id_User']}::{session_info['username']}::{session_info['date']}::IT", Settings.KEY)
+        Settings.write_log_dev_file(f"Encrypted string generated (length: {len(encrypted_String)})", "INFO")
         Settings.write_log_dev_file("Preparing payload", "INFO")
 
         try:
             state_json = json.dumps(self.STATE_STACK[-1], ensure_ascii=False)
             state_stack_json = json.dumps(self.STATE_STACK, ensure_ascii=False)
             state_b64 = base64.b64encode(state_json.encode("utf-8")).decode("utf-8")
-            state_stack_b64 = base64.b64encode(state_stack_json.encode("utf-8")).decode(
-                "utf-8"
-            )
+            state_stack_b64 = base64.b64encode(state_stack_json.encode("utf-8")).decode("utf-8")
 
         except Exception as e:
-            Settings.write_log_dev_file(
-                f"Error encoding state for saving: {e}\n{traceback.format_exc()}",
-                "ERROR",
-            )
+            Settings.write_log_dev_file(f"Error encoding state for saving: {e}\n{traceback.format_exc()}", "ERROR")
             return
 
-        payload = {
-            "user_id": session_info["Id_User"],
-            "encrypted": encrypted_String,
-            "name": scenario_name,
-            "state": state_b64,
-            "state_stack": state_stack_b64,
-        }
+        payload = {"user_id": session_info["Id_User"], "encrypted": encrypted_String, "name": scenario_name, "state": state_b64, "state_stack": state_stack_b64}
         Settings.write_log_dev_file(f"Complete payload prepared for API call", "INFO")
 
         Settings.write_log_dev_file("Building API URL", "INFO")
-        Api_Url = (
-            f"{Settings.SCENARIO_API}?rv4=1&entity=IT&action=add&l={encrypted_String}"
-        )
+        Api_Url = f"{Settings.SCENARIO_API}?rv4=1&entity=IT&action=add&l={encrypted_String}"
 
         Settings.write_log_dev_file(f"API URL: {Api_Url}", "INFO")
         Settings.write_log_dev_file("Calling API...", "INFO")
 
         try:
             result = API_MANAGER.handleSaveScenario(payload, Api_Url)
-            Settings.write_log_event(
-                "save_scenario_response_received",
-                "INFO",
-                response_type=type(result).__name__,
-                success=result.get("status") if isinstance(result, dict) else None,
-            )
+            Settings.write_log_event("save_scenario_response_received", "INFO", response_type=type(result).__name__, success=result.get("status") if isinstance(result, dict) else None)
 
             if result.get("status") is False:
-                Settings.write_log_dev_file(
-                    "API returned status=False, showing error message", "INFO"
-                )
+                Settings.write_log_dev_file("API returned status=False, showing error message", "INFO")
                 UIManager.showCriticalMessage(
                     self,
                     "Action Not Saved",
-                    " The action could not be saved.\n\n"
-                    "Your session may have expired, or this name already exists.\n Please verify your session and make sure the name is unique, then try again.",
+                    " The action could not be saved.\n\n" "Your session may have expired, or this name already exists.\n Please verify your session and make sure the name is unique, then try again.",
                     message_type="critical",
                 )
-                Settings.write_log_dev_file(
-                    "Save failed: session expired or action name already exists.",
-                    "ERROR",
-                )
+                Settings.write_log_dev_file("Save failed: session expired or action name already exists.", "ERROR")
                 return
 
             if result.get("status"):
-                Settings.write_log_dev_file(
-                    "API returned status=True, scenario saved successfully", "INFO"
-                )
+                Settings.write_log_dev_file("API returned status=True, scenario saved successfully", "INFO")
                 self.load_scenarios_into_combobox()
-                UIManager.showCriticalMessage(
-                    self,
-                    "Success",
-                    "The scenario has been saved successfully.",
-                    message_type="success",
-                )
-                Settings.write_log_dev_file(
-                    "The scenario has been saved successfully.", "INFO"
-                )
+                UIManager.showCriticalMessage(self, "Success", "The scenario has been saved successfully.", message_type="success")
+                Settings.write_log_dev_file("The scenario has been saved successfully.", "INFO")
             else:
-                Settings.write_log_dev_file(
-                    "API returned status=None or unexpected, showing API error", "INFO"
-                )
-                UIManager.showCriticalMessage(
-                    self,
-                    "API Error",
-                    "An error occurred while saving the scenario.",
-                    message_type="critical",
-                )
-                Settings.write_log_dev_file(
-                    "An error occurred while saving the scenario.", "ERROR"
-                )
+                Settings.write_log_dev_file("API returned status=None or unexpected, showing API error", "INFO")
+                UIManager.showCriticalMessage(self, "API Error", "An error occurred while saving the scenario.", message_type="critical")
+                Settings.write_log_dev_file("An error occurred while saving the scenario.", "ERROR")
 
         except Exception as e:
             Settings.write_log_dev_file(f"Exception during API call: {e}", "ERROR")
-            UIManager.showCriticalMessage(
-                self,
-                "Error",
-                "An error occurred while saving the scenario.",
-                message_type="critical",
-            )
-            Settings.write_log_dev_file(
-                f"An error occurred while saving the scenario: {str(e)}\n{traceback.format_exc()}",
-                "ERROR",
-            )
+            UIManager.showCriticalMessage(self, "Error", "An error occurred while saving the scenario.", message_type="critical")
+            Settings.write_log_dev_file(f"An error occurred while saving the scenario: {str(e)}\n{traceback.format_exc()}", "ERROR")
 
         Settings.write_log_dev_file("handle_save function completed", "INFO")
 
@@ -378,41 +240,27 @@ class AutomationMainWindow(QMainWindow):
 
         Settings.write_log_dev_file("Session file exists", "INFO")
         session_info = SessionManager.check_session()
-        Settings.write_log_event(
-            "session_checked", "INFO", valid=session_info.get("valid")
-        )
+        Settings.write_log_event("session_checked", "INFO", valid=session_info.get("valid"))
 
         if not session_info.get("valid"):
-            Settings.write_log_dev_file(
-                "Session invalid. Redirecting to login.", "ERROR"
-            )
+            Settings.write_log_dev_file("Session invalid. Redirecting to login.", "ERROR")
             sys.exit()
             return False
 
-        encrypted_String = EncryptionService.encrypt_message(
-            f"{session_info['Id_User']}::{session_info['username']}::{session_info['date']}::IT",
-            Settings.KEY,
-        )
+        encrypted_String = EncryptionService.encrypt_message(f"{session_info['Id_User']}::{session_info['username']}::{session_info['date']}::IT", Settings.KEY)
         Settings.write_log_dev_file(f"Encrypted string: {encrypted_String}", "INFO")
-        Api_Url = (
-            f"{Settings.SCENARIO_API}?rv4=1&action=get&entity=IT&l={encrypted_String}"
-        )
+        Api_Url = f"{Settings.SCENARIO_API}?rv4=1&action=get&entity=IT&l={encrypted_String}"
 
         try:
             result = API_MANAGER.fetchScenarios(Api_Url)
             if isinstance(result, dict) and result.get("status") is False:
-                Settings.write_log_dev_file(
-                    f"API returned error: {result.get('error', 'Unknown error')}",
-                    "ERROR",
-                )
+                Settings.write_log_dev_file(f"API returned error: {result.get('error', 'Unknown error')}", "ERROR")
                 self.saveSanario.clear()
                 self.saveSanario.addItem("None")
                 return
 
             scenarios = result if isinstance(result, list) else []
-            Settings.write_log_dev_file(
-                f"Number of scenarios loaded: {len(scenarios)}", "INFO"
-            )
+            Settings.write_log_dev_file(f"Number of scenarios loaded: {len(scenarios)}", "INFO")
 
             self.saveSanario.clear()
             self.saveSanario.addItem("None")
@@ -420,20 +268,13 @@ class AutomationMainWindow(QMainWindow):
             if scenarios:
                 for index, scenario in enumerate(scenarios, 1):
                     name = scenario.get("name", f"Scénario {index}")
-                    Settings.write_log_dev_file(
-                        f"Adding scenario {index}: {name}", "INFO"
-                    )
+                    Settings.write_log_dev_file(f"Adding scenario {index}: {name}", "INFO")
                     self.saveSanario.addItem(name)
             else:
-                Settings.write_log_dev_file(
-                    "No scenarios found, added 'None' only", "INFO"
-                )
+                Settings.write_log_dev_file("No scenarios found, added 'None' only", "INFO")
             Settings.write_log_dev_file("Combobox updated successfully", "INFO")
         except Exception as e:
-            Settings.write_log_dev_file(
-                f"An error occurred while loading scenarios: {str(e)}\n{traceback.format_exc()}",
-                "CRITICAL",
-            )
+            Settings.write_log_dev_file(f"An error occurred while loading scenarios: {str(e)}\n{traceback.format_exc()}", "CRITICAL")
 
     def copy_logs_to_clipboard(self):
         UIManager.copyLogsToClipboard(self)
@@ -445,9 +286,7 @@ class AutomationMainWindow(QMainWindow):
                 self.stop_processes(self)
 
             self.login_window = AuthenticationWindow(type(self), self.stop_processes)
-            self.login_window.setFixedSize(
-                Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT
-            )
+            self.login_window.setFixedSize(Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT)
             screen = QGuiApplication.primaryScreen()
             screen_geometry = screen.availableGeometry()
             x = (screen_geometry.width() - self.login_window.width()) // 2
@@ -457,10 +296,7 @@ class AutomationMainWindow(QMainWindow):
             self.close()
 
         except Exception as e:
-            Settings.write_log_dev_file(
-                f"An error occurred while logging out: {str(e)}\n{traceback.format_exc()}",
-                "ERROR",
-            )
+            Settings.write_log_dev_file(f"An error occurred while logging out: {str(e)}\n{traceback.format_exc()}", "ERROR")
 
     def update_logs_display(self, log_entry):
         UIManager.updateLogsDisplay(log_entry, self.log_text_edit)
@@ -469,10 +305,7 @@ class AutomationMainWindow(QMainWindow):
         self.LOGS_THREAD.stopThread()
         self.LOGS_THREAD.wait()
         Settings.write_log_dev_file("Extraction Finished", "INFO")
-        QTimer.singleShot(
-            100,
-            lambda: UIManager.readResultUpdateList(window, self.notification_badges),
-        )
+        QTimer.singleShot(100, lambda: UIManager.readResultUpdateList(window, self.notification_badges))
 
     def verify_required_paths(self):
         Settings.write_log_dev_file("Starting required path verification", "INFO")
@@ -495,29 +328,15 @@ class AutomationMainWindow(QMainWindow):
 
             detail_msg = f"Path check: {normalized_path} | expected={path_type} | exists={exists} | type_ok={type_ok}"
             Settings.write_log_dev_file(detail_msg, "INFO")
-            valid = ValidationUtils.validate_path(
-                path, must_exist=True, is_file=is_file
-            )
+            valid = ValidationUtils.validate_path(path, must_exist=True, is_file=is_file)
 
             if not valid:
-                reason = (
-                    "missing"
-                    if not exists
-                    else ("wrong type" if not type_ok else "unknown")
-                )
-                Settings.write_log_dev_file(
-                    f"❌ Invalid path: {normalized_path} | expected={path_type} | exists={exists} | type_ok={type_ok} | reason={reason}",
-                    "ERROR",
-                )
-                invalid_paths.append(
-                    f"❌ Invalid path: {normalized_path} | expected={path_type} | exists={exists} | type_ok={type_ok} | reason={reason}"
-                )
+                reason = "missing" if not exists else ("wrong type" if not type_ok else "unknown")
+                Settings.write_log_dev_file(f"❌ Invalid path: {normalized_path} | expected={path_type} | exists={exists} | type_ok={type_ok} | reason={reason}", "ERROR")
+                invalid_paths.append(f"❌ Invalid path: {normalized_path} | expected={path_type} | exists={exists} | type_ok={type_ok} | reason={reason}")
 
         if invalid_paths:
-            Settings.write_log_dev_file(
-                f"Required path verification failed: {len(invalid_paths)} invalid path(s)",
-                "ERROR",
-            )
+            Settings.write_log_dev_file(f"Required path verification failed: {len(invalid_paths)} invalid path(s)", "ERROR")
         else:
             Settings.write_log_dev_file("All required paths are valid", "SUCCESS")
         return len(invalid_paths) == 0, invalid_paths
@@ -527,9 +346,7 @@ class AutomationMainWindow(QMainWindow):
         session_info = SessionManager.check_session()
         if not session_info["valid"]:
             self.login_window = AuthenticationWindow(type(self), self.stop_processes)
-            self.login_window.setFixedSize(
-                Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT
-            )
+            self.login_window.setFixedSize(Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT)
 
             screen = QGuiApplication.primaryScreen()
             screen_geometry = screen.availableGeometry()
@@ -543,16 +360,11 @@ class AutomationMainWindow(QMainWindow):
                 with open(Settings.SESSION_PATH, "w", encoding="utf-8") as f:
                     f.write("")
             except Exception as e:
-                Settings.write_log_dev_file(
-                    f"An error occurred while cleaning the session: {str(e)}\n{traceback.format_exc()}",
-                    "ERROR",
-                )
+                Settings.write_log_dev_file(f"An error occurred while cleaning the session: {str(e)}\n{traceback.format_exc()}", "ERROR")
             UIManager.enableButton(self.submitButton)
             return
 
-        auth_result = SessionManager.check_api_credentials(
-            session_info.get("username"), session_info.get("password")
-        )
+        auth_result = SessionManager.check_api_credentials(session_info.get("username"), session_info.get("password"))
 
         if isinstance(auth_result, int):
             messages = {
@@ -563,9 +375,7 @@ class AutomationMainWindow(QMainWindow):
                 -5: "Unknown authentication error.",
             }
 
-            self.erreur_label.setText(
-                messages.get(auth_result, "Authentication failed.")
-            )
+            self.erreur_label.setText(messages.get(auth_result, "Authentication failed."))
             self.erreur_label.show()
             UIManager.enableButton(self.submitButton)
             return
@@ -578,34 +388,22 @@ class AutomationMainWindow(QMainWindow):
         else:
             Settings.write_log_dev_file("Error with required paths.", "ERROR")
             error_details = "\n".join(errors)
-            UIManager.showCriticalMessage(
-                window,
-                "Invalid Paths",
-                f"The following paths are invalid:\n\n{error_details}",
-                message_type="critical",
-            )
+            UIManager.showCriticalMessage(window, "Invalid Paths", f"The following paths are invalid:\n\n{error_details}", message_type="critical")
             UIManager.enableButton(self.submitButton)
             return
 
         try:
             Settings.write_log_dev_file("Start badge cleanup", "INFO")
             if self.result_tab_widget:
-                Settings.write_log_dev_file(
-                    f"Number of tabs in result_tab_widget = {self.result_tab_widget.count()}",
-                    "INFO",
-                )
+                Settings.write_log_dev_file(f"Number of tabs in result_tab_widget = {self.result_tab_widget.count()}", "INFO")
 
                 for tab_index, badge in self.notification_badges.items():
                     if badge:
-                        Settings.write_log_dev_file(
-                            f"Badge removed tab_index={tab_index}", "INFO"
-                        )
+                        Settings.write_log_dev_file(f"Badge removed tab_index={tab_index}", "INFO")
                         badge.deleteLater()
 
                 self.notification_badges.clear()
-                Settings.write_log_dev_file(
-                    "All existing badges removed and dictionary cleared", "INFO"
-                )
+                Settings.write_log_dev_file("All existing badges removed and dictionary cleared", "INFO")
 
                 for i in range(self.result_tab_widget.count()):
                     tab = self.result_tab_widget.widget(i)
@@ -618,25 +416,17 @@ class AutomationMainWindow(QMainWindow):
                 Settings.write_log_dev_file("result_tab_widget is None", "WARNING")
 
         except Exception as e:
-            Settings.write_log_dev_file(
-                f"An error occurred while removing badges: {str(e)}\n{traceback.format_exc()}",
-                "ERROR",
-            )
+            Settings.write_log_dev_file(f"An error occurred while removing badges: {str(e)}\n{traceback.format_exc()}", "ERROR")
             UIManager.enableButton(self.submitButton)
             return
 
         update_result = UpdateManager.checkAndUpdate(window=self)
         if update_result is False:
-            Settings.write_log_dev_file(
-                "Mise à jour détectée : checkV3.py lancé et AppV2 fermé.", "INFO"
-            )
+            Settings.write_log_dev_file("Mise à jour détectée : checkV3.py lancé et AppV2 fermé.", "INFO")
             QApplication.instance().quit()
             return
         if update_result is None:
-            Settings.write_log_dev_file(
-                "Aucune mise à jour appliquée ou vérification indisponible; poursuite normale.",
-                "WARNING",
-            )
+            Settings.write_log_dev_file("Aucune mise à jour appliquée ou vérification indisponible; poursuite normale.", "WARNING")
 
         selected_Browser = self.browser.currentText()
         QApplication.processEvents()
@@ -644,10 +434,7 @@ class AutomationMainWindow(QMainWindow):
         browser_path = BrowserManager.get_browser_executable_path(selected_Browser)
 
         if browser_path is None:
-            Settings.write_log_dev_file(
-                f"Navigateur introuvable ou chemin d'installation indisponible : {selected_Browser}",
-                "ERROR",
-            )
+            Settings.write_log_dev_file(f"Navigateur introuvable ou chemin d'installation indisponible : {selected_Browser}", "ERROR")
             UIManager.showCriticalMessage(
                 window,
                 "Navigateur introuvable",
@@ -684,58 +471,30 @@ class AutomationMainWindow(QMainWindow):
         self.runtime_state.logs_running = True
 
         if self.scenario_layout.count() == 0:
-            UIManager.showCriticalMessage(
-                window,
-                "Empty Scenario",
-                "No actions have been added. Please add actions before submitting.",
-                message_type="warning",
-            )
+            UIManager.showCriticalMessage(window, "Empty Scenario", "No actions have been added. Please add actions before submitting.", message_type="warning")
             UIManager.enableButton(self.submitButton)
-            Settings.write_log_dev_file(
-                "No actions have been added. Please add actions before submitting.",
-                "WARNING",
-            )
+            Settings.write_log_dev_file("No actions have been added. Please add actions before submitting.", "WARNING")
             return
 
         try:
             result = ValidationUtils.generateUserInputData(window)
 
             if not isinstance(result, dict):
-                Settings.write_log_dev_file(
-                    "Invalid result format returned from ValidationUtils.generateUserInputData",
-                    "ERROR",
-                )
+                Settings.write_log_dev_file("Invalid result format returned from ValidationUtils.generateUserInputData", "ERROR")
                 UIManager.enableButton(self.submitButton)
                 return
 
             if not result.get("valid"):
-                Settings.write_log_dev_file(
-                    "❌ [DATA ERROR] Input or proxy validation failed before browser processes were started.",
-                    "ERROR",
-                )
+                Settings.write_log_dev_file("❌ [DATA ERROR] Input or proxy validation failed before browser processes were started.", "ERROR")
 
                 title, detail_text = (
-                    result.get("error", "Unknown error").split(":", 1)
-                    if ":" in result.get("error", "Unknown error")
-                    else (
-                        result.get("error", "Unknown error"),
-                        result.get("error", "Unknown error"),
-                    )
+                    result.get("error", "Unknown error").split(":", 1) if ":" in result.get("error", "Unknown error") else (result.get("error", "Unknown error"), result.get("error", "Unknown error"))
                 )
 
-                Settings.write_log_dev_file(
-                    f"Data error: {result.get('error', 'Unknown error')}", "ERROR"
-                )
-                Settings.write_log_dev_file(
-                    f"Title: {title.strip()} | Detail: {detail_text.strip()}", "ERROR"
-                )
-                Settings.write_log_dev_file(
-                    f"Generate_User_Input_Data failed: {result.get('error', 'Unknown error')}",
-                    "ERROR",
-                )
-                UIManager.showCriticalMessage(
-                    window, title.strip(), detail_text.strip(), message_type="warning"
-                )
+                Settings.write_log_dev_file(f"Data error: {result.get('error', 'Unknown error')}", "ERROR")
+                Settings.write_log_dev_file(f"Title: {title.strip()} | Detail: {detail_text.strip()}", "ERROR")
+                Settings.write_log_dev_file(f"Generate_User_Input_Data failed: {result.get('error', 'Unknown error')}", "ERROR")
+                UIManager.showCriticalMessage(window, title.strip(), detail_text.strip(), message_type="warning")
                 UIManager.enableButton(self.submitButton)
                 return
 
@@ -747,30 +506,17 @@ class AutomationMainWindow(QMainWindow):
                 UIManager.enableButton(self.submitButton)
                 return
 
-            Settings.write_log_dev_file(
-                f"User input processed successfully | Records: {len(data_list)} | Entered number: {entered_number}",
-                "INFO",
-            )
+            Settings.write_log_dev_file(f"User input processed successfully | Records: {len(data_list)} | Entered number: {entered_number}", "INFO")
 
         except Exception as e:
-            Settings.write_log_dev_file(
-                f"Processing error: {e}\n{traceback.format_exc()}", "ERROR"
-            )
-            UIManager.showCriticalMessage(
-                window,
-                "Unexpected Error",
-                "Something went wrong while processing your request.\n\nPlease try again or contact support.",
-                message_type="critical",
-            )
+            Settings.write_log_dev_file(f"Processing error: {e}\n{traceback.format_exc()}", "ERROR")
+            UIManager.showCriticalMessage(window, "Unexpected Error", "Something went wrong while processing your request.\n\nPlease try again or contact support.", message_type="critical")
             UIManager.enableButton(self.submitButton)
             return
 
         Settings.write_log_dev_file("Final JSON:", "INFO")
         result_json = JsonManager.generateJson(self.scenario_layout)
-        Settings.write_log_dev_file(
-            f"Final JSON generated. Data: {json.dumps(result_json, indent=2, ensure_ascii=False)}",
-            "INFO",
-        )
+        Settings.write_log_dev_file(f"Final JSON generated. Data: {json.dumps(result_json, indent=2, ensure_ascii=False)}", "INFO")
         Settings.write_log_dev_file("The final JSON has been generated.", "INFO")
         QApplication.processEvents()
 
@@ -781,10 +527,7 @@ class AutomationMainWindow(QMainWindow):
                 "No valid actions could be generated or an error occurred while saving the configuration file.\n\nIf the problem persists, contact Support.",
                 message_type="critical",
             )
-            Settings.write_log_dev_file(
-                "No valid actions could be generated or an error occurred while saving the configuration file.",
-                "ERROR",
-            )
+            Settings.write_log_dev_file("No valid actions could be generated or an error occurred while saving the configuration file.", "ERROR")
             UIManager.enableButton(self.submitButton)
             return
 
@@ -795,9 +538,7 @@ class AutomationMainWindow(QMainWindow):
         except Exception as e:
             UIManager.enableButton(self.submitButton)
 
-            Settings.write_log_dev_file(
-                f"Error writing to Isp.txt: {e}\n{traceback.format_exc()}", "ERROR"
-            )
+            Settings.write_log_dev_file(f"Error writing to Isp.txt: {e}\n{traceback.format_exc()}", "ERROR")
 
         QApplication.processEvents()
         json_string = json.dumps(result_json)
@@ -814,30 +555,14 @@ class AutomationMainWindow(QMainWindow):
 
         unique_id = self.save_process(parameters)
         if unique_id == -1:
-            UIManager.showCriticalMessage(
-                window,
-                "Error - Process Save",
-                "Failed to save the process in the database.\n\nPlease check your connection and try again.",
-                message_type="critical",
-            )
-            Settings.write_log_dev_file(
-                "Failed to save the process in the database.", "ERROR"
-            )
+            UIManager.showCriticalMessage(window, "Error - Process Save", "Failed to save the process in the database.\n\nPlease check your connection and try again.", message_type="critical")
+            Settings.write_log_dev_file("Failed to save the process in the database.", "ERROR")
             UIManager.enableButton(self.submitButton)
             return
 
         QApplication.processEvents()
 
-        self.start_extraction(
-            window,
-            data_list,
-            entered_number,
-            selected_Browser,
-            self.Isp.currentText(),
-            unique_id,
-            result_json,
-            session_info["username"],
-        )
+        self.start_extraction(window, data_list, entered_number, selected_Browser, self.Isp.currentText(), unique_id, result_json, session_info["username"])
         self.LOGS_THREAD.start()
         QApplication.processEvents()
 
@@ -861,9 +586,7 @@ class AutomationMainWindow(QMainWindow):
         else:
             template_button = self.template_button
             icon_path = default_icon_path
-        button = QPushButton(
-            state.get("label", "Unnamed"), self.reset_options_container
-        )
+        button = QPushButton(state.get("label", "Unnamed"), self.reset_options_container)
         button.setStyleSheet(template_button.styleSheet())
         button.setFixedSize(template_button.size())
         button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -872,9 +595,7 @@ class AutomationMainWindow(QMainWindow):
         if ValidationUtils.pathExists(icon_path):
             button.setIcon(QIcon(icon_path))
         else:
-            Settings.write_log_dev_file(
-                f"[Warning] Icon not found at: {icon_path}", "WARNING"
-            )
+            Settings.write_log_dev_file(f"[Warning] Icon not found at: {icon_path}", "WARNING")
         self.reset_options_layout.addWidget(button)
 
     def load_state(self, state):
@@ -893,9 +614,7 @@ class AutomationMainWindow(QMainWindow):
         UIManager.removeInitial(self.scenario_layout, self.reset_options_layout)
 
     def update_actions_color_handle_last_button(self):
-        UIManager.updateActionsColorHandleLastButton(
-            self.scenario_layout, self.go_to_previous_state
-        )
+        UIManager.updateActionsColorHandleLastButton(self.scenario_layout, self.go_to_previous_state)
 
     def update_reset_options(self, actions):
         count = self.reset_options_layout.count()
@@ -915,9 +634,7 @@ class AutomationMainWindow(QMainWindow):
     def go_to_previous_state(self):
         if len(self.STATE_STACK) > 1:
             if self.scenario_layout.count() > 0:
-                last_item = self.scenario_layout.takeAt(
-                    self.scenario_layout.count() - 1
-                )
+                last_item = self.scenario_layout.takeAt(self.scenario_layout.count() - 1)
                 if last_item.widget():
                     last_item.widget().deleteLater()
 
@@ -941,35 +658,21 @@ class AutomationMainWindow(QMainWindow):
     def scenario_changed(self, name_selected):
         session_info = SessionManager.check_session()
         if not session_info.get("valid"):
-            Settings.write_log_dev_file(
-                "Session invalid. Redirecting to login.", "ERROR"
-            )
+            Settings.write_log_dev_file("Session invalid. Redirecting to login.", "ERROR")
             sys.exit()
             return False
 
-        encrypted_string = EncryptionService.encrypt_message(
-            f"{session_info['Id_User']}::{session_info['username']}::{session_info['date']}::IT",
-            Settings.KEY,
-        )
-        api_url = (
-            f"{Settings.SCENARIO_API}?rv4=1&action=get&entity=IT&l={encrypted_string}"
-        )
+        encrypted_string = EncryptionService.encrypt_message(f"{session_info['Id_User']}::{session_info['username']}::{session_info['date']}::IT", Settings.KEY)
+        api_url = f"{Settings.SCENARIO_API}?rv4=1&action=get&entity=IT&l={encrypted_string}"
 
         try:
-            raw_result = API_MANAGER.fetchScenarios(
-                api_url, params={"name": name_selected}
-            )
+            raw_result = API_MANAGER.fetchScenarios(api_url, params={"name": name_selected})
         except Exception as e:
-            Settings.write_log_dev_file(
-                f"API call failed: {e} \n {traceback.format_exc()}", "ERROR"
-            )
+            Settings.write_log_dev_file(f"API call failed: {e} \n {traceback.format_exc()}", "ERROR")
             return
 
         if isinstance(raw_result, dict) and raw_result.get("status") is False:
-            Settings.write_log_dev_file(
-                f"API returned error: {raw_result.get('error', 'Unknown API error')}",
-                "ERROR",
-            )
+            Settings.write_log_dev_file(f"API returned error: {raw_result.get('error', 'Unknown API error')}", "ERROR")
             return
 
         if isinstance(raw_result, list):
@@ -977,24 +680,16 @@ class AutomationMainWindow(QMainWindow):
         elif isinstance(raw_result, dict) and "data" in raw_result:
             data_list = raw_result["data"]
         else:
-            Settings.write_log_dev_file(
-                f"Unexpected API result format: {type(raw_result)}", "ERROR"
-            )
+            Settings.write_log_dev_file(f"Unexpected API result format: {type(raw_result)}", "ERROR")
             return
 
         if not data_list:
             Settings.write_log_dev_file("No scenario returned from API.", "WARNING")
             return
 
-        scenario = next(
-            (item for item in data_list if item.get("name") == name_selected),
-            None,
-        )
+        scenario = next((item for item in data_list if item.get("name") == name_selected), None)
         if scenario is None:
-            Settings.write_log_dev_file(
-                f"Scenario not found in API response: {name_selected}",
-                "WARNING",
-            )
+            Settings.write_log_dev_file(f"Scenario not found in API response: {name_selected}", "WARNING")
             return
 
         for i in reversed(range(self.scenario_layout.count())):
@@ -1002,14 +697,8 @@ class AutomationMainWindow(QMainWindow):
             if item:
                 widget = item.widget()
                 if widget:
-                    widget_name = (
-                        widget.objectName()
-                        if widget.objectName()
-                        else widget.__class__.__name__
-                    )
-                    Settings.write_log_dev_file(
-                        f"🗑️ Removing widget: {widget_name}", "INFO"
-                    )
+                    widget_name = widget.objectName() if widget.objectName() else widget.__class__.__name__
+                    Settings.write_log_dev_file(f"🗑️ Removing widget: {widget_name}", "INFO")
                     widget.deleteLater()
 
         state_stack = scenario.get("state_stack", [])
@@ -1019,26 +708,17 @@ class AutomationMainWindow(QMainWindow):
                 state_stack = json.loads(state_stack)
             except json.JSONDecodeError:
                 try:
-                    state_stack = json.loads(
-                        base64.b64decode(state_stack).decode("utf-8")
-                    )
+                    state_stack = json.loads(base64.b64decode(state_stack).decode("utf-8"))
                 except Exception as e:
-                    Settings.write_log_dev_file(
-                        f"Failed to parse state_stack: {e}\n{traceback.format_exc()}",
-                        "WARNING",
-                    )
+                    Settings.write_log_dev_file(f"Failed to parse state_stack: {e}\n{traceback.format_exc()}", "WARNING")
                     return
 
         if not isinstance(state_stack, list):
-            Settings.write_log_dev_file(
-                "Scenario state_stack has an invalid format.", "WARNING"
-            )
+            Settings.write_log_dev_file("Scenario state_stack has an invalid format.", "WARNING")
             return
 
         self.STATE_STACK = state_stack
-        Settings.write_log_dev_file(
-            f"📥 Scenario loaded with {len(self.STATE_STACK)} states.", "INFO"
-        )
+        Settings.write_log_dev_file(f"📥 Scenario loaded with {len(self.STATE_STACK)} states.", "INFO")
 
         state_stack_copy = copy.deepcopy(self.STATE_STACK)
 
@@ -1047,32 +727,20 @@ class AutomationMainWindow(QMainWindow):
                 pretty = json.dumps(state, indent=2, ensure_ascii=False, default=str)
             except Exception as exc:
                 # Repli attendu : etat non serialisable en JSON -> on garde repr().
-                Settings.write_log_dev_file(
-                    f"json.dumps indisponible pour l'etat #{index}, repli sur repr() "
-                    f"| exception={type(exc).__name__}: {exc}",
-                    "DEBUG",
-                )
+                Settings.write_log_dev_file(f"json.dumps indisponible pour l'etat #{index}, repli sur repr() " f"| exception={type(exc).__name__}: {exc}", "DEBUG")
                 pretty = repr(state)
 
             try:
                 t0 = time.time()
                 self.load_state(state)
                 t1 = time.time()
-                Settings.write_log_dev_file(
-                    f"✅ load_state for #{index} succeeded in {t1 - t0:.3f}s", "INFO"
-                )
+                Settings.write_log_dev_file(f"✅ load_state for #{index} succeeded in {t1 - t0:.3f}s", "INFO")
                 try:
                     self.update_actions_color_handle_last_button()
                 except Exception as e:
-                    Settings.write_log_dev_file(
-                        f"⚠️ update_actions_color_handle_last_button failed after state #{index}: {e} \n {traceback.format_exc()}",
-                        "WARNING",
-                    )
+                    Settings.write_log_dev_file(f"⚠️ update_actions_color_handle_last_button failed after state #{index}: {e} \n {traceback.format_exc()}", "WARNING")
             except Exception as e:
-                Settings.write_log_dev_file(
-                    f"❌ Error during load_state() for state #{index}: {e}\n{traceback.format_exc()}",
-                    "WARNING",
-                )
+                Settings.write_log_dev_file(f"❌ Error during load_state() for state #{index}: {e}\n{traceback.format_exc()}", "WARNING")
                 continue
 
         try:
@@ -1080,23 +748,14 @@ class AutomationMainWindow(QMainWindow):
             seen = set()
             for state in self.STATE_STACK:
                 try:
-                    state_key = json.dumps(
-                        state, sort_keys=True, ensure_ascii=False, default=str
-                    )
+                    state_key = json.dumps(state, sort_keys=True, ensure_ascii=False, default=str)
                 except Exception as exc:
                     # Repli attendu : etat non serialisable -> cle de dedoublonnage via repr().
-                    Settings.write_log_dev_file(
-                        "json.dumps indisponible pour la cle de dedoublonnage, repli sur repr() "
-                        f"| exception={type(exc).__name__}: {exc}",
-                        "DEBUG",
-                    )
+                    Settings.write_log_dev_file("json.dumps indisponible pour la cle de dedoublonnage, repli sur repr() " f"| exception={type(exc).__name__}: {exc}", "DEBUG")
                     state_key = repr(state)
                 if state_key not in seen:
                     seen.add(state_key)
                     unique_states.append(state)
             self.STATE_STACK = unique_states
         except Exception as e:
-            Settings.write_log_dev_file(
-                f"⚠️ Failed to deduplicate STATE_STACK: {e}\n{traceback.format_exc()}",
-                "ERROR",
-            )
+            Settings.write_log_dev_file(f"⚠️ Failed to deduplicate STATE_STACK: {e}\n{traceback.format_exc()}", "ERROR")

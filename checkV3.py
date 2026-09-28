@@ -102,10 +102,7 @@ def write_log_dev_file(message: str, level: str = "INFO", **context):
 
     except Exception:
         # affiche erreur detaille
-        print(
-            "Erreur lors de l'écriture du fichier de log de développement :",
-            sys.exc_info()[1],
-        )
+        print("Erreur lors de l'écriture du fichier de log de développement :", sys.exc_info()[1])
         # Ignore toute erreur d'écriture afin que le système de logs
         # n'interrompe pas le fonctionnement principal de l'application
         pass
@@ -134,10 +131,7 @@ def show_update_network_warning():
 
     # Prépare le message affiché lorsque la dernière version ne peut pas être détectée
     # \n\n -> ajoute une ligne vide entre les deux phrases
-    message = (
-        "Unable to detect the latest version from the update server.\n\n"
-        "Please contact support for assistance."
-    )
+    message = "Unable to detect the latest version from the update server.\n\n" "Please contact support for assistance."
 
     # Vérifie si l'application est exécutée sous Windows
     # sys.platform == "win32" -> identifie l'environnement Windows
@@ -161,10 +155,7 @@ def show_update_failure_warning():
 
     # Prépare le message affiché lorsque le téléchargement de la mise à jour obligatoire échoue
     # \n\n -> ajoute une ligne vide entre les deux phrases
-    message = (
-        "The required update could not be downloaded.\n\n"
-        "The application will now close. Please try again later or contact support."
-    )
+    message = "The required update could not be downloaded.\n\n" "The application will now close. Please try again later or contact support."
 
     # Vérifie si l'application est exécutée sous Windows
     # sys.platform == "win32" -> identifie l'environnement Windows
@@ -178,9 +169,7 @@ def show_update_failure_warning():
         # message -> contenu affiché dans la boîte de dialogue
         # "AutoMailPro - Update Failure" -> titre de la fenêtre
         # 0x10 -> affiche une icône d'erreur
-        ctypes.windll.user32.MessageBoxW(
-            None, message, "AutoMailPro - Update Failure", 0x10
-        )
+        ctypes.windll.user32.MessageBoxW(None, message, "AutoMailPro - Update Failure", 0x10)
     else:
 
         # Affiche le message dans la console pour les systèmes non Windows
@@ -256,29 +245,13 @@ class DependencyManager:
                 except PermissionError as exc:
 
                     # Enregistre une erreur si le dossier est utilisé ou protégé par un autre processus
-                    write_log_dev_file(
-                        f"Impossible de supprimer {folder} (fermez IDE/console) "
-                        f"| exception={type(exc).__name__}: {exc}\n{traceback.format_exc()}",
-                        "ERROR",
-                    )
+                    write_log_dev_file(f"Impossible de supprimer {folder} (fermez IDE/console) " f"| exception={type(exc).__name__}: {exc}\n{traceback.format_exc()}", "ERROR")
 
         try:
 
             # Réinstalle la version 305 de pywin32 avec le même interpréteur Python que l'application
             # --force-reinstall -> force la réinstallation même si le package est déjà présent
-            subprocess.run(
-                [
-                    sys.executable,
-                    "-m",
-                    "pip",
-                    "install",
-                    "--force-reinstall",
-                    "pywin32==305",
-                ],
-                check=True,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
+            subprocess.run([sys.executable, "-m", "pip", "install", "--force-reinstall", "pywin32==305"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
             # Enregistre la réussite de l'installation de pywin32
             write_log_dev_file("pywin32 installed successfully", "INFO")
@@ -286,18 +259,11 @@ class DependencyManager:
         except subprocess.CalledProcessError as exc:
 
             # Enregistre l'échec de l'installation de pywin32
-            write_log_dev_file(
-                "Failed to install pywin32 "
-                f"| exception={type(exc).__name__}: {exc} "
-                f"| returncode={exc.returncode}\n{traceback.format_exc()}",
-                "ERROR",
-            )
+            write_log_dev_file("Failed to install pywin32 " f"| exception={type(exc).__name__}: {exc} " f"| returncode={exc.returncode}\n{traceback.format_exc()}", "ERROR")
             return False
 
         # Construit le chemin vers le script de post-installation de pywin32
-        postinstall_script = (
-            Path(sys.executable).parent / "Scripts" / "pywin32_postinstall.py"
-        )
+        postinstall_script = Path(sys.executable).parent / "Scripts" / "pywin32_postinstall.py"
 
         # Vérifie si le script de post-installation existe
         if postinstall_script.exists():
@@ -306,12 +272,7 @@ class DependencyManager:
 
                 # Exécute le script de post-installation de pywin32
                 # -install -> effectue les opérations nécessaires après l'installation
-                subprocess.run(
-                    [sys.executable, str(postinstall_script), "-install"],
-                    check=True,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                )
+                subprocess.run([sys.executable, str(postinstall_script), "-install"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
                 # Enregistre la réussite de la post-installation
                 write_log_dev_file("Post-installation completed", "INFO")
@@ -319,12 +280,7 @@ class DependencyManager:
             except subprocess.CalledProcessError as exc:
 
                 # Enregistre l'échec de la post-installation de pywin32
-                write_log_dev_file(
-                    "Failed post-installation pywin32 "
-                    f"| exception={type(exc).__name__}: {exc} "
-                    f"| returncode={exc.returncode}\n{traceback.format_exc()}",
-                    "ERROR",
-                )
+                write_log_dev_file("Failed post-installation pywin32 " f"| exception={type(exc).__name__}: {exc} " f"| returncode={exc.returncode}\n{traceback.format_exc()}", "ERROR")
                 return False
 
         # Enregistre le redémarrage prochain de l'application
@@ -341,9 +297,7 @@ class DependencyManager:
         sys.exit(0)
 
     @staticmethod
-    def install_and_import(
-        package, module_name=None, required_import=None, version=None
-    ):
+    def install_and_import(package, module_name=None, required_import=None, version=None):
 
         # Utilise le nom du module fourni ou, à défaut, le nom du package
         module_to_import = module_name or package
@@ -372,34 +326,18 @@ class DependencyManager:
             try:
 
                 # Met à jour pip vers la version 23.3 avant l'installation du package
-                subprocess.check_call(
-                    [
-                        sys.executable,
-                        "-m",
-                        "pip",
-                        "install",
-                        "--upgrade",
-                        "pip==23.3",
-                    ]
-                )
+                subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "pip==23.3"])
 
             except subprocess.CalledProcessError as exc:
 
                 # Enregistre l'échec de la mise à jour de pip
-                write_log_dev_file(
-                    "Error updating pip "
-                    f"| exception={type(exc).__name__}: {exc} "
-                    f"| returncode={exc.returncode}\n{traceback.format_exc()}",
-                    "ERROR",
-                )
+                write_log_dev_file("Error updating pip " f"| exception={type(exc).__name__}: {exc} " f"| returncode={exc.returncode}\n{traceback.format_exc()}", "ERROR")
                 sys.exit(1)
 
             try:
 
                 # Installe le package avec la version demandée si elle est spécifiée
-                subprocess.check_call(
-                    [sys.executable, "-m", "pip", "install", install_spec]
-                )
+                subprocess.check_call([sys.executable, "-m", "pip", "install", install_spec])
 
                 # Enregistre la réussite de l'installation du package
                 write_log_dev_file(f"{package} installed", "INFO")
@@ -408,11 +346,7 @@ class DependencyManager:
 
                 # Enregistre l'échec de l'installation du package
                 write_log_dev_file(
-                    f"Error installing {package} "
-                    f"| exception={type(exc).__name__}: {exc} "
-                    f"| install_spec={install_spec} "
-                    f"| returncode={exc.returncode}\n{traceback.format_exc()}",
-                    "ERROR",
+                    f"Error installing {package} " f"| exception={type(exc).__name__}: {exc} " f"| install_spec={install_spec} " f"| returncode={exc.returncode}\n{traceback.format_exc()}", "ERROR"
                 )
                 sys.exit(1)
 
@@ -424,12 +358,7 @@ class DependencyManager:
             except ImportError as exc:
 
                 # Enregistre l'échec de l'importation après l'installation
-                write_log_dev_file(
-                    f"Error importing {module_to_import} "
-                    f"| exception={type(exc).__name__}: {exc} "
-                    f"| package={package}\n{traceback.format_exc()}",
-                    "ERROR",
-                )
+                write_log_dev_file(f"Error importing {module_to_import} " f"| exception={type(exc).__name__}: {exc} " f"| package={package}\n{traceback.format_exc()}", "ERROR")
                 sys.exit(1)
 
 
@@ -479,9 +408,7 @@ def encrypt_message(plaintext: str, key_bytes: bytes):
         # Chiffre les données après padding puis finalise le chiffrement
         # Le résultat contient l'IV au début afin qu'il puisse être utilisé
         # ultérieurement lors du déchiffrement
-        encrypted = base64.b64encode(
-            iv + (encryptor.update(padded) + encryptor.finalize())
-        ).decode("utf-8")
+        encrypted = base64.b64encode(iv + (encryptor.update(padded) + encryptor.finalize())).decode("utf-8")
 
         # Retourne les données chiffrées sous forme de chaîne Base64
         return encrypted
@@ -489,11 +416,7 @@ def encrypt_message(plaintext: str, key_bytes: bytes):
     except Exception as e:
         # Enregistre l'erreur sans exposer le contenu du message ou de la clé
         # (la traceback ne contient que le code, jamais les valeurs sensibles)
-        write_log_dev_file(
-            "AES-CBC encryption failed "
-            f"| exception={type(e).__name__}: {e}\n{traceback.format_exc()}",
-            level="ERROR",
-        )
+        write_log_dev_file("AES-CBC encryption failed " f"| exception={type(e).__name__}: {e}\n{traceback.format_exc()}", level="ERROR")
 
         # Indique que le chiffrement a échoué
         return False
@@ -529,36 +452,20 @@ class UpdateManager:
 
         except Exception as e:
             # Enregistre l'erreur rencontrée pendant la lecture
-            write_log_dev_file(
-                "Error reading local program version "
-                f"| exception={type(e).__name__}: {e} "
-                f"| path={path}\n{traceback.format_exc()}",
-                "ERROR",
-            )
+            write_log_dev_file("Error reading local program version " f"| exception={type(e).__name__}: {e} " f"| path={path}\n{traceback.format_exc()}", "ERROR")
 
             # Retourne None pour indiquer que la lecture a échoué
             return None
 
     @staticmethod
-    def _download_and_extract(
-        zip_url,
-        target_dir,
-        clean_target=False,
-        extract_subdir=None,
-        progress_callback=None,
-    ):
+    def _download_and_extract(zip_url, target_dir, clean_target=False, extract_subdir=None, progress_callback=None):
         try:
             # Enregistre les paramètres utilisés pour le téléchargement
             # zip_url -> URL de l'archive
             # target_dir -> dossier de destination
             # clean_target -> indique si le dossier cible doit être supprimé
             # extract_subdir -> sous-dossier éventuel à utiliser après extraction
-            write_log_dev_file(
-                f"Starting program update download: url={zip_url}, "
-                f"target={target_dir}, clean_target={clean_target}, "
-                f"extract_subdir={extract_subdir}",
-                "INFO",
-            )
+            write_log_dev_file(f"Starting program update download: url={zip_url}, " f"target={target_dir}, clean_target={clean_target}, " f"extract_subdir={extract_subdir}", "INFO")
 
             # Crée un dossier temporaire automatiquement supprimé à la fin du bloc
             with tempfile.TemporaryDirectory() as tmpdir:
@@ -572,9 +479,7 @@ class UpdateManager:
                 # stream=True -> évite de charger tout le fichier en mémoire
                 # timeout=60 -> limite l'attente à 60 secondes
                 # verify=True -> vérifie le certificat HTTPS
-                with requests.get(
-                    zip_url, stream=True, headers=HEADER, timeout=60, verify=True
-                ) as r:
+                with requests.get(zip_url, stream=True, headers=HEADER, timeout=60, verify=True) as r:
                     # Génère une exception si la réponse HTTP indique une erreur
                     r.raise_for_status()
 
@@ -615,52 +520,30 @@ class UpdateManager:
 
                                 # Met à jour la progression du téléchargement
                                 if progress_callback and content_length:
-                                    progress_callback(
-                                        "Downloading update...",
-                                        min(
-                                            75,
-                                            int(downloaded_bytes * 75 / content_length),
-                                        ),
-                                    )
+                                    progress_callback("Downloading update...", min(75, int(downloaded_bytes * 75 / content_length)))
 
                 # Enregistre la taille reçue et la signature du fichier
-                write_log_dev_file(
-                    f"Download response body received: bytes={downloaded_bytes}, "
-                    f"signature={first_bytes[:4].hex() if first_bytes else 'empty'}",
-                    "DEBUG",
-                )
+                write_log_dev_file(f"Download response body received: bytes={downloaded_bytes}, " f"signature={first_bytes[:4].hex() if first_bytes else 'empty'}", "DEBUG")
 
                 # Vérifie que le serveur a envoyé des données
                 if downloaded_bytes == 0:
-                    raise RuntimeError(
-                        "The server returned HTTP 200 but the ZIP response body is empty."
-                    )
+                    raise RuntimeError("The server returned HTTP 200 but the ZIP response body is empty.")
 
                 # Vérifie que le fichier téléchargé est bien une archive ZIP
                 if not zipfile.is_zipfile(zip_path):
                     # Enregistre les premiers octets pour faciliter le diagnostic
-                    write_log_dev_file(
-                        f"Non-ZIP response detected: prefix={first_bytes[:32]!r}",
-                        "ERROR",
-                    )
+                    write_log_dev_file(f"Non-ZIP response detected: prefix={first_bytes[:32]!r}", "ERROR")
 
                     # Signale que la réponse n'est pas une archive ZIP valide
-                    raise zipfile.BadZipFile(
-                        "The server response is not a valid ZIP archive."
-                    )
+                    raise zipfile.BadZipFile("The server response is not a valid ZIP archive.")
 
                 # Enregistre que le téléchargement est terminé
-                write_log_dev_file(
-                    f"Program ZIP downloaded successfully: path={zip_path}, bytes={downloaded_bytes}",
-                    "INFO",
-                )
+                write_log_dev_file(f"Program ZIP downloaded successfully: path={zip_path}, bytes={downloaded_bytes}", "INFO")
 
                 # Supprime le dossier cible uniquement si cela a été demandé
                 if clean_target and os.path.exists(target_dir):
                     shutil.rmtree(target_dir)
-                    write_log_dev_file(
-                        f"Previous target directory removed: {target_dir}", "INFO"
-                    )
+                    write_log_dev_file(f"Previous target directory removed: {target_dir}", "INFO")
 
                 # Ouvre l'archive ZIP en lecture
                 with zipfile.ZipFile(zip_path, "r") as z:
@@ -669,10 +552,7 @@ class UpdateManager:
                         progress_callback("Installing update...", 85)
 
                     # Enregistre le nombre d'éléments présents dans le ZIP
-                    write_log_dev_file(
-                        f"Program ZIP contents: {len(z.namelist())} entries",
-                        "DEBUG",
-                    )
+                    write_log_dev_file(f"Program ZIP contents: {len(z.namelist())} entries", "DEBUG")
 
                     # Extrait tous les fichiers dans le dossier temporaire
                     z.extractall(tmpdir)
@@ -681,16 +561,10 @@ class UpdateManager:
                 write_log_dev_file("Temporary ZIP extraction completed.", "INFO")
 
                 # Récupère les éléments extraits sauf le fichier ZIP
-                extracted_entries = [
-                    entry for entry in os.listdir(tmpdir) if entry != "update.zip"
-                ]
+                extracted_entries = [entry for entry in os.listdir(tmpdir) if entry != "update.zip"]
 
                 # Récupère uniquement les dossiers extraits
-                extracted_directories = [
-                    entry
-                    for entry in extracted_entries
-                    if os.path.isdir(os.path.join(tmpdir, entry))
-                ]
+                extracted_directories = [entry for entry in extracted_entries if os.path.isdir(os.path.join(tmpdir, entry))]
 
                 # Détermine si l'archive contient un seul dossier racine
                 if len(extracted_entries) == 1 and len(extracted_directories) == 1:
@@ -707,27 +581,16 @@ class UpdateManager:
                     extraction_layout = "project_files_at_archive_root"
 
                 # Enregistre la structure de l'archive détectée
-                write_log_dev_file(
-                    f"Detected ZIP structure: layout={extraction_layout}, entries={len(extracted_entries)}",
-                    "DEBUG",
-                )
+                write_log_dev_file(f"Detected ZIP structure: layout={extraction_layout}, entries={len(extracted_entries)}", "DEBUG")
 
                 # Détermine le dossier source à installer
                 # Si extract_subdir n'est pas fourni, utilise la racine détectée
                 extracted_dir = (
-                    extracted_root
-                    if not extract_subdir
-                    else (
-                        os.path.join(extracted_root, extract_subdir)
-                        if os.path.exists(os.path.join(extracted_root, extract_subdir))
-                        else extracted_root
-                    )
+                    extracted_root if not extract_subdir else (os.path.join(extracted_root, extract_subdir) if os.path.exists(os.path.join(extracted_root, extract_subdir)) else extracted_root)
                 )
 
                 # Enregistre le dossier source sélectionné
-                write_log_dev_file(
-                    f"Selected program source directory: {extracted_dir}", "DEBUG"
-                )
+                write_log_dev_file(f"Selected program source directory: {extracted_dir}", "DEBUG")
 
                 # Crée le dossier cible s'il n'existe pas
                 if not os.path.exists(target_dir):
@@ -765,9 +628,7 @@ class UpdateManager:
 
         except Exception as e:
             # Enregistre l'erreur principale
-            write_log_dev_file(
-                f"Program update download/extraction error: {e}", "ERROR"
-            )
+            write_log_dev_file(f"Program update download/extraction error: {e}", "ERROR")
 
             # Enregistre la stack trace complète pour faciliter le diagnostic
             write_log_dev_file(traceback.format_exc(), "DEBUG")
@@ -796,9 +657,7 @@ class UpdateManager:
         session_date = datetime.datetime.now().strftime("%Y-%m-%d")
 
         # Enregistre la date utilisée pour le contrôle
-        write_log_dev_file(
-            f"Date used for program update check: {session_date}", "DEBUG"
-        )
+        write_log_dev_file(f"Date used for program update check: {session_date}", "DEBUG")
 
         # Chiffre la date avec la clé configurée
         date_encrypted = encrypt_message(session_date, KEY)
@@ -806,18 +665,13 @@ class UpdateManager:
         # Vérifie que le chiffrement a réussi
         if not date_encrypted:
             # Enregistre l'échec du chiffrement
-            write_log_dev_file(
-                "Failed to encrypt date for program update check.", "ERROR"
-            )
+            write_log_dev_file("Failed to encrypt date for program update check.", "ERROR")
 
             # Arrête le programme car la vérification ne peut pas continuer
             sys.exit("Encryption failed, exiting program.")
 
         # Construit l'URL utilisée pour vérifier la version distante
-        url = (
-            f"https://reporting.nrb-apps.com/APP_R/redirect.php?"
-            f"nv=1&rv4=1&event=check&type=V4&ext=Script&k={date_encrypted}"
-        )
+        url = f"https://reporting.nrb-apps.com/APP_R/redirect.php?" f"nv=1&rv4=1&event=check&type=V4&ext=Script&k={date_encrypted}"
 
         # Ancienne URL de téléchargement conservée uniquement comme référence
         # PROGRAM_DOWNLOAD_URL = f"https://reporting.nrb-apps.com/APP_R/redirect.php?nv=1&rv4=1&event=download&type=V4&ext=Script&k={date_encrypted}"
@@ -836,37 +690,24 @@ class UpdateManager:
 
         # Enregistre uniquement une indication générale du point de téléchargement
         # afin d'éviter d'exposer un éventuel token dans les logs
-        write_log_dev_file(
-            "Program download URL: reporting.nrb-apps.com/APP_R/redirect.php (token hidden)",
-            "DEBUG",
-        )
+        write_log_dev_file("Program download URL: reporting.nrb-apps.com/APP_R/redirect.php (token hidden)", "DEBUG")
 
         # Effectue au maximum trois tentatives de vérification
         for attempt in range(1, 4):
             try:
                 # Enregistre le numéro de la tentative actuelle
-                write_log_dev_file(
-                    f"Program version check attempt: {attempt}/3", "INFO"
-                )
+                write_log_dev_file(f"Program version check attempt: {attempt}/3", "INFO")
 
                 # Envoie la requête au serveur de vérification
                 response = requests.get(url, headers=HEADER, timeout=10)
 
                 # Enregistre le statut HTTP et la taille de la réponse
-                write_log_dev_file(
-                    f"Program server response: status={response.status_code}, "
-                    f"content_length={response.headers.get('content-length')}",
-                    "DEBUG",
-                )
+                write_log_dev_file(f"Program server response: status={response.status_code}, " f"content_length={response.headers.get('content-length')}", "DEBUG")
 
                 # Vérifie que le serveur a retourné HTTP 200
                 if response.status_code != 200:
                     # Enregistre l'échec de la tentative
-                    write_log_dev_file(
-                        f"Failed to retrieve program version: "
-                        f"attempt={attempt}, status={response.status_code}",
-                        "ERROR",
-                    )
+                    write_log_dev_file(f"Failed to retrieve program version: " f"attempt={attempt}, status={response.status_code}", "ERROR")
 
                     # Réessaie après deux secondes si des tentatives sont disponibles
                     if attempt < 3:
@@ -874,10 +715,7 @@ class UpdateManager:
                         continue
 
                     # Après trois échecs, le programme continue avec la version locale
-                    write_log_dev_file(
-                        "Version check unavailable; using local program version.",
-                        "WARNING",
-                    )
+                    write_log_dev_file("Version check unavailable; using local program version.", "WARNING")
 
                     # None indique que la vérification distante n'a pas abouti
                     return None
@@ -892,47 +730,28 @@ class UpdateManager:
                 write_log_dev_file(f"Program version data received: {data}", "DEBUG")
 
                 # Lit la version actuellement installée
-                local_program = UpdateManager._read_local_version(
-                    os.path.join("config", "version.txt")
-                )
+                local_program = UpdateManager._read_local_version(os.path.join("config", "version.txt"))
 
                 # Récupère la version disponible sur le serveur
                 remote_program = data.get("version")
 
                 # Enregistre les deux versions pour le diagnostic
-                write_log_dev_file(
-                    f"Comparing program versions: local={local_program}, remote={remote_program}",
-                    "INFO",
-                )
+                write_log_dev_file(f"Comparing program versions: local={local_program}, remote={remote_program}", "INFO")
 
                 # Vérifie si une mise à jour est nécessaire
                 # Une mise à jour est demandée si la version locale est absente
                 # ou si elle est différente de la version distante
                 if not local_program or local_program != remote_program:
                     # Enregistre qu'une mise à jour est nécessaire
-                    write_log_dev_file(
-                        f"Program update required: local={local_program}, remote={remote_program}",
-                        "INFO",
-                    )
+                    write_log_dev_file(f"Program update required: local={local_program}, remote={remote_program}", "INFO")
 
                     try:
                         # Télécharge, extrait et installe la nouvelle version
-                        downloaded = UpdateManager._download_and_extract(
-                            PROGRAM_DOWNLOAD_URL,
-                            ROOT_DIR,
-                            clean_target=False,
-                            extract_subdir=None,
-                            progress_callback=report_progress,
-                        )
+                        downloaded = UpdateManager._download_and_extract(PROGRAM_DOWNLOAD_URL, ROOT_DIR, clean_target=False, extract_subdir=None, progress_callback=report_progress)
 
                     except Exception as e:
                         # Enregistre l'échec de la mise à jour
-                        write_log_dev_file(
-                            "Required program update download failed "
-                            f"| exception={type(e).__name__}: {e} "
-                            f"| url={PROGRAM_DOWNLOAD_URL}\n{traceback.format_exc()}",
-                            "ERROR",
-                        )
+                        write_log_dev_file("Required program update download failed " f"| exception={type(e).__name__}: {e} " f"| url={PROGRAM_DOWNLOAD_URL}\n{traceback.format_exc()}", "ERROR")
 
                         # Retourne un état spécifique indiquant l'échec
                         return "update_failed"
@@ -940,10 +759,7 @@ class UpdateManager:
                     # Vérifie que l'installation a réellement réussi
                     if not downloaded:
                         # Enregistre l'échec de l'installation
-                        write_log_dev_file(
-                            "Program update failed after download/extraction.",
-                            "ERROR",
-                        )
+                        write_log_dev_file("Program update failed after download/extraction.", "ERROR")
 
                         # Retourne l'état d'échec
                         return "update_failed"
@@ -952,18 +768,13 @@ class UpdateManager:
                     write_log_dev_file("Program update completed successfully.", "INFO")
 
                     # Enregistre la fin du processus avec mise à jour
-                    write_log_dev_file(
-                        "=== CHECK PROGRAM UPDATE END (UPDATED) ===", "INFO"
-                    )
+                    write_log_dev_file("=== CHECK PROGRAM UPDATE END (UPDATED) ===", "INFO")
 
                     # True indique qu'une mise à jour a été installée
                     return True
 
                 # Enregistre que le programme est déjà à jour
-                write_log_dev_file(
-                    f"Program is up to date: local={local_program}, remote={remote_program}",
-                    "INFO",
-                )
+                write_log_dev_file(f"Program is up to date: local={local_program}, remote={remote_program}", "INFO")
 
                 # Informe l'interface que le programme est à jour
                 report_progress("Program is up to date.", 100)
@@ -976,10 +787,7 @@ class UpdateManager:
 
             except Exception as e:
                 # Enregistre toute erreur inattendue pendant la tentative actuelle
-                write_log_dev_file(
-                    f"Critical program update check error: attempt={attempt}, error={e}",
-                    "ERROR",
-                )
+                write_log_dev_file(f"Critical program update check error: attempt={attempt}, error={e}", "ERROR")
 
                 # Enregistre la stack trace complète pour le diagnostic
                 write_log_dev_file(traceback.format_exc(), "DEBUG")
@@ -990,10 +798,7 @@ class UpdateManager:
                     continue
 
                 # Après trois échecs, continue avec la version locale
-                write_log_dev_file(
-                    "Version check unavailable after 3 attempts; using local program version.",
-                    "WARNING",
-                )
+                write_log_dev_file("Version check unavailable after 3 attempts; using local program version.", "WARNING")
 
                 # None indique que le serveur de version n'a pas pu être vérifié
                 return None
@@ -1015,22 +820,12 @@ def initialize_dependencies():
             # Importe requests et l'installe automatiquement si elle est absente
             "requests": DependencyManager.install_and_import("requests"),
             # Importe urllib3 avec une version précise
-            "urllib3": DependencyManager.install_and_import(
-                "urllib3",
-                version="2.2.3",
-            ),
+            "urllib3": DependencyManager.install_and_import("urllib3", version="2.2.3"),
             # Importe PyQt6 avec une version précise
             # required_import="QtCore" vérifie également que PyQt6.QtCore est disponible
-            "PyQt6": DependencyManager.install_and_import(
-                "PyQt6",
-                version="6.7.0",
-                required_import="QtCore",
-            ),
+            "PyQt6": DependencyManager.install_and_import("PyQt6", version="6.7.0", required_import="QtCore"),
             # Importe cryptography avec la version spécifiée
-            "cryptography_module": DependencyManager.install_and_import(
-                "cryptography",
-                version="3.3.2",
-            ),
+            "cryptography_module": DependencyManager.install_and_import("cryptography", version="3.3.2"),
             # Importe psutil et l'installe automatiquement si nécessaire
             "psutil": DependencyManager.install_and_import("psutil"),
             # Importe pytz et l'installe automatiquement si nécessaire
@@ -1041,20 +836,13 @@ def initialize_dependencies():
             "platformdirs": DependencyManager.install_and_import("platformdirs"),
             # Importe Selenium avec une version précise
             # required_import="webdriver" vérifie également selenium.webdriver
-            "selenium": DependencyManager.install_and_import(
-                "selenium",
-                required_import="webdriver",
-                version="4.27.1",
-            ),
+            "selenium": DependencyManager.install_and_import("selenium", required_import="webdriver", version="4.27.1"),
             # Importe colorama et l'installe automatiquement si nécessaire
             "colorama": DependencyManager.install_and_import("colorama"),
             # Importe SQLAlchemy et l'installe automatiquement si nécessaire
             "sqlalchemy": DependencyManager.install_and_import("sqlalchemy"),
             # Importe watchdog et vérifie également la disponibilité de son module observers
-            "watchdog": DependencyManager.install_and_import(
-                "watchdog",
-                required_import="observers",
-            ),
+            "watchdog": DependencyManager.install_and_import("watchdog", required_import="observers"),
         }
     )
 
@@ -1085,27 +873,18 @@ def main():
         initialize_dependencies()
 
         # Enregistre la fin de l'initialisation des dépendances
-        write_log_dev_file(
-            "Dependency initialization completed.",
-            "INFO",
-        )
+        write_log_dev_file("Dependency initialization completed.", "INFO")
 
         # Recherche pythonw.exe dans l'installation Python et dans le PATH
         pythonw_path = find_pythonw()
 
         # Arrête l'application si pythonw.exe est introuvable
         if not pythonw_path:
-            write_log_dev_file(
-                "pythonw.exe not found; application startup is impossible.",
-                "ERROR",
-            )
+            write_log_dev_file("pythonw.exe not found; application startup is impossible.", "ERROR")
             sys.exit(1)
 
         # Enregistre le chemin de pythonw.exe détecté
-        write_log_dev_file(
-            f"pythonw.exe detected: {pythonw_path}",
-            "INFO",
-        )
+        write_log_dev_file(f"pythonw.exe detected: {pythonw_path}", "INFO")
 
         # Référence vers l'application Qt utilisée par la fenêtre de progression
         progress_app = None
@@ -1128,12 +907,7 @@ def main():
                 progress_app = QApplication.instance() or QApplication(sys.argv)
 
                 # Crée la boîte de dialogue de progression
-                update_progress = QProgressDialog(
-                    "Starting application...",
-                    "",
-                    0,
-                    100,
-                )
+                update_progress = QProgressDialog("Starting application...", "", 0, 100)
 
                 # Définit le titre de la fenêtre
                 update_progress.setWindowTitle("AutoMailPro Update")
@@ -1183,9 +957,7 @@ def main():
             update_progress_callback("Starting update check...", 0)
 
             # Vérifie la version distante et applique une mise à jour si nécessaire
-            updated = UpdateManager.check_and_update(
-                progress_callback=update_progress_callback
-            )
+            updated = UpdateManager.check_and_update(progress_callback=update_progress_callback)
 
             # Ferme la fenêtre de progression après la vérification
             if update_progress is not None:
@@ -1202,10 +974,7 @@ def main():
 
             # Vérifie si le téléchargement de la mise à jour obligatoire a échoué
             if updated == "update_failed":
-                write_log_dev_file(
-                    "Required update failed; application will exit.",
-                    "ERROR",
-                )
+                write_log_dev_file("Required update failed; application will exit.", "ERROR")
 
                 # Informe l'utilisateur de l'échec de la mise à jour
                 show_update_failure_warning()
@@ -1215,10 +984,7 @@ def main():
 
             # Vérifie si la version distante n'a pas pu être vérifiée
             if updated is None:
-                write_log_dev_file(
-                    "Unable to verify the latest program version; application will exit.",
-                    "ERROR",
-                )
+                write_log_dev_file("Unable to verify the latest program version; application will exit.", "ERROR")
 
                 # Informe l'utilisateur que la version ne peut pas être vérifiée
                 show_update_network_warning()
@@ -1230,10 +996,7 @@ def main():
             result = "update applied" if updated else "application already up to date"
 
             # Enregistre le résultat final de la vérification
-            write_log_dev_file(
-                f"Program update check result: {result}",
-                "INFO",
-            )
+            write_log_dev_file(f"Program update check result: {result}", "INFO")
 
         except Exception as e:
             # Ferme la fenêtre de progression en cas d'erreur
@@ -1241,11 +1004,7 @@ def main():
                 update_progress.close()
 
             # Enregistre l'erreur critique pendant la vérification de mise à jour
-            write_log_dev_file(
-                "Fatal error during update "
-                f"| exception={type(e).__name__}: {e}\n{traceback.format_exc()}",
-                "CRITICAL",
-            )
+            write_log_dev_file("Fatal error during update " f"| exception={type(e).__name__}: {e}\n{traceback.format_exc()}", "CRITICAL")
 
             # Arrête l'application après une erreur critique
             sys.exit(1)
@@ -1257,10 +1016,7 @@ def main():
             script_path = SCRIPT_DIR / "src" / "AppV2.py"
 
             # Enregistre le lancement du script principal
-            write_log_dev_file(
-                f"Starting main application: script={script_path}",
-                "INFO",
-            )
+            write_log_dev_file(f"Starting main application: script={script_path}", "INFO")
 
             # Génère les clés nécessaires au lancement du programme principal
             encrypted_key, secret_key = generate_encrypted_key()
@@ -1269,39 +1025,21 @@ def main():
             if script_path.is_file():
 
                 # Lance le programme principal avec les clés générées
-                subprocess.run(
-                    [
-                        sys.executable,
-                        str(script_path),
-                        encrypted_key,
-                        secret_key,
-                    ]
-                )
+                subprocess.run([sys.executable, str(script_path), encrypted_key, secret_key])
 
                 # Enregistre la fin du programme principal
-                write_log_dev_file(
-                    "Main application terminated.",
-                    "INFO",
-                )
+                write_log_dev_file("Main application terminated.", "INFO")
 
             else:
                 # Enregistre l'absence du script principal
-                write_log_dev_file(
-                    f"Main application script not found: {script_path}",
-                    "ERROR",
-                )
+                write_log_dev_file(f"Main application script not found: {script_path}", "ERROR")
 
                 # Arrête l'application
                 sys.exit(1)
 
     except Exception as e:
         # Enregistre toute erreur non gérée avec son type et son message
-        write_log_dev_file(
-            "fatal_application_error",
-            "ERROR",
-            exception_type=type(e).__name__,
-            error=str(e),
-        )
+        write_log_dev_file("fatal_application_error", "ERROR", exception_type=type(e).__name__, error=str(e))
 
         # Arrête l'application après une erreur fatale
         sys.exit(1)

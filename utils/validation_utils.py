@@ -225,14 +225,7 @@ class ValidationUtils:
 
         # Structure de résultat standard utilisée
         # par les différentes branches de validation.
-        result: Dict[str, Any] = {
-            "success": False,
-            "data_list": None,
-            "entered_number": None,
-            "error_title": "",
-            "error_message": "",
-            "error_type": "critical",
-        }
+        result: Dict[str, Any] = {"success": False, "data_list": None, "entered_number": None, "error_title": "", "error_message": "", "error_type": "critical"}
 
         # =================================================
         # 1. VALIDATION DE BASE
@@ -240,41 +233,17 @@ class ValidationUtils:
 
         # Vérifie que les données utilisateur existent.
         if not input_data or not input_data.strip():
-            result.update(
-                {
-                    "error_title": "Input Validation Failed",
-                    "error_message": (
-                        "No input data was detected. "
-                        "Please provide the required data to proceed."
-                    ),
-                }
-            )
+            result.update({"error_title": "Input Validation Failed", "error_message": ("No input data was detected. " "Please provide the required data to proceed.")})
             return result
 
         # Vérifie que le nombre de lignes demandé existe.
         if not entered_number_text or not entered_number_text.strip():
-            result.update(
-                {
-                    "error_title": "Input Validation Failed",
-                    "error_message": (
-                        "The number of rows to process is missing. "
-                        "Please specify a valid number."
-                    ),
-                }
-            )
+            result.update({"error_title": "Input Validation Failed", "error_message": ("The number of rows to process is missing. " "Please specify a valid number.")})
             return result
 
         # Vérifie que la valeur contient uniquement des chiffres.
         if not entered_number_text.isdigit():
-            result.update(
-                {
-                    "error_title": "Input Validation Failed",
-                    "error_message": (
-                        "The entered number is invalid. "
-                        "Please provide a positive integer value."
-                    ),
-                }
-            )
+            result.update({"error_title": "Input Validation Failed", "error_message": ("The entered number is invalid. " "Please provide a positive integer value.")})
             return result
 
         # Convertit le nombre de lignes de String vers Integer.
@@ -282,9 +251,7 @@ class ValidationUtils:
 
         # Journalise uniquement le nombre demandé,
         # sans enregistrer les données sensibles.
-        Settings.write_log_event(
-            "user_input_row_limit_validated", "INFO", requested_rows=entered_number
-        )
+        Settings.write_log_event("user_input_row_limit_validated", "INFO", requested_rows=entered_number)
 
         # =================================================
         # 2. PARSING DES LIGNES
@@ -302,15 +269,7 @@ class ValidationUtils:
             #   ligne 1 -> header
             #   ligne 2 -> données
             if len(lines) < 2:
-                result.update(
-                    {
-                        "error_title": "Data Structure Error",
-                        "error_message": (
-                            "The input data contains a header "
-                            "but no data rows were found."
-                        ),
-                    }
-                )
+                result.update({"error_title": "Data Structure Error", "error_message": ("The input data contains a header " "but no data rows were found.")})
                 return result
 
             # Récupère le header et sépare ses colonnes avec ";".
@@ -318,21 +277,13 @@ class ValidationUtils:
 
             # Normalise chaque nom de colonne avec le dictionnaire
             # _INPUT_HEADER_ALIASES.
-            header = [
-                ValidationUtils._INPUT_HEADER_ALIASES.get(column, column)
-                for column in raw_header
-            ]
+            header = [ValidationUtils._INPUT_HEADER_ALIASES.get(column, column) for column in raw_header]
 
             # Toutes les lignes après le header sont les données.
             data_lines = lines[1:]
 
             # Journalise uniquement la structure générale.
-            Settings.write_log_event(
-                "user_input_parsing_started",
-                "INFO",
-                column_count=len(header),
-                row_count=len(data_lines),
-            )
+            Settings.write_log_event("user_input_parsing_started", "INFO", column_count=len(header), row_count=len(data_lines))
 
             # =================================================
             # VÉRIFICATION DES COLONNES DUPLIQUÉES
@@ -343,19 +294,12 @@ class ValidationUtils:
             if len(set(header)) != len(header):
 
                 # Construit la liste des colonnes présentes plusieurs fois.
-                duplicate_columns = sorted(
-                    {column for column in header if header.count(column) > 1}
-                )
+                duplicate_columns = sorted({column for column in header if header.count(column) > 1})
 
                 result.update(
                     {
                         "error_title": "Column Validation Failed",
-                        "error_message": (
-                            "Duplicate columns were detected after "
-                            "normalization: "
-                            f"{', '.join(duplicate_columns)}. "
-                            "Please keep only one column per field."
-                        ),
+                        "error_message": ("Duplicate columns were detected after " "normalization: " f"{', '.join(duplicate_columns)}. " "Please keep only one column per field."),
                     }
                 )
                 return result
@@ -368,35 +312,19 @@ class ValidationUtils:
             mandatory_patterns = [["email", "passwordEmail", "ipAddress", "port"]]
 
             # Colonnes optionnelles supportées.
-            optional_patterns = [
-                ["login", "password", "recoveryEmail", "new_recovery_email"]
-            ]
+            optional_patterns = [["login", "password", "recoveryEmail", "new_recovery_email"]]
 
             # Construit l'ensemble de toutes les colonnes acceptées.
-            all_valid_keys = set(
-                k for pat in (mandatory_patterns + optional_patterns) for k in pat
-            )
+            all_valid_keys = set(k for pat in (mandatory_patterns + optional_patterns) for k in pat)
 
             # Vérifie qu'au moins un format obligatoire
             # est entièrement présent dans le header.
             if not any(set(pat).issubset(header) for pat in mandatory_patterns):
 
-                Settings.write_log_event(
-                    "user_input_header_invalid",
-                    "ERROR",
-                    reason="mandatory_columns_missing",
-                    column_count=len(header),
-                )
+                Settings.write_log_event("user_input_header_invalid", "ERROR", reason="mandatory_columns_missing", column_count=len(header))
 
                 result.update(
-                    {
-                        "error_title": "Column Validation Failed",
-                        "error_message": (
-                            "Mandatory columns are missing from "
-                            "the input data. Please ensure the header "
-                            "contains all required fields."
-                        ),
-                    }
+                    {"error_title": "Column Validation Failed", "error_message": ("Mandatory columns are missing from " "the input data. Please ensure the header " "contains all required fields.")}
                 )
                 return result
 
@@ -406,22 +334,10 @@ class ValidationUtils:
             # Si des colonnes inconnues existent, la validation échoue.
             if invalid_keys:
 
-                Settings.write_log_event(
-                    "user_input_header_invalid",
-                    "ERROR",
-                    reason="unsupported_columns",
-                    invalid_column_count=len(invalid_keys),
-                )
+                Settings.write_log_event("user_input_header_invalid", "ERROR", reason="unsupported_columns", invalid_column_count=len(invalid_keys))
 
                 result.update(
-                    {
-                        "error_title": "Column Validation Failed",
-                        "error_message": (
-                            "The following columns are not recognized: "
-                            f"{', '.join(invalid_keys)}. "
-                            "Please verify the header format."
-                        ),
-                    }
+                    {"error_title": "Column Validation Failed", "error_message": ("The following columns are not recognized: " f"{', '.join(invalid_keys)}. " "Please verify the header format.")}
                 )
                 return result
 
@@ -443,23 +359,12 @@ class ValidationUtils:
                 # au nombre de colonnes du header.
                 if len(values) != len(header):
 
-                    Settings.write_log_event(
-                        "user_input_row_invalid",
-                        "ERROR",
-                        row_number=index,
-                        expected_column_count=len(header),
-                        actual_column_count=len(values),
-                    )
+                    Settings.write_log_event("user_input_row_invalid", "ERROR", row_number=index, expected_column_count=len(header), actual_column_count=len(values))
 
                     result.update(
                         {
                             "error_title": "Data Format Error",
-                            "error_message": (
-                                f"Row {index} does not match the "
-                                "expected column count. Please ensure "
-                                "all rows have the correct number "
-                                "of columns."
-                            ),
+                            "error_message": (f"Row {index} does not match the " "expected column count. Please ensure " "all rows have the correct number " "of columns."),
                         }
                     )
                     return result
@@ -485,16 +390,7 @@ class ValidationUtils:
             # que celles réellement disponibles.
             if entered_number > len(data_list):
 
-                result.update(
-                    {
-                        "error_title": "Range Validation Failed",
-                        "error_message": (
-                            f"The specified number ({entered_number}) "
-                            f"exceeds the available data rows "
-                            f"({len(data_list)})."
-                        ),
-                    }
-                )
+                result.update({"error_title": "Range Validation Failed", "error_message": (f"The specified number ({entered_number}) " f"exceeds the available data rows " f"({len(data_list)}).")})
                 return result
 
             # =================================================
@@ -507,10 +403,7 @@ class ValidationUtils:
                     "data_list": data_list,
                     "entered_number": entered_number,
                     "error_title": "Validation Successful",
-                    "error_message": (
-                        "Input data has been successfully validated "
-                        "and is ready for processing."
-                    ),
+                    "error_message": ("Input data has been successfully validated " "and is ready for processing."),
                     "error_type": "success",
                 }
             )
@@ -520,32 +413,18 @@ class ValidationUtils:
             # Enregistre les détails techniques de l'exception.
             # Attention : le traceback ne doit pas contenir de données
             # sensibles dans un environnement de production.
-            Settings.write_log_dev_file(
-                f"Unexpected error during data processing: "
-                f"{traceback.format_exc()}",
-                "ERROR",
-            )
+            Settings.write_log_dev_file(f"Unexpected error during data processing: " f"{traceback.format_exc()}", "ERROR")
 
             # Message générique destiné à l'utilisateur.
             result.update(
                 {
                     "error_title": "Processing Error",
-                    "error_message": (
-                        "An unexpected error occurred during data "
-                        "processing. Please verify your input and "
-                        "try again. If the issue persists, "
-                        "contact technical support."
-                    ),
+                    "error_message": ("An unexpected error occurred during data " "processing. Please verify your input and " "try again. If the issue persists, " "contact technical support."),
                 }
             )
 
         # Journalise la fin de la validation.
-        Settings.write_log_event(
-            "user_input_validation_completed",
-            "INFO",
-            success=bool(result.get("success")),
-            row_count=len(result.get("data_list") or []),
-        )
+        Settings.write_log_event("user_input_validation_completed", "INFO", success=bool(result.get("success")), row_count=len(result.get("data_list") or []))
 
         return result
 
@@ -570,45 +449,23 @@ class ValidationUtils:
             entered_number_text = window.textEdit_4.toPlainText().strip()
 
             # Journalise uniquement des informations statistiques.
-            Settings.write_log_event(
-                "user_input_received",
-                "INFO",
-                input_length=len(input_data),
-                input_line_count=len(input_data.splitlines()),
-                has_requested_row_count=bool(entered_number_text),
-            )
+            Settings.write_log_event("user_input_received", "INFO", input_length=len(input_data), input_line_count=len(input_data.splitlines()), has_requested_row_count=bool(entered_number_text))
 
             # Effectue la première étape de validation.
-            validation = ValidationUtils.process_user_input(
-                input_data, entered_number_text
-            )
+            validation = ValidationUtils.process_user_input(input_data, entered_number_text)
 
             # Arrête le workflow si la validation échoue.
             if not validation["success"]:
 
-                Settings.write_log_dev_file(
-                    f"Validation failed: " f"{validation['error_message']}", "ERROR"
-                )
+                Settings.write_log_dev_file(f"Validation failed: " f"{validation['error_message']}", "ERROR")
 
-                return {
-                    "valid": False,
-                    "data": None,
-                    "entered_number": None,
-                    "error": (
-                        f"{validation['error_title']}:" f"{validation['error_message']}"
-                    ),
-                }
+                return {"valid": False, "data": None, "entered_number": None, "error": (f"{validation['error_title']}:" f"{validation['error_message']}")}
 
             # Récupère les données validées.
             data_list = validation["data_list"]
             entered_number = validation["entered_number"]
 
-            Settings.write_log_event(
-                "user_input_validated",
-                "INFO",
-                row_count=len(data_list),
-                requested_rows=entered_number,
-            )
+            Settings.write_log_event("user_input_validated", "INFO", row_count=len(data_list), requested_rows=entered_number)
 
             # =================================================
             # VALIDATION DES PORTS ET DES IP
@@ -619,69 +476,37 @@ class ValidationUtils:
             # Si la validation des ports échoue, on arrête.
             if not ports_result["valid"]:
 
-                Settings.write_log_dev_file(
-                    "Ports processing failed: " f"{ports_result['error_message']}",
-                    "ERROR",
-                )
+                Settings.write_log_dev_file("Ports processing failed: " f"{ports_result['error_message']}", "ERROR")
 
-                Settings.write_log_event(
-                    "port_processing_failed",
-                    "ERROR",
-                    error_type=type(ports_result.get("error")).__name__,
-                )
+                Settings.write_log_event("port_processing_failed", "ERROR", error_type=type(ports_result.get("error")).__name__)
 
-                return {
-                    "valid": False,
-                    "data": ports_result.get("data"),
-                    "entered_number": entered_number,
-                    "error": (
-                        f"{ports_result['error_title']}:"
-                        f"{ports_result['error_message']}"
-                    ),
-                }
+                return {"valid": False, "data": ports_result.get("data"), "entered_number": entered_number, "error": (f"{ports_result['error_title']}:" f"{ports_result['error_message']}")}
 
             # Récupère uniquement les comptes filtrés.
             filtered_accounts = ports_result["data"]["filtered"]
 
-            Settings.write_log_dev_file(
-                "Ports processed - filtered count: " f"{len(filtered_accounts)}", "INFO"
-            )
+            Settings.write_log_dev_file("Ports processed - filtered count: " f"{len(filtered_accounts)}", "INFO")
 
             # =================================================
             # EXTRACTION DES IP UNIQUES
             # =================================================
 
-            ip_result = ValidationUtils.collect_unique_proxy_addresses(
-                filtered_accounts
-            )
+            ip_result = ValidationUtils.collect_unique_proxy_addresses(filtered_accounts)
 
             # Arrête le traitement si l'extraction échoue.
             if not ip_result["valid"]:
 
-                Settings.write_log_dev_file(
-                    f"IP extraction failed: " f"{ip_result['error']}", "ERROR"
-                )
+                Settings.write_log_dev_file(f"IP extraction failed: " f"{ip_result['error']}", "ERROR")
 
-                return {
-                    "valid": False,
-                    "data": None,
-                    "entered_number": entered_number,
-                    "error": (
-                        f"{ip_result['error_title']}:" f"{ip_result['error_message']}"
-                    ),
-                }
+                return {"valid": False, "data": None, "entered_number": entered_number, "error": (f"{ip_result['error_title']}:" f"{ip_result['error_message']}")}
 
             # Récupère le Set des IP uniques.
             unique_ips = ip_result["data"]
 
-            Settings.write_log_dev_file(
-                f"Unique IPs extracted: {len(unique_ips)}", "INFO"
-            )
+            Settings.write_log_dev_file(f"Unique IPs extracted: {len(unique_ips)}", "INFO")
 
             # Ne journalise volontairement pas les valeurs IP.
-            Settings.write_log_dev_file(
-                "Unique IP values intentionally omitted from logs", "DEBUG"
-            )
+            Settings.write_log_dev_file("Unique IP values intentionally omitted from logs", "DEBUG")
 
             # =================================================
             # IMPORTS DIFFÉRÉS
@@ -702,34 +527,18 @@ class ValidationUtils:
             # se reconnecter.
             if not session_info["valid"]:
 
-                Settings.write_log_dev_file(
-                    "Invalid session: " f"{session_info.get('error', 'Unknown error')}",
-                    "ERROR",
-                )
+                Settings.write_log_dev_file("Invalid session: " f"{session_info.get('error', 'Unknown error')}", "ERROR")
 
-                Settings.write_log_event(
-                    "session_validation_failed",
-                    "ERROR",
-                    error_code=session_info.get("error", "unknown"),
-                )
+                Settings.write_log_event("session_validation_failed", "ERROR", error_code=session_info.get("error", "unknown"))
 
-                return {
-                    "valid": False,
-                    "data": None,
-                    "entered_number": entered_number,
-                    "error": ("Your session is invalid. " "Please log in again."),
-                }
+                return {"valid": False, "data": None, "entered_number": entered_number, "error": ("Your session is invalid. " "Please log in again.")}
 
             # Récupère l'entité de la session.
             entity_used = session_info.get("p_entity_Nouveau", "UNKNOWN")
 
             Settings.write_log_dev_file("Session validated successfully", "INFO")
 
-            Settings.write_log_event(
-                "session_validation_succeeded",
-                "INFO",
-                has_entity=bool(entity_used and entity_used != "UNKNOWN"),
-            )
+            Settings.write_log_event("session_validation_succeeded", "INFO", has_entity=bool(entity_used and entity_used != "UNKNOWN"))
 
             # =================================================
             # APPEL API
@@ -746,24 +555,11 @@ class ValidationUtils:
 
                 Settings.write_log_dev_file(f"API call failed: {api_error}", "ERROR")
 
-                Settings.write_log_event(
-                    "proxy_configuration_failed",
-                    "ERROR",
-                    error_type=type(api_result.get("error")).__name__,
-                )
+                Settings.write_log_event("proxy_configuration_failed", "ERROR", error_type=type(api_result.get("error")).__name__)
 
-                return {
-                    "valid": False,
-                    "data": None,
-                    "entered_number": entered_number,
-                    "error": api_error,
-                }
+                return {"valid": False, "data": None, "entered_number": entered_number, "error": api_error}
 
-            Settings.write_log_dev_file(
-                "API call succeeded - returned entries: "
-                f"{len(api_result['data']) if api_result.get('data') else 0}",
-                "INFO",
-            )
+            Settings.write_log_dev_file("API call succeeded - returned entries: " f"{len(api_result['data']) if api_result.get('data') else 0}", "INFO")
 
             # =================================================
             # MERGE DES DONNÉES
@@ -771,74 +567,40 @@ class ValidationUtils:
 
             # Combine les données saisies par l'utilisateur
             # avec les informations retournées par l'API.
-            merge_result = ValidationUtils.mergeValidatedData(
-                api_result["data"], data_list
-            )
+            merge_result = ValidationUtils.mergeValidatedData(api_result["data"], data_list)
 
             # Vérifie le résultat du merge.
             if not merge_result["valid"]:
 
                 merge_error = merge_result["error"]
 
-                Settings.write_log_event(
-                    "validated_data_merge_failed",
-                    "ERROR",
-                    error=merge_error,
-                )
+                Settings.write_log_event("validated_data_merge_failed", "ERROR", error=merge_error)
 
-                return {
-                    "valid": False,
-                    "data": None,
-                    "entered_number": entered_number,
-                    "error": merge_error,
-                }
+                return {"valid": False, "data": None, "entered_number": entered_number, "error": merge_error}
 
             # Récupère les données finales.
             final_data = merge_result["data"]
 
-            Settings.write_log_dev_file(
-                "Merge succeeded - final records: " f"{len(final_data)}", "INFO"
-            )
+            Settings.write_log_dev_file("Merge succeeded - final records: " f"{len(final_data)}", "INFO")
 
             # Les données finales sensibles ne sont volontairement
             # pas écrites dans les logs.
-            Settings.write_log_dev_file(
-                "Final data sample intentionally omitted from logs",
-                "DEBUG",
-            )
+            Settings.write_log_dev_file("Final data sample intentionally omitted from logs", "DEBUG")
 
-            Settings.write_log_dev_file(
-                "========== REQUEST COMPLETED SUCCESSFULLY ==========", "INFO"
-            )
+            Settings.write_log_dev_file("========== REQUEST COMPLETED SUCCESSFULLY ==========", "INFO")
 
             # Retourne le résultat final.
-            return {
-                "valid": True,
-                "data": final_data,
-                "entered_number": entered_number,
-                "error": None,
-            }
+            return {"valid": True, "data": final_data, "entered_number": entered_number, "error": None}
 
         except Exception as e:
 
             # Journalise l'erreur technique complète.
-            Settings.write_log_dev_file(
-                "Unexpected error in generateUserInputData: "
-                f"{str(e)}\n{traceback.format_exc()}",
-                "ERROR",
-            )
+            Settings.write_log_dev_file("Unexpected error in generateUserInputData: " f"{str(e)}\n{traceback.format_exc()}", "ERROR")
 
-            Settings.write_log_dev_file(
-                "========== REQUEST FAILED WITH EXCEPTION ==========", "ERROR"
-            )
+            Settings.write_log_dev_file("========== REQUEST FAILED WITH EXCEPTION ==========", "ERROR")
 
             # Retourne un message générique à l'utilisateur.
-            return {
-                "valid": False,
-                "data": None,
-                "entered_number": None,
-                "error": ("An unexpected error occurred. " "Please try again later."),
-            }
+            return {"valid": False, "data": None, "entered_number": None, "error": ("An unexpected error occurred. " "Please try again later.")}
 
     # =========================================================
     # ACCÈS SÉCURISÉ À UNE VALEUR DE DICTIONNAIRE
@@ -909,30 +671,18 @@ class ValidationUtils:
                 # Le format doit être exactement IP#PORT.
                 if len(ip_parts) != 2:
 
-                    Settings.write_log_event(
-                        "proxy_address_invalid", "ERROR", reason="malformed_format"
-                    )
+                    Settings.write_log_event("proxy_address_invalid", "ERROR", reason="malformed_format")
 
-                    return {
-                        "valid": False,
-                        "data": None,
-                        "error": "Malformed IP address format",
-                    }
+                    return {"valid": False, "data": None, "error": "Malformed IP address format"}
 
                 ip, port = ip_parts
 
                 # Vérifie que le port contient uniquement des chiffres.
                 if not port.isdigit():
 
-                    Settings.write_log_event(
-                        "proxy_address_invalid", "ERROR", reason="invalid_port"
-                    )
+                    Settings.write_log_event("proxy_address_invalid", "ERROR", reason="invalid_port")
 
-                    return {
-                        "valid": False,
-                        "data": None,
-                        "error": "Invalid port format",
-                    }
+                    return {"valid": False, "data": None, "error": "Invalid port format"}
 
             # Journalise uniquement l'événement,
             # sans écrire la valeur IP.
@@ -943,10 +693,7 @@ class ValidationUtils:
         except Exception as e:
 
             # Enregistre le traceback technique.
-            Settings.write_log_dev_file(
-                "Unexpected error during IP formatting: " f"{traceback.format_exc()}",
-                "ERROR",
-            )
+            Settings.write_log_dev_file("Unexpected error during IP formatting: " f"{traceback.format_exc()}", "ERROR")
 
             Settings.write_log_dev_file(f"Error formatting IP: {e}", "ERROR")
 
@@ -974,18 +721,14 @@ class ValidationUtils:
             # Aucun compte à traiter.
             if not data_list:
 
-                Settings.write_log_dev_file(
-                    "No data provided for port processing", "WARNING"
-                )
+                Settings.write_log_dev_file("No data provided for port processing", "WARNING")
 
                 return {
                     "valid": True,
                     "data": {"filtered": [], "invalid": [], "suspicious": []},
                     "error": None,
                     "error_title": "No Data",
-                    "error_message": (
-                        "No account data was provided " "for port processing."
-                    ),
+                    "error_message": ("No account data was provided " "for port processing."),
                 }
 
             # Comptes dont la configuration est valide.
@@ -1004,20 +747,14 @@ class ValidationUtils:
                 # Chaque entrée doit être un dictionnaire.
                 if not isinstance(item, dict):
 
-                    Settings.write_log_dev_file(
-                        f"Data integrity error at index {index}: "
-                        "item is not a dictionary",
-                        "ERROR",
-                    )
+                    Settings.write_log_dev_file(f"Data integrity error at index {index}: " "item is not a dictionary", "ERROR")
 
                     return {
                         "valid": False,
                         "data": None,
                         "error": "Data integrity error",
                         "error_title": "Data Integrity Error",
-                        "error_message": (
-                            f"Item {index + 1} is not a valid " "data structure."
-                        ),
+                        "error_message": (f"Item {index + 1} is not a valid " "data structure."),
                     }
 
                 # Récupère le port de manière sécurisée.
@@ -1026,19 +763,9 @@ class ValidationUtils:
                 # Vérifie que le port existe.
                 if not port:
 
-                    Settings.write_log_dev_file(
-                        f"Missing port at index {index}", "ERROR"
-                    )
+                    Settings.write_log_dev_file(f"Missing port at index {index}", "ERROR")
 
-                    return {
-                        "valid": False,
-                        "data": None,
-                        "error": "Missing port",
-                        "error_title": "Port Validation Failed",
-                        "error_message": (
-                            f"Port information is missing for " f"item {index + 1}."
-                        ),
-                    }
+                    return {"valid": False, "data": None, "error": "Missing port", "error_title": "Port Validation Failed", "error_message": (f"Port information is missing for " f"item {index + 1}.")}
 
                 # Récupère l'adresse IP.
                 ip = str(ValidationUtils.getValueSafely(item, "ipAddress", "")).strip()
@@ -1046,38 +773,23 @@ class ValidationUtils:
                 # Vérifie que l'IP existe.
                 if not ip:
 
-                    Settings.write_log_dev_file(
-                        f"Missing IP address at index {index}", "ERROR"
-                    )
+                    Settings.write_log_dev_file(f"Missing IP address at index {index}", "ERROR")
 
-                    return {
-                        "valid": False,
-                        "data": None,
-                        "error": "Missing IP",
-                        "error_title": "IP Validation Failed",
-                        "error_message": (
-                            f"IP address is missing for " f"item {index + 1}."
-                        ),
-                    }
+                    return {"valid": False, "data": None, "error": "Missing IP", "error_title": "IP Validation Failed", "error_message": (f"IP address is missing for " f"item {index + 1}.")}
 
                 # Vérifie le format IPv4.
                 if not ValidationUtils.validate_ip(ip):
 
                     # Ne met pas l'IP dans les logs
                     # afin d'éviter d'exposer une donnée réseau.
-                    Settings.write_log_dev_file(
-                        f"Invalid IP address format at index {index}", "ERROR"
-                    )
+                    Settings.write_log_dev_file(f"Invalid IP address format at index {index}", "ERROR")
 
                     return {
                         "valid": False,
                         "data": None,
                         "error": "Invalid IP format",
                         "error_title": "IP Validation Failed",
-                        "error_message": (
-                            f"The IP address for item {index + 1} "
-                            "is not in a valid IPv4 format."
-                        ),
+                        "error_message": (f"The IP address for item {index + 1} " "is not in a valid IPv4 format."),
                     }
 
                 # Vérifie que le port fait partie des ports
@@ -1110,26 +822,13 @@ class ValidationUtils:
 
             if invalid_accounts:
 
-                msg = (
-                    f"Port validation failed for "
-                    f"{len(invalid_accounts)} account(s). "
-                    "Only authorized ports are allowed "
-                    "for this operation. "
-                    "Please review the port values."
-                )
+                msg = f"Port validation failed for " f"{len(invalid_accounts)} account(s). " "Only authorized ports are allowed " "for this operation. " "Please review the port values."
 
-                Settings.write_log_dev_file(
-                    "Validation failed: " f"{len(invalid_accounts)} invalid accounts",
-                    "ERROR",
-                )
+                Settings.write_log_dev_file("Validation failed: " f"{len(invalid_accounts)} invalid accounts", "ERROR")
 
                 return {
                     "valid": False,
-                    "data": {
-                        "filtered": valid_accounts,
-                        "invalid": invalid_accounts,
-                        "suspicious": suspicious_accounts,
-                    },
+                    "data": {"filtered": valid_accounts, "invalid": invalid_accounts, "suspicious": suspicious_accounts},
                     "error": msg,
                     "error_title": "Invalid Port Configuration",
                     "error_message": msg,
@@ -1137,44 +836,28 @@ class ValidationUtils:
 
             # Journalise uniquement le nombre,
             # sans exposer les comptes.
-            Settings.write_log_dev_file(
-                "Suspicious ports count: " f"{len(suspicious_accounts)}", "INFO"
-            )
+            Settings.write_log_dev_file("Suspicious ports count: " f"{len(suspicious_accounts)}", "INFO")
 
             # Retourne les résultats de validation.
             return {
                 "valid": True,
-                "data": {
-                    "filtered": valid_accounts,
-                    "invalid": [],
-                    "suspicious": suspicious_accounts,
-                },
+                "data": {"filtered": valid_accounts, "invalid": [], "suspicious": suspicious_accounts},
                 "error": None,
                 "error_title": "Port Processing Successful",
-                "error_message": (
-                    "All ports and IP addresses were " "validated successfully."
-                ),
+                "error_message": ("All ports and IP addresses were " "validated successfully."),
             }
 
         except Exception as e:
 
             # Enregistre l'erreur technique.
-            Settings.write_log_dev_file(
-                "Unexpected error during data processing: "
-                f"{e}\n{traceback.format_exc()}",
-                "ERROR",
-            )
+            Settings.write_log_dev_file("Unexpected error during data processing: " f"{e}\n{traceback.format_exc()}", "ERROR")
 
             return {
                 "valid": False,
                 "data": None,
                 "error": "Unexpected processing error",
                 "error_title": "Processing Error",
-                "error_message": (
-                    "An unexpected system error occurred "
-                    "during port processing. "
-                    "Please contact technical support."
-                ),
+                "error_message": ("An unexpected system error occurred " "during port processing. " "Please contact technical support."),
             }
 
     # =========================================================
@@ -1214,19 +897,9 @@ class ValidationUtils:
                 # Vérifie le résultat de la normalisation.
                 if not result["valid"]:
 
-                    Settings.write_log_event(
-                        "validated_data_merge_failed",
-                        "ERROR",
-                        reason="invalid_proxy_address",
-                    )
+                    Settings.write_log_event("validated_data_merge_failed", "ERROR", reason="invalid_proxy_address")
 
-                    return {
-                        "valid": False,
-                        "data": None,
-                        "error": (
-                            "There is an invalid IP address. " "Please check your data."
-                        ),
-                    }
+                    return {"valid": False, "data": None, "error": ("There is an invalid IP address. " "Please check your data.")}
 
                 # Adresse normalisée.
                 formatted_ip = result["data"]
@@ -1242,17 +915,9 @@ class ValidationUtils:
                 # la fusion ne peut pas continuer.
                 if not api_info:
 
-                    Settings.write_log_event(
-                        "validated_data_merge_failed",
-                        "ERROR",
-                        reason="proxy_configuration_missing",
-                    )
+                    Settings.write_log_event("validated_data_merge_failed", "ERROR", reason="proxy_configuration_missing")
 
-                    return {
-                        "valid": False,
-                        "data": None,
-                        "error": ("Service data is missing for " "some IP addresses."),
-                    }
+                    return {"valid": False, "data": None, "error": ("Service data is missing for " "some IP addresses.")}
 
                 # Construit la structure finale utilisée
                 # par le reste de l'application.
@@ -1261,9 +926,7 @@ class ValidationUtils:
                         # Email du compte.
                         "email": ValidationUtils.getValueSafely(item, "email"),
                         # Mot de passe email.
-                        "password_email": (
-                            ValidationUtils.getValueSafely(item, "passwordEmail")
-                        ),
+                        "password_email": (ValidationUtils.getValueSafely(item, "passwordEmail")),
                         # Adresse Proxy normalisée.
                         "ip_address": formatted_ip,
                         # Port fourni par l'API.
@@ -1273,46 +936,29 @@ class ValidationUtils:
                         # Mot de passe fourni par l'API.
                         "password": api_info.get("pass"),
                         # Email de récupération.
-                        "recovery_email": (
-                            ValidationUtils.getValueSafely(item, "recoveryEmail")
-                        ),
+                        "recovery_email": (ValidationUtils.getValueSafely(item, "recoveryEmail")),
                         # Nouvelle adresse email de récupération.
-                        "new_recovery_email": (
-                            ValidationUtils.getValueSafely(item, "new_recovery_email")
-                        ),
+                        "new_recovery_email": (ValidationUtils.getValueSafely(item, "new_recovery_email")),
                     }
                 )
 
             # Journalise uniquement le nombre de lignes.
-            Settings.write_log_event(
-                "validated_data_merge_completed",
-                "INFO",
-                input_row_count=len(data_list),
-                output_row_count=len(final_list),
-            )
+            Settings.write_log_event("validated_data_merge_completed", "INFO", input_row_count=len(data_list), output_row_count=len(final_list))
 
             return {"valid": True, "data": final_list, "error": None}
 
         except Exception as e:
 
-            Settings.write_log_dev_file(
-                f"Error merging data: {e}\n" f"{traceback.format_exc()}", "ERROR"
-            )
+            Settings.write_log_dev_file(f"Error merging data: {e}\n" f"{traceback.format_exc()}", "ERROR")
 
-            return {
-                "valid": False,
-                "data": None,
-                "error": ("An error occurred while merging the data."),
-            }
+            return {"valid": False, "data": None, "error": ("An error occurred while merging the data.")}
 
     # =========================================================
     # VALIDATION DES FICHIERS ET DES CHEMINS
     # =========================================================
 
     @staticmethod
-    def validate_path(
-        path: str, must_exist: bool = True, is_file: bool = False
-    ) -> bool:
+    def validate_path(path: str, must_exist: bool = True, is_file: bool = False) -> bool:
         """
         Vérifie si un chemin est valide.
 
@@ -1367,9 +1013,7 @@ class ValidationUtils:
 
         except Exception as e:
 
-            Settings.write_log_dev_file(
-                "Exception in validate_path: " f"{e}\n{traceback.format_exc()}", "ERROR"
-            )
+            Settings.write_log_dev_file("Exception in validate_path: " f"{e}\n{traceback.format_exc()}", "ERROR")
 
             return False
 
@@ -1438,10 +1082,7 @@ class ValidationUtils:
 
         except Exception as e:
 
-            Settings.write_log_dev_file(
-                "Exception in ensurePathExists: " f"{e}\n{traceback.format_exc()}",
-                "ERROR",
-            )
+            Settings.write_log_dev_file("Exception in ensurePathExists: " f"{e}\n{traceback.format_exc()}", "ERROR")
 
             return False
 
@@ -1520,12 +1161,7 @@ class ValidationUtils:
     # =========================================================
 
     @staticmethod
-    def validate_qlineedit_text(
-        input_data: Union[QLineEdit, str],
-        validator_type: str = "any",
-        min_length: int = 0,
-        max_length: int = 1000,
-    ) -> Tuple[bool, str]:
+    def validate_qlineedit_text(input_data: Union[QLineEdit, str], validator_type: str = "any", min_length: int = 0, max_length: int = 1000) -> Tuple[bool, str]:
         """
         Valide le contenu d'un QLineEdit ou d'une chaîne.
 
@@ -1599,11 +1235,7 @@ class ValidationUtils:
         except Exception as e:
 
             # Journalise l'erreur technique.
-            Settings.write_log_dev_file(
-                "Exception in validate_qlineedit_text: "
-                f"{e}\n{traceback.format_exc()}",
-                "ERROR",
-            )
+            Settings.write_log_dev_file("Exception in validate_qlineedit_text: " f"{e}\n{traceback.format_exc()}", "ERROR")
 
             return (False, f"Validation error: {str(e)}")
 
@@ -1638,13 +1270,7 @@ class ValidationUtils:
 
         except (ValueError, TypeError) as error:
 
-            Settings.write_log_dev_file(
-                "Error parsing random range "
-                f"| exception={type(error).__name__}: {error} "
-                f"| text={text!r} "
-                f"| default={default}\n{traceback.format_exc()}",
-                "ERROR",
-            )
+            Settings.write_log_dev_file("Error parsing random range " f"| exception={type(error).__name__}: {error} " f"| text={text!r} " f"| default={default}\n{traceback.format_exc()}", "ERROR")
 
             # Retourne la valeur par défaut.
             return default
@@ -1654,9 +1280,7 @@ class ValidationUtils:
     # =========================================================
 
     @staticmethod
-    def validate_and_correct_qlineedit(
-        qlineedit: QLineEdit, default_value: str = "50,50"
-    ) -> None:
+    def validate_and_correct_qlineedit(qlineedit: QLineEdit, default_value: str = "50,50") -> None:
         """
         Valide une valeur de type :
             50
@@ -1712,10 +1336,7 @@ class ValidationUtils:
                     qlineedit.setStyleSheet(new_style)
 
                     # Message affiché à l'utilisateur.
-                    qlineedit.setToolTip(
-                        "The minimum value is greater than "
-                        "the maximum value. The value was corrected."
-                    )
+                    qlineedit.setToolTip("The minimum value is greater than " "the maximum value. The value was corrected.")
 
                 # Programme la modification UI.
                 QTimer.singleShot(0, apply_style)
@@ -1758,9 +1379,7 @@ class ValidationUtils:
                 qlineedit.setStyleSheet(new_style)
 
                 # Explique le format attendu.
-                qlineedit.setToolTip(
-                    "Enter a value in the format " "'Min,Max' or a single number."
-                )
+                qlineedit.setToolTip("Enter a value in the format " "'Min,Max' or a single number.")
 
             # Programme la modification UI.
             QTimer.singleShot(0, apply_error)
@@ -1770,11 +1389,7 @@ class ValidationUtils:
     # =========================================================
 
     @staticmethod
-    def validate_qlineedit_with_range(
-        qlineedit: QLineEdit,
-        default_value: str = "50,50",
-        callback: Optional[Callable] = None,
-    ) -> Tuple[bool, Optional[Tuple[int, int]]]:
+    def validate_qlineedit_with_range(qlineedit: QLineEdit, default_value: str = "50,50", callback: Optional[Callable] = None) -> Tuple[bool, Optional[Tuple[int, int]]]:
         """
         Valide un QLineEdit contenant une plage numérique.
         """
@@ -1800,9 +1415,7 @@ class ValidationUtils:
     # =========================================================
 
     @staticmethod
-    def inject_border_into_style(
-        old_style: str, border_line: str = ("border: 2px solid #cc4c4c;")
-    ) -> str:
+    def inject_border_into_style(old_style: str, border_line: str = ("border: 2px solid #cc4c4c;")) -> str:
         """
         Ajoute une bordure à un bloc QLineEdit existant.
 
@@ -1928,12 +1541,7 @@ class ValidationUtils:
         special_chars = "!@#$%^&*()-_+=<>?/|"
 
         # Garantit au moins un caractère de chaque catégorie.
-        password = [
-            random.choice(lowercase),
-            random.choice(uppercase),
-            random.choice(digits),
-            random.choice(special_chars),
-        ]
+        password = [random.choice(lowercase), random.choice(uppercase), random.choice(digits), random.choice(special_chars)]
 
         # Calcule le nombre de caractères restant à générer.
         remaining_length = length - len(password)
@@ -1995,13 +1603,7 @@ class ValidationUtils:
         file_name = os.path.basename(file_name)
 
         # Recherche l'email selon le format attendu du fichier.
-        match = re.search(
-            r"log_\d{4}-\d{2}-\d{2}T"
-            r"\d{2}-\d{2}-\d{2}-\d{3}Z_"
-            r"([\w.+-]+@[\w.-]+\.[a-zA-Z]{2,6})"
-            r"\.txt",
-            file_name,
-        )
+        match = re.search(r"log_\d{4}-\d{2}-\d{2}T" r"\d{2}-\d{2}-\d{2}-\d{3}Z_" r"([\w.+-]+@[\w.-]+\.[a-zA-Z]{2,6})" r"\.txt", file_name)
 
         # Si un email est trouvé.
         if match:
@@ -2019,9 +1621,7 @@ class ValidationUtils:
     # =========================================================
 
     @staticmethod
-    def collect_unique_proxy_addresses(
-        data_list: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+    def collect_unique_proxy_addresses(data_list: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
         Extrait les adresses IP uniques des comptes.
         """
@@ -2031,21 +1631,9 @@ class ValidationUtils:
             # Vérifie si la liste contient des données.
             if not data_list:
 
-                Settings.write_log_dev_file(
-                    "No account data provided " "for proxy address collection",
-                    "WARNING",
-                )
+                Settings.write_log_dev_file("No account data provided " "for proxy address collection", "WARNING")
 
-                return {
-                    "valid": True,
-                    "data": set(),
-                    "error": None,
-                    "error_title": "No Data",
-                    "error_message": (
-                        "No account entries were provided "
-                        "for proxy address collection."
-                    ),
-                }
+                return {"valid": True, "data": set(), "error": None, "error_title": "No Data", "error_message": ("No account entries were provided " "for proxy address collection.")}
 
             # Utilise un Set afin de supprimer automatiquement
             # les adresses IP dupliquées.
@@ -2066,44 +1654,30 @@ class ValidationUtils:
 
                     # Journalise uniquement l'index,
                     # pas la valeur sensible.
-                    Settings.write_log_dev_file(
-                        f"Missing ipAddress at index {index}", "WARNING"
-                    )
+                    Settings.write_log_dev_file(f"Missing ipAddress at index {index}", "WARNING")
 
             # Journalise le nombre total d'IP uniques.
-            Settings.write_log_dev_file(
-                "Proxy addresses collected - total: " f"{len(unique_ips)}", "INFO"
-            )
+            Settings.write_log_dev_file("Proxy addresses collected - total: " f"{len(unique_ips)}", "INFO")
 
             return {
                 "valid": True,
                 "data": unique_ips,
                 "error": None,
                 "error_title": ("Proxy Address Collection Successful"),
-                "error_message": (
-                    f"Collected {len(unique_ips)} " "unique proxy address(es)."
-                ),
+                "error_message": (f"Collected {len(unique_ips)} " "unique proxy address(es)."),
             }
 
         except Exception as e:
 
             # Journalise l'erreur technique.
-            Settings.write_log_dev_file(
-                "Error collecting unique proxy addresses: "
-                f"{e}\n{traceback.format_exc()}",
-                "ERROR",
-            )
+            Settings.write_log_dev_file("Error collecting unique proxy addresses: " f"{e}\n{traceback.format_exc()}", "ERROR")
 
             return {
                 "valid": False,
                 "data": None,
                 "error": str(e),
                 "error_title": ("Proxy Address Collection Error"),
-                "error_message": (
-                    "An error occurred while collecting "
-                    "proxy addresses. Please verify the "
-                    "data format and retry."
-                ),
+                "error_message": ("An error occurred while collecting " "proxy addresses. Please verify the " "data format and retry."),
             }
 
 

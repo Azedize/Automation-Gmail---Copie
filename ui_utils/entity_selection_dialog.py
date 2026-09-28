@@ -3,14 +3,7 @@ import re
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
-from PyQt6.QtWidgets import (
-    QDialog,
-    QHBoxLayout,
-    QLabel,
-    QLineEdit,
-    QPushButton,
-    QVBoxLayout,
-)
+from PyQt6.QtWidgets import QDialog, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout
 
 from config import Settings
 
@@ -114,9 +107,7 @@ class EntitySelectionDialog(QDialog):
         # font-weight    -> texte en gras
         # color          -> couleur du texte
         # margin-bottom  -> espace sous le titre
-        title_label.setStyleSheet(
-            "font-size: 18px; font-weight: bold; color: #333; margin-bottom: 10px;"
-        )
+        title_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #333; margin-bottom: 10px;")
 
         # Ajoute le titre au layout principal.
         #
@@ -124,14 +115,10 @@ class EntitySelectionDialog(QDialog):
         main_layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignCenter)
 
         # Crée le texte explicatif affiché au-dessus du champ de saisie.
-        instruction_label = QLabel(
-            "Please enter the entity you want to use for this session : "
-        )
+        instruction_label = QLabel("Please enter the entity you want to use for this session : ")
 
         # Définit le style visuel du texte d'instruction.
-        instruction_label.setStyleSheet(
-            "font-size: 14px; color: #555; margin-bottom: 5px;"
-        )
+        instruction_label.setStyleSheet("font-size: 14px; color: #555; margin-bottom: 5px;")
 
         # Autorise QLabel à couper automatiquement le texte sur plusieurs lignes
         # si la largeur disponible n'est pas suffisante.
@@ -156,10 +143,7 @@ class EntitySelectionDialog(QDialog):
             #
             # Le texte est plus petit et affiché en italique afin
             # de le distinguer de l'instruction principale.
-            format_info.setStyleSheet(
-                "font-size: 12px; color: #859cb5; "
-                "margin-bottom: 10px; font-style: italic;"
-            )
+            format_info.setStyleSheet("font-size: 12px; color: #859cb5; " "margin-bottom: 10px; font-style: italic;")
 
             # Ajoute l'information sur le format au layout.
             main_layout.addWidget(format_info)
@@ -223,12 +207,7 @@ class EntitySelectionDialog(QDialog):
         #
         # Le texte est rouge afin d'indiquer clairement à l'utilisateur
         # qu'une erreur de validation s'est produite.
-        self.error_label.setStyleSheet(
-            "font-size: 12px; "
-            "color: #d32f2f; "
-            "margin-top: 8px; "
-            "margin-bottom: 8px;"
-        )
+        self.error_label.setStyleSheet("font-size: 12px; " "color: #d32f2f; " "margin-top: 8px; " "margin-bottom: 8px;")
 
         # Permet au message d'erreur de passer sur plusieurs lignes
         # lorsque sa longueur dépasse la largeur disponible.
@@ -426,10 +405,7 @@ class EntitySelectionDialog(QDialog):
         #     opm
         if self.pattern and not re.match(self.pattern, entity_text):
             # Affiche le message indiquant que le format est incorrect.
-            self.error_label.setText(
-                "Invalid entity format. Expected format: "
-                "opm followed by digits (e.g., opm74)"
-            )
+            self.error_label.setText("Invalid entity format. Expected format: " "opm followed by digits (e.g., opm74)")
 
             # Rend le message d'erreur visible.
             self.error_label.show()

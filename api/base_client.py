@@ -79,19 +79,9 @@ try:
 except ImportError as error:
     # Journalise le traceback si Settings est disponible, sinon utilise la console.
     if "Settings" in globals():
-        Settings.write_log_event(
-            "api_client_import_failed",
-            "ERROR",
-            file=__file__,
-            exception_type=type(error).__name__,
-            error=str(error),
-            traceback=traceback.format_exc(),
-        )
+        Settings.write_log_event("api_client_import_failed", "ERROR", file=__file__, exception_type=type(error).__name__, error=str(error), traceback=traceback.format_exc())
     else:
-        print(
-            f"❌ Erreur d'importation dans file {__file__}: {error}\n"
-            f"{traceback.format_exc()}"
-        )
+        print(f"❌ Erreur d'importation dans file {__file__}: {error}\n" f"{traceback.format_exc()}")
 
     # Arrête immédiatement le programme car les dépendances
     # nécessaires au fonctionnement de l'ApiClient sont absentes.
@@ -190,22 +180,10 @@ class ApiClient:
         #
         # Le contenu sensible des requêtes n'est pas journalisé.
         # --------------------------------------------------
-        Settings.write_log_event(
-            "api_client_initialized",
-            "INFO",
-            verify_ssl=self.session.verify,
-            retry_attempts=self.MAX_REQUEST_ATTEMPTS,
-        )
+        Settings.write_log_event("api_client_initialized", "INFO", verify_ssl=self.session.verify, retry_attempts=self.MAX_REQUEST_ATTEMPTS)
 
     def makeRequest(
-        self,
-        endpoint: str,
-        method: str = "POST",
-        data: Optional[Dict] = None,
-        json_data: Optional[Dict] = None,
-        params: Optional[Dict] = None,
-        headers: Optional[Dict] = None,
-        timeout: int = 30,
+        self, endpoint: str, method: str = "POST", data: Optional[Dict] = None, json_data: Optional[Dict] = None, params: Optional[Dict] = None, headers: Optional[Dict] = None, timeout: int = 30
     ) -> Dict[str, Any]:
 
         # --------------------------------------------------
@@ -227,11 +205,7 @@ class ApiClient:
         # Si endpoint ne commence pas par "_", sa valeur est
         # considérée directement comme une URL.
         # --------------------------------------------------
-        url = (
-            Settings.API_ENDPOINTS.get(endpoint, endpoint)
-            if endpoint.startswith("_")
-            else endpoint
-        )
+        url = Settings.API_ENDPOINTS.get(endpoint, endpoint) if endpoint.startswith("_") else endpoint
 
         # --------------------------------------------------
         # Crée une copie des headers globaux de la Session.
@@ -262,14 +236,7 @@ class ApiClient:
         # dans les logs.
         # --------------------------------------------------
         Settings.write_log_event(
-            "http_request_prepared",
-            "INFO",
-            endpoint=endpoint,
-            method=method.upper(),
-            has_data=bool(data),
-            has_json=bool(json_data),
-            has_params=bool(params),
-            timeout_seconds=timeout,
+            "http_request_prepared", "INFO", endpoint=endpoint, method=method.upper(), has_data=bool(data), has_json=bool(json_data), has_params=bool(params), timeout_seconds=timeout
         )
 
         # --------------------------------------------------
@@ -297,14 +264,7 @@ class ApiClient:
                 # ------------------------------------------
                 # Journalise le début de la tentative.
                 # ------------------------------------------
-                Settings.write_log_event(
-                    "http_request_started",
-                    "INFO",
-                    endpoint=endpoint,
-                    method=method.upper(),
-                    attempt=attempt,
-                    max_attempts=self.MAX_REQUEST_ATTEMPTS,
-                )
+                Settings.write_log_event("http_request_started", "INFO", endpoint=endpoint, method=method.upper(), attempt=attempt, max_attempts=self.MAX_REQUEST_ATTEMPTS)
 
                 # ------------------------------------------
                 # Envoie réellement la requête HTTP.
@@ -327,15 +287,7 @@ class ApiClient:
                 # timeout :
                 #     temps maximal d'attente.
                 # ------------------------------------------
-                response = self.session.request(
-                    method=method.upper(),
-                    url=url,
-                    data=data,
-                    json=json_data,
-                    params=params,
-                    headers=req_headers,
-                    timeout=timeout,
-                )
+                response = self.session.request(method=method.upper(), url=url, data=data, json=json_data, params=params, headers=req_headers, timeout=timeout)
 
                 # ------------------------------------------
                 # Journalise les informations générales de la
@@ -382,14 +334,7 @@ class ApiClient:
                         #
                         # Le contenu réel n'est pas enregistré.
                         # ----------------------------------
-                        Settings.write_log_event(
-                            "http_json_parsed",
-                            "INFO",
-                            response_type=type(parsed).__name__,
-                            item_count=(
-                                len(parsed) if hasattr(parsed, "__len__") else None
-                            ),
-                        )
+                        Settings.write_log_event("http_json_parsed", "INFO", response_type=type(parsed).__name__, item_count=(len(parsed) if hasattr(parsed, "__len__") else None))
 
                         # ----------------------------------
                         # Retourne une structure standardisée.
@@ -427,11 +372,7 @@ class ApiClient:
                         # ----------------------------------
                         # Retourne directement le texte reçu.
                         # ----------------------------------
-                        return {
-                            "status": "success",
-                            "data": response.text,
-                            "status_code": 200,
-                        }
+                        return {"status": "success", "data": response.text, "status_code": 200}
 
                 # ------------------------------------------
                 # HTTP 401 ou 403 indique généralement un
@@ -442,26 +383,13 @@ class ApiClient:
                 # plusieurs retries.
                 # ------------------------------------------
                 elif response.status_code in (401, 403):
-                    Settings.write_log_event(
-                        "http_authentication_failed",
-                        "WARNING",
-                        endpoint=endpoint,
-                        status_code=response.status_code,
-                        action="verify credentials or session",
-                    )
+                    Settings.write_log_event("http_authentication_failed", "WARNING", endpoint=endpoint, status_code=response.status_code, action="verify credentials or session")
 
                     # --------------------------------------
                     # Retourne immédiatement une erreur
                     # d'authentification.
                     # --------------------------------------
-                    return {
-                        "status": "error",
-                        "error": (
-                            f"HTTP {response.status_code}: "
-                            "Access denied / session expired"
-                        ),
-                        "status_code": response.status_code,
-                    }
+                    return {"status": "error", "error": (f"HTTP {response.status_code}: " "Access denied / session expired"), "status_code": response.status_code}
 
                 else:
                     # --------------------------------------
@@ -478,13 +406,7 @@ class ApiClient:
                     last_exception = f"HTTP {response.status_code}"
 
                     Settings.write_log_event(
-                        "http_request_failed",
-                        "WARNING",
-                        endpoint=endpoint,
-                        method=method.upper(),
-                        attempt=attempt,
-                        status_code=response.status_code,
-                        response_size=len(response.content),
+                        "http_request_failed", "WARNING", endpoint=endpoint, method=method.upper(), attempt=attempt, status_code=response.status_code, response_size=len(response.content)
                     )
 
             except requests.RequestException as e:
@@ -501,15 +423,7 @@ class ApiClient:
                 # On enregistre le type de l'exception et son
                 # message pour faciliter le diagnostic.
                 # ------------------------------------------
-                Settings.write_log_event(
-                    "http_request_exception",
-                    "ERROR",
-                    endpoint=endpoint,
-                    attempt=attempt,
-                    exception_type=type(e).__name__,
-                    error=str(e),
-                    traceback=traceback.format_exc(),
-                )
+                Settings.write_log_event("http_request_exception", "ERROR", endpoint=endpoint, attempt=attempt, exception_type=type(e).__name__, error=str(e), traceback=traceback.format_exc())
 
                 # ------------------------------------------
                 # Conserve la dernière erreur pour le message
@@ -522,13 +436,7 @@ class ApiClient:
             # une nouvelle tentative.
             # ------------------------------------------------
             if attempt < self.MAX_REQUEST_ATTEMPTS:
-                Settings.write_log_event(
-                    "http_request_retry_scheduled",
-                    "WARNING",
-                    endpoint=endpoint,
-                    next_attempt=attempt + 1,
-                    delay_seconds=2,
-                )
+                Settings.write_log_event("http_request_retry_scheduled", "WARNING", endpoint=endpoint, next_attempt=attempt + 1, delay_seconds=2)
 
                 # ------------------------------------------------
                 # Attend deux secondes avant la prochaine tentative.
@@ -545,32 +453,15 @@ class ApiClient:
         # Cette étape est atteinte uniquement après avoir utilisé
         # toutes les tentatives disponibles.
         # ------------------------------------------------------
-        Settings.write_log_event(
-            "http_request_failed_final",
-            "ERROR",
-            endpoint=endpoint,
-            attempts=self.MAX_REQUEST_ATTEMPTS,
-            error=last_exception,
-        )
+        Settings.write_log_event("http_request_failed_final", "ERROR", endpoint=endpoint, attempts=self.MAX_REQUEST_ATTEMPTS, error=last_exception)
 
         # ------------------------------------------------------
         # Retourne une réponse standardisée indiquant l'échec
         # définitif de la requête.
         # ------------------------------------------------------
-        return {
-            "status": "error",
-            "error": (
-                f"Failed after {self.MAX_REQUEST_ATTEMPTS} attempts: {last_exception}"
-            ),
-            "status_code": None,
-        }
+        return {"status": "error", "error": (f"Failed after {self.MAX_REQUEST_ATTEMPTS} attempts: {last_exception}"), "status_code": None}
 
-    def handleResponse(
-        self,
-        result: Dict[str, Any],
-        success_default: Any = None,
-        failure_default: Any = None,
-    ):
+    def handleResponse(self, result: Dict[str, Any], success_default: Any = None, failure_default: Any = None):
         # ------------------------------------------------------
         # Cette méthode centralise le traitement des réponses
         # retournées par makeRequest().
@@ -600,12 +491,7 @@ class ApiClient:
             # Vérifie que la réponse est bien un dictionnaire.
             # --------------------------------------------------
             if not isinstance(result, dict):
-                Settings.write_log_event(
-                    "api_response_handler_failed",
-                    "ERROR",
-                    reason="invalid_response_type",
-                    response_type=type(result).__name__,
-                )
+                Settings.write_log_event("api_response_handler_failed", "ERROR", reason="invalid_response_type", response_type=type(result).__name__)
 
                 return failure_default
 
@@ -621,12 +507,7 @@ class ApiClient:
             if status == "success":
                 data = result.get("data", success_default)
 
-                Settings.write_log_event(
-                    "api_response_handled",
-                    "INFO",
-                    status="success",
-                    data_type=type(data).__name__,
-                )
+                Settings.write_log_event("api_response_handled", "INFO", status="success", data_type=type(data).__name__)
 
                 return data
 
@@ -635,13 +516,7 @@ class ApiClient:
             # des erreurs.
             # --------------------------------------------------
             else:
-                Settings.write_log_event(
-                    "api_response_handled",
-                    "ERROR",
-                    status="error",
-                    status_code=result.get("status_code"),
-                    error=result.get("error", "Unknown error"),
-                )
+                Settings.write_log_event("api_response_handled", "ERROR", status="error", status_code=result.get("status_code"), error=result.get("error", "Unknown error"))
 
                 return failure_default
 
@@ -650,13 +525,7 @@ class ApiClient:
             # Capture toute erreur inattendue lors du traitement
             # de la réponse.
             # --------------------------------------------------
-            Settings.write_log_event(
-                "api_response_handler_failed",
-                "ERROR",
-                exception_type=type(e).__name__,
-                error=str(e),
-                traceback=traceback.format_exc(),
-            )
+            Settings.write_log_event("api_response_handler_failed", "ERROR", exception_type=type(e).__name__, error=str(e), traceback=traceback.format_exc())
 
             # --------------------------------------------------
             # En cas d'erreur, retourne la valeur par défaut
@@ -664,20 +533,12 @@ class ApiClient:
             # --------------------------------------------------
             return failure_default
 
-    def fetchScenarios(
-        self, Url_Api, params: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+    def fetchScenarios(self, Url_Api, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
 
         # ------------------------------------------------------
         # Journalise le début de la récupération des scénarios.
         # ------------------------------------------------------
-        Settings.write_log_event(
-            "scenarios_fetch_started",
-            "INFO",
-            method="GET",
-            endpoint=Url_Api,
-            has_params=bool(params),
-        )
+        Settings.write_log_event("scenarios_fetch_started", "INFO", method="GET", endpoint=Url_Api, has_params=bool(params))
 
         try:
             # --------------------------------------------------
@@ -690,13 +551,7 @@ class ApiClient:
             # Capture une éventuelle erreur inattendue autour
             # de makeRequest().
             # --------------------------------------------------
-            Settings.write_log_event(
-                "scenarios_fetch_failed",
-                "ERROR",
-                exception_type=type(e).__name__,
-                error=str(e),
-                traceback=traceback.format_exc(),
-            )
+            Settings.write_log_event("scenarios_fetch_failed", "ERROR", exception_type=type(e).__name__, error=str(e), traceback=traceback.format_exc())
 
             return {"session": False, "scenarios": []}
 
@@ -710,11 +565,7 @@ class ApiClient:
             #
             # est utilisé comme valeur par défaut si nécessaire.
             # --------------------------------------------------
-            response = self.handleResponse(
-                result,
-                {"session": False, "scenarios": []},
-                {"session": False, "scenarios": []},
-            )
+            response = self.handleResponse(result, {"session": False, "scenarios": []}, {"session": False, "scenarios": []})
 
             # --------------------------------------------------
             # Calcule le nombre de scénarios uniquement pour
@@ -727,14 +578,7 @@ class ApiClient:
                 "scenarios_fetch_completed",
                 "INFO",
                 response_type=type(response).__name__,
-                scenario_count=(
-                    len(response.get("scenarios", []))
-                    if (
-                        isinstance(response, dict)
-                        and isinstance(response.get("scenarios"), list)
-                    )
-                    else None
-                ),
+                scenario_count=(len(response.get("scenarios", [])) if (isinstance(response, dict) and isinstance(response.get("scenarios"), list)) else None),
             )
 
             return response
@@ -744,13 +588,7 @@ class ApiClient:
             # Capture les erreurs pouvant apparaître pendant
             # le traitement de la réponse.
             # --------------------------------------------------
-            Settings.write_log_event(
-                "scenarios_response_processing_failed",
-                "ERROR",
-                exception_type=type(e).__name__,
-                error=str(e),
-                traceback=traceback.format_exc(),
-            )
+            Settings.write_log_event("scenarios_response_processing_failed", "ERROR", exception_type=type(e).__name__, error=str(e), traceback=traceback.format_exc())
 
             return {"session": False, "scenarios": []}
 
@@ -779,9 +617,7 @@ class ApiClient:
         # 3. sa valeur est exactement True.
         # ------------------------------------------------------
         if isinstance(data, dict) and data.get("status") is True:
-            Settings.write_log_event(
-                "process_saved", "INFO", has_inserted_id=bool(data.get("inserted_id"))
-            )
+            Settings.write_log_event("process_saved", "INFO", has_inserted_id=bool(data.get("inserted_id")))
 
             # --------------------------------------------------
             # Retourne l'identifiant créé par l'API.
@@ -820,9 +656,7 @@ class ApiClient:
         # On enregistre uniquement le nombre de paramètres,
         # pas leur contenu.
         # ------------------------------------------------------
-        Settings.write_log_event(
-            "status_request_prepared", "INFO", parameter_count=len(params)
-        )
+        Settings.write_log_event("status_request_prepared", "INFO", parameter_count=len(params))
 
         # ------------------------------------------------------
         # Envoie le statut au serveur.
@@ -832,9 +666,7 @@ class ApiClient:
         # ------------------------------------------------------
         # Journalise uniquement le type de résultat reçu.
         # ------------------------------------------------------
-        Settings.write_log_event(
-            "status_response_received", "INFO", response_type=type(result).__name__
-        )
+        Settings.write_log_event("status_response_received", "INFO", response_type=type(result).__name__)
 
         # ------------------------------------------------------
         # Traite la réponse et retourne sa valeur sous forme
@@ -853,13 +685,7 @@ class ApiClient:
         # - type du payload ;
         # - nombre de champs.
         # ------------------------------------------------------
-        Settings.write_log_event(
-            "scenario_save_started",
-            "INFO",
-            endpoint=Url_Api,
-            payload_type=type(payload).__name__,
-            payload_field_count=len(payload),
-        )
+        Settings.write_log_event("scenario_save_started", "INFO", endpoint=Url_Api, payload_type=type(payload).__name__, payload_field_count=len(payload))
 
         # ------------------------------------------------------
         # Envoie le scénario vers l'API.
@@ -873,13 +699,7 @@ class ApiClient:
         # ------------------------------------------------------
         # Journalise les informations générales de la réponse.
         # ------------------------------------------------------
-        Settings.write_log_event(
-            "save_scenario_response_received",
-            "INFO",
-            status_code=result.get("status_code"),
-            status=result.get("status"),
-            response_type=type(result).__name__,
-        )
+        Settings.write_log_event("save_scenario_response_received", "INFO", status_code=result.get("status_code"), status=result.get("status"), response_type=type(result).__name__)
 
         # ------------------------------------------------------
         # Transforme la réponse API en résultat standard.
@@ -895,26 +715,16 @@ class ApiClient:
         #     "error": "Format de réponse invalide"
         # }
         # ------------------------------------------------------
-        response = self.handleResponse(
-            result,
-            {"success": True},
-            {"success": False, "error": "Format de réponse invalide"},
-        )
+        response = self.handleResponse(result, {"success": True}, {"success": False, "error": "Format de réponse invalide"})
 
         # ------------------------------------------------------
         # Journalise le résultat final du traitement.
         # ------------------------------------------------------
-        Settings.write_log_event(
-            "save_scenario_response_processed",
-            "INFO",
-            success=(response.get("success") if isinstance(response, dict) else None),
-        )
+        Settings.write_log_event("save_scenario_response_processed", "INFO", success=(response.get("success") if isinstance(response, dict) else None))
 
         return response
 
-    def fetchProxyConfiguration(
-        self, unique_ips: set, entity_New: str
-    ) -> Dict[str, Any]:
+    def fetchProxyConfiguration(self, unique_ips: set, entity_New: str) -> Dict[str, Any]:
 
         # ------------------------------------------------------
         # Cette méthode récupère une configuration Proxy auprès
@@ -939,22 +749,13 @@ class ApiClient:
         # résultat final
         # ------------------------------------------------------
         try:
-            Settings.write_log_event(
-                "proxy_configuration_fetch_started",
-                "INFO",
-                entity=entity_New,
-                ip_count=len(unique_ips),
-            )
+            Settings.write_log_event("proxy_configuration_fetch_started", "INFO", entity=entity_New, ip_count=len(unique_ips))
 
             # --------------------------------------------------
             # Vérifie que la collection d'IP n'est pas vide.
             # --------------------------------------------------
             if not unique_ips:
-                Settings.write_log_event(
-                    "proxy_configuration_input_invalid",
-                    "ERROR",
-                    reason="no_ips_provided",
-                )
+                Settings.write_log_event("proxy_configuration_input_invalid", "ERROR", reason="no_ips_provided")
 
                 return {"valid": False, "data": None, "error": "No IPs provided"}
 
@@ -990,12 +791,7 @@ class ApiClient:
             # --------------------------------------------------
             params = {"m": "5454542z15szsdz4jklhjhdfz", "k": k_proxy}
 
-            Settings.write_log_event(
-                "proxy_request_prepared",
-                "INFO",
-                parameter_count=len(params),
-                ip_count=len(unique_ips),
-            )
+            Settings.write_log_event("proxy_request_prepared", "INFO", parameter_count=len(params), ip_count=len(unique_ips))
 
             # --------------------------------------------------
             # Définit un User-Agent spécifique pour cette requête.
@@ -1017,25 +813,13 @@ class ApiClient:
             # - gestion HTTP
             # - retry
             # --------------------------------------------------
-            result = self.makeRequest(
-                Settings.API_ENDPOINTS["__GET_PROXY_INFO__"],
-                method="POST",
-                data=params,
-                headers=headers,
-                timeout=30,
-            )
+            result = self.makeRequest(Settings.API_ENDPOINTS["__GET_PROXY_INFO__"], method="POST", data=params, headers=headers, timeout=30)
 
             # --------------------------------------------------
             # Journalise uniquement les informations générales
             # de la réponse.
             # --------------------------------------------------
-            Settings.write_log_event(
-                "proxy_response_received",
-                "INFO",
-                status=result.get("status"),
-                status_code=result.get("status_code"),
-                response_type=type(result.get("data")).__name__,
-            )
+            Settings.write_log_event("proxy_response_received", "INFO", status=result.get("status"), status_code=result.get("status_code"), response_type=type(result.get("data")).__name__)
 
             # --------------------------------------------------
             # Vérifie si makeRequest() considère la requête
@@ -1045,24 +829,11 @@ class ApiClient:
                 # ----------------------------------------------
                 # Récupère l'erreur fournie par makeRequest().
                 # ----------------------------------------------
-                error_detail = (
-                    result.get("error") or "Invalid response status from proxy service"
-                )
+                error_detail = result.get("error") or "Invalid response status from proxy service"
 
-                Settings.write_log_event(
-                    "proxy_configuration_fetch_failed",
-                    "ERROR",
-                    stage="http_response",
-                    status=result.get("status"),
-                    status_code=result.get("status_code"),
-                    error=error_detail,
-                )
+                Settings.write_log_event("proxy_configuration_fetch_failed", "ERROR", stage="http_response", status=result.get("status"), status_code=result.get("status_code"), error=error_detail)
 
-                return {
-                    "valid": False,
-                    "data": None,
-                    "error": (f"Données API non valides : {error_detail}"),
-                }
+                return {"valid": False, "data": None, "error": (f"Données API non valides : {error_detail}")}
 
             # --------------------------------------------------
             # Récupère les données retournées par l'API.
@@ -1079,11 +850,7 @@ class ApiClient:
             # --------------------------------------------------
             response_size = len(response_text) if isinstance(response_text, str) else 0
 
-            Settings.write_log_event(
-                "proxy_response_ready_for_decryption",
-                "INFO",
-                response_size_bytes=response_size,
-            )
+            Settings.write_log_event("proxy_response_ready_for_decryption", "INFO", response_size_bytes=response_size)
 
             try:
                 # ----------------------------------------------
@@ -1095,15 +862,9 @@ class ApiClient:
                 # Settings.API_KEY_PROXY :
                 #     clé utilisée par EncryptionService.
                 # ----------------------------------------------
-                decrypted = EncryptionService.decrypt_message(
-                    response_text, Settings.API_KEY_PROXY
-                )
+                decrypted = EncryptionService.decrypt_message(response_text, Settings.API_KEY_PROXY)
 
-                Settings.write_log_event(
-                    "proxy_response_decrypted",
-                    "INFO",
-                    decrypted_size_bytes=len(decrypted),
-                )
+                Settings.write_log_event("proxy_response_decrypted", "INFO", decrypted_size_bytes=len(decrypted))
 
             except Exception as decrypt_error:
                 # ----------------------------------------------
@@ -1111,19 +872,10 @@ class ApiClient:
                 # pu être déchiffrée correctement.
                 # ----------------------------------------------
                 Settings.write_log_event(
-                    "proxy_configuration_fetch_failed",
-                    "ERROR",
-                    stage="decryption",
-                    exception_type=type(decrypt_error).__name__,
-                    error=str(decrypt_error),
-                    traceback=traceback.format_exc(),
+                    "proxy_configuration_fetch_failed", "ERROR", stage="decryption", exception_type=type(decrypt_error).__name__, error=str(decrypt_error), traceback=traceback.format_exc()
                 )
 
-                return {
-                    "valid": False,
-                    "data": None,
-                    "error": (f"Decryption error: {str(decrypt_error)}"),
-                }
+                return {"valid": False, "data": None, "error": (f"Decryption error: {str(decrypt_error)}")}
 
             # --------------------------------------------------
             # Supprime les caractères qui ne font pas partie
@@ -1156,12 +908,7 @@ class ApiClient:
                 # ----------------------------------------------
                 data = json.loads(decrypted)
 
-                Settings.write_log_event(
-                    "proxy_json_parsed",
-                    "INFO",
-                    data_type=type(data).__name__,
-                    key_count=(len(data) if isinstance(data, dict) else None),
-                )
+                Settings.write_log_event("proxy_json_parsed", "INFO", data_type=type(data).__name__, key_count=(len(data) if isinstance(data, dict) else None))
 
             except json.JSONDecodeError as json_error:
                 # ----------------------------------------------
@@ -1169,38 +916,19 @@ class ApiClient:
                 # n'est pas un JSON valide.
                 # ----------------------------------------------
                 Settings.write_log_event(
-                    "proxy_configuration_fetch_failed",
-                    "ERROR",
-                    stage="json_parse",
-                    exception_type=type(json_error).__name__,
-                    error=str(json_error),
-                    traceback=traceback.format_exc(),
+                    "proxy_configuration_fetch_failed", "ERROR", stage="json_parse", exception_type=type(json_error).__name__, error=str(json_error), traceback=traceback.format_exc()
                 )
 
-                return {
-                    "valid": False,
-                    "data": None,
-                    "error": (f"JSON parsing error: {str(json_error)}"),
-                }
+                return {"valid": False, "data": None, "error": (f"JSON parsing error: {str(json_error)}")}
 
             # --------------------------------------------------
             # Vérifie que le JSON obtenu possède la structure
             # attendue : un dictionnaire.
             # --------------------------------------------------
             if not isinstance(data, dict):
-                Settings.write_log_event(
-                    "proxy_configuration_fetch_failed",
-                    "ERROR",
-                    stage="validation",
-                    reason="response_data_not_object",
-                    response_type=type(data).__name__,
-                )
+                Settings.write_log_event("proxy_configuration_fetch_failed", "ERROR", stage="validation", reason="response_data_not_object", response_type=type(data).__name__)
 
-                return {
-                    "valid": False,
-                    "data": None,
-                    "error": "Invalid proxy response format",
-                }
+                return {"valid": False, "data": None, "error": "Invalid proxy response format"}
 
             # --------------------------------------------------
             # Extrait les IPs présentes dans les clés retournées
@@ -1261,12 +989,7 @@ class ApiClient:
             extra = api_ips - unique_ips
 
             Settings.write_log_event(
-                "proxy_configuration_compared",
-                "INFO",
-                expected_ip_count=len(unique_ips),
-                returned_ip_count=len(api_ips),
-                missing_ip_count=len(missing),
-                extra_ip_count=len(extra),
+                "proxy_configuration_compared", "INFO", expected_ip_count=len(unique_ips), returned_ip_count=len(api_ips), missing_ip_count=len(missing), extra_ip_count=len(extra)
             )
 
             # --------------------------------------------------
@@ -1287,11 +1010,7 @@ class ApiClient:
                     "valid": False,
                     "data": data,
                     "error": (
-                        "Données du service non valides : "
-                        "certaines adresses IP attendues sont "
-                        "absentes de la réponse. Veuillez "
-                        "réessayer ou contacter le support si "
-                        "le problème persiste."
+                        "Données du service non valides : " "certaines adresses IP attendues sont " "absentes de la réponse. Veuillez " "réessayer ou contacter le support si " "le problème persiste."
                     ),
                 }
 
@@ -1300,9 +1019,7 @@ class ApiClient:
             # La configuration peut donc être considérée comme
             # valide selon les règles actuelles.
             # --------------------------------------------------
-            Settings.write_log_event(
-                "proxy_configuration_fetch_completed", "INFO", ip_count=len(api_ips)
-            )
+            Settings.write_log_event("proxy_configuration_fetch_completed", "INFO", ip_count=len(api_ips))
 
             return {"valid": True, "data": data, "error": None}
 
@@ -1314,14 +1031,7 @@ class ApiClient:
             # Cela protège l'appelant contre une propagation
             # inattendue de l'exception.
             # --------------------------------------------------
-            Settings.write_log_event(
-                "proxy_configuration_fetch_failed",
-                "ERROR",
-                stage="unexpected",
-                exception_type=type(e).__name__,
-                error=str(e),
-                traceback=traceback.format_exc(),
-            )
+            Settings.write_log_event("proxy_configuration_fetch_failed", "ERROR", stage="unexpected", exception_type=type(e).__name__, error=str(e), traceback=traceback.format_exc())
 
             return {"valid": False, "data": None, "error": str(e)}
 

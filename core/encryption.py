@@ -40,21 +40,12 @@ class EncryptionService:
 
         else:
             # Enregistre uniquement le type de clé afin de ne jamais exposer sa valeur
-            settings.write_log_event(
-                "decryption_key_invalid",
-                "ERROR",
-                key_type=type(key).__name__,
-            )
+            settings.write_log_event("decryption_key_invalid", "ERROR", key_type=type(key).__name__)
             sys.exit(1)
 
         # Vérifie que la clé possède exactement la longueur attendue par AES
         if len(key_bytes) != settings.AES_KEY_LENGTH:
-            settings.write_log_event(
-                "decryption_key_invalid",
-                "ERROR",
-                expected_length=settings.AES_KEY_LENGTH,
-                received_length=len(key_bytes),
-            )
+            settings.write_log_event("decryption_key_invalid", "ERROR", expected_length=settings.AES_KEY_LENGTH, received_length=len(key_bytes))
             sys.exit(1)
 
         try:
@@ -72,11 +63,7 @@ class EncryptionService:
 
             # Vérifie que le payload contient au minimum l'IV attendu
             if len(raw) < settings.AES_IV_LENGTH_CBC:
-                raise ValueError(
-                    "Invalid encrypted payload length. "
-                    f"Expected at least {settings.AES_IV_LENGTH_CBC} bytes "
-                    f"for the IV, received {len(raw)}."
-                )
+                raise ValueError("Invalid encrypted payload length. " f"Expected at least {settings.AES_IV_LENGTH_CBC} bytes " f"for the IV, received {len(raw)}.")
 
             # Extrait l'IV placé au début du payload
             iv = raw[: settings.AES_IV_LENGTH_CBC]
@@ -86,21 +73,14 @@ class EncryptionService:
 
             # Vérifie une nouvelle fois que la taille de l'IV est correcte
             if len(iv) != settings.AES_IV_LENGTH_CBC:
-                raise ValueError(
-                    f"Invalid IV size ({len(iv)}) for CBC. "
-                    f"Expected {settings.AES_IV_LENGTH_CBC}."
-                )
+                raise ValueError(f"Invalid IV size ({len(iv)}) for CBC. " f"Expected {settings.AES_IV_LENGTH_CBC}.")
 
             # Vérifie qu'un ciphertext est bien présent après l'IV
             if len(ciphertext) == 0:
                 raise ValueError("Ciphertext is empty after extracting the IV.")
 
             # Initialise AES avec le mode CBC et l'IV extrait du payload
-            cipher = Cipher(
-                algorithms.AES(key_bytes),
-                modes.CBC(iv),
-                backend=default_backend(),
-            )
+            cipher = Cipher(algorithms.AES(key_bytes), modes.CBC(iv), backend=default_backend())
 
             # Crée le déchiffreur AES-CBC
             decryptor = cipher.decryptor()
@@ -120,15 +100,7 @@ class EncryptionService:
         except Exception as e:
             # Enregistre uniquement les informations nécessaires au diagnostic
             # sans enregistrer la clé ou le contenu déchiffré
-            settings.write_log_event(
-                "aes_cbc_decryption_failed",
-                "ERROR",
-                exception_type=type(e).__name__,
-                error=str(e),
-                payload_length=(
-                    len(base64_data) if isinstance(base64_data, str) else 0
-                ),
-            )
+            settings.write_log_event("aes_cbc_decryption_failed", "ERROR", exception_type=type(e).__name__, error=str(e), payload_length=(len(base64_data) if isinstance(base64_data, str) else 0))
             sys.exit(1)
 
     @staticmethod
@@ -140,22 +112,12 @@ class EncryptionService:
     def derive_key(password: str, salt: bytes) -> bytes:
         # Vérifie que le salt possède la longueur attendue
         if len(salt) != settings.AES_SALT_LENGTH:
-            settings.write_log_event(
-                "pbkdf2_key_derivation_failed",
-                "ERROR",
-                expected_salt_length=settings.AES_SALT_LENGTH,
-                received_salt_length=len(salt),
-            )
+            settings.write_log_event("pbkdf2_key_derivation_failed", "ERROR", expected_salt_length=settings.AES_SALT_LENGTH, received_salt_length=len(salt))
             sys.exit(1)
 
         try:
             # Configure PBKDF2 avec SHA-256 pour dériver une clé AES
-            kdf = PBKDF2HMAC(
-                algorithm=hashes.SHA256(),
-                length=settings.AES_KEY_LENGTH,
-                salt=salt,
-                iterations=settings.PBKDF2_ITERATIONS,
-            )
+            kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=settings.AES_KEY_LENGTH, salt=salt, iterations=settings.PBKDF2_ITERATIONS)
 
             # Transforme le mot de passe en bytes puis dérive la clé finale
             return kdf.derive(password.encode("utf-8"))
@@ -163,13 +125,7 @@ class EncryptionService:
         except Exception as e:
             # Enregistre le type d'erreur et la longueur du mot de passe
             # sans enregistrer le mot de passe lui-même
-            settings.write_log_event(
-                "pbkdf2_key_derivation_failed",
-                "ERROR",
-                exception_type=type(e).__name__,
-                error=str(e),
-                password_length=len(password),
-            )
+            settings.write_log_event("pbkdf2_key_derivation_failed", "ERROR", exception_type=type(e).__name__, error=str(e), password_length=len(password))
             sys.exit(1)
 
     @staticmethod
@@ -181,12 +137,7 @@ class EncryptionService:
     def encrypt_message(plaintext: str, key_bytes: bytes) -> str:
         # Vérifie que la clé possède la longueur attendue par AES
         if len(key_bytes) != settings.AES_KEY_LENGTH:
-            settings.write_log_event(
-                "aes_cbc_encryption_failed",
-                "ERROR",
-                expected_length=settings.AES_KEY_LENGTH,
-                received_length=len(key_bytes),
-            )
+            settings.write_log_event("aes_cbc_encryption_failed", "ERROR", expected_length=settings.AES_KEY_LENGTH, received_length=len(key_bytes))
             sys.exit(1)
 
         try:
@@ -200,10 +151,7 @@ class EncryptionService:
             iv = os.urandom(settings.AES_IV_LENGTH_CBC)
 
             # Initialise AES avec le mode CBC et l'IV généré
-            cipher = Cipher(
-                algorithms.AES(key_bytes),
-                modes.CBC(iv),
-            )
+            cipher = Cipher(algorithms.AES(key_bytes), modes.CBC(iv))
 
             # Crée l'objet responsable du chiffrement
             encryptor = cipher.encryptor()
@@ -216,13 +164,7 @@ class EncryptionService:
 
         except Exception as e:
             # Enregistre les informations de diagnostic sans exposer le plaintext
-            settings.write_log_event(
-                "aes_cbc_encryption_failed",
-                "ERROR",
-                exception_type=type(e).__name__,
-                error=str(e),
-                plaintext_length=len(plaintext),
-            )
+            settings.write_log_event("aes_cbc_encryption_failed", "ERROR", exception_type=type(e).__name__, error=str(e), plaintext_length=len(plaintext))
             sys.exit(1)
 
     @staticmethod
@@ -247,11 +189,7 @@ class EncryptionService:
 
             # Chiffre le plaintext et génère automatiquement le tag
             # d'authentification utilisé pour vérifier l'intégrité des données
-            ciphertext_and_tag = aesgcm.encrypt(
-                iv,
-                plaintext.encode("utf-8"),
-                None,
-            )
+            ciphertext_and_tag = aesgcm.encrypt(iv, plaintext.encode("utf-8"), None)
 
             # Construit le payload final : salt + IV + ciphertext + tag
             payload = salt + iv + ciphertext_and_tag
@@ -266,14 +204,7 @@ class EncryptionService:
         except Exception as e:
             # Enregistre uniquement les informations nécessaires au diagnostic
             # sans exposer le mot de passe ou le contenu original
-            settings.write_log_event(
-                "aes_gcm_encryption_failed",
-                "ERROR",
-                exception_type=type(e).__name__,
-                error=str(e),
-                password_length=len(password),
-                plaintext_length=len(plaintext),
-            )
+            settings.write_log_event("aes_gcm_encryption_failed", "ERROR", exception_type=type(e).__name__, error=str(e), password_length=len(password), plaintext_length=len(plaintext))
             sys.exit(1)
 
     @staticmethod
@@ -298,12 +229,7 @@ class EncryptionService:
             # Enregistre uniquement les longueurs et le type d'erreur
             # afin de ne pas exposer les clés dans les logs
             settings.write_log_event(
-                "fernet_key_verification_failed",
-                "ERROR",
-                exception_type=type(e).__name__,
-                error=str(e),
-                encrypted_key_length=len(encrypted_key),
-                secret_key_length=len(secret_key),
+                "fernet_key_verification_failed", "ERROR", exception_type=type(e).__name__, error=str(e), encrypted_key_length=len(encrypted_key), secret_key_length=len(secret_key)
             )
             sys.exit(1)
 
@@ -330,12 +256,7 @@ class EncryptionService:
         except Exception as e:
             # Enregistre uniquement les informations techniques de l'erreur
             # sans exposer la clé secrète ou le message chiffré
-            settings.write_log_event(
-                "fernet_key_generation_failed",
-                "ERROR",
-                exception_type=type(e).__name__,
-                error=str(e),
-            )
+            settings.write_log_event("fernet_key_generation_failed", "ERROR", exception_type=type(e).__name__, error=str(e))
             sys.exit(1)
 
 

@@ -44,20 +44,10 @@ try:
 except ImportError as error:
     # Journalise le détail complet si la configuration est déjà disponible.
     if "Settings" in globals():
-        Settings.write_log_event(
-            "json_manager_import_failed",
-            "ERROR",
-            file=__file__,
-            exception_type=type(error).__name__,
-            error=str(error),
-            traceback=traceback.format_exc(),
-        )
+        Settings.write_log_event("json_manager_import_failed", "ERROR", file=__file__, exception_type=type(error).__name__, error=str(error), traceback=traceback.format_exc())
     else:
         # Utilise la console si l’import de Settings est lui-même en échec.
-        print(
-            f"❌ Erreur d'importation dans file {__file__}: {error}\n"
-            f"{traceback.format_exc()}"
-        )
+        print(f"❌ Erreur d'importation dans file {__file__}: {error}\n" f"{traceback.format_exc()}")
 
     # Arrête immédiatement l'application avec un code d'erreur.
     sys.exit(1)
@@ -207,13 +197,7 @@ class JsonManager:
             # show_on_init = False
             #
             # Cette action sera traitée comme une action classique.
-            if (
-                hidden_id
-                and not show_on_init
-                and not hidden_id.startswith(
-                    (Settings.GOOGLE_PREFIX, Settings.YOUTUBE_PREFIX)
-                )
-            ):
+            if hidden_id and not show_on_init and not hidden_id.startswith((Settings.GOOGLE_PREFIX, Settings.YOUTUBE_PREFIX)):
                 # Si le widget contient au moins deux champs texte,
                 # le premier représente la limite et le second
                 # représente le temps d'attente.
@@ -226,9 +210,7 @@ class JsonManager:
                     sleep = ValidationUtils.parse_random_range(qlineedits[1].text())
 
                     # Ajoute l'action au scénario JSON.
-                    output_json.append(
-                        {"process": hidden_id, "limit": limit, "sleep": sleep}
-                    )
+                    output_json.append({"process": hidden_id, "limit": limit, "sleep": sleep})
 
                 # Si un seul QLineEdit existe, il est utilisé comme
                 # valeur de sleep.
@@ -254,40 +236,24 @@ class JsonManager:
             #
             # Avant l'action YouTube, le scénario ajoute automatiquement
             # CheckLoginYoutube.
-            if (
-                hidden_id
-                and not show_on_init
-                and hidden_id.startswith(Settings.YOUTUBE_PREFIX)
-            ):
+            if hidden_id and not show_on_init and hidden_id.startswith(Settings.YOUTUBE_PREFIX):
                 # Si deux QLineEdit existent :
                 # qlineedits[0] = limite
                 # qlineedits[1] = sleep
                 #
                 # Sinon, les valeurs par défaut sont 0.
-                limit = (
-                    ValidationUtils.parse_random_range(qlineedits[0].text())
-                    if len(qlineedits) > 1
-                    else 0
-                )
+                limit = ValidationUtils.parse_random_range(qlineedits[0].text()) if len(qlineedits) > 1 else 0
 
-                sleep = (
-                    ValidationUtils.parse_random_range(qlineedits[1].text())
-                    if len(qlineedits) > 1
-                    else 0
-                )
+                sleep = ValidationUtils.parse_random_range(qlineedits[1].text()) if len(qlineedits) > 1 else 0
 
                 # Ajoute une vérification de connexion YouTube
                 # avant l'exécution de l'action YouTube.
                 #
                 # randint(1, 3) produit aléatoirement 1, 2 ou 3.
-                output_json.append(
-                    {"process": "CheckLoginYoutube", "sleep": random.randint(1, 3)}
-                )
+                output_json.append({"process": "CheckLoginYoutube", "sleep": random.randint(1, 3)})
 
                 # Ajoute ensuite l'action YouTube elle-même.
-                output_json.append(
-                    {"process": hidden_id, "limit": limit, "sleep": sleep}
-                )
+                output_json.append({"process": hidden_id, "limit": limit, "sleep": sleep})
 
                 # Passe à l'élément suivant.
                 i += 1
@@ -315,9 +281,7 @@ class JsonManager:
                 #
                 # Le temps d'attente initial est volontairement aléatoire
                 # entre 1 et 3 secondes.
-                output_json.append(
-                    {"process": hidden_id, "sleep": random.randint(1, 3)}
-                )
+                output_json.append({"process": hidden_id, "sleep": random.randint(1, 3)})
 
                 # Vérifie si le Checkbox est activé.
                 if checkbox.isChecked():
@@ -370,21 +334,13 @@ class JsonManager:
                     # des sous-actions du widget actuel.
                     #
                     # On arrête donc la boucle interne.
-                    if sub_state.get("showOnInit") or sub_id.startswith(
-                        (Settings.GOOGLE_PREFIX, Settings.YOUTUBE_PREFIX)
-                    ):
+                    if sub_state.get("showOnInit") or sub_id.startswith((Settings.GOOGLE_PREFIX, Settings.YOUTUBE_PREFIX)):
                         break
 
                     # Recherche le premier QLineEdit du sous-widget.
                     #
                     # Si aucun QLineEdit n'existe, "0" est utilisé.
-                    sleep_txt = next(
-                        (
-                            c.text()
-                            for c in JsonManager.getChildWidgets(sub_widget, QLineEdit)
-                        ),
-                        "0",
-                    )
+                    sleep_txt = next((c.text() for c in JsonManager.getChildWidgets(sub_widget, QLineEdit)), "0")
 
                     # Convertit la valeur de sleep.
                     sleep = ValidationUtils.parse_random_range(sleep_txt)
@@ -406,11 +362,7 @@ class JsonManager:
                 # "Return back", l'action finale sera "return_back".
                 #
                 # Dans tous les autres cas, l'action sera "next".
-                action = (
-                    "return_back"
-                    if combo and combo.currentText() == "Return back"
-                    else "next"
-                )
+                action = "return_back" if combo and combo.currentText() == "Return back" else "next"
 
                 # Si des sous-actions existent, ajoute l'action finale
                 # à la fin de la liste.
@@ -429,32 +381,16 @@ class JsonManager:
                 #
                 # qlineedits[0] représente la limite lorsque deux champs
                 # sont présents.
-                limit_loop = (
-                    ValidationUtils.parse_random_range(qlineedits[0].text())
-                    if len(qlineedits) > 1
-                    else 0
-                )
+                limit_loop = ValidationUtils.parse_random_range(qlineedits[0].text()) if len(qlineedits) > 1 else 0
 
                 # Récupère la valeur de départ du loop.
-                start_loop = (
-                    ValidationUtils.parse_random_range(qlineedits[1].text())
-                    if len(qlineedits) > 1
-                    else 0
-                )
+                start_loop = ValidationUtils.parse_random_range(qlineedits[1].text()) if len(qlineedits) > 1 else 0
 
                 # Ajoute le loop complet au JSON.
                 #
                 # "check" indique la condition utilisée par le moteur
                 # d'exécution pour contrôler le loop.
-                output_json.append(
-                    {
-                        "process": "loop",
-                        "check": "is_empty_folder",
-                        "limit_loop": limit_loop,
-                        "start": start_loop,
-                        "sub_process": sub_process,
-                    }
-                )
+                output_json.append({"process": "loop", "check": "is_empty_folder", "limit_loop": limit_loop, "start": start_loop, "sub_process": sub_process})
 
                 # Le widget et ses sous-widgets ont déjà été traités.
                 continue
@@ -467,11 +403,7 @@ class JsonManager:
                 # Récupère le temps d'attente depuis le premier QLineEdit.
                 #
                 # S'il n'existe aucun QLineEdit, utilise 0.
-                sleep = (
-                    ValidationUtils.parse_random_range(qlineedits[0].text())
-                    if qlineedits
-                    else 0
-                )
+                sleep = ValidationUtils.parse_random_range(qlineedits[0].text()) if qlineedits else 0
 
                 # Ajoute l'action principale au JSON.
                 output_json.append({"process": hidden_id, "sleep": sleep})
@@ -484,17 +416,11 @@ class JsonManager:
             # CAS 5 :
             # Action Google ou YouTube.
             # ---------------------------------------------------------
-            if hidden_id and hidden_id.startswith(
-                (Settings.GOOGLE_PREFIX, Settings.YOUTUBE_PREFIX)
-            ):
+            if hidden_id and hidden_id.startswith((Settings.GOOGLE_PREFIX, Settings.YOUTUBE_PREFIX)):
                 # Récupère le sleep depuis le premier QLineEdit.
                 #
                 # Si aucun champ n'existe, utilise 0.
-                sleep = (
-                    ValidationUtils.parse_random_range(qlineedits[0].text())
-                    if qlineedits
-                    else 0
-                )
+                sleep = ValidationUtils.parse_random_range(qlineedits[0].text()) if qlineedits else 0
 
                 # Construit l'action de base.
                 action = {"process": hidden_id, "sleep": sleep}
@@ -506,11 +432,7 @@ class JsonManager:
                     # représente la recherche.
                     #
                     # Avec un seul QLineEdit, le premier est utilisé.
-                    action["search"] = (
-                        qlineedits[1].text()
-                        if len(qlineedits) > 1
-                        else qlineedits[0].text()
-                    )
+                    action["search"] = qlineedits[1].text() if len(qlineedits) > 1 else qlineedits[0].text()
 
                 # Ajoute l'action finale au JSON.
                 output_json.append(action)
@@ -615,18 +537,14 @@ class JsonManager:
                 # - select_all
                 # OU
                 # - au moins une action autorisée dans la section.
-                if any(s["process"] == "select_all" for s in sub) or any(
-                    s["process"] in allowed for s in sub
-                ):
+                if any(s["process"] == "select_all" for s in sub) or any(s["process"] in allowed for s in sub):
                     # Dans ce cas, les actions de contrôle
                     # next / return_back sont supprimées.
                     #
                     # Cela permet d'éviter certaines actions finales
                     # incompatibles avec les opérations présentes
                     # dans le loop.
-                    sub = [
-                        s for s in sub if s["process"] not in ("next", "return_back")
-                    ]
+                    sub = [s for s in sub if s["process"] not in ("next", "return_back")]
 
                 # Remplace les sous-actions originales par la version
                 # éventuellement nettoyée.
@@ -697,9 +615,7 @@ class JsonManager:
                         # open_message après le loop.
                         #
                         # Le sleep est aléatoire entre 1 et 3 secondes.
-                        output.append(
-                            {"process": "open_message", "sleep": random.randint(1, 3)}
-                        )
+                        output.append({"process": "open_message", "sleep": random.randint(1, 3)})
 
                     # -------------------------------------------------
                     # Cas où le dernier process n'est pas une action

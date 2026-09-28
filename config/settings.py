@@ -26,9 +26,7 @@ class Settings:
         "KEY_HEX": "f564292a5740af4fc4819c6e22f64765232ad35f56079854a0ad3996c68ee7a2",
         "VERIFY_SSL": True,
         "HEADER": {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/117.0.0.0 Safari/537.36",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " "AppleWebKit/537.36 (KHTML, like Gecko) " "Chrome/117.0.0.0 Safari/537.36",
             "Accept": "application/json, text/javascript, */*; q=0.01",
             "Accept-Language": "en-US,en;q=0.9",
             "Connection": "keep-alive",
@@ -45,32 +43,13 @@ class Settings:
             "comodo": {"exe_name": "chrome.exe"},
         },
         "CHROME_FAMILY_BROWSERS": {"chrome", "edge", "msedge", "icedragon", "comodo"},
-        "BROWSER_OPTIONS": (
-            ("Chrome", "chrome.png"),
-            ("Firefox", "firefox.png"),
-            ("Edge", "edge.png"),
-            ("Comodo", "comodo.png"),
-        ),
-        "PROCESS_PATTERNS": {
-            "chrome": ("chrome", "chromium"),
-            "edge": ("edge", "msedge"),
-            "icedragon": ("dragon", "icedragon", "chromium"),
-            "comodo": ("comodo", "chrome"),
-        },
-        "EXECUTABLES": {
-            "chrome": "chrome.exe",
-            "firefox": "firefox",
-            "edge": "msedge.exe",
-            "icedragon": "dragon.exe",
-            "comodo": "dragon.exe",
-        },
+        "BROWSER_OPTIONS": (("Chrome", "chrome.png"), ("Firefox", "firefox.png"), ("Edge", "edge.png"), ("Comodo", "comodo.png")),
+        "PROCESS_PATTERNS": {"chrome": ("chrome", "chromium"), "edge": ("edge", "msedge"), "icedragon": ("dragon", "icedragon", "chromium"), "comodo": ("comodo", "chrome")},
+        "EXECUTABLES": {"chrome": "chrome.exe", "firefox": "firefox", "edge": "msedge.exe", "icedragon": "dragon.exe", "comodo": "dragon.exe"},
     }
 
     # Identifiants et noms des extensions gérées par l’application.
-    EXTENSION_CONFIG = {
-        "TARGET_NAME": "EX3",
-        "FIREFOX_ID": "gmail.automation.proxy@azedine.dev",
-    }
+    EXTENSION_CONFIG = {"TARGET_NAME": "EX3", "FIREFOX_ID": "gmail.automation.proxy@azedine.dev"}
 
     # Points de contrôle et adresse de téléchargement des mises à jour.
     UPDATE_CONFIG = {
@@ -82,96 +61,16 @@ class Settings:
 
     # Emplacements des extensions installées dans les profils des navigateurs.
     BROWSER_EXTENSION_PATHS = {
-        "chrome": (
-            (
-                "AppData",
-                "Local",
-                "Google",
-                "Chrome",
-                "User Data",
-                "Default",
-                "Extensions",
-            ),
-            (
-                "AppData",
-                "Local",
-                "Google",
-                "Chrome",
-                "User Data",
-                "Profile 1",
-                "Extensions",
-            ),
-        ),
-        "edge": (
-            (
-                "AppData",
-                "Local",
-                "Microsoft",
-                "Edge",
-                "User Data",
-                "Default",
-                "Extensions",
-            ),
-            (
-                "AppData",
-                "Local",
-                "Microsoft",
-                "Edge",
-                "User Data",
-                "Profile 1",
-                "Extensions",
-            ),
-        ),
+        "chrome": (("AppData", "Local", "Google", "Chrome", "User Data", "Default", "Extensions"), ("AppData", "Local", "Google", "Chrome", "User Data", "Profile 1", "Extensions")),
+        "edge": (("AppData", "Local", "Microsoft", "Edge", "User Data", "Default", "Extensions"), ("AppData", "Local", "Microsoft", "Edge", "User Data", "Profile 1", "Extensions")),
         "comodo": (
-            (
-                "AppData",
-                "Local",
-                "Comodo",
-                "Browser",
-                "User Data",
-                "Default",
-                "Extensions",
-            ),
-            (
-                "AppData",
-                "Local",
-                "Comodo",
-                "Dragon",
-                "User Data",
-                "Default",
-                "Extensions",
-            ),
-            (
-                "AppData",
-                "Local",
-                "Comodo",
-                "Dragon",
-                "User Data",
-                "Profile 1",
-                "Extensions",
-            ),
-            (
-                "AppData",
-                "Local",
-                "Comodo",
-                "Comodo Dragon",
-                "User Data",
-                "Default",
-                "Extensions",
-            ),
-            (
-                "AppData",
-                "Roaming",
-                "Comodo",
-                "Dragon",
-                "User Data",
-                "Default",
-                "Extensions",
-            ),
+            ("AppData", "Local", "Comodo", "Browser", "User Data", "Default", "Extensions"),
+            ("AppData", "Local", "Comodo", "Dragon", "User Data", "Default", "Extensions"),
+            ("AppData", "Local", "Comodo", "Dragon", "User Data", "Profile 1", "Extensions"),
+            ("AppData", "Local", "Comodo", "Comodo Dragon", "User Data", "Default", "Extensions"),
+            ("AppData", "Roaming", "Comodo", "Dragon", "User Data", "Default", "Extensions"),
         ),
-        "icedragon": (
-            ("AppData", "Local", "Icedragon", "User Data", "Default", "Extensions"),
-        ),
+        "icedragon": (("AppData", "Local", "Icedragon", "User Data", "Default", "Extensions"),),
         "firefox": (("AppData", "Roaming", "Mozilla", "Firefox", "Profiles"),),
     }
 
@@ -179,13 +78,8 @@ class Settings:
     PROCESS_CONFIG = {
         "GOOGLE_PREFIX": "google",
         "YOUTUBE_PREFIX": "youtube",
-        "EXCLUDED_PROCESSES": frozenset(
-            {"google_maps_actions", "save_location", "search_activities"}
-        ),
-        "ALLOWED_ITEMS": {
-            "open_inbox": ("report_spam", "delete", "archive"),
-            "open_spam": ("not_spam", "delete", "report_spam"),
-        },
+        "EXCLUDED_PROCESSES": frozenset({"google_maps_actions", "save_location", "search_activities"}),
+        "ALLOWED_ITEMS": {"open_inbox": ("report_spam", "delete", "archive"), "open_spam": ("not_spam", "delete", "report_spam")},
     }
 
     # Associe les identifiants de fournisseurs à leurs noms affichés.
@@ -271,18 +165,10 @@ class Settings:
     }
 
     # Paramètres transmis lors de la validation et de l’ouverture d’une session.
-    SESSION_API_CONFIG = {
-        "KEY": "mP5QXYrK9E67Y",
-        "VALIDATION_REQUEST_ID": "4",
-        "AUTHENTICATION_REQUEST_ID": "1",
-        "APP_VERSION": "1",
-        "AUTHENTICATION_LOGIN": "1",
-    }
+    SESSION_API_CONFIG = {"KEY": "mP5QXYrK9E67Y", "VALIDATION_REQUEST_ID": "4", "AUTHENTICATION_REQUEST_ID": "1", "APP_VERSION": "1", "AUTHENTICATION_LOGIN": "1"}
 
     # Nombre maximal de tentatives pour une requête API.
-    API_CONFIG = {
-        "MAX_REQUEST_ATTEMPTS": 3,
-    }
+    API_CONFIG = {"MAX_REQUEST_ATTEMPTS": 3}
 
     MAX_REQUEST_ATTEMPTS = API_CONFIG["MAX_REQUEST_ATTEMPTS"]
 
@@ -296,9 +182,7 @@ class Settings:
 
     # Paramètres cryptographiques partagés par les fonctions de chiffrement.
 
-    ENCRYPTION_KEY_HEX = (
-        "f564292a5740af4fc4819c6e22f64765232ad35f56079854a0ad3996c68ee7a2"
-    )
+    ENCRYPTION_KEY_HEX = "f564292a5740af4fc4819c6e22f64765232ad35f56079854a0ad3996c68ee7a2"
 
     AES_BLOCK_SIZE = 128
     AES_KEY_LENGTH = 32
@@ -329,19 +213,9 @@ class Settings:
     # Chemins des profils de navigateur et du numéro de version local.
     VERSION_LOCAL_PROGRAMM = os.path.join(BASE_DIR, "config", "version.txt")
 
-    CHROMIUM_BROWSER_PATHS = {
-        "edge": {"profiles": EDGE_PROFILES},
-        "icedragon": {"profiles": ICEDRAGON_PROFILES},
-        "comodo": {"profiles": COMODO_PROFILES},
-    }
+    CHROMIUM_BROWSER_PATHS = {"edge": {"profiles": EDGE_PROFILES}, "icedragon": {"profiles": ICEDRAGON_PROFILES}, "comodo": {"profiles": COMODO_PROFILES}}
 
-    BROWSER_PROFILE_PATHS = {
-        "chrome": CHROME_PROFILES,
-        "firefox": FIREFOX_PROFILES,
-        "edge": EDGE_PROFILES,
-        "icedragon": ICEDRAGON_PROFILES,
-        "comodo": COMODO_PROFILES,
-    }
+    BROWSER_PROFILE_PATHS = {"chrome": CHROME_PROFILES, "firefox": FIREFOX_PROFILES, "edge": EDGE_PROFILES, "icedragon": ICEDRAGON_PROFILES, "comodo": COMODO_PROFILES}
 
     ICONS_DIR = BASE_DIR / "resources" / "icons"
     FILE_ISP = os.path.join(BASE_DIR, "config", "Isp.txt")
@@ -349,9 +223,7 @@ class Settings:
     # Modèles de profils et fichiers des extensions locales.
 
     CONFIG_PROFILE = r"C:\RepProxy\template_Profile"
-    SECURE_PREFERENCES_TEMPLATE = (
-        r"C:\RepProxy\template_Profile\default\Secure Preferences"
-    )
+    SECURE_PREFERENCES_TEMPLATE = r"C:\RepProxy\template_Profile\default\Secure Preferences"
     FICHIER_LOCAL_STATE = r"C:\RepProxy\template_Profile\Local State"
     FICHIER_VARIATIONS = r"C:\RepProxy\template_Profile\Variations"
 
@@ -363,12 +235,8 @@ class Settings:
     MANIFEST_PATH_EX3 = os.path.join(EXTENTION_EX3_CHROMIUM, "manifest.json")
     VERSION_LOCAL_EX3 = os.path.join(EXTENTION_EX3_CHROMIUM, "version.txt")
 
-    TEMPLATE_DIRECTORY_FIREFOX = os.path.join(
-        TOOLS_DIR, "extensions Templete", "ExtensionTemplateFirefox"
-    )
-    TEMPLATE_DIRECTORY_CHROMIUM = os.path.join(
-        TOOLS_DIR, "extensions Templete", "Extention_Family_Chrome"
-    )
+    TEMPLATE_DIRECTORY_FIREFOX = os.path.join(TOOLS_DIR, "extensions Templete", "ExtensionTemplateFirefox")
+    TEMPLATE_DIRECTORY_CHROMIUM = os.path.join(TOOLS_DIR, "extensions Templete", "Extention_Family_Chrome")
 
     LOGS_DIRECTORY = os.path.join(TOOLS_DIR, "logs")
     RESULT_FILE_PATH = os.path.join(TOOLS_DIR, "result.txt")
@@ -381,11 +249,7 @@ class Settings:
 
     # Clés recherchées dans les fichiers de configuration des navigateurs.
     RESULTATS = []
-    CLES_RECHERCHE = [
-        "cglaeklndjbecchejgkdpblljkmgkacg",
-        "dkbionknflglndapchlcfnelgchogjnl",
-        "developer_mode",
-    ]
+    CLES_RECHERCHE = ["cglaeklndjbecchejgkdpblljkmgkacg", "dkbionknflglndapchlcfnelgchogjnl", "developer_mode"]
     RESULTATS_EX = []
 
     ARROW_DOWN_PATH = os.path.join(ICONS_DIR, "arrow_Down.png").replace("\\", "/")
@@ -411,9 +275,7 @@ class Settings:
 
     # Fichiers d’interface et ressources chargés par les fenêtres.
 
-    INTERFACE_UI = os.path.abspath(
-        os.path.join(BASE_DIR, "resources", "ui", "interface.ui")
-    )
+    INTERFACE_UI = os.path.abspath(os.path.join(BASE_DIR, "resources", "ui", "interface.ui"))
     AUTH_UI = os.path.abspath(os.path.join(BASE_DIR, "resources", "ui", "Auth.ui"))
     FILE_ACTIONS_JSON = os.path.join(BASE_DIR, "config", "action.json")
     AUTH_BACKGROUND = os.path.join(BASE_DIR, "resources", "icons", "baghround.jpg")
@@ -464,23 +326,16 @@ class Settings:
         r"inserted[_-]?id|key[_-]?hex|encrypted)"
         r"\1\s*([:=])\s*([\"']?)([^,;\s}\]]+)"
     )
-    _SENSITIVE_BLOCK_PATTERN = re.compile(
-        r"(?is)(payload|command)\s*([:=])\s*(.+?)(?=(?:\s+\w[\w -]*\s*[:=])|$)"
-    )
+    _SENSITIVE_BLOCK_PATTERN = re.compile(r"(?is)(payload|command)\s*([:=])\s*(.+?)(?=(?:\s+\w[\w -]*\s*[:=])|$)")
     _EMAIL_PATTERN = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")
-    _IP_PATTERN = re.compile(
-        r"\b(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}"
-        r"(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\b"
-    )
+    _IP_PATTERN = re.compile(r"\b(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}" r"(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\b")
     _URL_PATTERN = re.compile(r"\bhttps?://[^\s\]}>,]+", re.IGNORECASE)
     _PATH_PATTERN = re.compile(r"(?<![A-Za-z0-9])(?:[A-Za-z]:\\)[^\n\r|,;]+")
 
     @classmethod
     def _stable_identifier(cls, value: str, label: str) -> str:
         """Produit un identifiant stable sans conserver la valeur sensible."""
-        digest = hashlib.sha256(value.encode("utf-8", errors="replace")).hexdigest()[
-            :12
-        ]
+        digest = hashlib.sha256(value.encode("utf-8", errors="replace")).hexdigest()[:12]
         return f"<{label}:{digest}>"
 
     @classmethod
@@ -492,19 +347,11 @@ class Settings:
             return f"{match.group(1)}{match.group(2)}{match.group(3)}<redacted>"
 
         text = cls._SENSITIVE_KEY_PATTERN.sub(redact_key_value, text)
-        text = cls._SENSITIVE_BLOCK_PATTERN.sub(
-            lambda match: f"{match.group(1)}{match.group(2)}<redacted>", text
-        )
+        text = cls._SENSITIVE_BLOCK_PATTERN.sub(lambda match: f"{match.group(1)}{match.group(2)}<redacted>", text)
         text = cls._URL_PATTERN.sub("<url:redacted>", text)
-        text = cls._EMAIL_PATTERN.sub(
-            lambda match: cls._stable_identifier(match.group(0).lower(), "email"), text
-        )
-        text = cls._IP_PATTERN.sub(
-            lambda match: cls._stable_identifier(match.group(0), "ip"), text
-        )
-        text = cls._PATH_PATTERN.sub(
-            lambda match: cls._stable_identifier(match.group(0), "path"), text
-        )
+        text = cls._EMAIL_PATTERN.sub(lambda match: cls._stable_identifier(match.group(0).lower(), "email"), text)
+        text = cls._IP_PATTERN.sub(lambda match: cls._stable_identifier(match.group(0), "ip"), text)
+        text = cls._PATH_PATTERN.sub(lambda match: cls._stable_identifier(match.group(0), "path"), text)
         return " ".join(text.split())
 
     @classmethod
@@ -513,10 +360,7 @@ class Settings:
         safe_message = cls._redact_log_message(message)
         if len(safe_message) <= cls._MAX_LOG_MESSAGE_LENGTH:
             return safe_message
-        return (
-            f"{safe_message[: cls._MAX_LOG_MESSAGE_LENGTH]}... "
-            f"[truncated_length={len(safe_message)}]"
-        )
+        return f"{safe_message[: cls._MAX_LOG_MESSAGE_LENGTH]}... " f"[truncated_length={len(safe_message)}]"
 
     @classmethod
     def _get_logger(cls):
@@ -533,12 +377,7 @@ class Settings:
             logger.propagate = False
             log_path = Path(cls.LOG_DEV_FILE)
             log_path.parent.mkdir(parents=True, exist_ok=True)
-            handler = RotatingFileHandler(
-                log_path,
-                maxBytes=cls.LOG_MAX_BYTES,
-                backupCount=cls.LOG_BACKUP_COUNT,
-                encoding="utf-8",
-            )
+            handler = RotatingFileHandler(log_path, maxBytes=cls.LOG_MAX_BYTES, backupCount=cls.LOG_BACKUP_COUNT, encoding="utf-8")
             handler.setFormatter(logging.Formatter("%(message)s"))
             if not logger.handlers:
                 logger.addHandler(handler)
@@ -549,10 +388,7 @@ class Settings:
     def write_log_event(cls, event: str, level: str = "INFO", **context):
         """Écrit un événement structuré après nettoyage de son contexte."""
         try:
-            safe_context = {
-                str(key): cls._prepare_log_message(value)
-                for key, value in context.items()
-            }
+            safe_context = {str(key): cls._prepare_log_message(value) for key, value in context.items()}
             cls._write_log_record({"event": event, "context": safe_context}, level)
         except (OSError, TypeError, ValueError):
             pass
@@ -572,10 +408,7 @@ class Settings:
             "thread": threading.current_thread().name,
             **fields,
         }
-        cls._get_logger().log(
-            getattr(logging, str(level).upper(), logging.INFO),
-            json.dumps(record, ensure_ascii=False, separators=(",", ":")),
-        )
+        cls._get_logger().log(getattr(logging, str(level).upper(), logging.INFO), json.dumps(record, ensure_ascii=False, separators=(",", ":")))
 
     @classmethod
     def write_log_dev_file(cls, message: str, level: str = "INFO"):
@@ -603,12 +436,7 @@ class Settings:
             else:
                 cls.write_log_dev_file("Fichier log inexistant", "WARNING")
         except Exception as exc:
-            cls.write_log_event(
-                "log_clear_failed",
-                "ERROR",
-                exception_type=type(exc).__name__,
-                error=str(exc),
-            )
+            cls.write_log_event("log_clear_failed", "ERROR", exception_type=type(exc).__name__, error=str(exc))
 
     @classmethod
     def clearLog(cls):
@@ -618,29 +446,14 @@ class Settings:
     @classmethod
     def ensure_directories(cls):
         """Crée les répertoires de données et de profils s’ils sont absents."""
-        directories = [
-            cls.DATA_DIR,
-            cls.PROFILES_DIR,
-            cls.LOGS_DIRECTORY,
-            cls.CHROME_PROFILES,
-            cls.FIREFOX_PROFILES,
-            cls.EDGE_PROFILES,
-            cls.ICEDRAGON_PROFILES,
-            cls.COMODO_PROFILES,
-        ]
+        directories = [cls.DATA_DIR, cls.PROFILES_DIR, cls.LOGS_DIRECTORY, cls.CHROME_PROFILES, cls.FIREFOX_PROFILES, cls.EDGE_PROFILES, cls.ICEDRAGON_PROFILES, cls.COMODO_PROFILES]
         for directory in directories:
             path = Path(directory)
             if not path.exists():
                 try:
                     path.mkdir(parents=True, exist_ok=True)
                 except Exception as exc:
-                    cls.write_log_event(
-                        "directory_creation_failed",
-                        "ERROR",
-                        directory=str(path),
-                        exception_type=type(exc).__name__,
-                        error=str(exc),
-                    )
+                    cls.write_log_event("directory_creation_failed", "ERROR", directory=str(path), exception_type=type(exc).__name__, error=str(exc))
 
     @classmethod
     def ensureDirectories(cls):
@@ -677,9 +490,7 @@ class Settings:
             cls.write_log_dev_file("Node.js already installed", "INFO")
             return True
 
-        cls.write_log_dev_file(
-            "Node.js not installed. Trying to install via Chocolatey...", "INFO"
-        )
+        cls.write_log_dev_file("Node.js not installed. Trying to install via Chocolatey...", "INFO")
 
         if shutil.which("choco") is None:
             cls.write_log_dev_file("Chocolatey not found. Installing...", "INFO")
@@ -700,13 +511,7 @@ class Settings:
                     check=True,
                 )
             except subprocess.CalledProcessError as exc:
-                cls.write_log_event(
-                    "node_setup_failed",
-                    "ERROR",
-                    action="choco_install",
-                    exception_type=type(exc).__name__,
-                    error=str(exc),
-                )
+                cls.write_log_event("node_setup_failed", "ERROR", action="choco_install", exception_type=type(exc).__name__, error=str(exc))
                 return False
 
         try:
@@ -714,13 +519,7 @@ class Settings:
             subprocess.run(["choco", "install", "nodejs-lts", "-y"], check=True)
             return True
         except subprocess.CalledProcessError as exc:
-            cls.write_log_event(
-                "node_setup_failed",
-                "ERROR",
-                action="choco_install_node",
-                exception_type=type(exc).__name__,
-                error=str(exc),
-            )
+            cls.write_log_event("node_setup_failed", "ERROR", action="choco_install_node", exception_type=type(exc).__name__, error=str(exc))
             return False
 
     @classmethod
@@ -748,13 +547,7 @@ class Settings:
             # Installe web-ext globalement afin qu’il soit accessible dans le PATH.
             subprocess.run([npm_path, "install", "--global", "web-ext"], check=True)
         except subprocess.CalledProcessError as exc:
-            cls.write_log_event(
-                "web_ext_install_failed",
-                "ERROR",
-                action="npm_install",
-                exception_type=type(exc).__name__,
-                error=str(exc),
-            )
+            cls.write_log_event("web_ext_install_failed", "ERROR", action="npm_install", exception_type=type(exc).__name__, error=str(exc))
 
     @classmethod
     def ensureWebExtInstalled(cls):

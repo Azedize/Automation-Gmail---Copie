@@ -80,19 +80,9 @@ try:
     from utils.validation_utils import ValidationUtils
 except ImportError as e:
     if "Settings" in globals():
-        Settings.write_log_event(
-            "browser_manager_import_failed",
-            "ERROR",
-            file=__file__,
-            exception_type=type(e).__name__,
-            error=str(e),
-            traceback=traceback.format_exc(),
-        )
+        Settings.write_log_event("browser_manager_import_failed", "ERROR", file=__file__, exception_type=type(e).__name__, error=str(e), traceback=traceback.format_exc())
     else:
-        print(
-            f"❌ Erreur d'importation dans file {__file__} : {e}\n"
-            f"{traceback.format_exc()}"
-        )
+        print(f"❌ Erreur d'importation dans file {__file__} : {e}\n" f"{traceback.format_exc()}")
     sys.exit(1)
 
 
@@ -132,9 +122,7 @@ class BrowserManager:
         # - strip() supprime les espaces inutiles ;
         # - lower() permet une recherche insensible à la casse.
         # --------------------------------------------------
-        executable = Settings.BROWSER_EXECUTABLES.get(
-            (browser_name or "").strip().lower()
-        )
+        executable = Settings.BROWSER_EXECUTABLES.get((browser_name or "").strip().lower())
 
         # --------------------------------------------------
         # Si un exécutable correspondant est trouvé dans
@@ -143,9 +131,7 @@ class BrowserManager:
         #
         # Sinon, retourne None.
         # --------------------------------------------------
-        return (
-            BrowserManager.getBrowserExecutablePath(executable) if executable else None
-        )
+        return BrowserManager.getBrowserExecutablePath(executable) if executable else None
 
     # ======================================================
     # getBrowserExecutablePath
@@ -176,9 +162,7 @@ class BrowserManager:
         #
         # Sinon, la valeur reçue est conservée telle quelle.
         # --------------------------------------------------
-        exe_name = Settings.SUPPORTED_BROWSERS.get(browser_name_or_exe.lower(), {}).get(
-            "exe_name", browser_name_or_exe
-        )
+        exe_name = Settings.SUPPORTED_BROWSERS.get(browser_name_or_exe.lower(), {}).get("exe_name", browser_name_or_exe)
 
         # --------------------------------------------------
         # Journalise le début de la recherche.
@@ -191,10 +175,7 @@ class BrowserManager:
         #
         # Cela permet d'avoir des logs plus lisibles.
         # --------------------------------------------------
-        HIVE_NAMES = {
-            winreg.HKEY_LOCAL_MACHINE: "HKEY_LOCAL_MACHINE",
-            winreg.HKEY_CURRENT_USER: "HKEY_CURRENT_USER",
-        }
+        HIVE_NAMES = {winreg.HKEY_LOCAL_MACHINE: "HKEY_LOCAL_MACHINE", winreg.HKEY_CURRENT_USER: "HKEY_CURRENT_USER"}
 
         # --------------------------------------------------
         # Liste des emplacements Registry à tester.
@@ -224,9 +205,7 @@ class BrowserManager:
         # SOFTWARE\Microsoft\Windows\CurrentVersion\
         # App Paths\chrome.exe
         # --------------------------------------------------
-        key_app_paths = (
-            rf"SOFTWARE\Microsoft\Windows\CurrentVersion" rf"\App Paths\{exe_name}"
-        )
+        key_app_paths = rf"SOFTWARE\Microsoft\Windows\CurrentVersion" rf"\App Paths\{exe_name}"
 
         # --------------------------------------------------
         # Teste chaque emplacement Registry.
@@ -265,9 +244,7 @@ class BrowserManager:
                         # ------------------------------------
                         if ValidationUtils.pathExists(path):
 
-                            Settings.write_log_dev_file(
-                                f"✅ Navigateur trouvé: {exe_name}", "SUCCESS"
-                            )
+                            Settings.write_log_dev_file(f"✅ Navigateur trouvé: {exe_name}", "SUCCESS")
 
                             Settings.write_log_dev_file(f"📂 Chemin: {path}", "SUCCESS")
 
@@ -278,10 +255,7 @@ class BrowserManager:
                             # Le Registry contient un chemin,
                             # mais le fichier n'existe plus.
                             # --------------------------------
-                            Settings.write_log_dev_file(
-                                "⚠️ Chemin trouvé mais " f"fichier inexistant: {path}",
-                                "WARNING",
-                            )
+                            Settings.write_log_dev_file("⚠️ Chemin trouvé mais " f"fichier inexistant: {path}", "WARNING")
 
             except FileNotFoundError:
 
@@ -303,11 +277,7 @@ class BrowserManager:
                 # traceback.format_exc() fournit le stack trace
                 # complet pour faciliter le diagnostic.
                 # ------------------------------------------------
-                Settings.write_log_dev_file(
-                    f"🚨 Erreur registre ({hive_name}): "
-                    f"{str(e)}\n{traceback.format_exc()}",
-                    "ERROR",
-                )
+                Settings.write_log_dev_file(f"🚨 Erreur registre ({hive_name}): " f"{str(e)}\n{traceback.format_exc()}", "ERROR")
 
         # ------------------------------------------------------
         # Aucun emplacement Registry n'a permis de trouver
@@ -338,15 +308,7 @@ class BrowserManager:
     # ======================================================
     @staticmethod
     def persistBrowserSessionInfo(
-        pid: Any,
-        Path_DiR: str,
-        email: str,
-        SESSION_ID: str,
-        browser: str,
-        inserted_id: str,
-        profile_path: Optional[str] = None,
-        web_ext_pid: Optional[int] = None,
-        profile_name: Optional[str] = None,
+        pid: Any, Path_DiR: str, email: str, SESSION_ID: str, browser: str, inserted_id: str, profile_path: Optional[str] = None, web_ext_pid: Optional[int] = None, profile_name: Optional[str] = None
     ) -> None:
 
         # ==================================================
@@ -370,9 +332,7 @@ class BrowserManager:
             if browser_key == "firefox":
 
                 if isinstance(pid_value, (list, tuple, set)):
-                    return ";".join(
-                        str(int(p)) for p in pid_value if str(p).strip().isdigit()
-                    )
+                    return ";".join(str(int(p)) for p in pid_value if str(p).strip().isdigit())
 
                 # --------------------------------------------
                 # PID unique sous forme entière.
@@ -450,27 +410,14 @@ class BrowserManager:
             # Journalise uniquement les tailles afin d'éviter
             # d'exposer directement le contenu du fichier.
             # ------------------------------------------------
-            Settings.write_log_event(
-                "browser_session_write_verified",
-                "INFO",
-                label=label,
-                expected_length=len(content.strip()),
-                actual_length=len(actual),
-                file_written=target_path.name,
-            )
+            Settings.write_log_event("browser_session_write_verified", "INFO", label=label, expected_length=len(content.strip()), actual_length=len(actual), file_written=target_path.name)
 
             # ------------------------------------------------
             # Compare le contenu attendu avec le contenu réel.
             # ------------------------------------------------
             if actual != content.strip():
 
-                Settings.write_log_event(
-                    "browser_session_write_mismatch",
-                    "ERROR",
-                    label=label,
-                    expected_length=len(content.strip()),
-                    actual_length=len(actual),
-                )
+                Settings.write_log_event("browser_session_write_mismatch", "ERROR", label=label, expected_length=len(content.strip()), actual_length=len(actual))
 
         # ==================================================
         # Traitement principal de la sauvegarde
@@ -511,9 +458,7 @@ class BrowserManager:
             #
             # PID:EMAIL:SESSION_ID:INSERTED_ID
             # ------------------------------------------------
-            session_entry = (
-                f"{normalized_pid}:" f"{email}:" f"{SESSION_ID}:" f"{inserted_id}"
-            )
+            session_entry = f"{normalized_pid}:" f"{email}:" f"{SESSION_ID}:" f"{inserted_id}"
 
             # ------------------------------------------------
             # Chemin utilisé pour Firefox/autres navigateurs.
@@ -543,11 +488,7 @@ class BrowserManager:
 
                     profile_path = str(Path(Path_DiR) / email)
 
-                    Settings.write_log_dev_file(
-                        "Inferred profile_path for Chrome "
-                        f"family browser: {profile_path}",
-                        "DEBUG",
-                    )
+                    Settings.write_log_dev_file("Inferred profile_path for Chrome " f"family browser: {profile_path}", "DEBUG")
 
                 # ------------------------------------------------
                 # Si le profile path est disponible, écrit
@@ -557,11 +498,7 @@ class BrowserManager:
 
                     profile_data_file = Path(profile_path) / "data.txt"
 
-                    Settings.write_log_dev_file(
-                        "Writing session entry to Chrome "
-                        f"profile data file: {profile_data_file}",
-                        "INFO",
-                    )
+                    Settings.write_log_dev_file("Writing session entry to Chrome " f"profile data file: {profile_data_file}", "INFO")
 
                     _write_and_verify(profile_data_file, session_entry, browser_label)
 
@@ -570,27 +507,18 @@ class BrowserManager:
                     # --------------------------------------------
                     # Impossible de déterminer où stocker la session.
                     # --------------------------------------------
-                    Settings.write_log_dev_file(
-                        "No profile_path provided for " "Chrome session storage",
-                        "ERROR",
-                    )
+                    Settings.write_log_dev_file("No profile_path provided for " "Chrome session storage", "ERROR")
 
             # ==================================================
             # Firefox ou autre navigateur
             # ==================================================
             else:
 
-                Settings.write_log_dev_file(
-                    f"Firefox or other browser detected: " f"{browser_key}", "INFO"
-                )
+                Settings.write_log_dev_file(f"Firefox or other browser detected: " f"{browser_key}", "INFO")
 
-                Settings.write_log_dev_file(
-                    f"Session entry for Firefox write: " f"'{session_entry}'", "DEBUG"
-                )
+                Settings.write_log_dev_file(f"Session entry for Firefox write: " f"'{session_entry}'", "DEBUG")
 
-                Settings.write_log_dev_file(
-                    f"Writing session to {session_file}", "INFO"
-                )
+                Settings.write_log_dev_file(f"Writing session to {session_file}", "INFO")
 
                 _write_and_verify(session_file, session_entry, "OTHER")
 
@@ -633,9 +561,7 @@ class BrowserManager:
     @staticmethod
     def getFirefoxProfileMap() -> Dict[str, str]:
 
-        Settings.write_log_dev_file(
-            "[_get_firefox_profiles] " "Lecture des profils Firefox existants", "DEBUG"
-        )
+        Settings.write_log_dev_file("[_get_firefox_profiles] " "Lecture des profils Firefox existants", "DEBUG")
 
         # ------------------------------------------------------
         # Récupère le chemin configuré dans Settings.
@@ -643,9 +569,7 @@ class BrowserManager:
         # Si aucun chemin n'est disponible, construit le chemin
         # standard de Firefox dans APPDATA.
         # ------------------------------------------------------
-        ini_path = getattr(Settings, "FIREFOX_PROFILES_INI", None) or os.path.join(
-            Settings.APPDATA, "Mozilla", "Firefox", "profiles.ini"
-        )
+        ini_path = getattr(Settings, "FIREFOX_PROFILES_INI", None) or os.path.join(Settings.APPDATA, "Mozilla", "Firefox", "profiles.ini")
 
         # ------------------------------------------------------
         # Conserve le chemin calculé dans Settings afin que
@@ -653,21 +577,14 @@ class BrowserManager:
         # ------------------------------------------------------
         Settings.FIREFOX_PROFILES_INI = ini_path
 
-        Settings.write_log_dev_file(
-            "[_get_firefox_profiles] Firefox profiles.ini "
-            f"path stored in Settings: {ini_path}",
-            "DEBUG",
-        )
+        Settings.write_log_dev_file("[_get_firefox_profiles] Firefox profiles.ini " f"path stored in Settings: {ini_path}", "DEBUG")
 
         # ------------------------------------------------------
         # Vérifie que profiles.ini existe.
         # ------------------------------------------------------
         if not os.path.exists(ini_path):
 
-            Settings.write_log_dev_file(
-                "[_get_firefox_profiles] ⚠️ profiles.ini " f"non trouvé: {ini_path}",
-                "WARNING",
-            )
+            Settings.write_log_dev_file("[_get_firefox_profiles] ⚠️ profiles.ini " f"non trouvé: {ini_path}", "WARNING")
 
             return {}
 
@@ -685,14 +602,7 @@ class BrowserManager:
 
         except Exception as exc:
 
-            Settings.write_log_event(
-                "firefox_profiles_read_failed",
-                "ERROR",
-                exception_type=type(exc).__name__,
-                error=str(exc),
-                ini_path=ini_path,
-                traceback=traceback.format_exc(),
-            )
+            Settings.write_log_event("firefox_profiles_read_failed", "ERROR", exception_type=type(exc).__name__, error=str(exc), ini_path=ini_path, traceback=traceback.format_exc())
 
             return {}
 
@@ -758,28 +668,16 @@ class BrowserManager:
                         # ----------------------------------------
                         profiles[name] = os.path.normpath(full_path)
 
-                        Settings.write_log_dev_file(
-                            f"  📌 Profil trouvé: {name} -> " f"{profiles[name]}",
-                            "DEBUG",
-                        )
+                        Settings.write_log_dev_file(f"  📌 Profil trouvé: {name} -> " f"{profiles[name]}", "DEBUG")
 
         except Exception as exc:
 
-            Settings.write_log_event(
-                "firefox_profiles_parse_failed",
-                "ERROR",
-                exception_type=type(exc).__name__,
-                error=str(exc),
-                ini_path=ini_path,
-                traceback=traceback.format_exc(),
-            )
+            Settings.write_log_event("firefox_profiles_parse_failed", "ERROR", exception_type=type(exc).__name__, error=str(exc), ini_path=ini_path, traceback=traceback.format_exc())
 
         # ------------------------------------------------------
         # Journalise le nombre final de profils trouvés.
         # ------------------------------------------------------
-        Settings.write_log_event(
-            "firefox_profiles_loaded", "INFO", profile_count=len(profiles)
-        )
+        Settings.write_log_event("firefox_profiles_loaded", "INFO", profile_count=len(profiles))
 
         return profiles
 
@@ -801,12 +699,7 @@ class BrowserManager:
     @staticmethod
     def findFirefoxProcessIds(profile_path: str, parent_pid: int) -> List[int]:
 
-        Settings.write_log_dev_file(
-            "[find_firefox_pids] Recherche des PIDs Firefox "
-            f"pour profile_path={profile_path}, "
-            f"parent_pid={parent_pid}",
-            "DEBUG",
-        )
+        Settings.write_log_dev_file("[find_firefox_pids] Recherche des PIDs Firefox " f"pour profile_path={profile_path}, " f"parent_pid={parent_pid}", "DEBUG")
 
         # ------------------------------------------------------
         # Utilisation d'un set pour éviter automatiquement
@@ -869,12 +762,7 @@ class BrowserManager:
                     pids.add(proc.pid)
 
                     Settings.write_log_dev_file(
-                        "[find_firefox_pids] Match PID "
-                        f"{proc.pid}: "
-                        f"profile_match={match_profile}, "
-                        f"parent_match={match_parent}, "
-                        f"cmdline={cmdline[:200]}",
-                        "DEBUG",
+                        "[find_firefox_pids] Match PID " f"{proc.pid}: " f"profile_match={match_profile}, " f"parent_match={match_parent}, " f"cmdline={cmdline[:200]}", "DEBUG"
                     )
 
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
@@ -890,13 +778,7 @@ class BrowserManager:
             except Exception as exc:
 
                 Settings.write_log_event(
-                    "firefox_pid_scan_failed",
-                    "WARNING",
-                    exception_type=type(exc).__name__,
-                    error=str(exc),
-                    profile_path=profile_path,
-                    parent_pid=parent_pid,
-                    traceback=traceback.format_exc(),
+                    "firefox_pid_scan_failed", "WARNING", exception_type=type(exc).__name__, error=str(exc), profile_path=profile_path, parent_pid=parent_pid, traceback=traceback.format_exc()
                 )
 
                 continue
@@ -906,9 +788,7 @@ class BrowserManager:
         # ------------------------------------------------------
         result = sorted(pids)
 
-        Settings.write_log_dev_file(
-            f"[find_firefox_pids] Firefox PIDs found: {result}", "INFO"
-        )
+        Settings.write_log_dev_file(f"[find_firefox_pids] Firefox PIDs found: {result}", "INFO")
 
         return result
 
@@ -926,12 +806,7 @@ class BrowserManager:
     @staticmethod
     def findChromiumProcessIds(profile_path: str, browser_name: str) -> List[int]:
 
-        Settings.write_log_dev_file(
-            "[find_chromium_pids] Searching Chromium PIDs "
-            f"for profile_path={profile_path}, "
-            f"browser_name={browser_name}",
-            "DEBUG",
-        )
+        Settings.write_log_dev_file("[find_chromium_pids] Searching Chromium PIDs " f"for profile_path={profile_path}, " f"browser_name={browser_name}", "DEBUG")
 
         # ------------------------------------------------------
         # Set utilisé pour éviter les doublons.
@@ -954,10 +829,7 @@ class BrowserManager:
         # Si aucun pattern n'est configuré, utilise une liste
         # de valeurs par défaut.
         # ------------------------------------------------------
-        allowed_names = Settings.BROWSER_PROCESS_PATTERNS.get(
-            browser_name_lower,
-            ("chrome", "edge", "msedge", "dragon", "comodo", "chromium"),
-        )
+        allowed_names = Settings.BROWSER_PROCESS_PATTERNS.get(browser_name_lower, ("chrome", "edge", "msedge", "dragon", "comodo", "chromium"))
 
         # ------------------------------------------------------
         # Parcourt les processus.
@@ -992,13 +864,7 @@ class BrowserManager:
 
                     pids.add(proc.pid)
 
-                    Settings.write_log_dev_file(
-                        "[find_chromium_pids] Match PID "
-                        f"{proc.pid}: "
-                        f"name={name}, "
-                        f"cmdline={cmdline[:200]}",
-                        "DEBUG",
-                    )
+                    Settings.write_log_dev_file("[find_chromium_pids] Match PID " f"{proc.pid}: " f"name={name}, " f"cmdline={cmdline[:200]}", "DEBUG")
 
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                 # ------------------------------------------------
@@ -1009,13 +875,7 @@ class BrowserManager:
 
             except Exception as exc:
                 Settings.write_log_event(
-                    "chromium_pid_scan_failed",
-                    "WARNING",
-                    exception_type=type(exc).__name__,
-                    error=str(exc),
-                    profile_path=profile_path,
-                    browser_name=browser_name,
-                    traceback=traceback.format_exc(),
+                    "chromium_pid_scan_failed", "WARNING", exception_type=type(exc).__name__, error=str(exc), profile_path=profile_path, browser_name=browser_name, traceback=traceback.format_exc()
                 )
 
                 continue
@@ -1025,9 +885,7 @@ class BrowserManager:
         # ------------------------------------------------------
         result = sorted(pids)
 
-        Settings.write_log_dev_file(
-            f"[find_chromium_pids] Chromium PIDs found: " f"{result}", "INFO"
-        )
+        Settings.write_log_dev_file(f"[find_chromium_pids] Chromium PIDs found: " f"{result}", "INFO")
 
         return result
 
@@ -1054,9 +912,7 @@ class BrowserManager:
     @staticmethod
     def createFirefoxProfile(profile_name: str) -> Optional[str]:
 
-        Settings.write_log_dev_file(
-            f"[create_firefox_profile] Start: {profile_name}", "DEBUG"
-        )
+        Settings.write_log_dev_file(f"[create_firefox_profile] Start: {profile_name}", "DEBUG")
 
         # ------------------------------------------------------
         # Recherche de l'exécutable Firefox.
@@ -1086,13 +942,7 @@ class BrowserManager:
 
         except Exception as e:
             Settings.write_log_event(
-                "firefox_profile_directory_creation_failed",
-                "ERROR",
-                profile_name=profile_name,
-                directory=base_dir,
-                exception_type=type(e).__name__,
-                error=str(e),
-                traceback=traceback.format_exc(),
+                "firefox_profile_directory_creation_failed", "ERROR", profile_name=profile_name, directory=base_dir, exception_type=type(e).__name__, error=str(e), traceback=traceback.format_exc()
             )
 
             return None
@@ -1125,13 +975,7 @@ class BrowserManager:
             # timeout protège l'application contre une commande
             # qui resterait bloquée indéfiniment.
             # --------------------------------------------------
-            result = subprocess.run(
-                [firefox_path, "--CreateProfile", cmd],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                timeout=15,
-            )
+            result = subprocess.run([firefox_path, "--CreateProfile", cmd], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=15)
 
             # --------------------------------------------------
             # Un returncode différent de 0 indique que Firefox
@@ -1145,13 +989,7 @@ class BrowserManager:
 
         except Exception as e:
             Settings.write_log_event(
-                "firefox_profile_creation_failed",
-                "ERROR",
-                profile_name=profile_name,
-                profile_path=profile_dir,
-                exception_type=type(e).__name__,
-                error=str(e),
-                traceback=traceback.format_exc(),
+                "firefox_profile_creation_failed", "ERROR", profile_name=profile_name, profile_path=profile_dir, exception_type=type(e).__name__, error=str(e), traceback=traceback.format_exc()
             )
 
             return None
@@ -1202,11 +1040,7 @@ class BrowserManager:
     @staticmethod
     def closeFirefoxProcesses(firefox_close_list: List[Any]):
 
-        Settings.write_log_dev_file(
-            "close_windows_by_profiles called with "
-            f"{len(firefox_close_list)} entries",
-            "INFO",
-        )
+        Settings.write_log_dev_file("close_windows_by_profiles called with " f"{len(firefox_close_list)} entries", "INFO")
 
         # ------------------------------------------------------
         # Liste temporaire contenant tous les PIDs détectés.
@@ -1237,26 +1071,14 @@ class BrowserManager:
                     # --------------------------------------------
                     if isinstance(entry["firefox_pids"], str):
 
-                        pid_list.extend(
-                            [
-                                int(pid.strip())
-                                for pid in entry["firefox_pids"].split(";")
-                                if pid.strip().isdigit()
-                            ]
-                        )
+                        pid_list.extend([int(pid.strip()) for pid in entry["firefox_pids"].split(";") if pid.strip().isdigit()])
 
                     # --------------------------------------------
                     # Plusieurs PIDs sous forme de collection.
                     # --------------------------------------------
                     elif isinstance(entry["firefox_pids"], (list, tuple, set)):
 
-                        pid_list.extend(
-                            [
-                                int(pid)
-                                for pid in entry["firefox_pids"]
-                                if str(pid).strip().isdigit()
-                            ]
-                        )
+                        pid_list.extend([int(pid) for pid in entry["firefox_pids"] if str(pid).strip().isdigit()])
 
                 # ------------------------------------------------
                 # Deuxième format :
@@ -1267,23 +1089,11 @@ class BrowserManager:
 
                     if isinstance(entry["pids"], str):
 
-                        pid_list.extend(
-                            [
-                                int(pid.strip())
-                                for pid in entry["pids"].split(";")
-                                if pid.strip().isdigit()
-                            ]
-                        )
+                        pid_list.extend([int(pid.strip()) for pid in entry["pids"].split(";") if pid.strip().isdigit()])
 
                     elif isinstance(entry["pids"], list):
 
-                        pid_list.extend(
-                            [
-                                int(pid)
-                                for pid in entry["pids"]
-                                if str(pid).strip().isdigit()
-                            ]
-                        )
+                        pid_list.extend([int(pid) for pid in entry["pids"] if str(pid).strip().isdigit()])
 
                 # ------------------------------------------------
                 # Troisième format :
@@ -1310,12 +1120,7 @@ class BrowserManager:
 
                     except Exception as exc:
                         Settings.write_log_event(
-                            "firefox_process_pid_read_failed",
-                            "WARNING",
-                            exception_type=type(exc).__name__,
-                            error=str(exc),
-                            process_type=type(entry["proc"]).__name__,
-                            traceback=traceback.format_exc(),
+                            "firefox_process_pid_read_failed", "WARNING", exception_type=type(exc).__name__, error=str(exc), process_type=type(entry["proc"]).__name__, traceback=traceback.format_exc()
                         )
 
                 # ------------------------------------------------
@@ -1328,17 +1133,11 @@ class BrowserManager:
                 # ------------------------------------------------
                 elif entry.get("profile_path"):
 
-                    derived = BrowserManager.findFirefoxProcessIds(
-                        entry["profile_path"], entry.get("web_ext_pid", 0)
-                    )
+                    derived = BrowserManager.findFirefoxProcessIds(entry["profile_path"], entry.get("web_ext_pid", 0))
 
                     pid_list.extend(derived)
 
-                    Settings.write_log_dev_file(
-                        "Derived Firefox PIDs from profile_path "
-                        f"{entry['profile_path']}: {derived}",
-                        "DEBUG",
-                    )
+                    Settings.write_log_dev_file("Derived Firefox PIDs from profile_path " f"{entry['profile_path']}: {derived}", "DEBUG")
 
             # ==================================================
             # Cas Integer
@@ -1370,13 +1169,7 @@ class BrowserManager:
                 # ------------------------------------------------
                 elif ";" in text:
 
-                    pid_list.extend(
-                        [
-                            int(pid.strip())
-                            for pid in text.split(";")
-                            if pid.strip().isdigit()
-                        ]
-                    )
+                    pid_list.extend([int(pid.strip()) for pid in text.split(";") if pid.strip().isdigit()])
 
         # ------------------------------------------------------
         # Supprime les doublons et trie les PIDs.
@@ -1406,9 +1199,7 @@ class BrowserManager:
                 # ------------------------------------------------
                 if not psutil.pid_exists(pid):
 
-                    Settings.write_log_dev_file(
-                        f"Firefox PID {pid} " "no longer exists", "INFO"
-                    )
+                    Settings.write_log_dev_file(f"Firefox PID {pid} " "no longer exists", "INFO")
 
                     continue
 
@@ -1432,18 +1223,14 @@ class BrowserManager:
                     # --------------------------------------------
                     process.wait(timeout=5)
 
-                    Settings.write_log_dev_file(
-                        f"Firefox PID {pid} " "terminated gracefully", "INFO"
-                    )
+                    Settings.write_log_dev_file(f"Firefox PID {pid} " "terminated gracefully", "INFO")
 
                 except psutil.TimeoutExpired:
 
                     # --------------------------------------------
                     # Firefox n'a pas terminé dans le délai prévu.
                     # --------------------------------------------
-                    Settings.write_log_dev_file(
-                        f"Timeout terminating PID {pid}, " "forcing kill", "WARNING"
-                    )
+                    Settings.write_log_dev_file(f"Timeout terminating PID {pid}, " "forcing kill", "WARNING")
 
                     # --------------------------------------------
                     # Force l'arrêt.
@@ -1457,41 +1244,26 @@ class BrowserManager:
                         # ----------------------------------------
                         process.wait(timeout=3)
 
-                        Settings.write_log_dev_file(
-                            f"Firefox PID {pid} " "killed forcefully", "INFO"
-                        )
+                        Settings.write_log_dev_file(f"Firefox PID {pid} " "killed forcefully", "INFO")
 
                     except psutil.NoSuchProcess:
 
                         # ----------------------------------------
                         # Le processus a disparu après kill.
                         # ----------------------------------------
-                        Settings.write_log_dev_file(
-                            f"Firefox PID {pid} " "already exited after kill", "INFO"
-                        )
+                        Settings.write_log_dev_file(f"Firefox PID {pid} " "already exited after kill", "INFO")
 
             except psutil.NoSuchProcess:
 
-                Settings.write_log_dev_file(
-                    f"Firefox PID {pid} " "already terminated", "INFO"
-                )
+                Settings.write_log_dev_file(f"Firefox PID {pid} " "already terminated", "INFO")
 
             except psutil.AccessDenied:
 
-                Settings.write_log_dev_file(
-                    f"Permission denied closing " f"Firefox PID {pid}", "WARNING"
-                )
+                Settings.write_log_dev_file(f"Permission denied closing " f"Firefox PID {pid}", "WARNING")
 
             except Exception as exc:
 
-                Settings.write_log_event(
-                    "firefox_pid_close_failed",
-                    "ERROR",
-                    pid=pid,
-                    exception_type=type(exc).__name__,
-                    error=str(exc),
-                    traceback=traceback.format_exc(),
-                )
+                Settings.write_log_event("firefox_pid_close_failed", "ERROR", pid=pid, exception_type=type(exc).__name__, error=str(exc), traceback=traceback.format_exc())
 
         # ------------------------------------------------------
         # Toutes les opérations sont terminées.
@@ -1529,12 +1301,7 @@ class BrowserManager:
     # les deux clés "email" seront trouvées.
     # ======================================================
     @staticmethod
-    def search_keys(
-        data: Any,
-        search_keys: List[str],
-        results: List[Dict[str, Any]],
-        path_trace: str = "",
-    ):
+    def search_keys(data: Any, search_keys: List[str], results: List[Dict[str, Any]], path_trace: str = ""):
 
         try:
 
@@ -1568,9 +1335,7 @@ class BrowserManager:
                         # ----------------------------------------
                         results.append({k: v})
 
-                        Settings.write_log_dev_file(
-                            f"Found JSON key: {k} " f"at {current_path} -> {v}", "INFO"
-                        )
+                        Settings.write_log_dev_file(f"Found JSON key: {k} " f"at {current_path} -> {v}", "INFO")
 
                     # --------------------------------------------
                     # Continue récursivement dans la valeur.
@@ -1611,14 +1376,7 @@ class BrowserManager:
             # --------------------------------------------------
             # Capture toute erreur pendant la traversée récursive.
             # --------------------------------------------------
-            Settings.write_log_event(
-                "json_key_search_failed",
-                "ERROR",
-                path_trace=path_trace,
-                exception_type=type(exc).__name__,
-                error=str(exc),
-                traceback=traceback.format_exc(),
-            )
+            Settings.write_log_event("json_key_search_failed", "ERROR", path_trace=path_trace, exception_type=type(exc).__name__, error=str(exc), traceback=traceback.format_exc())
 
 
 # ==========================================================

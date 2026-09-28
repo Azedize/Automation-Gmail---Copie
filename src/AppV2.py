@@ -59,13 +59,7 @@ try:
     from services import JsonManager
     from Update import UpdateManager
 except ImportError as e:
-    Settings.write_log_event(
-        "app_import_failed",
-        "ERROR",
-        file=__file__,
-        exception_type=type(e).__name__,
-        error=str(e),
-    )
+    Settings.write_log_event("app_import_failed", "ERROR", file=__file__, exception_type=type(e).__name__, error=str(e))
     sys.exit(1)
 
 
@@ -101,17 +95,9 @@ def stopAllProcesses(window, show_idle_warning=True):
             EXTRACTION_THREAD.stop_flag = True
             EXTRACTION_THREAD.wait()
             EXTRACTION_THREAD = None
-            Settings.write_log_dev_file(
-                "Extraction thread stopped successfully.", "INFO"
-            )
+            Settings.write_log_dev_file("Extraction thread stopped successfully.", "INFO")
     except Exception as e:
-        Settings.write_log_event(
-            "thread_stop_failed",
-            "ERROR",
-            thread_name="extraction",
-            exception_type=type(e).__name__,
-            error=str(e),
-        )
+        Settings.write_log_event("thread_stop_failed", "ERROR", thread_name="extraction", exception_type=type(e).__name__, error=str(e))
 
     try:
         if CLOSE_BROWSER_THREAD:
@@ -119,29 +105,14 @@ def stopAllProcesses(window, show_idle_warning=True):
             CLOSE_BROWSER_THREAD.stop_flag = True
             CLOSE_BROWSER_THREAD.wait()
             CLOSE_BROWSER_THREAD = None
-            Settings.write_log_dev_file(
-                "Close browser thread stopped successfully.", "INFO"
-            )
+            Settings.write_log_dev_file("Close browser thread stopped successfully.", "INFO")
     except Exception as e:
-        Settings.write_log_event(
-            "thread_stop_failed",
-            "ERROR",
-            thread_name="browser_close",
-            exception_type=type(e).__name__,
-            error=str(e),
-        )
+        Settings.write_log_event("thread_stop_failed", "ERROR", thread_name="browser_close", exception_type=type(e).__name__, error=str(e))
 
     if not runtime_state.selected_browser:
-        Settings.write_log_dev_file(
-            "Stop failed: No browser selected or no processes running.", "WARNING"
-        )
+        Settings.write_log_dev_file("Stop failed: No browser selected or no processes running.", "WARNING")
         if show_idle_warning:
-            UIManager.showCriticalMessage(
-                window,
-                "No Processes Running",
-                "No processes are currently running.",
-                message_type="warning",
-            )
+            UIManager.showCriticalMessage(window, "No Processes Running", "No processes are currently running.", message_type="warning")
         UIManager.enableButton(window.submitButton)
         UIManager.enableButton(window.stopButton)
         ACTIVE_EMAILS.clear()
@@ -151,84 +122,51 @@ def stopAllProcesses(window, show_idle_warning=True):
     if browser_name != "firefox":
         for pid in PROCESS_PIDS[:]:
             try:
-                Settings.write_log_dev_file(
-                    f"Attempting to terminate process with PID {pid}...", "INFO"
-                )
+                Settings.write_log_dev_file(f"Attempting to terminate process with PID {pid}...", "INFO")
                 process = psutil.Process(pid)
                 process.terminate()
                 try:
                     process.wait(timeout=5)
-                    Settings.write_log_dev_file(
-                        f"Process {pid} terminated successfully.", "INFO"
-                    )
+                    Settings.write_log_dev_file(f"Process {pid} terminated successfully.", "INFO")
                 except psutil.TimeoutExpired:
-                    Settings.write_log_dev_file(
-                        f"Timeout for PID {pid}, forcing kill...", "WARNING"
-                    )
+                    Settings.write_log_dev_file(f"Timeout for PID {pid}, forcing kill...", "WARNING")
                     process.kill()
                     try:
                         process.wait(timeout=3)
-                        Settings.write_log_dev_file(
-                            f"Process {pid} killed successfully.", "INFO"
-                        )
+                        Settings.write_log_dev_file(f"Process {pid} killed successfully.", "INFO")
                     except psutil.NoSuchProcess:
-                        Settings.write_log_dev_file(
-                            f"Process {pid} already closed after kill.", "INFO"
-                        )
+                        Settings.write_log_dev_file(f"Process {pid} already closed after kill.", "INFO")
                     except psutil.TimeoutExpired:
-                        Settings.write_log_dev_file(
-                            f"Failed to kill PID {pid} after timeout.", "ERROR"
-                        )
+                        Settings.write_log_dev_file(f"Failed to kill PID {pid} after timeout.", "ERROR")
                 except psutil.NoSuchProcess:
-                    Settings.write_log_dev_file(
-                        f"Process {pid} already terminated.", "INFO"
-                    )
+                    Settings.write_log_dev_file(f"Process {pid} already terminated.", "INFO")
             except psutil.NoSuchProcess:
                 Settings.write_log_dev_file(f"Process {pid} no longer exists.", "INFO")
             except psutil.AccessDenied:
-                Settings.write_log_dev_file(
-                    f"Permission denied for PID {pid}.", "WARNING"
-                )
+                Settings.write_log_dev_file(f"Permission denied for PID {pid}.", "WARNING")
             except Exception as e:
-                Settings.write_log_dev_file(
-                    f"Unexpected error terminating PID {pid}: {e}\n{traceback.format_exc()}",
-                    "ERROR",
-                )
+                Settings.write_log_dev_file(f"Unexpected error terminating PID {pid}: {e}\n{traceback.format_exc()}", "ERROR")
             finally:
                 if pid in PROCESS_PIDS:
                     PROCESS_PIDS.remove(pid)
-                    Settings.write_log_dev_file(
-                        f"PID {pid} removed from process list.", "INFO"
-                    )
+                    Settings.write_log_dev_file(f"PID {pid} removed from process list.", "INFO")
     else:
         try:
-            Settings.write_log_dev_file(
-                "Closing Firefox profiles using stored session entries...", "INFO"
-            )
+            Settings.write_log_dev_file("Closing Firefox profiles using stored session entries...", "INFO")
             if FIREFOX_SESSIONS:
                 session_entries = list(FIREFOX_SESSIONS.values())
-                Settings.write_log_dev_file(
-                    f"Closing {len(session_entries)} Firefox session entries", "DEBUG"
-                )
+                Settings.write_log_dev_file(f"Closing {len(session_entries)} Firefox session entries", "DEBUG")
                 BrowserManager.closeFirefoxProcesses(session_entries)
             else:
-                Settings.write_log_dev_file(
-                    "No Firefox sessions found, unable to close Firefox profiles.",
-                    "WARNING",
-                )
+                Settings.write_log_dev_file("No Firefox sessions found, unable to close Firefox profiles.", "WARNING")
             Settings.write_log_dev_file("Firefox profiles closed successfully.", "INFO")
         except Exception as e:
-            Settings.write_log_dev_file(
-                f"Error closing Firefox profiles: {e}\n{traceback.format_exc()}",
-                "WARNING",
-            )
+            Settings.write_log_dev_file(f"Error closing Firefox profiles: {e}\n{traceback.format_exc()}", "WARNING")
         finally:
             if PROCESS_PIDS:
                 for pid in PROCESS_PIDS[:]:
                     PROCESS_PIDS.remove(pid)
-                    Settings.write_log_dev_file(
-                        f"PID {pid} removed from process list.", "INFO"
-                    )
+                    Settings.write_log_dev_file(f"PID {pid} removed from process list.", "INFO")
             if FIREFOX_SESSIONS:
                 FIREFOX_SESSIONS.clear()
                 Settings.write_log_dev_file("FIREFOX_SESSIONS cleared", "DEBUG")
@@ -239,71 +177,35 @@ def stopAllProcesses(window, show_idle_warning=True):
     Settings.write_log_dev_file("All stop operations completed.", "INFO")
 
 
-def startExtraction(
-    window,
-    data_list,
-    entered_number,
-    selected_Browser,
-    Isp,
-    unique_id,
-    output_json_final,
-    username,
-):
+def startExtraction(window, data_list, entered_number, selected_Browser, Isp, unique_id, output_json_final, username):
 
     global EXTRACTION_THREAD, CLOSE_BROWSER_THREAD
 
     try:
         entered_number = int(entered_number)
     except ValueError:
-        UIManager.showCriticalMessage(
-            window,
-            "Input Error - Invalid Format",
-            "Numeric value required. Please check your input and try again.",
-            message_type="critical",
-        )
-        Settings.write_log_dev_file(
-            "Numeric value required. Please check your input and try again.", "ERROR"
-        )
+        UIManager.showCriticalMessage(window, "Input Error - Invalid Format", "Numeric value required. Please check your input and try again.", message_type="critical")
+        Settings.write_log_dev_file("Numeric value required. Please check your input and try again.", "ERROR")
         return
 
     email_count = len(data_list)
     if entered_number > email_count:
-        UIManager.showCriticalMessage(
-            window,
-            "Range Error - Exceeded Limit",
-            f"Maximum allowed entries: {email_count}\n Please enter a value between 1 and {email_count}.",
-            message_type="critical",
-        )
-        Settings.write_log_dev_file(
-            f"Maximum allowed entries: {email_count}\nPlease enter a value between 1 and {email_count}.",
-            "ERROR",
-        )
+        UIManager.showCriticalMessage(window, "Range Error - Exceeded Limit", f"Maximum allowed entries: {email_count}\n Please enter a value between 1 and {email_count}.", message_type="critical")
+        Settings.write_log_dev_file(f"Maximum allowed entries: {email_count}\nPlease enter a value between 1 and {email_count}.", "ERROR")
         return
 
     Settings.write_log_dev_file(f"Selected entries: {entered_number}", "INFO")
-    browser_normalized = (
-        selected_Browser.lower() if isinstance(selected_Browser, str) else "unknown"
-    )
-    Settings.write_log_dev_file(
-        f"Browser selection normalized: {browser_normalized}", "INFO"
-    )
+    browser_normalized = selected_Browser.lower() if isinstance(selected_Browser, str) else "unknown"
+    Settings.write_log_dev_file(f"Browser selection normalized: {browser_normalized}", "INFO")
 
     browser_path = BrowserManager.get_browser_executable_path(browser_normalized)
 
-    browser_name = (
-        selected_Browser.strip() if isinstance(selected_Browser, str) else "Unknown"
-    )
+    browser_name = selected_Browser.strip() if isinstance(selected_Browser, str) else "Unknown"
     browser_path_display = browser_path or "Non trouvÃ©"
-    Settings.write_log_dev_file(
-        f"Browser startup details | Browser selected: {browser_name} | Executable path: {browser_path_display} | Extraction stage: initialisation",
-        "INFO",
-    )
+    Settings.write_log_dev_file(f"Browser startup details | Browser selected: {browser_name} | Executable path: {browser_path_display} | Extraction stage: initialisation", "INFO")
 
     if browser_path is None:
-        Settings.write_log_dev_file(
-            f"Navigateur introuvable ou chemin d'installation indisponible : {browser_name}",
-            "ERROR",
-        )
+        Settings.write_log_dev_file(f"Navigateur introuvable ou chemin d'installation indisponible : {browser_name}", "ERROR")
         UIManager.showCriticalMessage(
             window,
             "Navigateur introuvable",
@@ -316,41 +218,18 @@ def startExtraction(
     if selected_Browser.lower() == "firefox":
         Settings.ensure_web_ext_installed()
 
-    EXTRACTION_THREAD = EmailExtractionWorker(
-        window,
-        data_list,
-        SESSION_ID,
-        entered_number,
-        browser_path,
-        window,
-        selected_Browser,
-        Isp,
-        unique_id,
-        output_json_final,
-        runtime_state,
-        file_lock,
-    )
+    EXTRACTION_THREAD = EmailExtractionWorker(window, data_list, SESSION_ID, entered_number, browser_path, window, selected_Browser, Isp, unique_id, output_json_final, runtime_state, file_lock)
 
     EXTRACTION_THREAD.finished.connect(lambda: window.extraction_finished(window))
     EXTRACTION_THREAD.progress.connect(lambda msg: print(msg))
-    EXTRACTION_THREAD.stopped.connect(
-        lambda msg: UIManager.showCriticalMessage(
-            window, "ArrÃªtÃ©", msg, message_type="warning"
-        )
-    )
-    EXTRACTION_THREAD.finished.connect(
-        lambda: UIManager.showCriticalMessage(
-            window, "TerminÃ©", "L'extraction est terminÃ©e.", message_type="success"
-        )
-    )
+    EXTRACTION_THREAD.stopped.connect(lambda msg: UIManager.showCriticalMessage(window, "ArrÃªtÃ©", msg, message_type="warning"))
+    EXTRACTION_THREAD.finished.connect(lambda: UIManager.showCriticalMessage(window, "TerminÃ©", "L'extraction est terminÃ©e.", message_type="success"))
     EXTRACTION_THREAD.start()
 
     def launch_browser_session_monitor():
         global CLOSE_BROWSER_THREAD
         Settings.write_log_dev_file("Launching BrowserSessionMonitorThread...", "INFO")
-        CLOSE_BROWSER_THREAD = BrowserSessionMonitorThread(
-            selected_Browser, username, SESSION_ID, file_lock
-        )
+        CLOSE_BROWSER_THREAD = BrowserSessionMonitorThread(selected_Browser, username, SESSION_ID, file_lock)
         CLOSE_BROWSER_THREAD.progress.connect(lambda msg: print(msg))
         CLOSE_BROWSER_THREAD.start()
 
@@ -364,13 +243,8 @@ def main():
     Settings.write_log_dev_file(f"Received arguments: {sys.argv}", "DEBUG")
 
     if len(sys.argv) < 3:
-        Settings.write_log_dev_file(
-            "Insufficient arguments provided. Expected encrypted_key and secret_key.",
-            "ERROR",
-        )
-        Settings.write_log_dev_file(
-            "Usage: python AppV2.py <encrypted_key> <secret_key>", "ERROR"
-        )
+        Settings.write_log_dev_file("Insufficient arguments provided. Expected encrypted_key and secret_key.", "ERROR")
+        Settings.write_log_dev_file("Usage: python AppV2.py <encrypted_key> <secret_key>", "ERROR")
         sys.exit(1)
 
     encrypted_key = sys.argv[1]
@@ -391,9 +265,7 @@ def main():
     session_valid = session_info.get("valid", False)
 
     Settings.write_log_dev_file(f"Session valid: {session_valid}", "DEBUG")
-    Settings.write_log_event(
-        "application_session_checked", "DEBUG", valid=session_valid
-    )
+    Settings.write_log_event("application_session_checked", "DEBUG", valid=session_valid)
 
     app = QApplication(sys.argv)
     Settings.write_log_dev_file("QApplication initialized.", "DEBUG")
@@ -409,55 +281,33 @@ def main():
     window = None
 
     if session_valid:
-        Settings.write_log_dev_file(
-            "Valid session found. Attempting to open AutomationMainWindow.", "INFO"
-        )
+        Settings.write_log_dev_file("Valid session found. Attempting to open AutomationMainWindow.", "INFO")
         try:
-            Settings.write_log_dev_file(
-                f"Loading config file: {Settings.FILE_ACTIONS_JSON}", "DEBUG"
-            )
+            Settings.write_log_dev_file(f"Loading config file: {Settings.FILE_ACTIONS_JSON}", "DEBUG")
             with open(Settings.FILE_ACTIONS_JSON, "r", encoding="utf-8") as file:
                 json_data = json.load(file)
 
             if not json_data:
-                Settings.write_log_dev_file(
-                    f"Configuration file is empty: {Settings.FILE_ACTIONS_JSON}",
-                    "WARNING",
-                )
+                Settings.write_log_dev_file(f"Configuration file is empty: {Settings.FILE_ACTIONS_JSON}", "WARNING")
                 raise ValueError("Fichier de configuration vide")
 
-            Settings.write_log_dev_file(
-                "Configuration file loaded successfully.", "INFO"
-            )
+            Settings.write_log_dev_file("Configuration file loaded successfully.", "INFO")
 
-            window = AutomationMainWindow(
-                json_data, stopAllProcesses, startExtraction, runtime_state
-            )
+            window = AutomationMainWindow(json_data, stopAllProcesses, startExtraction, runtime_state)
             Settings.write_log_dev_file("AutomationMainWindow initialized.", "INFO")
 
         except Exception as e:
-            Settings.write_log_dev_file(
-                f"An error occurred while loading AutomationMainWindow: {e}\n{traceback.format_exc()}",
-                "ERROR",
-            )
+            Settings.write_log_dev_file(f"An error occurred while loading AutomationMainWindow: {e}\n{traceback.format_exc()}", "ERROR")
             SessionManager.clear_session()
-            window = AuthenticationWindow(
-                AutomationMainWindow, stopAllProcesses, startExtraction, runtime_state
-            )
+            window = AuthenticationWindow(AutomationMainWindow, stopAllProcesses, startExtraction, runtime_state)
 
     else:
-        Settings.write_log_dev_file(
-            "No valid session found. Opening AuthenticationWindow.", "INFO"
-        )
+        Settings.write_log_dev_file("No valid session found. Opening AuthenticationWindow.", "INFO")
         SessionManager.clear_session()
-        window = AuthenticationWindow(
-            AutomationMainWindow, stopAllProcesses, startExtraction, runtime_state
-        )
+        window = AuthenticationWindow(AutomationMainWindow, stopAllProcesses, startExtraction, runtime_state)
 
     if window is None:
-        Settings.write_log_dev_file(
-            "Critical error: No window could be created.", "CRITICAL"
-        )
+        Settings.write_log_dev_file("Critical error: No window could be created.", "CRITICAL")
         sys.exit(1)
 
     window.setFixedSize(Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT)
@@ -471,28 +321,19 @@ def main():
     window.move(x, y)
 
     if hasattr(window, "stopButton"):
-        Settings.write_log_dev_file(
-            "stopButton detected in window. Attempting to connect.", "DEBUG"
-        )
-        Settings.write_log_dev_file(
-            "stopButton found. Connecting to stopAllProcesses.", "DEBUG"
-        )
+        Settings.write_log_dev_file("stopButton detected in window. Attempting to connect.", "DEBUG")
+        Settings.write_log_dev_file("stopButton found. Connecting to stopAllProcesses.", "DEBUG")
         try:
             window.stopButton.clicked.connect(lambda: stopAllProcesses(window))
             Settings.write_log_dev_file("stopButton connected successfully.", "INFO")
         except Exception as e:
-            Settings.write_log_dev_file(
-                f"An error occurred while connecting stopButton: {e}\n{traceback.format_exc()}",
-                "ERROR",
-            )
+            Settings.write_log_dev_file(f"An error occurred while connecting stopButton: {e}\n{traceback.format_exc()}", "ERROR")
     else:
         Settings.write_log_dev_file("No stopButton found in window.", "INFO")
 
     window.setWindowTitle("AutoMailPro")
     window.show()
-    Settings.write_log_dev_file(
-        "Application started successfully, window displayed.", "INFO"
-    )
+    Settings.write_log_dev_file("Application started successfully, window displayed.", "INFO")
     Settings.write_log_dev_file("\n\n========== [APP RUNNING] ==========\n", "INFO")
     Settings.write_log_dev_file("Application is now running.", "INFO")
     sys.exit(app.exec())

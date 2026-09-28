@@ -86,21 +86,7 @@ class EmailExtractionWorker(QThread):
     #   - Isp : fournisseur de messagerie ; output_json_final : scenario d'actions ;
     #   - runtime_state : etat partage (files, emails actifs, PID, logs) ;
     #   - file_lock : verrou protegeant les acces concurrents a runtime_state.
-    def __init__(
-        self,
-        window,
-        data_list,
-        SESSION_ID,
-        entered_number,
-        Browser_path,
-        main_window,
-        selected_Browser,
-        Isp,
-        unique_id,
-        output_json_final,
-        runtime_state,
-        file_lock,
-    ):
+    def __init__(self, window, data_list, SESSION_ID, entered_number, Browser_path, main_window, selected_Browser, Isp, unique_id, output_json_final, runtime_state, file_lock):
         # Initialise la classe mere QThread (obligatoire avant tout usage du thread).
         super().__init__()
         self.window = window
@@ -113,11 +99,7 @@ class EmailExtractionWorker(QThread):
         self.emails_processed = 0
         # Nom du navigateur normalise (minuscules, sans espaces) ;
         # « unknown » si la valeur fournie n'est pas une chaine.
-        self.selected_Browser = (
-            selected_Browser.strip().lower()
-            if isinstance(selected_Browser, str)
-            else "unknown"
-        )
+        self.selected_Browser = selected_Browser.strip().lower() if isinstance(selected_Browser, str) else "unknown"
         self.Isp = Isp
         self.unique_id = unique_id
         self.output_json_final = output_json_final
@@ -136,31 +118,15 @@ class EmailExtractionWorker(QThread):
     #   3. Chiffre l'ensemble (AES-GCM) et l'ajoute en parametre « rep » de l'URL.
     # En cas d'erreur de chiffrement : journalise et renvoie une URL vide.
     # -------------------------------------------------------------------------
-    def buildEncryptedUrl(
-        self,
-        ip_address,
-        port,
-        login,
-        password,
-        profile_email,
-        profile_password,
-        recovery_email,
-        new_password,
-        new_recovery_email,
-        output_json_final,
-    ):
+    def buildEncryptedUrl(self, ip_address, port, login, password, profile_email, profile_password, recovery_email, new_password, new_recovery_email, output_json_final):
         # Etape 1 : JSON sans espaces superflus (separators) et accents conserves
         # (ensure_ascii=False).
-        result_payload = json.dumps(
-            output_json_final, ensure_ascii=False, separators=(",", ":")
-        )
+        result_payload = json.dumps(output_json_final, ensure_ascii=False, separators=(",", ":"))
         # Etape 2 : assemblage de tous les champs dans une seule chaine.
         combined = f"{ip_address};{port};{login};{password};{profile_email};{profile_password};{recovery_email};{new_password};{new_recovery_email};{self.session_id};{result_payload}"
         try:
             # Etape 3 : chiffrement de la chaine puis construction de l'URL du proxy.
-            b64 = EncryptionService.encrypt_aes_gcm(
-                "A9!fP3z$wQ8@rX7kM2#dN6^bH1&yL4t*", combined
-            )
+            b64 = EncryptionService.encrypt_aes_gcm("A9!fP3z$wQ8@rX7kM2#dN6^bH1&yL4t*", combined)
             url = f"{Settings.ENCRYPTED_PROXY_API}?rep={b64}"
         except Exception as error:
             Settings.write_log_dev_file(
@@ -174,10 +140,7 @@ class EmailExtractionWorker(QThread):
                 f"| browser={self.selected_Browser}\n{traceback.format_exc()}",
                 "ERROR",
             )
-            self._logMessage(
-                f"[ERROR] Echec du chiffrement de l'URL pour {profile_email} "
-                f"({type(error).__name__})"
-            )
+            self._logMessage(f"[ERROR] Echec du chiffrement de l'URL pour {profile_email} " f"({type(error).__name__})")
             url = ""
         return url
 
@@ -190,16 +153,12 @@ class EmailExtractionWorker(QThread):
     def parsePidList(self, pid_value):
         # Aucune valeur fournie : rien a analyser.
         if pid_value is None:
-            Settings.write_log_dev_file(
-                "_parse_pid_list received None pid_value", "DEBUG"
-            )
+            Settings.write_log_dev_file("_parse_pid_list received None pid_value", "DEBUG")
             return []
         # Normalisation en chaine sans espaces de bordure.
         pid_str = str(pid_value).strip()
         if not pid_str:
-            Settings.write_log_dev_file(
-                "_parse_pid_list received empty pid string", "DEBUG"
-            )
+            Settings.write_log_dev_file("_parse_pid_list received empty pid string", "DEBUG")
             return []
         pids = []
         # Parcours de chaque segment separe par « ; ».
@@ -210,12 +169,8 @@ class EmailExtractionWorker(QThread):
                 pids.append(int(part))
             # === Cas 3 : autres navigateurs Chromium (Chrome par defaut) ===
             else:
-                Settings.write_log_dev_file(
-                    f"_parse_pid_list skipped non-digit segment: '{part}'", "WARNING"
-                )
-        Settings.write_log_dev_file(
-            f"_parse_pid_list parsed PIDs: {pids} from '{pid_str}'", "DEBUG"
-        )
+                Settings.write_log_dev_file(f"_parse_pid_list skipped non-digit segment: '{part}'", "WARNING")
+        Settings.write_log_dev_file(f"_parse_pid_list parsed PIDs: {pids} from '{pid_str}'", "DEBUG")
         return pids
 
     # -------------------------------------------------------------------------
@@ -234,10 +189,7 @@ class EmailExtractionWorker(QThread):
         self.runtime_state.remaining_emails = len(remaining_emails_queue)
 
         self._logMessage("[INFO] Processing started")
-        Settings.write_log_dev_file(
-            f"EmailExtractionWorker started with browser={self.selected_Browser} | Browser_path={self.Browser_path}",
-            "INFO",
-        )
+        Settings.write_log_dev_file(f"EmailExtractionWorker started with browser={self.selected_Browser} | Browser_path={self.Browser_path}", "INFO")
 
         # Etape 2 : verification de la validite de la session utilisateur.
         session_info = SessionManager.check_session()
@@ -251,23 +203,13 @@ class EmailExtractionWorker(QThread):
         try:
             # Etape 3 : chemin du fichier de donnees de l'extension (dossier different
             # selon Firefox ou Chromium).
-            extension_data_path = os.path.join(
-                (
-                    Settings.EXTENTION_EX3_FIREFOX
-                    if self.selected_Browser.lower() == "firefox"
-                    else Settings.EXTENTION_EX3_CHROMIUM
-                ),
-                "data.txt",
-            )
+            extension_data_path = os.path.join((Settings.EXTENTION_EX3_FIREFOX if self.selected_Browser.lower() == "firefox" else Settings.EXTENTION_EX3_CHROMIUM), "data.txt")
             os.makedirs(os.path.dirname(extension_data_path), exist_ok=True)
 
             # Ecriture de l'identifiant de session dans ce fichier.
             with open(extension_data_path, "w", encoding="utf-8") as file:
                 file.write(f"{self.session_id}\n")
-            Settings.write_log_dev_file(
-                f"Wrote session_id to extension data file: {extension_data_path}",
-                "INFO",
-            )
+            Settings.write_log_dev_file(f"Wrote session_id to extension data file: {extension_data_path}", "INFO")
 
         except Exception as error:
             Settings.write_log_dev_file(
@@ -280,10 +222,7 @@ class EmailExtractionWorker(QThread):
                 f"| browser={self.selected_Browser}\n{traceback.format_exc()}",
                 "ERROR",
             )
-            self._logMessage(
-                "[ERROR] Impossible d'ecrire le fichier de donnees de l'extension "
-                f"({type(error).__name__})"
-            )
+            self._logMessage("[ERROR] Impossible d'ecrire le fichier de donnees de l'extension " f"({type(error).__name__})")
 
         # Etape 4 : boucle principale du traitement par lots.
         while remaining_emails_queue or self.runtime_state.active_emails:
@@ -304,46 +243,26 @@ class EmailExtractionWorker(QThread):
                 next_email = remaining_emails_queue.popleft()
                 self.runtime_state.remaining_emails = len(remaining_emails_queue)
                 # Lecture de l'email en acceptant plusieurs orthographes de cle.
-                email_value = ValidationUtils.getValueFromDictionary(
-                    next_email, ["email", "Email"]
-                )
+                email_value = ValidationUtils.getValueFromDictionary(next_email, ["email", "Email"])
                 self._logMessage(f"[INFO] Processing the email:  {email_value}")
-                Settings.write_log_dev_file(
-                    f"Processing the email: {email_value}", "INFO"
-                )
+                Settings.write_log_dev_file(f"Processing the email: {email_value}", "INFO")
 
                 try:
                     # Extraction de tous les champs du compte (email, mot de passe, proxy,
                     # identifiants, emails de recuperation), avec tolerance sur les noms de cle.
-                    profile_email = ValidationUtils.getValueFromDictionary(
-                        next_email, ["email", "Email"]
-                    )
-                    profile_password = ValidationUtils.getValueFromDictionary(
-                        next_email, ["password_email", "passwordEmail"]
-                    )
-                    ip_address = ValidationUtils.getValueFromDictionary(
-                        next_email, ["ip_address", "ipAddress"]
-                    )
+                    profile_email = ValidationUtils.getValueFromDictionary(next_email, ["email", "Email"])
+                    profile_password = ValidationUtils.getValueFromDictionary(next_email, ["password_email", "passwordEmail"])
+                    ip_address = ValidationUtils.getValueFromDictionary(next_email, ["ip_address", "ipAddress"])
                     port = ValidationUtils.getValueFromDictionary(next_email, ["port"])
-                    login = ValidationUtils.getValueFromDictionary(
-                        next_email, ["login"]
-                    )
-                    password = ValidationUtils.getValueFromDictionary(
-                        next_email, ["password"]
-                    )
-                    recovery_email = ValidationUtils.getValueFromDictionary(
-                        next_email, ["recovery_email", "recoveryEmail"]
-                    )
-                    new_recovery_email = ValidationUtils.getValueFromDictionary(
-                        next_email, ["new_recovery_email", "neWrecoveryEmail"]
-                    )
+                    login = ValidationUtils.getValueFromDictionary(next_email, ["login"])
+                    password = ValidationUtils.getValueFromDictionary(next_email, ["password"])
+                    recovery_email = ValidationUtils.getValueFromDictionary(next_email, ["recovery_email", "recoveryEmail"])
+                    new_recovery_email = ValidationUtils.getValueFromDictionary(next_email, ["new_recovery_email", "neWrecoveryEmail"])
 
                     # Parametres envoyes a l'API pour enregistrer l'email en cours de traitement
                     # (identifiant chiffre ; proxy_login renseigne seulement si le login differe).
                     params = {
-                        "l": EncryptionService.encrypt_message(
-                            session_info["username"], Settings.KEY
-                        ),
+                        "l": EncryptionService.encrypt_message(session_info["username"], Settings.KEY),
                         "login": session_info["username"],
                         "entity": session_info["p_entity_Origine"],
                         "isp": self.Isp,
@@ -351,11 +270,7 @@ class EmailExtractionWorker(QThread):
                         "email": email_value,
                         "password": "",
                         "proxy_ip": ip_address + ":" + port,
-                        "proxy_login": (
-                            f"{login};{password}"
-                            if login != session_info["username"]
-                            else ""
-                        ),
+                        "proxy_login": (f"{login};{password}" if login != session_info["username"] else ""),
                         "email_recovery": "",
                         "line": "",
                         "app": "V4",
@@ -371,11 +286,7 @@ class EmailExtractionWorker(QThread):
                         # Nettoyage des dossiers de logs : on ne conserve que les plus recents.
                         os.makedirs(Settings.LOGS_DIRECTORY, exist_ok=True)
                         logs_subdirs = [
-                            os.path.join(Settings.LOGS_DIRECTORY, directory)
-                            for directory in os.listdir(Settings.LOGS_DIRECTORY)
-                            if os.path.isdir(
-                                os.path.join(Settings.LOGS_DIRECTORY, directory)
-                            )
+                            os.path.join(Settings.LOGS_DIRECTORY, directory) for directory in os.listdir(Settings.LOGS_DIRECTORY) if os.path.isdir(os.path.join(Settings.LOGS_DIRECTORY, directory))
                         ]
                         # Tri des sous-dossiers du plus ancien au plus recent (date de creation).
                         logs_subdirs.sort(key=os.path.getctime)
@@ -412,46 +323,23 @@ class EmailExtractionWorker(QThread):
 
                     # === Cas 1 : navigateur Firefox (lance via l'outil web-ext) ===
                     if self.selected_Browser.lower() == "firefox":
-                        url = self.buildEncryptedUrl(
-                            ip_address,
-                            port,
-                            login,
-                            password,
-                            profile_email,
-                            profile_password,
-                            recovery_email,
-                            new_password,
-                            new_recovery_email,
-                            self.output_json_final,
-                        )
+                        url = self.buildEncryptedUrl(ip_address, port, login, password, profile_email, profile_password, recovery_email, new_password, new_recovery_email, self.output_json_final)
                         # Creation (ou verification) du profil Firefox dedie a cet email.
-                        firefox_profile_path = BrowserManager.createFirefoxProfile(
-                            profile_email
-                        )
+                        firefox_profile_path = BrowserManager.createFirefoxProfile(profile_email)
 
                         # Echec de creation du profil : on passe a l'email suivant (continue).
                         if not firefox_profile_path:
-                            Settings.write_log_dev_file(
-                                f"❌ [Firefox] Impossible de créer le profil Firefox pour {profile_email}",
-                                "ERROR",
-                            )
-                            self._logMessage(
-                                f"[ERROR] Impossible de créer le profil Firefox pour {profile_email}"
-                            )
+                            Settings.write_log_dev_file(f"❌ [Firefox] Impossible de créer le profil Firefox pour {profile_email}", "ERROR")
+                            self._logMessage(f"[ERROR] Impossible de créer le profil Firefox pour {profile_email}")
                             continue
 
-                        Settings.write_log_dev_file(
-                            f"✅ [Firefox] Profil créé/vérifié: {firefox_profile_path}",
-                            "INFO",
-                        )
+                        Settings.write_log_dev_file(f"✅ [Firefox] Profil créé/vérifié: {firefox_profile_path}", "INFO")
                         # Recuperation du chemin de l'outil web-ext.
                         web_ext_path = Settings.get_web_ext_path()
 
                         # web-ext introuvable : on passe a l'email suivant.
                         if not web_ext_path:
-                            Settings.write_log_dev_file(
-                                "❌ [Firefox] web-ext non trouvé", "ERROR"
-                            )
+                            Settings.write_log_dev_file("❌ [Firefox] web-ext non trouvé", "ERROR")
                             self._logMessage("[ERROR] web-ext introuvable")
                             continue
 
@@ -470,54 +358,30 @@ class EmailExtractionWorker(QThread):
                             "--no-reload",
                         ]
 
-                        Settings.write_log_dev_file(
-                            f"Launching Firefox with command: {command}", "DEBUG"
-                        )
-                        Settings.write_log_dev_file(
-                            f"Firefox profile directory: {os.path.join(Settings.FIREFOX_PROFILES, profile_email)}",
-                            "DEBUG",
-                        )
+                        Settings.write_log_dev_file(f"Launching Firefox with command: {command}", "DEBUG")
+                        Settings.write_log_dev_file(f"Firefox profile directory: {os.path.join(Settings.FIREFOX_PROFILES, profile_email)}", "DEBUG")
 
-                        process = subprocess.Popen(
-                            command,
-                            stdout=subprocess.DEVNULL,
-                            stderr=subprocess.DEVNULL,
-                        )
+                        process = subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                         # Memorisation du PID du processus lance dans l'etat partage.
                         self.runtime_state.process_pids.append(process.pid)
-                        Settings.write_log_dev_file(
-                            f"Firefox web-ext PID: {process.pid}", "INFO"
-                        )
+                        Settings.write_log_dev_file(f"Firefox web-ext PID: {process.pid}", "INFO")
 
                         # Recherche des PID reels de Firefox lies au profil ; si aucun n'est trouve,
                         # on attend 2 secondes et on reessaie (voir plus bas).
-                        firefox_pids = BrowserManager.findFirefoxProcessIds(
-                            firefox_profile_path, process.pid
-                        )
+                        firefox_pids = BrowserManager.findFirefoxProcessIds(firefox_profile_path, process.pid)
                         if not firefox_pids:
-                            Settings.write_log_dev_file(
-                                "Aucune PID Firefox détectée immédiatement après lancement, attente de 2 secondes puis nouvelle recherche",
-                                "WARNING",
-                            )
+                            Settings.write_log_dev_file("Aucune PID Firefox détectée immédiatement après lancement, attente de 2 secondes puis nouvelle recherche", "WARNING")
                             time.sleep(2)
-                            firefox_pids = BrowserManager.findFirefoxProcessIds(
-                                firefox_profile_path, process.pid
-                            )
+                            firefox_pids = BrowserManager.findFirefoxProcessIds(firefox_profile_path, process.pid)
 
                         if not firefox_pids:
-                            Settings.write_log_dev_file(
-                                "Aucune PID Firefox fiable trouvée, utilisation du PID web-ext comme fallback",
-                                "WARNING",
-                            )
+                            Settings.write_log_dev_file("Aucune PID Firefox fiable trouvée, utilisation du PID web-ext comme fallback", "WARNING")
                             firefox_pids = [process.pid]
 
                         # Dedoublonnage et tri des PID, puis assemblage en chaine « pid;pid ».
                         firefox_pids = sorted(set(firefox_pids))
                         firefox_pid_string = ";".join(str(pid) for pid in firefox_pids)
-                        Settings.write_log_dev_file(
-                            f"Firefox PID list stored for profile {profile_email}: {firefox_pid_string}",
-                            "INFO",
-                        )
+                        Settings.write_log_dev_file(f"Firefox PID list stored for profile {profile_email}: {firefox_pid_string}", "INFO")
                         # Dictionnaire decrivant la session Firefox (profil, PID, email, commande,
                         # horodatage), memorise dans l'etat partage.
                         firefox_session = {
@@ -532,14 +396,9 @@ class EmailExtractionWorker(QThread):
                             "launch_command": command,
                             "launched_at": datetime.datetime.now().isoformat(),
                         }
-                        self.runtime_state.firefox_sessions[profile_email] = (
-                            firefox_session
-                        )
+                        self.runtime_state.firefox_sessions[profile_email] = firefox_session
 
-                        Settings.write_log_dev_file(
-                            f"Firefox session map updated for {profile_email}: {json.dumps(firefox_session, ensure_ascii=False)}",
-                            "DEBUG",
-                        )
+                        Settings.write_log_dev_file(f"Firefox session map updated for {profile_email}: {json.dumps(firefox_session, ensure_ascii=False)}", "DEBUG")
                         # Sauvegarde des informations de session sur disque (suivi et fermeture
                         # ulterieure des processus).
                         BrowserManager.persistBrowserSessionInfo(
@@ -560,18 +419,7 @@ class EmailExtractionWorker(QThread):
 
                     # === Cas 2 : navigateur IceDragon (base Chromium) ===
                     elif self.selected_Browser == "icedragon":
-                        url = self.buildEncryptedUrl(
-                            ip_address,
-                            port,
-                            login,
-                            password,
-                            profile_email,
-                            profile_password,
-                            recovery_email,
-                            new_password,
-                            new_recovery_email,
-                            self.output_json_final,
-                        )
+                        url = self.buildEncryptedUrl(ip_address, port, login, password, profile_email, profile_password, recovery_email, new_password, new_recovery_email, self.output_json_final)
                         # Chemins et dossier de profils propres a IceDragon ; la commande charge
                         # l'extension et ouvre directement l'URL chiffree.
                         browser_paths = Settings.CHROMIUM_BROWSER_PATHS["icedragon"]
@@ -591,42 +439,18 @@ class EmailExtractionWorker(QThread):
                             "--disable-features=DownloadBubble",
                             f"{url}",
                         ]
-                        process = subprocess.Popen(
-                            command,
-                            stdout=subprocess.DEVNULL,
-                            stderr=subprocess.DEVNULL,
-                        )
+                        process = subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                         self.runtime_state.process_pids.append(process.pid)
                         BrowserManager.persistBrowserSessionInfo(
-                            process.pid,
-                            profile_dir,
-                            profile_email,
-                            self.session_id,
-                            self.selected_Browser,
-                            inserted_id,
-                            profile_path=os.path.join(profile_dir, profile_email),
+                            process.pid, profile_dir, profile_email, self.session_id, self.selected_Browser, inserted_id, profile_path=os.path.join(profile_dir, profile_email)
                         )
                         with self.file_lock:
                             self.runtime_state.active_emails.add(profile_email)
 
                     else:
-                        url = self.buildEncryptedUrl(
-                            ip_address,
-                            port,
-                            login,
-                            password,
-                            profile_email,
-                            profile_password,
-                            recovery_email,
-                            new_password,
-                            new_recovery_email,
-                            self.output_json_final,
-                        )
+                        url = self.buildEncryptedUrl(ip_address, port, login, password, profile_email, profile_password, recovery_email, new_password, new_recovery_email, self.output_json_final)
                         # Dossier de profils selon le navigateur, avec repli sur les profils Chrome.
-                        profile_dir = Settings.CHROMIUM_BROWSER_PATHS.get(
-                            self.selected_Browser,
-                            {"profiles": Settings.CHROME_PROFILES},
-                        )["profiles"]
+                        profile_dir = Settings.CHROMIUM_BROWSER_PATHS.get(self.selected_Browser, {"profiles": Settings.CHROME_PROFILES})["profiles"]
                         browser_executable = self.Browser_path
                         ValidationUtils.ensurePathExists(profile_dir, is_file=False)
                         command = [
@@ -656,30 +480,16 @@ class EmailExtractionWorker(QThread):
                             "--disable-notifications",
                             "--disable-features=DownloadBubble",
                         ]
-                        process = subprocess.Popen(
-                            command,
-                            stdout=subprocess.DEVNULL,
-                            stderr=subprocess.DEVNULL,
-                        )
+                        process = subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                         self.runtime_state.process_pids.append(process.pid)
                         # Pause pour laisser le profil s'initialiser avant d'ouvrir l'URL.
                         time.sleep(4)
-                        process1 = subprocess.Popen(
-                            command1,
-                            stdout=subprocess.DEVNULL,
-                            stderr=subprocess.DEVNULL,
-                        )
+                        process1 = subprocess.Popen(command1, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                         self.runtime_state.process_pids.append(process1.pid)
                         # Les deux PID sont enregistres ensemble (« pid;pid »).
                         session_pids = f"{process.pid};{process1.pid}"
                         BrowserManager.persistBrowserSessionInfo(
-                            session_pids,
-                            profile_dir,
-                            profile_email,
-                            self.session_id,
-                            self.selected_Browser.lower(),
-                            inserted_id,
-                            profile_path=os.path.join(profile_dir, profile_email),
+                            session_pids, profile_dir, profile_email, self.session_id, self.selected_Browser.lower(), inserted_id, profile_path=os.path.join(profile_dir, profile_email)
                         )
                         with self.file_lock:
                             self.runtime_state.active_emails.add(profile_email)
@@ -706,10 +516,7 @@ class EmailExtractionWorker(QThread):
                         f"| active={len(self.runtime_state.active_emails)}\n{traceback.format_exc()}",
                         "ERROR",
                     )
-                    self._logMessage(
-                        f"[ERROR] Echec du traitement de l'email {profile_email} "
-                        f"({type(error).__name__}: {error})"
-                    )
+                    self._logMessage(f"[ERROR] Echec du traitement de l'email {profile_email} " f"({type(error).__name__}: {error})")
             # Pause d'une seconde entre deux tours de boucle (msleep = pause du thread Qt).
             self.msleep(1000)
 

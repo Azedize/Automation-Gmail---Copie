@@ -125,14 +125,9 @@ class BrowserSessionMonitorThread(QThread):
         # Observateur watchdog + planification : surveille le dossier (non recursif)
         # et pousse les evenements de fichier dans la file.
         self.observer = Observer()
-        self.observer.schedule(
-            DownloadFileEventHandler(self.file_queue),
-            self.downloads_folder,
-            recursive=False,
-        )
+        self.observer.schedule(DownloadFileEventHandler(self.file_queue), self.downloads_folder, recursive=False)
         Settings.write_log_dev_file(
-            f"Thread created | Browser={selected_Browser} | User={username} | downloads_folder={self.downloads_folder} | session_id={self.session_id} | session_dir={self.SESSION_DIR}",
-            "INFO",
+            f"Thread created | Browser={selected_Browser} | User={username} | downloads_folder={self.downloads_folder} | session_id={self.session_id} | session_dir={self.SESSION_DIR}", "INFO"
         )
 
     # -------------------------------------------------------------------------
@@ -147,10 +142,7 @@ class BrowserSessionMonitorThread(QThread):
         with self.file_lock:
             if email in runtime_state.active_emails:
                 runtime_state.active_emails.remove(email)
-                Settings.write_log_dev_file(
-                    f"Active email slot released: {email} | remaining active accounts={len(runtime_state.active_emails)}",
-                    "INFO",
-                )
+                Settings.write_log_dev_file(f"Active email slot released: {email} | remaining active accounts={len(runtime_state.active_emails)}", "INFO")
 
     # -------------------------------------------------------------------------
     # Analyse le NOM d'un fichier pour en extraire les metadonnees
@@ -177,13 +169,7 @@ class BrowserSessionMonitorThread(QThread):
         if not session_id or not email or not status:
             return None
 
-        return {
-            "category": category,
-            "session_id": session_id,
-            "email": email,
-            "status": status.lower(),
-            "file_name": file_name,
-        }
+        return {"category": category, "session_id": session_id, "email": email, "status": status.lower(), "file_name": file_name}
 
     # -------------------------------------------------------------------------
     # Renvoie (en le creant) le dossier ou ranger les fichiers d'un email :
@@ -191,12 +177,8 @@ class BrowserSessionMonitorThread(QThread):
     # -------------------------------------------------------------------------
     def getEmailFolder(self, email, status):
         # Sous-dossier selon le statut : « Completed » ou « Not_Completed ».
-        status_folder = (
-            "Completed" if str(status).lower() == "completed" else "Not_Completed"
-        )
-        email_folder = os.path.join(
-            self.SESSION_DIR, self.selected_Browser, status_folder, email
-        )
+        status_folder = "Completed" if str(status).lower() == "completed" else "Not_Completed"
+        email_folder = os.path.join(self.SESSION_DIR, self.selected_Browser, status_folder, email)
         os.makedirs(email_folder, exist_ok=True)
         return email_folder
 
@@ -229,16 +211,11 @@ class BrowserSessionMonitorThread(QThread):
         try:
             # Parcours du dossier ; on ne retient que les fichiers image.
             for entry in os.scandir(self.downloads_folder):
-                if entry.is_file() and entry.name.lower().endswith(
-                    (".png", ".jpg", ".jpeg")
-                ):
+                if entry.is_file() and entry.name.lower().endswith((".png", ".jpg", ".jpeg")):
                     screenshots.append(entry.name)
         except OSError as e:
             Settings.write_log_dev_file(
-                "[WATCHER] Failed to scan screenshots "
-                f"| exception={type(e).__name__}: {e} "
-                f"| downloads_folder={self.downloads_folder}\n{traceback.format_exc()}",
-                "WARNING",
+                "[WATCHER] Failed to scan screenshots " f"| exception={type(e).__name__}: {e} " f"| downloads_folder={self.downloads_folder}\n{traceback.format_exc()}", "WARNING"
             )
         return screenshots
 
@@ -258,11 +235,7 @@ class BrowserSessionMonitorThread(QThread):
 
         # Filtre : seul un fichier reconnu (log_, metadonnees, ou session_id) est traite.
         metadata = self.parseFilenameMetadata(file_name)
-        if not (
-            file_name.startswith("log_")
-            or metadata
-            or file_name.startswith(self.session_id)
-        ):
+        if not (file_name.startswith("log_") or metadata or file_name.startswith(self.session_id)):
             return
 
         # Aiguillage : fichier de log vs fichier de session.
@@ -285,9 +258,7 @@ class BrowserSessionMonitorThread(QThread):
         self.observer.start()
         try:
             start_wait = time.time()
-            Settings.write_log_dev_file(
-                "Filesystem watcher started; waiting initial delay: 10s", "DEBUG"
-            )
+            Settings.write_log_dev_file("Filesystem watcher started; waiting initial delay: 10s", "DEBUG")
             # Etape 2 : delai initial de 10 s, interruptible par stop_flag.
             while time.time() - start_wait < 10 and not self.stop_flag:
                 time.sleep(0.2)
@@ -299,12 +270,7 @@ class BrowserSessionMonitorThread(QThread):
                     file_path = self.file_queue.get(timeout=0.5)
                 except Empty:
                     # File vide ET plus aucun travail en cours -> fin de la surveillance.
-                    if (
-                        runtime_state.remaining_emails == 0
-                        and not runtime_state.process_pids
-                        and not runtime_state.active_emails
-                        and self.file_queue.empty()
-                    ):
+                    if runtime_state.remaining_emails == 0 and not runtime_state.process_pids and not runtime_state.active_emails and self.file_queue.empty():
                         break
                     continue
 
@@ -312,17 +278,14 @@ class BrowserSessionMonitorThread(QThread):
                     # Traitement du fichier ; toute erreur est journalisee sans arreter la boucle.
                     self.processEventFile(file_path)
                 except Exception as e:
-                    Settings.write_log_dev_file(
-                        f"[WATCHER] Error processing {file_path}: {e}\n{traceback.format_exc()}",
-                        "ERROR",
-                    )
+                    Settings.write_log_dev_file(f"[WATCHER] Error processing {file_path}: {e}\n{traceback.format_exc()}", "ERROR")
         finally:
             # Etape 4 : arret et attente de l'observateur (toujours execute).
             self.observer.stop()
             self.observer.join(timeout=5)
 
         end_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        Settings.write_log_dev_file( f"Thread finished | End time: {end_time} | PROCESS_PIDS: {len(runtime_state.process_pids)} | REMAINING_EMAILS: {runtime_state.remaining_emails}", "INFO")
+        Settings.write_log_dev_file(f"Thread finished | End time: {end_time} | PROCESS_PIDS: {len(runtime_state.process_pids)} | REMAINING_EMAILS: {runtime_state.remaining_emails}", "INFO")
 
     # -------------------------------------------------------------------------
     # Retrouve les informations de session d'un email (PID, session_id,
@@ -336,25 +299,11 @@ class BrowserSessionMonitorThread(QThread):
     # -------------------------------------------------------------------------
     def resolveBrowserSessionFromProfile(self, email):
         if not email:
-            return {
-                "pid": None,
-                "session_id": self.session_id,
-                "inserted_id": None,
-                "firefox_pids": [],
-                "web_ext_pid": None,
-                "profile_data_file": None,
-            }
+            return {"pid": None, "session_id": self.session_id, "inserted_id": None, "firefox_pids": [], "web_ext_pid": None, "profile_data_file": None}
 
         # Nom du navigateur en minuscules (gere le cas None).
         browser_name = (self.selected_Browser or "").lower()
-        session_data = {
-            "pid": None,
-            "session_id": self.session_id,
-            "inserted_id": None,
-            "firefox_pids": [],
-            "web_ext_pid": None,
-            "profile_data_file": None,
-        }
+        session_data = {"pid": None, "session_id": self.session_id, "inserted_id": None, "firefox_pids": [], "web_ext_pid": None, "profile_data_file": None}
 
         # === Cas Firefox ===
         if browser_name == "firefox":
@@ -363,9 +312,7 @@ class BrowserSessionMonitorThread(QThread):
                 session_data["firefox_pids"] = firefox_session.get("firefox_pids", [])
                 session_data["web_ext_pid"] = firefox_session.get("web_ext_pid")
                 session_data["inserted_id"] = firefox_session.get("inserted_id")
-                session_data["session_id"] = (
-                    firefox_session.get("session_id") or self.session_id
-                )
+                session_data["session_id"] = firefox_session.get("session_id") or self.session_id
                 if session_data["firefox_pids"]:
                     session_data["pid"] = session_data["firefox_pids"][0]
                 elif session_data["web_ext_pid"]:
@@ -378,30 +325,21 @@ class BrowserSessionMonitorThread(QThread):
             session_data["profile_data_file"] = profile_data_file
             if os.path.exists(profile_data_file):
                 try:
-                    with open(
-                        profile_data_file, "r", encoding="utf-8", errors="replace"
-                    ) as f:
+                    with open(profile_data_file, "r", encoding="utf-8", errors="replace") as f:
                         content = f.read().strip()
                     if content:
                         # Format attendu : « pid:...:session_id:inserted_id » (au moins 4 champs).
                         parts = content.split(":")
                         if len(parts) >= 4:
                             pid_value = parts[0].strip()
-                            session_data["pid"] = (
-                                int(pid_value) if str(pid_value).isdigit() else None
-                            )
-                            session_data["session_id"] = (
-                                parts[2].strip() or self.session_id
-                            )
+                            session_data["pid"] = int(pid_value) if str(pid_value).isdigit() else None
+                            session_data["session_id"] = parts[2].strip() or self.session_id
                             session_data["inserted_id"] = parts[3].strip() or None
                             if isinstance(session_data["pid"], int):
                                 session_data["firefox_pids"] = [session_data["pid"]]
                 except Exception as e:
                     Settings.write_log_dev_file(
-                        "[LOG] Failed to read Firefox session data file "
-                        f"| exception={type(e).__name__}: {e} "
-                        f"| profile_data_file={profile_data_file}\n{traceback.format_exc()}",
-                        "WARNING",
+                        "[LOG] Failed to read Firefox session data file " f"| exception={type(e).__name__}: {e} " f"| profile_data_file={profile_data_file}\n{traceback.format_exc()}", "WARNING"
                     )
             return session_data
 
@@ -411,18 +349,14 @@ class BrowserSessionMonitorThread(QThread):
         if browser_name == "chrome":
             profile_dir = Settings.CHROME_PROFILES
         elif browser_name in {"edge", "icedragon", "comodo"}:
-            profile_dir = Settings.CHROMIUM_BROWSER_PATHS.get(browser_name, {}).get(
-                "profiles"
-            )
+            profile_dir = Settings.CHROMIUM_BROWSER_PATHS.get(browser_name, {}).get("profiles")
 
         if profile_dir:
             profile_data_file = os.path.join(profile_dir, email, "data.txt")
             session_data["profile_data_file"] = profile_data_file
             if os.path.exists(profile_data_file):
                 try:
-                    with open(
-                        profile_data_file, "r", encoding="utf-8", errors="replace"
-                    ) as f:
+                    with open(profile_data_file, "r", encoding="utf-8", errors="replace") as f:
                         content = f.read().strip()
                     if content:
                         parts = content.split(":")
@@ -430,25 +364,14 @@ class BrowserSessionMonitorThread(QThread):
                             pid_value = parts[0].strip()
                             # Plusieurs PID separes par « ; » (cas de double lancement) -> liste d'entiers.
                             if ";" in pid_value:
-                                session_data["pid"] = [
-                                    int(value.strip())
-                                    for value in pid_value.split(";")
-                                    if value.strip().isdigit()
-                                ]
+                                session_data["pid"] = [int(value.strip()) for value in pid_value.split(";") if value.strip().isdigit()]
                             else:
-                                session_data["pid"] = (
-                                    int(pid_value) if pid_value.isdigit() else None
-                                )
-                            session_data["session_id"] = (
-                                parts[2].strip() or self.session_id
-                            )
+                                session_data["pid"] = int(pid_value) if pid_value.isdigit() else None
+                            session_data["session_id"] = parts[2].strip() or self.session_id
                             session_data["inserted_id"] = parts[3].strip() or None
                 except Exception as e:
                     Settings.write_log_dev_file(
-                        "[LOG] Failed to read profile session data file "
-                        f"| exception={type(e).__name__}: {e} "
-                        f"| profile_data_file={profile_data_file}\n{traceback.format_exc()}",
-                        "WARNING",
+                        "[LOG] Failed to read profile session data file " f"| exception={type(e).__name__}: {e} " f"| profile_data_file={profile_data_file}\n{traceback.format_exc()}", "WARNING"
                     )
         return session_data
 
@@ -471,16 +394,10 @@ class BrowserSessionMonitorThread(QThread):
                         if os.path.exists(target_path):
                             os.remove(target_path)
                         shutil.move(source_path, target_path)
-                        Settings.write_log_dev_file(
-                            f"[LOG] Screenshot moved to email folder: {target_path}",
-                            "INFO",
-                        )
+                        Settings.write_log_dev_file(f"[LOG] Screenshot moved to email folder: {target_path}", "INFO")
                         return target_path
         except Exception as e:
-            Settings.write_log_dev_file(
-                f"⚠️ [SCREENSHOT] Error moving screenshot for {email}: {e}\n{traceback.format_exc()}",
-                "ERROR",
-            )
+            Settings.write_log_dev_file(f"⚠️ [SCREENSHOT] Error moving screenshot for {email}: {e}\n{traceback.format_exc()}", "ERROR")
         return None
 
     # -------------------------------------------------------------------------
@@ -498,16 +415,11 @@ class BrowserSessionMonitorThread(QThread):
 
         full_path = os.path.join(self.downloads_folder, log_file)
         metadata = self.parseFilenameMetadata(full_path)
-        Settings.write_log_dev_file(
-            f"[LOG] Starting log file processing: {log_file} | full_path={full_path} | metadata={metadata}",
-            "DEBUG",
-        )
+        Settings.write_log_dev_file(f"[LOG] Starting log file processing: {log_file} | full_path={full_path} | metadata={metadata}", "DEBUG")
 
         try:
             if not os.path.exists(full_path):
-                Settings.write_log_dev_file(
-                    f"[LOG] File not found during processing: {full_path}", "ERROR"
-                )
+                Settings.write_log_dev_file(f"[LOG] File not found during processing: {full_path}", "ERROR")
                 return
 
             email = None
@@ -525,9 +437,7 @@ class BrowserSessionMonitorThread(QThread):
             if not email:
                 with open(full_path, "r", encoding="utf-8", errors="replace") as f:
                     sample = f.read(256)
-                Settings.write_log_dev_file(
-                    f"No email found in log file content sample: {sample!r}", "ERROR"
-                )
+                Settings.write_log_dev_file(f"No email found in log file content sample: {sample!r}", "ERROR")
                 return
 
             # Recuperation des infos de session (PID, inserted_id...) pour cet email.
@@ -541,74 +451,50 @@ class BrowserSessionMonitorThread(QThread):
             firefox_pids = session_lookup.get("firefox_pids", [])
             web_ext_pid = session_lookup.get("web_ext_pid")
 
-            Settings.write_log_dev_file(
-                f"[LOG] Extracted email from log file: {email} | status={status} | session_id={session_id} | pid={pid}",
-                "DEBUG",
-            )
+            Settings.write_log_dev_file(f"[LOG] Extracted email from log file: {email} | status={status} | session_id={session_id} | pid={pid}", "DEBUG")
 
             if status:
-                Settings.write_log_dev_file(
-                    f"[LOG] Status parsed from filename: {status}", "INFO"
-                )
+                Settings.write_log_dev_file(f"[LOG] Status parsed from filename: {status}", "INFO")
 
             with self.lock:
                 # Email deja traite : on ignore ce log (evite les doublons).
                 if email in self.completed_emails:
-                    Settings.write_log_dev_file(
-                        f"Email {email} already processed, skipping log file: {log_file}",
-                        "INFO",
-                    )
+                    Settings.write_log_dev_file(f"Email {email} already processed, skipping log file: {log_file}", "INFO")
                     return
 
             email_folder = self.getEmailFolder(email, status)
-            Settings.write_log_dev_file(
-                f"[LOG] Email folder ensured: {email_folder}", "DEBUG"
-            )
+            Settings.write_log_dev_file(f"[LOG] Email folder ensured: {email_folder}", "DEBUG")
 
             # Copie du contenu du log dans un fichier dedie du dossier de l'email.
-            target_log = os.path.join(
-                email_folder, f"{email}_{self.CURRENT_DATETIME}.txt"
-            )
+            target_log = os.path.join(email_folder, f"{email}_{self.CURRENT_DATETIME}.txt")
             with open(full_path, "r", encoding="utf-8", errors="replace") as f:
                 content = f.read()
-            Settings.write_log_dev_file(
-                f"[LOG] Read log file content length: {len(content)}", "DEBUG"
-            )
+            Settings.write_log_dev_file(f"[LOG] Read log file content length: {len(content)}", "DEBUG")
 
             with open(target_log, "a", encoding="utf-8") as tf:
                 tf.write(content + "\n")
-            Settings.write_log_dev_file(
-                f"[LOG] Appended log to target file: {target_log}", "DEBUG"
-            )
+            Settings.write_log_dev_file(f"[LOG] Appended log to target file: {target_log}", "DEBUG")
 
             self.moveAssociatedScreenshot(email, email_folder)
 
             # Toutes les infos presentes : on finalise (resultat + API + fermeture +
             # liberation du creneau).
             if status and session_id and email:
-                self.writeResultAndSendStatus(
-                    session_id, pid, email, status, inserted_id
-                )
-                self.closeBrowserSession(
-                    pid, email, self.selected_Browser, firefox_pids, web_ext_pid, "-LOG"
-                )
+                self.writeResultAndSendStatus(session_id, pid, email, status, inserted_id)
+                self.closeBrowserSession(pid, email, self.selected_Browser, firefox_pids, web_ext_pid, "-LOG")
                 with self.lock:
                     self.completed_emails.add(email)
                 self.releaseActiveEmail(email)
 
             # Suppression du fichier de log source une fois traite.
             os.remove(full_path)
-            Settings.write_log_dev_file(
-                f"✅ [LOG] Processed and removed source file: {full_path}", "INFO"
-            )
+            Settings.write_log_dev_file(f"✅ [LOG] Processed and removed source file: {full_path}", "INFO")
 
         except Exception as e:
             Settings.write_log_dev_file(
                 # Gestion d'erreur : tout echec du traitement du log est journalise avec la
                 # pile d'appels.
-                f"❌ [LOG] Erreur processing log file {full_path}: {e}\n{traceback.format_exc()}",
-                "ERROR",
-            )
+                f"❌ [LOG] Erreur processing log file {full_path}: {e}\n{traceback.format_exc()}",  "ERROR" )
 
     # -------------------------------------------------------------------------
     # Ferme une session Firefox : tue chaque PID Firefox connu, puis le PID de
@@ -617,83 +503,51 @@ class BrowserSessionMonitorThread(QThread):
     # -------------------------------------------------------------------------
     def closeFirefoxSession(self, firefox_pids, web_ext_pid, email, flow_label=""):
         if firefox_pids:
-            Settings.write_log_dev_file(
-                f"[CLOSE{flow_label}] Closing Firefox PIDs: {firefox_pids} for {email}",
-                "INFO",
-            )
+            Settings.write_log_dev_file(f"[CLOSE{flow_label}] Closing Firefox PIDs: {firefox_pids} for {email}", "INFO")
             # Tentative d'arret de chaque processus Firefox (s'il existe encore).
             for firefox_pid in firefox_pids:
                 try:
                     if psutil.pid_exists(firefox_pid):
                         psutil.Process(firefox_pid).kill()
-                        Settings.write_log_dev_file(
-                            f"[CLOSE{flow_label}] Firefox PID {firefox_pid} killed successfully",
-                            "INFO",
-                        )
+                        Settings.write_log_dev_file(f"[CLOSE{flow_label}] Firefox PID {firefox_pid} killed successfully", "INFO")
                     else:
-                        Settings.write_log_dev_file(
-                            f"[CLOSE{flow_label}] Firefox PID {firefox_pid} no longer exists",
-                            "INFO",
-                        )
+                        Settings.write_log_dev_file(f"[CLOSE{flow_label}] Firefox PID {firefox_pid} no longer exists", "INFO")
                 except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
                     Settings.write_log_dev_file(
-                        f"[CLOSE{flow_label}] Error closing Firefox PID {firefox_pid} "
-                        f"| exception={type(e).__name__}: {e} "
-                        f"| email={email}\n{traceback.format_exc()}",
-                        "WARNING",
+                        f"[CLOSE{flow_label}] Error closing Firefox PID {firefox_pid} " f"| exception={type(e).__name__}: {e} " f"| email={email}\n{traceback.format_exc()}", "WARNING"
                     )
         else:
-            Settings.write_log_dev_file(
-                f"No Firefox PIDs for {email} {flow_label}".strip(), "WARNING"
-            )
+            Settings.write_log_dev_file(f"No Firefox PIDs for {email} {flow_label}".strip(), "WARNING")
 
         # Arret du processus web-ext associe.
         if web_ext_pid:
             try:
                 if psutil.pid_exists(web_ext_pid):
                     psutil.Process(web_ext_pid).kill()
-                    Settings.write_log_dev_file(
-                        f"[CLOSE{flow_label}] web-ext PID {web_ext_pid} killed successfully",
-                        "INFO",
-                    )
+                    Settings.write_log_dev_file(f"[CLOSE{flow_label}] web-ext PID {web_ext_pid} killed successfully", "INFO")
                 else:
-                    Settings.write_log_dev_file(
-                        f"[CLOSE{flow_label}] web-ext PID {web_ext_pid} no longer exists",
-                        "INFO",
-                    )
+                    Settings.write_log_dev_file(f"[CLOSE{flow_label}] web-ext PID {web_ext_pid} no longer exists", "INFO")
             except (psutil.NoSuchProcess, psutil.AccessDenied):
-                Settings.write_log_dev_file(
-                    f"[CLOSE{flow_label}] web-ext PID {web_ext_pid} already closed",
-                    "INFO",
-                )
+                Settings.write_log_dev_file(f"[CLOSE{flow_label}] web-ext PID {web_ext_pid} already closed", "INFO")
 
         # Retrait du PID web-ext de la liste des processus suivis.
         if web_ext_pid in runtime_state.process_pids:
             runtime_state.process_pids.remove(web_ext_pid)
-            Settings.write_log_dev_file(
-                f"[CLOSE{flow_label}] web-ext PID {web_ext_pid} removed from PROCESS_PIDS queue",
-                "INFO",
-            )
+            Settings.write_log_dev_file(f"[CLOSE{flow_label}] web-ext PID {web_ext_pid} removed from PROCESS_PIDS queue", "INFO")
 
     # -------------------------------------------------------------------------
     # Ferme la session du navigateur : delegue a closeFirefoxSession pour
     # Firefox, sinon ferme le(s) processus Chromium via closeBrowserProcess.
     # -------------------------------------------------------------------------
-    def closeBrowserSession(
-        self, pid, email, browser, firefox_pids, web_ext_pid, flow_label=""
-    ):
+    def closeBrowserSession(self, pid, email, browser, firefox_pids, web_ext_pid, flow_label=""):
         if browser.lower() == "firefox":
             self.closeFirefoxSession(firefox_pids, web_ext_pid, email, flow_label)
         else:
             if pid:
                 self.closeBrowserProcess(pid, email, browser)
-                Settings.write_log_dev_file(
-                    f"[CLOSE{flow_label}] Process {pid} closed for {email}", "INFO"
-                )
+                Settings.write_log_dev_file(f"[CLOSE{flow_label}] Process {pid} closed for {email}", "INFO")
             else:
-                Settings.write_log_dev_file(
-                    f"No PID for {email} {flow_label}".strip(), "WARNING"
-                )
+                Settings.write_log_dev_file(f"No PID for {email} {flow_label}".strip(), "WARNING")
 
     # -------------------------------------------------------------------------
     # Traite un fichier de SESSION depose par l'extension.
@@ -712,34 +566,22 @@ class BrowserSessionMonitorThread(QThread):
             return
 
         session_path = os.path.join(self.downloads_folder, file_name)
-        Settings.write_log_dev_file(
-            f"[SESSION] Starting processing: {file_name} | full_path={session_path}",
-            "DEBUG",
-        )
+        Settings.write_log_dev_file(f"[SESSION] Starting processing: {file_name} | full_path={session_path}", "DEBUG")
 
         if not os.path.exists(session_path):
-            Settings.write_log_dev_file(
-                f"Session file not found: {session_path}", "ERROR"
-            )
+            Settings.write_log_dev_file(f"Session file not found: {session_path}", "ERROR")
             return
 
         try:
             with open(session_path, "r", encoding="utf-8", errors="replace") as f:
                 content = f.read().strip()
-            Settings.write_log_dev_file(
-                f"[SESSION] Read content length={len(content)}", "DEBUG"
-            )
-            Settings.write_log_dev_file(
-                f"[SESSION] Content preview: {content[:200]!r}",
-                "TRACE" if hasattr(Settings, "TRACE") else "DEBUG",
-            )
+            Settings.write_log_dev_file(f"[SESSION] Read content length={len(content)}", "DEBUG")
+            Settings.write_log_dev_file(f"[SESSION] Content preview: {content[:200]!r}", "TRACE" if hasattr(Settings, "TRACE") else "DEBUG")
 
             # Etape 1 : extraction de session_id / email / etat depuis le contenu.
             regex = r"session_id:(\w+)_email:([\w.@+-]+)_etat:(\w+)"
             match = re.search(regex, content, re.IGNORECASE)
-            Settings.write_log_dev_file(
-                f"[SESSION] Using regex={regex} | match_found={bool(match)}", "DEBUG"
-            )
+            Settings.write_log_dev_file(f"[SESSION] Using regex={regex} | match_found={bool(match)}", "DEBUG")
 
             if not match:
                 Settings.write_log_dev_file(
@@ -755,73 +597,41 @@ class BrowserSessionMonitorThread(QThread):
             firefox_pids = []
             web_ext_pid = None
             profile_data_file = None
-            Settings.write_log_dev_file(
-                f"[SESSION] Parsed session_id={session_id} email={email} status={status}",
-                "INFO",
-            )
+            Settings.write_log_dev_file(f"[SESSION] Parsed session_id={session_id} email={email} status={status}", "INFO")
 
             # Etape 2 : recuperation des PID selon le navigateur (cas Firefox).
             if self.selected_Browser.lower() == "firefox":
-                Settings.write_log_dev_file(
-                    f"[SESSION] Firefox browser detected, looking up FIREFOX_SESSIONS[{email}]",
-                    "DEBUG",
-                )
+                Settings.write_log_dev_file(f"[SESSION] Firefox browser detected, looking up FIREFOX_SESSIONS[{email}]", "DEBUG")
                 if email in runtime_state.firefox_sessions:
                     firefox_session = runtime_state.firefox_sessions[email]
-                    Settings.write_log_dev_file(
-                        f"[SESSION] Firefox session found: {json.dumps(firefox_session, ensure_ascii=False, default=str)}",
-                        "DEBUG",
-                    )
+                    Settings.write_log_dev_file(f"[SESSION] Firefox session found: {json.dumps(firefox_session, ensure_ascii=False, default=str)}", "DEBUG")
                     firefox_pids = firefox_session.get("firefox_pids", [])
                     web_ext_pid = firefox_session.get("web_ext_pid")
                     inserted_id = firefox_session.get("inserted_id")
                     pid = firefox_pids
-                    Settings.write_log_dev_file(
-                        f"[SESSION] Firefox extracted firefox_pids={firefox_pids} web_ext_pid={web_ext_pid} inserted_id={inserted_id}",
-                        "INFO",
-                    )
+                    Settings.write_log_dev_file(f"[SESSION] Firefox extracted firefox_pids={firefox_pids} web_ext_pid={web_ext_pid} inserted_id={inserted_id}", "INFO")
                 else:
-                    Settings.write_log_dev_file(
-                        f"❌ [SESSION] Firefox session not found in FIREFOX_SESSIONS for email={email}",
-                        "ERROR",
-                    )
-                    Settings.write_log_dev_file(
-                        f"[SESSION] Available keys in FIREFOX_SESSIONS: {list(runtime_state.firefox_sessions.keys())}",
-                        "WARNING",
-                    )
+                    Settings.write_log_dev_file(f"❌ [SESSION] Firefox session not found in FIREFOX_SESSIONS for email={email}", "ERROR")
+                    Settings.write_log_dev_file(f"[SESSION] Available keys in FIREFOX_SESSIONS: {list(runtime_state.firefox_sessions.keys())}", "WARNING")
             else:
                 profile_dir = Settings.CHROME_PROFILES
                 if self.selected_Browser.lower() == "edge":
                     profile_dir = Settings.CHROMIUM_BROWSER_PATHS["edge"]["profiles"]
                 elif self.selected_Browser.lower() == "icedragon":
-                    profile_dir = Settings.CHROMIUM_BROWSER_PATHS["icedragon"][
-                        "profiles"
-                    ]
+                    profile_dir = Settings.CHROMIUM_BROWSER_PATHS["icedragon"]["profiles"]
                 elif self.selected_Browser.lower() == "comodo":
                     profile_dir = Settings.CHROMIUM_BROWSER_PATHS["comodo"]["profiles"]
 
                 profile_data_file = os.path.join(profile_dir, email, "data.txt")
-                Settings.write_log_dev_file(
-                    f"[SESSION] Chromium profile data path: {profile_data_file}",
-                    "DEBUG",
-                )
+                Settings.write_log_dev_file(f"[SESSION] Chromium profile data path: {profile_data_file}", "DEBUG")
                 if os.path.exists(profile_data_file):
-                    with open(
-                        profile_data_file, "r", encoding="utf-8", errors="replace"
-                    ) as f:
+                    with open(profile_data_file, "r", encoding="utf-8", errors="replace") as f:
                         # Cas Chromium : lecture de la premiere ligne de data.txt (pid:email:session:id).
                         profile_line = f.readline().strip()
-                    Settings.write_log_dev_file(
-                        f"[SESSION] Chromium profile data line: {profile_line}", "DEBUG"
-                    )
+                    Settings.write_log_dev_file(f"[SESSION] Chromium profile data line: {profile_line}", "DEBUG")
                     try:
-                        pid, email_chk, session_id_chk, inserted_id = (
-                            profile_line.split(":")[:4]
-                        )
-                        Settings.write_log_dev_file(
-                            f"[SESSION] Chromium extracted pid={pid} email_chk={email_chk} session_id_chk={session_id_chk} inserted_id={inserted_id}",
-                            "INFO",
-                        )
+                        pid, email_chk, session_id_chk, inserted_id = profile_line.split(":")[:4]
+                        Settings.write_log_dev_file(f"[SESSION] Chromium extracted pid={pid} email_chk={email_chk} session_id_chk={session_id_chk} inserted_id={inserted_id}", "INFO")
                     except ValueError as e:
                         Settings.write_log_dev_file(
                             "🚨 [SESSION] Failed to parse Chromium profile line "
@@ -831,19 +641,11 @@ class BrowserSessionMonitorThread(QThread):
                             "ERROR",
                         )
                 else:
-                    Settings.write_log_dev_file(
-                        f"Chromium profile data file not found for {email} at {profile_data_file}",
-                        "ERROR",
-                    )
+                    Settings.write_log_dev_file(f"Chromium profile data file not found for {email} at {profile_data_file}", "ERROR")
 
-            Settings.write_log_dev_file(
-                f"Session found | Email: {email} | Status: {status} | PID: {pid} | inserted_id: {inserted_id}",
-                "DEBUG",
-            )
+            Settings.write_log_dev_file(f"Session found | Email: {email} | Status: {status} | PID: {pid} | inserted_id: {inserted_id}", "DEBUG")
             email_folder = self.getEmailFolder(email, status)
-            Settings.write_log_dev_file(
-                f"[SESSION] Email folder ensured: {email_folder}", "DEBUG"
-            )
+            Settings.write_log_dev_file(f"[SESSION] Email folder ensured: {email_folder}", "DEBUG")
 
             # Etape 3 : flux « leger » (succes ou mauvais proxy) : on finalise et on sort.
             if status.lower() in ("completed", "bad_proxy"):
@@ -852,25 +654,16 @@ class BrowserSessionMonitorThread(QThread):
                 with self.lock:
                     self.completed_emails.add(email)
 
-                self.writeResultAndSendStatus(
-                    session_id, pid, email, status, inserted_id
-                )
-                self.closeBrowserSession(
-                    pid, email, self.selected_Browser, firefox_pids, web_ext_pid
-                )
+                self.writeResultAndSendStatus(session_id, pid, email, status, inserted_id)
+                self.closeBrowserSession(pid, email, self.selected_Browser, firefox_pids, web_ext_pid)
                 self.releaseActiveEmail(email)
                 return
 
-            Settings.write_log_dev_file(
-                f"ERROR FLOW detected for session {session_id} email={email} status={status}",
-                "DEBUG",
-            )
+            Settings.write_log_dev_file(f"ERROR FLOW detected for session {session_id} email={email} status={status}", "DEBUG")
             # Etape 4 : flux « erreur » : on conserve la capture d'ecran comme preuve.
             self.moveScreenshot(email, screenshots, email_folder)
             self.writeResultAndSendStatus(session_id, pid, email, status, inserted_id)
-            self.closeBrowserSession(
-                pid, email, self.selected_Browser, firefox_pids, web_ext_pid, "-ERROR"
-            )
+            self.closeBrowserSession(pid, email, self.selected_Browser, firefox_pids, web_ext_pid, "-ERROR")
             self.releaseActiveEmail(email)
         except Exception as e:
             Settings.write_log_dev_file(
@@ -884,38 +677,23 @@ class BrowserSessionMonitorThread(QThread):
                 # Etape 5 (finally) : suppression du fichier de session, quoi qu'il arrive.
                 if os.path.exists(session_path):
                     os.remove(session_path)
-                    Settings.write_log_dev_file(
-                        f"[CLEANUP] Removed session file: {session_path}", "DEBUG"
-                    )
+                    Settings.write_log_dev_file(f"[CLEANUP] Removed session file: {session_path}", "DEBUG")
             except Exception as e:
-                Settings.write_log_dev_file(
-                    "❌ [CLEANUP] Error removing session file "
-                    f"| exception={type(e).__name__}: {e} "
-                    f"| session_path={session_path}\n{traceback.format_exc()}",
-                    "DEBUG",
-                )
+                Settings.write_log_dev_file("❌ [CLEANUP] Error removing session file " f"| exception={type(e).__name__}: {e} " f"| session_path={session_path}\n{traceback.format_exc()}", "DEBUG")
 
             if self.selected_Browser.lower() == "firefox":
                 if email in runtime_state.firefox_sessions:
                     # Nettoyage : retrait de la session Firefox en memoire.
                     del runtime_state.firefox_sessions[email]
-                    Settings.write_log_dev_file(
-                        f"[CLEANUP] Removed Firefox session for {email}", "DEBUG"
-                    )
+                    Settings.write_log_dev_file(f"[CLEANUP] Removed Firefox session for {email}", "DEBUG")
             else:
                 try:
                     # Nettoyage : suppression du fichier data.txt du profil Chromium.
                     if profile_data_file and os.path.exists(profile_data_file):
                         os.remove(profile_data_file)
-                        Settings.write_log_dev_file(
-                            f"[CLEANUP] Removed chromium profile data file: {profile_data_file}",
-                            "DEBUG",
-                        )
+                        Settings.write_log_dev_file(f"[CLEANUP] Removed chromium profile data file: {profile_data_file}", "DEBUG")
                 except Exception as e:
-                    Settings.write_log_dev_file(
-                        f"❌ [CLEANUP] Error removing profile data file: {e}\n{traceback.format_exc()}",
-                        "DEBUG",
-                    )
+                    Settings.write_log_dev_file(f"❌ [CLEANUP] Error removing profile data file: {e}\n{traceback.format_exc()}", "DEBUG")
 
     # -------------------------------------------------------------------------
     # Enregistre le resultat d'un email et l'envoie a l'API.
@@ -935,10 +713,7 @@ class BrowserSessionMonitorThread(QThread):
         with self.lock:
             # Resultat deja envoye pour ce couple email/statut : on ignore.
             if result_key in self.reported_results:
-                Settings.write_log_dev_file(
-                    f"Duplicate result ignored for {email} with status {status}",
-                    "WARNING",
-                )
+                Settings.write_log_dev_file(f"Duplicate result ignored for {email} with status {status}", "WARNING")
                 return
             self.reported_results.add(result_key)
 
@@ -947,37 +722,18 @@ class BrowserSessionMonitorThread(QThread):
             result_line = f"{session_id}:{pid}:{email}:{status}"
             with open(Settings.RESULT_FILE_PATH, "a", encoding="utf-8") as f:
                 f.write(f"{result_line}\n")
-            Settings.write_log_event(
-                "result_written",
-                "INFO",
-                status=status,
-                result_file=Settings.RESULT_FILE_PATH,
-            )
+            Settings.write_log_event("result_written", "INFO", status=status, result_file=Settings.RESULT_FILE_PATH)
 
             # Etape 3 : donnees envoyees a l'API (statut OK/NotOK et motif eventuel).
-            api_data = {
-                "id": inserted_id,
-                "login": self.username,
-                "status": "OK" if status.lower() == "completed" else "NotOK",
-                "error": "" if status.lower() == "completed" else status,
-            }
+            api_data = {"id": inserted_id, "login": self.username, "status": "OK" if status.lower() == "completed" else "NotOK", "error": "" if status.lower() == "completed" else status}
 
             # Appel de l'API et journalisation du code de reponse.
             result = str(API_MANAGER.sendStatus(api_data))
-            Settings.write_log_event(
-                "status_api_response",
-                "INFO",
-                response_type=type(result).__name__,
-                response_code=(
-                    result if result in {"-1", "-2", "-3", "-4", "-5"} else "received"
-                ),
-            )
+            Settings.write_log_event("status_api_response", "INFO", response_type=type(result).__name__, response_code=(result if result in {"-1", "-2", "-3", "-4", "-5"} else "received"))
 
             # Reponse -1 : erreur cote API -> on leve une exception.
             if result == "-1":
-                Settings.write_log_dev_file(
-                    f"API returned -1 for {email}", level="ERROR"
-                )
+                Settings.write_log_dev_file(f"API returned -1 for {email}", level="ERROR")
                 raise RuntimeError(f"API returned -1 for {email}")
 
         # SystemExit : on annule l'enregistrement du resultat et on relaie l'arret.
@@ -1004,15 +760,10 @@ class BrowserSessionMonitorThread(QThread):
             # Recherche d'une capture correspondant a l'email.
             for img in screenshots:
                 if email.lower() in img.lower():
-                    shutil.move(
-                        os.path.join(self.downloads_folder, img),
-                        os.path.join(email_folder, f"{email}.png"),
-                    )
+                    shutil.move(os.path.join(self.downloads_folder, img), os.path.join(email_folder, f"{email}.png"))
                     break
         except Exception as e:
-            Settings.write_log_dev_file(
-                f"⚠️ [SCREENSHOT] Erreur: {e}\n{traceback.format_exc()}", "ERROR"
-            )
+            Settings.write_log_dev_file(f"⚠️ [SCREENSHOT] Erreur: {e}\n{traceback.format_exc()}", "ERROR")
 
     # -------------------------------------------------------------------------
     # Ferme un (ou plusieurs) processus navigateur Chromium par PID.
@@ -1023,16 +774,11 @@ class BrowserSessionMonitorThread(QThread):
     #   3. Retire les PID fermes de la liste des processus suivis.
     # -------------------------------------------------------------------------
     def closeBrowserProcess(self, pid, email, browser):
-        Settings.write_log_dev_file(
-            f"_close_browser_process start | browser={browser} | email={email} | pid={repr(pid)} | pid_type={type(pid).__name__}",
-            "DEBUG",
-        )
+        Settings.write_log_dev_file(f"_close_browser_process start | browser={browser} | email={email} | pid={repr(pid)} | pid_type={type(pid).__name__}", "DEBUG")
 
         try:
             if pid is None:
-                Settings.write_log_dev_file(
-                    f"No PID provided for {email} ({browser})", "WARNING"
-                )
+                Settings.write_log_dev_file(f"No PID provided for {email} ({browser})", "WARNING")
                 return
 
             pid_list = []
@@ -1043,27 +789,18 @@ class BrowserSessionMonitorThread(QThread):
                     if item_str.isdigit():
                         pid_list.append(int(item_str))
                     else:
-                        Settings.write_log_dev_file(
-                            f"Skipped non-numeric PID segment in list: {repr(item)}",
-                            "WARNING",
-                        )
+                        Settings.write_log_dev_file(f"Skipped non-numeric PID segment in list: {repr(item)}", "WARNING")
             else:
                 pid_str = str(pid).strip()
                 if pid_str.isdigit():
                     pid_list = [int(pid_str)]
                 else:
-                    Settings.write_log_dev_file(
-                        f"Invalid PID value for Chromium family: {repr(pid)}", "ERROR"
-                    )
+                    Settings.write_log_dev_file(f"Invalid PID value for Chromium family: {repr(pid)}", "ERROR")
                     return
 
-            Settings.write_log_dev_file(
-                f"_close_browser_process computed pid_list={pid_list}", "DEBUG"
-            )
+            Settings.write_log_dev_file(f"_close_browser_process computed pid_list={pid_list}", "DEBUG")
             if not pid_list:
-                Settings.write_log_dev_file(
-                    f"No valid PID to close for {email} ({browser})", "WARNING"
-                )
+                Settings.write_log_dev_file(f"No valid PID to close for {email} ({browser})", "WARNING")
                 return
 
             # Fermeture de chaque PID de la liste calculee.
@@ -1076,30 +813,19 @@ class BrowserSessionMonitorThread(QThread):
                         p = psutil.Process(current_pid)
                         p.terminate()
                         p.wait(timeout=3)
-                        Settings.write_log_dev_file(
-                            f"Chrome closed via terminate() for PID {current_pid}",
-                            "INFO",
-                        )
+                        Settings.write_log_dev_file(f"Chrome closed via terminate() for PID {current_pid}", "INFO")
                     else:
-                        Settings.write_log_dev_file(
-                            f"Chrome closed via SIGTERM for PID {current_pid}", "INFO"
-                        )
+                        Settings.write_log_dev_file(f"Chrome closed via SIGTERM for PID {current_pid}", "INFO")
                 except Exception as e_chrome:
                     Settings.write_log_dev_file(
                         # Echec de fermeture d'un PID precis : journalise, on passe au suivant.
-                        f"Error closing Chrome PID {current_pid}: {e_chrome}\n{traceback.format_exc()}",
-                        "ERROR",
-                    )
+                        f"Error closing Chrome PID {current_pid}: {e_chrome}\n{traceback.format_exc()}", "ERROR" )
 
                 if current_pid in runtime_state.process_pids:
                     runtime_state.process_pids.remove(current_pid)
-                    Settings.write_log_dev_file(
-                        f"PID {current_pid} removed from PROCESS_PIDS", "INFO"
-                    )
+                    Settings.write_log_dev_file(f"PID {current_pid} removed from PROCESS_PIDS", "INFO")
 
         except Exception as e:
-            Settings.write_log_dev_file(
+            
                 # Erreur globale de la procedure de fermeture (journalisee avec la trace).
-                f"❌ [CLOSE] Erreur: {e}\n{traceback.format_exc()}",
-                "ERROR",
-            )
+            Settings.write_log_dev_file( f"❌ [CLOSE] Erreur: {e}\n{traceback.format_exc()}", "ERROR")
