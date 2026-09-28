@@ -101,14 +101,14 @@ def write_log_dev_file(message: str, level: str = "INFO", **context):
             f.write("\n")
 
     except Exception:
-        # affiche erreur detaille 
-        print("Erreur lors de l'écriture du fichier de log de développement :", sys.exc_info()[1])
+        # affiche erreur detaille
+        print(
+            "Erreur lors de l'écriture du fichier de log de développement :",
+            sys.exc_info()[1],
+        )
         # Ignore toute erreur d'écriture afin que le système de logs
         # n'interrompe pas le fonctionnement principal de l'application
         pass
-
-
-
 
 
 def clear_log():
@@ -130,14 +130,14 @@ def clear_log():
         pass
 
 
-
 def show_update_network_warning():
 
     # Prépare le message affiché lorsque la dernière version ne peut pas être détectée
     # \n\n -> ajoute une ligne vide entre les deux phrases
     message = (
         "Unable to detect the latest version from the update server.\n\n"
-        "Please contact support for assistance." )
+        "Please contact support for assistance."
+    )
 
     # Vérifie si l'application est exécutée sous Windows
     # sys.platform == "win32" -> identifie l'environnement Windows
@@ -151,12 +151,10 @@ def show_update_network_warning():
         # message -> contenu affiché dans la boîte de dialogue
         # "AutoMailPro - Mise à jour" -> titre de la fenêtre
         # 0x30 -> affiche une icône d'avertissement
-        ctypes.windll.user32.MessageBoxW(  None,  message,  "AutoMailPro - Update" , 0x30 )
+        ctypes.windll.user32.MessageBoxW(None, message, "AutoMailPro - Update", 0x30)
     else:
         # Affiche le message dans la console pour les systèmes non Windows
         print(message)
-
-
 
 
 def show_update_failure_warning():
@@ -180,13 +178,14 @@ def show_update_failure_warning():
         # message -> contenu affiché dans la boîte de dialogue
         # "AutoMailPro - Update Failure" -> titre de la fenêtre
         # 0x10 -> affiche une icône d'erreur
-        ctypes.windll.user32.MessageBoxW(  None,   message, "AutoMailPro - Update Failure", 0x10 )
+        ctypes.windll.user32.MessageBoxW(
+            None, message, "AutoMailPro - Update Failure", 0x10
+        )
     else:
 
         # Affiche le message dans la console pour les systèmes non Windows
         print(message)
 
-        
 
 def find_pythonw():
 
@@ -218,11 +217,6 @@ def find_pythonw():
 
     # Retourne None si pythonw.exe n'a été trouvé dans aucun des emplacements recherchés
     return None
-
-
-
-
-
 
 
 class DependencyManager:
@@ -259,11 +253,12 @@ class DependencyManager:
                     # Enregistre la suppression du dossier dans le fichier de log
                     write_log_dev_file(f"Removed {folder}", "INFO")
 
-                except PermissionError:
+                except PermissionError as exc:
 
                     # Enregistre une erreur si le dossier est utilisé ou protégé par un autre processus
                     write_log_dev_file(
-                        f"Impossible de supprimer {folder} (fermez IDE/console)",
+                        f"Impossible de supprimer {folder} (fermez IDE/console) "
+                        f"| exception={type(exc).__name__}: {exc}\n{traceback.format_exc()}",
                         "ERROR",
                     )
 
@@ -288,10 +283,15 @@ class DependencyManager:
             # Enregistre la réussite de l'installation de pywin32
             write_log_dev_file("pywin32 installed successfully", "INFO")
 
-        except subprocess.CalledProcessError:
+        except subprocess.CalledProcessError as exc:
 
             # Enregistre l'échec de l'installation de pywin32
-            write_log_dev_file("Failed to install pywin32", "ERROR")
+            write_log_dev_file(
+                "Failed to install pywin32 "
+                f"| exception={type(exc).__name__}: {exc} "
+                f"| returncode={exc.returncode}\n{traceback.format_exc()}",
+                "ERROR",
+            )
             return False
 
         # Construit le chemin vers le script de post-installation de pywin32
@@ -316,10 +316,15 @@ class DependencyManager:
                 # Enregistre la réussite de la post-installation
                 write_log_dev_file("Post-installation completed", "INFO")
 
-            except subprocess.CalledProcessError:
+            except subprocess.CalledProcessError as exc:
 
                 # Enregistre l'échec de la post-installation de pywin32
-                write_log_dev_file("Failed post-installation pywin32", "ERROR")
+                write_log_dev_file(
+                    "Failed post-installation pywin32 "
+                    f"| exception={type(exc).__name__}: {exc} "
+                    f"| returncode={exc.returncode}\n{traceback.format_exc()}",
+                    "ERROR",
+                )
                 return False
 
         # Enregistre le redémarrage prochain de l'application
@@ -378,10 +383,15 @@ class DependencyManager:
                     ]
                 )
 
-            except subprocess.CalledProcessError:
+            except subprocess.CalledProcessError as exc:
 
                 # Enregistre l'échec de la mise à jour de pip
-                write_log_dev_file("Error updating pip", "ERROR")
+                write_log_dev_file(
+                    "Error updating pip "
+                    f"| exception={type(exc).__name__}: {exc} "
+                    f"| returncode={exc.returncode}\n{traceback.format_exc()}",
+                    "ERROR",
+                )
                 sys.exit(1)
 
             try:
@@ -394,10 +404,16 @@ class DependencyManager:
                 # Enregistre la réussite de l'installation du package
                 write_log_dev_file(f"{package} installed", "INFO")
 
-            except subprocess.CalledProcessError:
+            except subprocess.CalledProcessError as exc:
 
                 # Enregistre l'échec de l'installation du package
-                write_log_dev_file(f"Error installing {package}", "ERROR")
+                write_log_dev_file(
+                    f"Error installing {package} "
+                    f"| exception={type(exc).__name__}: {exc} "
+                    f"| install_spec={install_spec} "
+                    f"| returncode={exc.returncode}\n{traceback.format_exc()}",
+                    "ERROR",
+                )
                 sys.exit(1)
 
             try:
@@ -405,12 +421,16 @@ class DependencyManager:
                 # Réimporte le module après son installation pour vérifier qu'il est maintenant disponible
                 return importlib.import_module(module_to_import)
 
-            except ImportError:
+            except ImportError as exc:
 
                 # Enregistre l'échec de l'importation après l'installation
-                write_log_dev_file(f"Error importing {module_to_import}", "ERROR")
+                write_log_dev_file(
+                    f"Error importing {module_to_import} "
+                    f"| exception={type(exc).__name__}: {exc} "
+                    f"| package={package}\n{traceback.format_exc()}",
+                    "ERROR",
+                )
                 sys.exit(1)
-
 
 
 def encrypt_message(plaintext: str, key_bytes: bytes):
@@ -451,10 +471,7 @@ def encrypt_message(plaintext: str, key_bytes: bytes):
         # Configure le chiffrement AES-256 avec le mode CBC
         # key_bytes -> clé secrète utilisée pour le chiffrement
         # iv -> vecteur d'initialisation utilisé par le mode CBC
-        cipher = Cipher(
-            algorithms.AES(key_bytes),
-            modes.CBC(iv)
-        )
+        cipher = Cipher(algorithms.AES(key_bytes), modes.CBC(iv))
 
         # Crée l'objet chargé d'effectuer le chiffrement des données
         encryptor = cipher.encryptor()
@@ -471,15 +488,17 @@ def encrypt_message(plaintext: str, key_bytes: bytes):
 
     except Exception as e:
         # Enregistre l'erreur sans exposer le contenu du message ou de la clé
+        # (la traceback ne contient que le code, jamais les valeurs sensibles)
         write_log_dev_file(
-            f"AES-CBC encryption failed: {e}",
-            level="ERROR"
+            "AES-CBC encryption failed "
+            f"| exception={type(e).__name__}: {e}\n{traceback.format_exc()}",
+            level="ERROR",
         )
 
         # Indique que le chiffrement a échoué
         return False
 
-        
+
 class UpdateManager:
 
     @staticmethod
@@ -510,7 +529,12 @@ class UpdateManager:
 
         except Exception as e:
             # Enregistre l'erreur rencontrée pendant la lecture
-            write_log_dev_file(f"Error reading local program version: {e}", "ERROR")
+            write_log_dev_file(
+                "Error reading local program version "
+                f"| exception={type(e).__name__}: {e} "
+                f"| path={path}\n{traceback.format_exc()}",
+                "ERROR",
+            )
 
             # Retourne None pour indiquer que la lecture a échoué
             return None
@@ -591,7 +615,13 @@ class UpdateManager:
 
                                 # Met à jour la progression du téléchargement
                                 if progress_callback and content_length:
-                                    progress_callback("Downloading update...", min(75, int(downloaded_bytes * 75 / content_length)))
+                                    progress_callback(
+                                        "Downloading update...",
+                                        min(
+                                            75,
+                                            int(downloaded_bytes * 75 / content_length),
+                                        ),
+                                    )
 
                 # Enregistre la taille reçue et la signature du fichier
                 write_log_dev_file(
@@ -648,9 +678,7 @@ class UpdateManager:
                     z.extractall(tmpdir)
 
                 # Enregistre la fin de l'extraction
-                write_log_dev_file(
-                    "Temporary ZIP extraction completed.", "INFO"
-                )
+                write_log_dev_file("Temporary ZIP extraction completed.", "INFO")
 
                 # Récupère les éléments extraits sauf le fichier ZIP
                 extracted_entries = [
@@ -689,9 +717,11 @@ class UpdateManager:
                 extracted_dir = (
                     extracted_root
                     if not extract_subdir
-                    else os.path.join(extracted_root, extract_subdir)
-                    if os.path.exists(os.path.join(extracted_root, extract_subdir))
-                    else extracted_root
+                    else (
+                        os.path.join(extracted_root, extract_subdir)
+                        if os.path.exists(os.path.join(extracted_root, extract_subdir))
+                        else extracted_root
+                    )
                 )
 
                 # Enregistre le dossier source sélectionné
@@ -724,9 +754,7 @@ class UpdateManager:
                         shutil.move(src, dst)
 
                 # Enregistre la fin de l'installation
-                write_log_dev_file(
-                    f"Program update extracted to: {target_dir}", "INFO"
-                )
+                write_log_dev_file(f"Program update extracted to: {target_dir}", "INFO")
 
                 # Informe l'interface que la mise à jour est terminée
                 if progress_callback:
@@ -861,12 +889,12 @@ class UpdateManager:
                 report_progress("Program version received.", 25)
 
                 # Enregistre les données retournées par le serveur
-                write_log_dev_file(
-                    f"Program version data received: {data}", "DEBUG"
-                )
+                write_log_dev_file(f"Program version data received: {data}", "DEBUG")
 
                 # Lit la version actuellement installée
-                local_program = UpdateManager._read_local_version(os.path.join("config", "version.txt"))
+                local_program = UpdateManager._read_local_version(
+                    os.path.join("config", "version.txt")
+                )
 
                 # Récupère la version disponible sur le serveur
                 remote_program = data.get("version")
@@ -889,12 +917,20 @@ class UpdateManager:
 
                     try:
                         # Télécharge, extrait et installe la nouvelle version
-                        downloaded = UpdateManager._download_and_extract(PROGRAM_DOWNLOAD_URL, ROOT_DIR, clean_target=False, extract_subdir=None, progress_callback=report_progress)
+                        downloaded = UpdateManager._download_and_extract(
+                            PROGRAM_DOWNLOAD_URL,
+                            ROOT_DIR,
+                            clean_target=False,
+                            extract_subdir=None,
+                            progress_callback=report_progress,
+                        )
 
                     except Exception as e:
                         # Enregistre l'échec de la mise à jour
                         write_log_dev_file(
-                            f"Required program update download failed: {e}",
+                            "Required program update download failed "
+                            f"| exception={type(e).__name__}: {e} "
+                            f"| url={PROGRAM_DOWNLOAD_URL}\n{traceback.format_exc()}",
                             "ERROR",
                         )
 
@@ -913,9 +949,7 @@ class UpdateManager:
                         return "update_failed"
 
                     # Enregistre la réussite de la mise à jour
-                    write_log_dev_file(
-                        "Program update completed successfully.", "INFO"
-                    )
+                    write_log_dev_file("Program update completed successfully.", "INFO")
 
                     # Enregistre la fin du processus avec mise à jour
                     write_log_dev_file(
@@ -935,9 +969,7 @@ class UpdateManager:
                 report_progress("Program is up to date.", 100)
 
                 # Enregistre la fin du processus sans mise à jour
-                write_log_dev_file(
-                    "=== CHECK PROGRAM UPDATE END (OK) ===", "INFO"
-                )
+                write_log_dev_file("=== CHECK PROGRAM UPDATE END (OK) ===", "INFO")
 
                 # False indique qu'aucune mise à jour n'était nécessaire
                 return False
@@ -967,9 +999,6 @@ class UpdateManager:
                 return None
 
 
-
-
-
 def initialize_dependencies():
 
     # Enregistre le début de l'initialisation des dépendances
@@ -985,13 +1014,11 @@ def initialize_dependencies():
         {
             # Importe requests et l'installe automatiquement si elle est absente
             "requests": DependencyManager.install_and_import("requests"),
-
             # Importe urllib3 avec une version précise
             "urllib3": DependencyManager.install_and_import(
                 "urllib3",
                 version="2.2.3",
             ),
-
             # Importe PyQt6 avec une version précise
             # required_import="QtCore" vérifie également que PyQt6.QtCore est disponible
             "PyQt6": DependencyManager.install_and_import(
@@ -999,25 +1026,19 @@ def initialize_dependencies():
                 version="6.7.0",
                 required_import="QtCore",
             ),
-
             # Importe cryptography avec la version spécifiée
             "cryptography_module": DependencyManager.install_and_import(
                 "cryptography",
                 version="3.3.2",
             ),
-
             # Importe psutil et l'installe automatiquement si nécessaire
             "psutil": DependencyManager.install_and_import("psutil"),
-
             # Importe pytz et l'installe automatiquement si nécessaire
             "pytz": DependencyManager.install_and_import("pytz"),
-
             # Importe tqdm et l'installe automatiquement si nécessaire
             "tqdm": DependencyManager.install_and_import("tqdm"),
-
             # Importe platformdirs et l'installe automatiquement si nécessaire
             "platformdirs": DependencyManager.install_and_import("platformdirs"),
-
             # Importe Selenium avec une version précise
             # required_import="webdriver" vérifie également selenium.webdriver
             "selenium": DependencyManager.install_and_import(
@@ -1025,13 +1046,10 @@ def initialize_dependencies():
                 required_import="webdriver",
                 version="4.27.1",
             ),
-
             # Importe colorama et l'installe automatiquement si nécessaire
             "colorama": DependencyManager.install_and_import("colorama"),
-
             # Importe SQLAlchemy et l'installe automatiquement si nécessaire
             "sqlalchemy": DependencyManager.install_and_import("sqlalchemy"),
-
             # Importe watchdog et vérifie également la disponibilité de son module observers
             "watchdog": DependencyManager.install_and_import(
                 "watchdog",
@@ -1045,13 +1063,7 @@ def initialize_dependencies():
         # Désactive uniquement les avertissements InsecureRequestWarning
         # Cela masque les avertissements liés à certaines connexions HTTPS
         # mais ne rend pas une connexion non sécurisée plus sûre
-        urllib3.disable_warnings(
-            urllib3.exceptions.InsecureRequestWarning
-        )
-
-
-
-
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 def main():
@@ -1060,9 +1072,7 @@ def main():
         import ctypes
 
         # Récupère la fenêtre console actuelle puis la masque
-        ctypes.windll.user32.ShowWindow(
-            ctypes.windll.kernel32.GetConsoleWindow(), 0
-        )
+        ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
 
     try:
         # Vide le fichier de log avant de démarrer une nouvelle exécution
@@ -1129,9 +1139,7 @@ def main():
                 update_progress.setWindowTitle("AutoMailPro Update")
 
                 # Bloque les autres fenêtres pendant la vérification
-                update_progress.setWindowModality(
-                    Qt.WindowModality.ApplicationModal
-                )
+                update_progress.setWindowModality(Qt.WindowModality.ApplicationModal)
 
                 # Empêche la fermeture automatique de la fenêtre
                 update_progress.setAutoClose(False)
@@ -1219,11 +1227,7 @@ def main():
                 sys.exit(1)
 
             # Prépare le résultat de la vérification pour le log
-            result = (
-                "update applied"
-                if updated
-                else "application already up to date"
-            )
+            result = "update applied" if updated else "application already up to date"
 
             # Enregistre le résultat final de la vérification
             write_log_dev_file(
@@ -1238,7 +1242,8 @@ def main():
 
             # Enregistre l'erreur critique pendant la vérification de mise à jour
             write_log_dev_file(
-                f"Fatal error during update: {e}",
+                "Fatal error during update "
+                f"| exception={type(e).__name__}: {e}\n{traceback.format_exc()}",
                 "CRITICAL",
             )
 
@@ -1305,4 +1310,3 @@ def main():
 if __name__ == "__main__":
     # Lance l'application lorsque ce fichier est exécuté directement
     main()
-

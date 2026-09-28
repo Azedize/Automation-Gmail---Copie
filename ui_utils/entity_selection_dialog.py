@@ -3,7 +3,14 @@ import re
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
-from PyQt6.QtWidgets import QDialog, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout
+from PyQt6.QtWidgets import (
+    QDialog,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QVBoxLayout,
+)
 
 from config import Settings
 
@@ -114,10 +121,7 @@ class EntitySelectionDialog(QDialog):
         # Ajoute le titre au layout principal.
         #
         # AlignCenter place le widget au centre horizontalement.
-        main_layout.addWidget(
-            title_label,
-            alignment=Qt.AlignmentFlag.AlignCenter
-        )
+        main_layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignCenter)
 
         # Crée le texte explicatif affiché au-dessus du champ de saisie.
         instruction_label = QLabel(
@@ -146,9 +150,7 @@ class EntitySelectionDialog(QDialog):
             # Exemple :
             # opm74
             # opm19
-            format_info = QLabel(
-                "Format: opm followed by digits (e.g., opm74, opm19)"
-            )
+            format_info = QLabel("Format: opm followed by digits (e.g., opm74, opm19)")
 
             # Définit le style du texte d'information.
             #
@@ -172,9 +174,7 @@ class EntitySelectionDialog(QDialog):
         #
         # Ce texte disparaît automatiquement lorsque l'utilisateur commence
         # à saisir une valeur.
-        self.input_field.setPlaceholderText(
-            "Enter entity (opm + number)..."
-        )
+        self.input_field.setPlaceholderText("Enter entity (opm + number)...")
 
         # Vérifie si une Entity par défaut a été fournie.
         #
@@ -213,10 +213,7 @@ class EntitySelectionDialog(QDialog):
         # Ajoute le champ de saisie au layout principal.
         #
         # AlignCenter permet de centrer le champ horizontalement.
-        main_layout.addWidget(
-            self.input_field,
-            alignment=Qt.AlignmentFlag.AlignCenter
-        )
+        main_layout.addWidget(self.input_field, alignment=Qt.AlignmentFlag.AlignCenter)
 
         # Crée le label utilisé pour afficher les messages d'erreur
         # lors de la validation de l'Entity.
@@ -367,9 +364,7 @@ class EntitySelectionDialog(QDialog):
         main_layout.addLayout(button_layout)
 
         # Définit la couleur de fond générale de la fenêtre.
-        self.setStyleSheet(
-            "QDialog { background-color: #f8f8f8; }"
-        )
+        self.setStyleSheet("QDialog { background-color: #f8f8f8; }")
 
     def validate_and_accept(self):
         # Cette méthode est appelée lorsque l'utilisateur clique
@@ -397,9 +392,7 @@ class EntitySelectionDialog(QDialog):
         # Une chaîne vide est considérée comme False en Python.
         if not entity_text:
             # Affiche le message d'erreur approprié.
-            self.error_label.setText(
-                "Entity name cannot be empty."
-            )
+            self.error_label.setText("Entity name cannot be empty.")
 
             # Rend le label d'erreur visible.
             self.error_label.show()

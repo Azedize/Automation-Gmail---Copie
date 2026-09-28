@@ -47,11 +47,7 @@ except ImportError as e:
 #
 # dirname(dirname(__file__))
 #   -> dossier racine du projet
-ROOT_DIR = os.path.dirname(
-    os.path.dirname(
-        os.path.abspath(__file__)
-    )
-)
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 # Ajoute le dossier racine dans sys.path uniquement
@@ -67,6 +63,7 @@ if ROOT_DIR not in sys.path:
 # CLASS CENTRALE DE VALIDATION
 # =========================================================
 
+
 class ValidationUtils:
 
     # =====================================================
@@ -77,9 +74,7 @@ class ValidationUtils:
     #
     # L'objectif est d'éviter de redéfinir le même Regex
     # dans plusieurs fichiers.
-    _PATTERN_EMAIL = re.compile(
-        Settings.VALIDATION_CONFIG["EMAIL"]
-    )
+    _PATTERN_EMAIL = re.compile(Settings.VALIDATION_CONFIG["EMAIL"])
 
     # Pattern permettant de valider les valeurs numériques
     # simples ou sous forme de plage.
@@ -87,14 +82,10 @@ class ValidationUtils:
     # Exemples possibles :
     #   50
     #   50,100
-    _PATTERN_NUMERIC_RANGE = re.compile(
-        Settings.VALIDATION_CONFIG["NUMERIC_RANGE"]
-    )
+    _PATTERN_NUMERIC_RANGE = re.compile(Settings.VALIDATION_CONFIG["NUMERIC_RANGE"])
 
     # Pattern centralisé permettant de valider une adresse IPv4.
-    _PATTERN_IP = re.compile(
-        Settings.VALIDATION_CONFIG["IP_ADDRESS"]
-    )
+    _PATTERN_IP = re.compile(Settings.VALIDATION_CONFIG["IP_ADDRESS"])
 
     # =====================================================
     # ALIAS DES NOMS DE COLONNES
@@ -111,24 +102,17 @@ class ValidationUtils:
     # Cela permet d'accepter plusieurs formats d'entrée
     # sans dupliquer la logique de traitement.
     _INPUT_HEADER_ALIASES = {
-
         "Email": "email",
         "email": "email",
-
         "passwordEmail": "passwordEmail",
         "password_email": "passwordEmail",
-
         "ipAddress": "ipAddress",
         "ip_address": "ipAddress",
-
         "port": "port",
-
         "login": "login",
         "password": "password",
-
         "recoveryEmail": "recoveryEmail",
         "recovery_email": "recoveryEmail",
-
         "newrecoveryEmail": "new_recovery_email",
         "New_recovery_email": "new_recovery_email",
         "new_recovery_email": "new_recovery_email",
@@ -177,7 +161,7 @@ class ValidationUtils:
     # =====================================================
 
     @staticmethod
-    def validate_numeric_range( text: str ) -> Tuple[bool, Optional[Tuple[int, int]]]:
+    def validate_numeric_range(text: str) -> Tuple[bool, Optional[Tuple[int, int]]]:
         """
         Valide une valeur numérique ou une plage numérique.
 
@@ -207,11 +191,7 @@ class ValidationUtils:
 
         # Si une deuxième valeur existe, elle devient le maximum.
         # Sinon, la valeur unique est utilisée pour les deux limites.
-        max_val = (
-            int(match.group(2))
-            if match.group(2)
-            else min_val
-        )
+        max_val = int(match.group(2)) if match.group(2) else min_val
 
         # Si le minimum est supérieur au maximum,
         # les deux valeurs sont inversées.
@@ -226,7 +206,7 @@ class ValidationUtils:
     # =====================================================
 
     @staticmethod
-    def process_user_input( input_data: str,  entered_number_text: str) -> Dict[str, Any]:
+    def process_user_input(input_data: str, entered_number_text: str) -> Dict[str, Any]:
         """
         Parse et valide les données saisies par l'utilisateur.
 
@@ -241,7 +221,7 @@ class ValidationUtils:
         """
 
         # Journalise le début de la validation.
-        Settings.write_log_event(  "user_input_validation_started", "INFO" )
+        Settings.write_log_event("user_input_validation_started", "INFO")
 
         # Structure de résultat standard utilisée
         # par les différentes branches de validation.
@@ -272,10 +252,7 @@ class ValidationUtils:
             return result
 
         # Vérifie que le nombre de lignes demandé existe.
-        if (
-            not entered_number_text
-            or not entered_number_text.strip()
-        ):
+        if not entered_number_text or not entered_number_text.strip():
             result.update(
                 {
                     "error_title": "Input Validation Failed",
@@ -306,9 +283,7 @@ class ValidationUtils:
         # Journalise uniquement le nombre demandé,
         # sans enregistrer les données sensibles.
         Settings.write_log_event(
-            "user_input_row_limit_validated",
-            "INFO",
-            requested_rows=entered_number
+            "user_input_row_limit_validated", "INFO", requested_rows=entered_number
         )
 
         # =================================================
@@ -321,11 +296,7 @@ class ValidationUtils:
             #
             # strip() supprime les espaces inutiles.
             # Les lignes vides sont ignorées.
-            lines = [
-                line.strip()
-                for line in input_data.split("\n")
-                if line.strip()
-            ]
+            lines = [line.strip() for line in input_data.split("\n") if line.strip()]
 
             # Il faut au minimum :
             #   ligne 1 -> header
@@ -343,18 +314,12 @@ class ValidationUtils:
                 return result
 
             # Récupère le header et sépare ses colonnes avec ";".
-            raw_header = [
-                k.strip()
-                for k in lines[0].split(";")
-            ]
+            raw_header = [k.strip() for k in lines[0].split(";")]
 
             # Normalise chaque nom de colonne avec le dictionnaire
             # _INPUT_HEADER_ALIASES.
             header = [
-                ValidationUtils._INPUT_HEADER_ALIASES.get(
-                    column,
-                    column
-                )
+                ValidationUtils._INPUT_HEADER_ALIASES.get(column, column)
                 for column in raw_header
             ]
 
@@ -366,7 +331,7 @@ class ValidationUtils:
                 "user_input_parsing_started",
                 "INFO",
                 column_count=len(header),
-                row_count=len(data_lines)
+                row_count=len(data_lines),
             )
 
             # =================================================
@@ -379,11 +344,7 @@ class ValidationUtils:
 
                 # Construit la liste des colonnes présentes plusieurs fois.
                 duplicate_columns = sorted(
-                    {
-                        column
-                        for column in header
-                        if header.count(column) > 1
-                    }
+                    {column for column in header if header.count(column) > 1}
                 )
 
                 result.update(
@@ -404,41 +365,21 @@ class ValidationUtils:
             # =================================================
 
             # Format obligatoire attendu.
-            mandatory_patterns = [
-                [
-                    "email",
-                    "passwordEmail",
-                    "ipAddress",
-                    "port"
-                ]
-            ]
+            mandatory_patterns = [["email", "passwordEmail", "ipAddress", "port"]]
 
             # Colonnes optionnelles supportées.
             optional_patterns = [
-                [
-                    "login",
-                    "password",
-                    "recoveryEmail",
-                    "new_recovery_email"
-                ]
+                ["login", "password", "recoveryEmail", "new_recovery_email"]
             ]
 
             # Construit l'ensemble de toutes les colonnes acceptées.
             all_valid_keys = set(
-                k
-                for pat in (
-                    mandatory_patterns
-                    + optional_patterns
-                )
-                for k in pat
+                k for pat in (mandatory_patterns + optional_patterns) for k in pat
             )
 
             # Vérifie qu'au moins un format obligatoire
             # est entièrement présent dans le header.
-            if not any(
-                set(pat).issubset(header)
-                for pat in mandatory_patterns
-            ):
+            if not any(set(pat).issubset(header) for pat in mandatory_patterns):
 
                 Settings.write_log_event(
                     "user_input_header_invalid",
@@ -460,11 +401,7 @@ class ValidationUtils:
                 return result
 
             # Recherche les colonnes non reconnues.
-            invalid_keys = [
-                k
-                for k in header
-                if k not in all_valid_keys
-            ]
+            invalid_keys = [k for k in header if k not in all_valid_keys]
 
             # Si des colonnes inconnues existent, la validation échoue.
             if invalid_keys:
@@ -497,16 +434,10 @@ class ValidationUtils:
 
             # Parcourt chaque ligne de données.
             # start=1 permet d'afficher un numéro de ligne utilisateur.
-            for index, line in enumerate(
-                data_lines,
-                start=1
-            ):
+            for index, line in enumerate(data_lines, start=1):
 
                 # Sépare les valeurs de la ligne.
-                values = [
-                    v.strip()
-                    for v in line.split(";")
-                ]
+                values = [v.strip() for v in line.split(";")]
 
                 # Le nombre de valeurs doit correspondre
                 # au nombre de colonnes du header.
@@ -544,9 +475,7 @@ class ValidationUtils:
                 #     "email": "test@example.com",
                 #     "port": "8080"
                 # }
-                data_list.append(
-                    dict(zip(header, values))
-                )
+                data_list.append(dict(zip(header, values)))
 
             # =================================================
             # 5. VALIDATION DU NOMBRE DE LIGNES
@@ -615,9 +544,7 @@ class ValidationUtils:
             "user_input_validation_completed",
             "INFO",
             success=bool(result.get("success")),
-            row_count=len(
-                result.get("data_list") or []
-            ),
+            row_count=len(result.get("data_list") or []),
         )
 
         return result
@@ -627,9 +554,7 @@ class ValidationUtils:
     # =========================================================
 
     @staticmethod
-    def generateUserInputData(
-        window
-    ) -> Dict[str, Any]:
+    def generateUserInputData(window) -> Dict[str, Any]:
         """
         Récupère les données depuis l'interface,
         les valide, récupère la configuration Proxy
@@ -639,45 +564,30 @@ class ValidationUtils:
         try:
 
             # Récupère le contenu du premier champ texte.
-            input_data = (
-                window.textEdit_3
-                .toPlainText()
-                .strip()
-            )
+            input_data = window.textEdit_3.toPlainText().strip()
 
             # Récupère le nombre de lignes demandé.
-            entered_number_text = (
-                window.textEdit_4
-                .toPlainText()
-                .strip()
-            )
+            entered_number_text = window.textEdit_4.toPlainText().strip()
 
             # Journalise uniquement des informations statistiques.
             Settings.write_log_event(
                 "user_input_received",
                 "INFO",
                 input_length=len(input_data),
-                input_line_count=len(
-                    input_data.splitlines()
-                ),
-                has_requested_row_count=bool(
-                    entered_number_text
-                ),
+                input_line_count=len(input_data.splitlines()),
+                has_requested_row_count=bool(entered_number_text),
             )
 
             # Effectue la première étape de validation.
             validation = ValidationUtils.process_user_input(
-                input_data,
-                entered_number_text
+                input_data, entered_number_text
             )
 
             # Arrête le workflow si la validation échoue.
             if not validation["success"]:
 
                 Settings.write_log_dev_file(
-                    f"Validation failed: "
-                    f"{validation['error_message']}",
-                    "ERROR"
+                    f"Validation failed: " f"{validation['error_message']}", "ERROR"
                 )
 
                 return {
@@ -685,9 +595,8 @@ class ValidationUtils:
                     "data": None,
                     "entered_number": None,
                     "error": (
-                        f"{validation['error_title']}:"
-                        f"{validation['error_message']}"
-                    )
+                        f"{validation['error_title']}:" f"{validation['error_message']}"
+                    ),
                 }
 
             # Récupère les données validées.
@@ -705,25 +614,20 @@ class ValidationUtils:
             # VALIDATION DES PORTS ET DES IP
             # =================================================
 
-            ports_result = ValidationUtils.processPorts(
-                data_list
-            )
+            ports_result = ValidationUtils.processPorts(data_list)
 
             # Si la validation des ports échoue, on arrête.
             if not ports_result["valid"]:
 
                 Settings.write_log_dev_file(
-                    "Ports processing failed: "
-                    f"{ports_result['error_message']}",
-                    "ERROR"
+                    "Ports processing failed: " f"{ports_result['error_message']}",
+                    "ERROR",
                 )
 
                 Settings.write_log_event(
                     "port_processing_failed",
                     "ERROR",
-                    error_type=type(
-                        ports_result.get("error")
-                    ).__name__,
+                    error_type=type(ports_result.get("error")).__name__,
                 )
 
                 return {
@@ -733,37 +637,29 @@ class ValidationUtils:
                     "error": (
                         f"{ports_result['error_title']}:"
                         f"{ports_result['error_message']}"
-                    )
+                    ),
                 }
 
             # Récupère uniquement les comptes filtrés.
-            filtered_accounts = (
-                ports_result["data"]["filtered"]
-            )
+            filtered_accounts = ports_result["data"]["filtered"]
 
             Settings.write_log_dev_file(
-                "Ports processed - filtered count: "
-                f"{len(filtered_accounts)}",
-                "INFO"
+                "Ports processed - filtered count: " f"{len(filtered_accounts)}", "INFO"
             )
 
             # =================================================
             # EXTRACTION DES IP UNIQUES
             # =================================================
 
-            ip_result = (
-                ValidationUtils.collect_unique_proxy_addresses(
-                    filtered_accounts
-                )
+            ip_result = ValidationUtils.collect_unique_proxy_addresses(
+                filtered_accounts
             )
 
             # Arrête le traitement si l'extraction échoue.
             if not ip_result["valid"]:
 
                 Settings.write_log_dev_file(
-                    f"IP extraction failed: "
-                    f"{ip_result['error']}",
-                    "ERROR"
+                    f"IP extraction failed: " f"{ip_result['error']}", "ERROR"
                 )
 
                 return {
@@ -771,23 +667,20 @@ class ValidationUtils:
                     "data": None,
                     "entered_number": entered_number,
                     "error": (
-                        f"{ip_result['error_title']}:"
-                        f"{ip_result['error_message']}"
-                    )
+                        f"{ip_result['error_title']}:" f"{ip_result['error_message']}"
+                    ),
                 }
 
             # Récupère le Set des IP uniques.
             unique_ips = ip_result["data"]
 
             Settings.write_log_dev_file(
-                f"Unique IPs extracted: {len(unique_ips)}",
-                "INFO"
+                f"Unique IPs extracted: {len(unique_ips)}", "INFO"
             )
 
             # Ne journalise volontairement pas les valeurs IP.
             Settings.write_log_dev_file(
-                "Unique IP values intentionally omitted from logs",
-                "DEBUG"
+                "Unique IP values intentionally omitted from logs", "DEBUG"
             )
 
             # =================================================
@@ -810,48 +703,32 @@ class ValidationUtils:
             if not session_info["valid"]:
 
                 Settings.write_log_dev_file(
-                    "Invalid session: "
-                    f"{session_info.get('error', 'Unknown error')}",
+                    "Invalid session: " f"{session_info.get('error', 'Unknown error')}",
                     "ERROR",
                 )
 
                 Settings.write_log_event(
                     "session_validation_failed",
                     "ERROR",
-                    error_code=session_info.get(
-                        "error",
-                        "unknown"
-                    ),
+                    error_code=session_info.get("error", "unknown"),
                 )
 
                 return {
                     "valid": False,
                     "data": None,
                     "entered_number": entered_number,
-                    "error": (
-                        "Your session is invalid. "
-                        "Please log in again."
-                    )
+                    "error": ("Your session is invalid. " "Please log in again."),
                 }
 
             # Récupère l'entité de la session.
-            entity_used = session_info.get(
-                "p_entity_Nouveau",
-                "UNKNOWN"
-            )
+            entity_used = session_info.get("p_entity_Nouveau", "UNKNOWN")
 
-            Settings.write_log_dev_file(
-                "Session validated successfully",
-                "INFO"
-            )
+            Settings.write_log_dev_file("Session validated successfully", "INFO")
 
             Settings.write_log_event(
                 "session_validation_succeeded",
                 "INFO",
-                has_entity=bool(
-                    entity_used
-                    and entity_used != "UNKNOWN"
-                ),
+                has_entity=bool(entity_used and entity_used != "UNKNOWN"),
             )
 
             # =================================================
@@ -860,39 +737,26 @@ class ValidationUtils:
 
             # Récupère les configurations Proxy associées
             # aux IP et à l'entité de la session.
-            api_result = (
-                API_MANAGER.fetchProxyConfiguration(
-                    unique_ips,
-                    entity_used
-                )
-            )
+            api_result = API_MANAGER.fetchProxyConfiguration(unique_ips, entity_used)
 
             # Vérifie le résultat de l'API.
             if not api_result["valid"]:
 
-                api_error = api_result.get(
-                    "error",
-                    "Unknown API error"
-                )
+                api_error = api_result.get("error", "Unknown API error")
 
-                Settings.write_log_dev_file(
-                    f"API call failed: {api_error}",
-                    "ERROR"
-                )
+                Settings.write_log_dev_file(f"API call failed: {api_error}", "ERROR")
 
                 Settings.write_log_event(
                     "proxy_configuration_failed",
                     "ERROR",
-                    error_type=type(
-                        api_result.get("error")
-                    ).__name__,
+                    error_type=type(api_result.get("error")).__name__,
                 )
 
                 return {
                     "valid": False,
                     "data": None,
                     "entered_number": entered_number,
-                    "error": api_error
+                    "error": api_error,
                 }
 
             Settings.write_log_dev_file(
@@ -907,11 +771,8 @@ class ValidationUtils:
 
             # Combine les données saisies par l'utilisateur
             # avec les informations retournées par l'API.
-            merge_result = (
-                ValidationUtils.mergeValidatedData(
-                    api_result["data"],
-                    data_list
-                )
+            merge_result = ValidationUtils.mergeValidatedData(
+                api_result["data"], data_list
             )
 
             # Vérifie le résultat du merge.
@@ -929,16 +790,14 @@ class ValidationUtils:
                     "valid": False,
                     "data": None,
                     "entered_number": entered_number,
-                    "error": merge_error
+                    "error": merge_error,
                 }
 
             # Récupère les données finales.
             final_data = merge_result["data"]
 
             Settings.write_log_dev_file(
-                "Merge succeeded - final records: "
-                f"{len(final_data)}",
-                "INFO"
+                "Merge succeeded - final records: " f"{len(final_data)}", "INFO"
             )
 
             # Les données finales sensibles ne sont volontairement
@@ -949,8 +808,7 @@ class ValidationUtils:
             )
 
             Settings.write_log_dev_file(
-                "========== REQUEST COMPLETED SUCCESSFULLY ==========",
-                "INFO"
+                "========== REQUEST COMPLETED SUCCESSFULLY ==========", "INFO"
             )
 
             # Retourne le résultat final.
@@ -958,7 +816,7 @@ class ValidationUtils:
                 "valid": True,
                 "data": final_data,
                 "entered_number": entered_number,
-                "error": None
+                "error": None,
             }
 
         except Exception as e:
@@ -971,8 +829,7 @@ class ValidationUtils:
             )
 
             Settings.write_log_dev_file(
-                "========== REQUEST FAILED WITH EXCEPTION ==========",
-                "ERROR"
+                "========== REQUEST FAILED WITH EXCEPTION ==========", "ERROR"
             )
 
             # Retourne un message générique à l'utilisateur.
@@ -980,10 +837,7 @@ class ValidationUtils:
                 "valid": False,
                 "data": None,
                 "entered_number": None,
-                "error": (
-                    "An unexpected error occurred. "
-                    "Please try again later."
-                )
+                "error": ("An unexpected error occurred. " "Please try again later."),
             }
 
     # =========================================================
@@ -991,11 +845,7 @@ class ValidationUtils:
     # =========================================================
 
     @staticmethod
-    def getValueSafely(
-        item: dict,
-        key: str,
-        default=None
-    ):
+    def getValueSafely(item: dict, key: str, default=None):
         """
         Récupère une valeur d'un dictionnaire sans provoquer
         d'exception si l'objet n'est pas un dictionnaire.
@@ -1004,20 +854,14 @@ class ValidationUtils:
         # Si item est un dictionnaire, utilise get().
         #
         # Sinon, retourne directement la valeur par défaut.
-        return (
-            item.get(key, default)
-            if isinstance(item, dict)
-            else default
-        )
+        return item.get(key, default) if isinstance(item, dict) else default
 
     # =========================================================
     # NORMALISATION D'UNE ADRESSE IP
     # =========================================================
 
     @staticmethod
-    def normalizeIpAddress(
-        raw_ip: str
-    ) -> Dict[str, Any]:
+    def normalizeIpAddress(raw_ip: str) -> Dict[str, Any]:
         """
         Normalise une adresse Proxy vers le format :
             IP#PORT
@@ -1033,16 +877,9 @@ class ValidationUtils:
             # Vérifie que l'adresse existe.
             if not raw_ip:
 
-                Settings.write_log_dev_file(
-                    "Empty IP provided",
-                    "ERROR"
-                )
+                Settings.write_log_dev_file("Empty IP provided", "ERROR")
 
-                return {
-                    "valid": False,
-                    "data": None,
-                    "error": "Empty IP"
-                }
+                return {"valid": False, "data": None, "error": "Empty IP"}
 
             # Sépare les différentes parties avec ";".
             parts = raw_ip.split(";")
@@ -1051,20 +888,14 @@ class ValidationUtils:
             # la troisième partie est considérée comme l'adresse Proxy.
             if len(parts) >= 3:
 
-                Settings.write_log_event(
-                    "proxy_address_with_port_detected",
-                    "INFO"
-                )
+                Settings.write_log_event("proxy_address_with_port_detected", "INFO")
 
                 # Remplace ":" par "#".
                 formatted = parts[2].replace(":", "#")
 
             else:
 
-                Settings.write_log_event(
-                    "proxy_address_without_port_detected",
-                    "INFO"
-                )
+                Settings.write_log_event("proxy_address_without_port_detected", "INFO")
 
                 # Conserve l'adresse telle quelle.
                 formatted = raw_ip
@@ -1079,15 +910,13 @@ class ValidationUtils:
                 if len(ip_parts) != 2:
 
                     Settings.write_log_event(
-                        "proxy_address_invalid",
-                        "ERROR",
-                        reason="malformed_format"
+                        "proxy_address_invalid", "ERROR", reason="malformed_format"
                     )
 
                     return {
                         "valid": False,
                         "data": None,
-                        "error": "Malformed IP address format"
+                        "error": "Malformed IP address format",
                     }
 
                 ip, port = ip_parts
@@ -1096,58 +925,39 @@ class ValidationUtils:
                 if not port.isdigit():
 
                     Settings.write_log_event(
-                        "proxy_address_invalid",
-                        "ERROR",
-                        reason="invalid_port"
+                        "proxy_address_invalid", "ERROR", reason="invalid_port"
                     )
 
                     return {
                         "valid": False,
                         "data": None,
-                        "error": "Invalid port format"
+                        "error": "Invalid port format",
                     }
 
             # Journalise uniquement l'événement,
             # sans écrire la valeur IP.
-            Settings.write_log_event(
-                "proxy_address_normalized",
-                "INFO"
-            )
+            Settings.write_log_event("proxy_address_normalized", "INFO")
 
-            return {
-                "valid": True,
-                "data": formatted,
-                "error": None
-            }
+            return {"valid": True, "data": formatted, "error": None}
 
         except Exception as e:
 
             # Enregistre le traceback technique.
             Settings.write_log_dev_file(
-                "Unexpected error during IP formatting: "
-                f"{traceback.format_exc()}",
+                "Unexpected error during IP formatting: " f"{traceback.format_exc()}",
                 "ERROR",
             )
 
-            Settings.write_log_dev_file(
-                f"Error formatting IP: {e}",
-                "ERROR"
-            )
+            Settings.write_log_dev_file(f"Error formatting IP: {e}", "ERROR")
 
-            return {
-                "valid": False,
-                "data": None,
-                "error": str(e)
-            }
+            return {"valid": False, "data": None, "error": str(e)}
 
     # =========================================================
     # TRAITEMENT DES PORTS ET DES IP
     # =========================================================
 
     @staticmethod
-    def processPorts(
-        data_list: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+    def processPorts(data_list: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
         Valide les données IP/Port de chaque compte.
 
@@ -1165,22 +975,16 @@ class ValidationUtils:
             if not data_list:
 
                 Settings.write_log_dev_file(
-                    "No data provided for port processing",
-                    "WARNING"
+                    "No data provided for port processing", "WARNING"
                 )
 
                 return {
                     "valid": True,
-                    "data": {
-                        "filtered": [],
-                        "invalid": [],
-                        "suspicious": []
-                    },
+                    "data": {"filtered": [], "invalid": [], "suspicious": []},
                     "error": None,
                     "error_title": "No Data",
                     "error_message": (
-                        "No account data was provided "
-                        "for port processing."
+                        "No account data was provided " "for port processing."
                     ),
                 }
 
@@ -1203,7 +1007,7 @@ class ValidationUtils:
                     Settings.write_log_dev_file(
                         f"Data integrity error at index {index}: "
                         "item is not a dictionary",
-                        "ERROR"
+                        "ERROR",
                     )
 
                     return {
@@ -1212,26 +1016,18 @@ class ValidationUtils:
                         "error": "Data integrity error",
                         "error_title": "Data Integrity Error",
                         "error_message": (
-                            f"Item {index + 1} is not a valid "
-                            "data structure."
+                            f"Item {index + 1} is not a valid " "data structure."
                         ),
                     }
 
                 # Récupère le port de manière sécurisée.
-                port = str(
-                    ValidationUtils.getValueSafely(
-                        item,
-                        "port",
-                        ""
-                    )
-                ).strip()
+                port = str(ValidationUtils.getValueSafely(item, "port", "")).strip()
 
                 # Vérifie que le port existe.
                 if not port:
 
                     Settings.write_log_dev_file(
-                        f"Missing port at index {index}",
-                        "ERROR"
+                        f"Missing port at index {index}", "ERROR"
                     )
 
                     return {
@@ -1240,26 +1036,18 @@ class ValidationUtils:
                         "error": "Missing port",
                         "error_title": "Port Validation Failed",
                         "error_message": (
-                            f"Port information is missing for "
-                            f"item {index + 1}."
+                            f"Port information is missing for " f"item {index + 1}."
                         ),
                     }
 
                 # Récupère l'adresse IP.
-                ip = str(
-                    ValidationUtils.getValueSafely(
-                        item,
-                        "ipAddress",
-                        ""
-                    )
-                ).strip()
+                ip = str(ValidationUtils.getValueSafely(item, "ipAddress", "")).strip()
 
                 # Vérifie que l'IP existe.
                 if not ip:
 
                     Settings.write_log_dev_file(
-                        f"Missing IP address at index {index}",
-                        "ERROR"
+                        f"Missing IP address at index {index}", "ERROR"
                     )
 
                     return {
@@ -1268,8 +1056,7 @@ class ValidationUtils:
                         "error": "Missing IP",
                         "error_title": "IP Validation Failed",
                         "error_message": (
-                            f"IP address is missing for "
-                            f"item {index + 1}."
+                            f"IP address is missing for " f"item {index + 1}."
                         ),
                     }
 
@@ -1279,8 +1066,7 @@ class ValidationUtils:
                     # Ne met pas l'IP dans les logs
                     # afin d'éviter d'exposer une donnée réseau.
                     Settings.write_log_dev_file(
-                        f"Invalid IP address format at index {index}",
-                        "ERROR"
+                        f"Invalid IP address format at index {index}", "ERROR"
                     )
 
                     return {
@@ -1333,8 +1119,7 @@ class ValidationUtils:
                 )
 
                 Settings.write_log_dev_file(
-                    "Validation failed: "
-                    f"{len(invalid_accounts)} invalid accounts",
+                    "Validation failed: " f"{len(invalid_accounts)} invalid accounts",
                     "ERROR",
                 )
 
@@ -1353,9 +1138,7 @@ class ValidationUtils:
             # Journalise uniquement le nombre,
             # sans exposer les comptes.
             Settings.write_log_dev_file(
-                "Suspicious ports count: "
-                f"{len(suspicious_accounts)}",
-                "INFO"
+                "Suspicious ports count: " f"{len(suspicious_accounts)}", "INFO"
             )
 
             # Retourne les résultats de validation.
@@ -1369,8 +1152,7 @@ class ValidationUtils:
                 "error": None,
                 "error_title": "Port Processing Successful",
                 "error_message": (
-                    "All ports and IP addresses were "
-                    "validated successfully."
+                    "All ports and IP addresses were " "validated successfully."
                 ),
             }
 
@@ -1400,10 +1182,7 @@ class ValidationUtils:
     # =========================================================
 
     @staticmethod
-    def mergeValidatedData(
-        api_data: dict,
-        data_list: list
-    ) -> Dict[str, Any]:
+    def mergeValidatedData(api_data: dict, data_list: list) -> Dict[str, Any]:
         """
         Fusionne les données utilisateur avec les informations
         retournées par l'API.
@@ -1421,24 +1200,16 @@ class ValidationUtils:
             #
             # la clé interne devient :
             #     192.168.1.10
-            api_map = {
-                k.split("#")[0]: v
-                for k, v in api_data.items()
-            }
+            api_map = {k.split("#")[0]: v for k, v in api_data.items()}
 
             # Parcourt toutes les données utilisateur.
             for item in data_list:
 
                 # Récupère l'adresse Proxy utilisateur.
-                raw_ip = ValidationUtils.getValueSafely(
-                    item,
-                    "ipAddress"
-                )
+                raw_ip = ValidationUtils.getValueSafely(item, "ipAddress")
 
                 # Normalise l'adresse.
-                result = ValidationUtils.normalizeIpAddress(
-                    raw_ip
-                )
+                result = ValidationUtils.normalizeIpAddress(raw_ip)
 
                 # Vérifie le résultat de la normalisation.
                 if not result["valid"]:
@@ -1453,8 +1224,7 @@ class ValidationUtils:
                         "valid": False,
                         "data": None,
                         "error": (
-                            "There is an invalid IP address. "
-                            "Please check your data."
+                            "There is an invalid IP address. " "Please check your data."
                         ),
                     }
 
@@ -1481,10 +1251,7 @@ class ValidationUtils:
                     return {
                         "valid": False,
                         "data": None,
-                        "error": (
-                            "Service data is missing for "
-                            "some IP addresses."
-                        ),
+                        "error": ("Service data is missing for " "some IP addresses."),
                     }
 
                 # Construit la structure finale utilisée
@@ -1492,45 +1259,26 @@ class ValidationUtils:
                 final_list.append(
                     {
                         # Email du compte.
-                        "email": ValidationUtils.getValueSafely(
-                            item,
-                            "email"
-                        ),
-
+                        "email": ValidationUtils.getValueSafely(item, "email"),
                         # Mot de passe email.
                         "password_email": (
-                            ValidationUtils.getValueSafely(
-                                item,
-                                "passwordEmail"
-                            )
+                            ValidationUtils.getValueSafely(item, "passwordEmail")
                         ),
-
                         # Adresse Proxy normalisée.
                         "ip_address": formatted_ip,
-
                         # Port fourni par l'API.
                         "port": api_info.get("port"),
-
                         # Login fourni par l'API.
                         "login": api_info.get("login"),
-
                         # Mot de passe fourni par l'API.
                         "password": api_info.get("pass"),
-
                         # Email de récupération.
                         "recovery_email": (
-                            ValidationUtils.getValueSafely(
-                                item,
-                                "recoveryEmail"
-                            )
+                            ValidationUtils.getValueSafely(item, "recoveryEmail")
                         ),
-
                         # Nouvelle adresse email de récupération.
                         "new_recovery_email": (
-                            ValidationUtils.getValueSafely(
-                                item,
-                                "new_recovery_email"
-                            )
+                            ValidationUtils.getValueSafely(item, "new_recovery_email")
                         ),
                     }
                 )
@@ -1543,26 +1291,18 @@ class ValidationUtils:
                 output_row_count=len(final_list),
             )
 
-            return {
-                "valid": True,
-                "data": final_list,
-                "error": None
-            }
+            return {"valid": True, "data": final_list, "error": None}
 
         except Exception as e:
 
             Settings.write_log_dev_file(
-                f"Error merging data: {e}\n"
-                f"{traceback.format_exc()}",
-                "ERROR"
+                f"Error merging data: {e}\n" f"{traceback.format_exc()}", "ERROR"
             )
 
             return {
                 "valid": False,
                 "data": None,
-                "error": (
-                    "An error occurred while merging the data."
-                ),
+                "error": ("An error occurred while merging the data."),
             }
 
     # =========================================================
@@ -1571,9 +1311,7 @@ class ValidationUtils:
 
     @staticmethod
     def validate_path(
-        path: str,
-        must_exist: bool = True,
-        is_file: bool = False
+        path: str, must_exist: bool = True, is_file: bool = False
     ) -> bool:
         """
         Vérifie si un chemin est valide.
@@ -1586,28 +1324,19 @@ class ValidationUtils:
         """
 
         # Journalise l'opération.
-        Settings.write_log_dev_file(
-            "Validating path",
-            "INFO"
-        )
+        Settings.write_log_dev_file("Validating path", "INFO")
 
         # Vérifie le type et la présence du chemin.
         if not path or not isinstance(path, str):
 
-            Settings.write_log_dev_file(
-                "Path is invalid or not a string",
-                "ERROR"
-            )
+            Settings.write_log_dev_file("Path is invalid or not a string", "ERROR")
 
             return False
 
         # Si le chemin doit exister, vérifie sa présence.
         if must_exist and not os.path.exists(path):
 
-            Settings.write_log_dev_file(
-                "Path does not exist",
-                "ERROR"
-            )
+            Settings.write_log_dev_file("Path does not exist", "ERROR")
 
             return False
 
@@ -1618,39 +1347,28 @@ class ValidationUtils:
                 # Si is_file=True, vérifie qu'il s'agit bien d'un fichier.
                 if is_file and not os.path.isfile(path):
 
-                    Settings.write_log_dev_file(
-                        "Path is not a file",
-                        "ERROR"
-                    )
+                    Settings.write_log_dev_file("Path is not a file", "ERROR")
 
                     return False
 
                 # Sinon, vérifie qu'il s'agit bien d'un dossier.
                 elif not is_file and not os.path.isdir(path):
 
-                    Settings.write_log_dev_file(
-                        "Path is not a directory",
-                        "ERROR"
-                    )
+                    Settings.write_log_dev_file("Path is not a directory", "ERROR")
 
                     return False
 
             # Normalise le chemin avant de confirmer la validation.
             normalized_path = os.path.normpath(path)
 
-            Settings.write_log_dev_file(
-                "Path validation succeeded",
-                "INFO"
-            )
+            Settings.write_log_dev_file("Path validation succeeded", "INFO")
 
             return True
 
         except Exception as e:
 
             Settings.write_log_dev_file(
-                "Exception in validate_path: "
-                f"{e}\n{traceback.format_exc()}",
-                "ERROR"
+                "Exception in validate_path: " f"{e}\n{traceback.format_exc()}", "ERROR"
             )
 
             return False
@@ -1660,19 +1378,13 @@ class ValidationUtils:
     # =========================================================
 
     @staticmethod
-    def ensurePathExists(
-        path: str,
-        is_file: bool = True
-    ) -> bool:
+    def ensurePathExists(path: str, is_file: bool = True) -> bool:
         """
         Vérifie l'existence d'un fichier ou dossier.
         Le crée s'il n'existe pas.
         """
 
-        Settings.write_log_dev_file(
-            "Ensuring path exists",
-            "INFO"
-        )
+        Settings.write_log_dev_file("Ensuring path exists", "INFO")
 
         try:
 
@@ -1688,38 +1400,22 @@ class ValidationUtils:
                 # Crée le dossier parent s'il n'existe pas.
                 if directory and not os.path.exists(directory):
 
-                    Settings.write_log_dev_file(
-                        "Creating required directory",
-                        "INFO"
-                    )
+                    Settings.write_log_dev_file("Creating required directory", "INFO")
 
-                    os.makedirs(
-                        directory,
-                        exist_ok=True
-                    )
+                    os.makedirs(directory, exist_ok=True)
 
                 # Crée le fichier s'il n'existe pas.
                 if not os.path.exists(path):
 
-                    Settings.write_log_dev_file(
-                        "Creating required file",
-                        "INFO"
-                    )
+                    Settings.write_log_dev_file("Creating required file", "INFO")
 
                     # Le mode "a" permet de créer le fichier
                     # sans supprimer son contenu s'il existe.
-                    open(
-                        path,
-                        "a",
-                        encoding="utf-8"
-                    ).close()
+                    open(path, "a", encoding="utf-8").close()
 
                 else:
 
-                    Settings.write_log_dev_file(
-                        "File already exists",
-                        "INFO"
-                    )
+                    Settings.write_log_dev_file("File already exists", "INFO")
 
             # =================================================
             # CAS D'UN DOSSIER
@@ -1730,30 +1426,20 @@ class ValidationUtils:
                 # Crée le dossier s'il n'existe pas.
                 if not os.path.exists(path):
 
-                    Settings.write_log_dev_file(
-                        "Creating required directory",
-                        "INFO"
-                    )
+                    Settings.write_log_dev_file("Creating required directory", "INFO")
 
-                    os.makedirs(
-                        path,
-                        exist_ok=True
-                    )
+                    os.makedirs(path, exist_ok=True)
 
                 else:
 
-                    Settings.write_log_dev_file(
-                        "Directory already exists",
-                        "INFO"
-                    )
+                    Settings.write_log_dev_file("Directory already exists", "INFO")
 
             return True
 
         except Exception as e:
 
             Settings.write_log_dev_file(
-                "Exception in ensurePathExists: "
-                f"{e}\n{traceback.format_exc()}",
+                "Exception in ensurePathExists: " f"{e}\n{traceback.format_exc()}",
                 "ERROR",
             )
 
@@ -1772,10 +1458,7 @@ class ValidationUtils:
         # Vérifie directement l'existence du chemin.
         exists = os.path.exists(path)
 
-        Settings.write_log_dev_file(
-            f"Path exists check result: {exists}",
-            "INFO"
-        )
+        Settings.write_log_dev_file(f"Path exists check result: {exists}", "INFO")
 
         return exists
 
@@ -1784,9 +1467,7 @@ class ValidationUtils:
     # =========================================================
 
     @staticmethod
-    def validate_session_format(
-        session_data: str
-    ) -> Tuple[bool, Optional[Dict]]:
+    def validate_session_format(session_data: str) -> Tuple[bool, Optional[Dict]]:
         """
         Valide et parse le format d'une session.
 
@@ -1801,10 +1482,7 @@ class ValidationUtils:
         """
 
         # Vérifie que la session existe et contient le séparateur.
-        if (
-            not session_data
-            or "::" not in session_data
-        ):
+        if not session_data or "::" not in session_data:
             return False, None
 
         # Sépare les différentes parties.
@@ -1815,22 +1493,12 @@ class ValidationUtils:
             return False, None
 
         # Affecte chaque élément à sa variable.
-        (
-            username,
-            password,
-            date_str,
-            entityOriginal,
-            entityNew,
-            Id_User
-        ) = parts
+        (username, password, date_str, entityOriginal, entityNew, Id_User) = parts
 
         try:
 
             # Vérifie le format de la date.
-            datetime.strptime(
-                date_str,
-                "%Y-%m-%d %H:%M:%S"
-            )
+            datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
 
         except ValueError:
 
@@ -1856,7 +1524,7 @@ class ValidationUtils:
         input_data: Union[QLineEdit, str],
         validator_type: str = "any",
         min_length: int = 0,
-        max_length: int = 1000
+        max_length: int = 1000,
     ) -> Tuple[bool, str]:
         """
         Valide le contenu d'un QLineEdit ou d'une chaîne.
@@ -1878,11 +1546,7 @@ class ValidationUtils:
             # un QLineEdit ou un widget similaire.
             if hasattr(input_data, "text"):
 
-                text = (
-                    input_data
-                    .text()
-                    .strip()
-                )
+                text = input_data.text().strip()
 
             else:
 
@@ -1899,17 +1563,11 @@ class ValidationUtils:
 
             # Vérifie la longueur minimale.
             if len(text) < min_length:
-                return (
-                    False,
-                    f"Minimum {min_length} characters required"
-                )
+                return (False, f"Minimum {min_length} characters required")
 
             # Vérifie la longueur maximale.
             if len(text) > max_length:
-                return (
-                    False,
-                    f"Maximum {max_length} characters allowed"
-                )
+                return (False, f"Maximum {max_length} characters allowed")
 
             # =================================================
             # VALIDATION SPÉCIFIQUE
@@ -1930,17 +1588,10 @@ class ValidationUtils:
             elif validator_type == "numeric_range":
 
                 # Vérifie le format d'une plage numérique.
-                valid, _ = (
-                    ValidationUtils.validate_numeric_range(
-                        text
-                    )
-                )
+                valid, _ = ValidationUtils.validate_numeric_range(text)
 
                 if not valid:
-                    return (
-                        False,
-                        "Invalid format. Use: number or min,max"
-                    )
+                    return (False, "Invalid format. Use: number or min,max")
 
             # Si toutes les validations passent.
             return True, "Valid text"
@@ -1954,20 +1605,14 @@ class ValidationUtils:
                 "ERROR",
             )
 
-            return (
-                False,
-                f"Validation error: {str(e)}"
-            )
+            return (False, f"Validation error: {str(e)}")
 
     # =========================================================
     # PARSING D'UNE PLAGE ALÉATOIRE
     # =========================================================
 
     @staticmethod
-    def parse_random_range(
-        text: str,
-        default: int = 0
-    ) -> int:
+    def parse_random_range(text: str, default: int = 0) -> int:
         """
         Transforme :
             "10,20" -> nombre aléatoire entre 10 et 20
@@ -1983,16 +1628,10 @@ class ValidationUtils:
             if "," in text:
 
                 # Sépare les deux valeurs.
-                min_val, max_val = map(
-                    int,
-                    text.split(",")
-                )
+                min_val, max_val = map(int, text.split(","))
 
                 # Retourne une valeur aléatoire dans la plage.
-                return random.randint(
-                    min_val,
-                    max_val
-                )
+                return random.randint(min_val, max_val)
 
             # Sinon, traite le texte comme un nombre unique.
             return int(text)
@@ -2000,8 +1639,11 @@ class ValidationUtils:
         except (ValueError, TypeError) as error:
 
             Settings.write_log_dev_file(
-                "Error parsing random range",
-                "ERROR"
+                "Error parsing random range "
+                f"| exception={type(error).__name__}: {error} "
+                f"| text={text!r} "
+                f"| default={default}\n{traceback.format_exc()}",
+                "ERROR",
             )
 
             # Retourne la valeur par défaut.
@@ -2013,8 +1655,7 @@ class ValidationUtils:
 
     @staticmethod
     def validate_and_correct_qlineedit(
-        qlineedit: QLineEdit,
-        default_value: str = "50,50"
+        qlineedit: QLineEdit, default_value: str = "50,50"
     ) -> None:
         """
         Valide une valeur de type :
@@ -2031,17 +1672,10 @@ class ValidationUtils:
         # Regex permettant :
         #   50
         #   50,100
-        pattern = (
-            r"^\s*(\d+)"
-            r"(?:\s*,\s*(\d+))?"
-            r"\s*$"
-        )
+        pattern = r"^\s*(\d+)" r"(?:\s*,\s*(\d+))?" r"\s*$"
 
         # Vérifie le contenu.
-        match = re.match(
-            pattern,
-            text
-        )
+        match = re.match(pattern, text)
 
         # =================================================
         # CAS VALIDE
@@ -2050,17 +1684,11 @@ class ValidationUtils:
         if match:
 
             # Première valeur.
-            min_val = int(
-                match.group(1)
-            )
+            min_val = int(match.group(1))
 
             # Deuxième valeur si elle existe.
             # Sinon, utilise la première valeur.
-            max_val = (
-                int(match.group(2))
-                if match.group(2)
-                else min_val
-            )
+            max_val = int(match.group(2)) if match.group(2) else min_val
 
             # =================================================
             # MIN > MAX
@@ -2070,9 +1698,7 @@ class ValidationUtils:
 
                 # Conserve le comportement actuel :
                 # la valeur maximale est remplacée par min_val.
-                qlineedit.setText(
-                    f"{min_val},{min_val}"
-                )
+                qlineedit.setText(f"{min_val},{min_val}")
 
                 # Sauvegarde le style actuel.
                 old_style = qlineedit.styleSheet()
@@ -2081,15 +1707,9 @@ class ValidationUtils:
                 def apply_style():
 
                     # Ajoute la bordure d'erreur.
-                    new_style = (
-                        ValidationUtils.inject_border_into_style(
-                            old_style
-                        )
-                    )
+                    new_style = ValidationUtils.inject_border_into_style(old_style)
 
-                    qlineedit.setStyleSheet(
-                        new_style
-                    )
+                    qlineedit.setStyleSheet(new_style)
 
                     # Message affiché à l'utilisateur.
                     qlineedit.setToolTip(
@@ -2098,10 +1718,7 @@ class ValidationUtils:
                     )
 
                 # Programme la modification UI.
-                QTimer.singleShot(
-                    0,
-                    apply_style
-                )
+                QTimer.singleShot(0, apply_style)
 
             # =================================================
             # VALEUR CORRECTE
@@ -2113,15 +1730,9 @@ class ValidationUtils:
                 old_style = qlineedit.styleSheet()
 
                 # Supprime une éventuelle bordure d'erreur.
-                cleaned = (
-                    ValidationUtils.remove_border_from_style(
-                        old_style
-                    )
-                )
+                cleaned = ValidationUtils.remove_border_from_style(old_style)
 
-                qlineedit.setStyleSheet(
-                    cleaned
-                )
+                qlineedit.setStyleSheet(cleaned)
 
                 # Supprime le tooltip.
                 qlineedit.setToolTip("")
@@ -2142,27 +1753,17 @@ class ValidationUtils:
             def apply_error():
 
                 # Ajoute la bordure d'erreur.
-                new_style = (
-                    ValidationUtils.inject_border_into_style(
-                        old_style
-                    )
-                )
+                new_style = ValidationUtils.inject_border_into_style(old_style)
 
-                qlineedit.setStyleSheet(
-                    new_style
-                )
+                qlineedit.setStyleSheet(new_style)
 
                 # Explique le format attendu.
                 qlineedit.setToolTip(
-                    "Enter a value in the format "
-                    "'Min,Max' or a single number."
+                    "Enter a value in the format " "'Min,Max' or a single number."
                 )
 
             # Programme la modification UI.
-            QTimer.singleShot(
-                0,
-                apply_error
-            )
+            QTimer.singleShot(0, apply_error)
 
     # =========================================================
     # VALIDATION D'UN QLINEEDIT AVEC PLAGE
@@ -2172,42 +1773,24 @@ class ValidationUtils:
     def validate_qlineedit_with_range(
         qlineedit: QLineEdit,
         default_value: str = "50,50",
-        callback: Optional[Callable] = None
-    ) -> Tuple[
-        bool,
-        Optional[Tuple[int, int]]
-    ]:
+        callback: Optional[Callable] = None,
+    ) -> Tuple[bool, Optional[Tuple[int, int]]]:
         """
         Valide un QLineEdit contenant une plage numérique.
         """
 
         # Corrige d'abord le champ si nécessaire.
-        ValidationUtils.validate_and_correct_qlineedit(
-            qlineedit,
-            default_value
-        )
+        ValidationUtils.validate_and_correct_qlineedit(qlineedit, default_value)
 
         # Récupère le texte après correction.
-        corrected_text = (
-            qlineedit
-            .text()
-            .strip()
-        )
+        corrected_text = qlineedit.text().strip()
 
         # Valide et parse la plage.
-        valid, range_values = (
-            ValidationUtils.validate_numeric_range(
-                corrected_text
-            )
-        )
+        valid, range_values = ValidationUtils.validate_numeric_range(corrected_text)
 
         # Exécute le callback si fourni.
         if callback:
-            callback(
-                qlineedit,
-                valid,
-                range_values
-            )
+            callback(qlineedit, valid, range_values)
 
         # Retourne l'état et la plage.
         return valid, range_values
@@ -2218,10 +1801,7 @@ class ValidationUtils:
 
     @staticmethod
     def inject_border_into_style(
-        old_style: str,
-        border_line: str = (
-            "border: 2px solid #cc4c4c;"
-        )
+        old_style: str, border_line: str = ("border: 2px solid #cc4c4c;")
     ) -> str:
         """
         Ajoute une bordure à un bloc QLineEdit existant.
@@ -2231,16 +1811,10 @@ class ValidationUtils:
         """
 
         # Regex recherchant un bloc QLineEdit.
-        pattern = (
-            r"(QLineEdit\s*{[^}]*?)\s*}"
-        )
+        pattern = r"(QLineEdit\s*{[^}]*?)\s*}"
 
         # Cherche le bloc dans le stylesheet.
-        match = re.search(
-            pattern,
-            old_style,
-            re.DOTALL
-        )
+        match = re.search(pattern, old_style, re.DOTALL)
 
         # =================================================
         # BLOC QLINEEDIT EXISTANT
@@ -2255,18 +1829,10 @@ class ValidationUtils:
             if "border" not in before_close:
 
                 # Construit le nouveau bloc CSS.
-                new_block = (
-                    before_close
-                    + f"\n    {border_line}\n}}"
-                )
+                new_block = before_close + f"\n    {border_line}\n}}"
 
                 # Remplace le bloc original.
-                result = re.sub(
-                    pattern,
-                    new_block,
-                    old_style,
-                    flags=re.DOTALL
-                )
+                result = re.sub(pattern, new_block, old_style, flags=re.DOTALL)
 
                 return result
 
@@ -2293,20 +1859,13 @@ class ValidationUtils:
     # =========================================================
 
     @staticmethod
-    def remove_border_from_style(
-        style: str
-    ) -> str:
+    def remove_border_from_style(style: str) -> str:
         """
         Supprime les propriétés CSS 'border' du stylesheet.
         """
 
         # Supprime toute déclaration border: ...;
-        cleaned_style = re.sub(
-            r"border\s*:\s*[^;]+;",
-            "",
-            style,
-            flags=re.IGNORECASE
-        )
+        cleaned_style = re.sub(r"border\s*:\s*[^;]+;", "", style, flags=re.IGNORECASE)
 
         # Nettoie les espaces inutiles.
         return cleaned_style.strip()
@@ -2316,9 +1875,7 @@ class ValidationUtils:
     # =========================================================
 
     @staticmethod
-    def generateSessionId(
-        length: int = 5
-    ) -> str:
+    def generateSessionId(length: int = 5) -> str:
         """
         Génère un identifiant court basé sur UUID4.
 
@@ -2332,27 +1889,20 @@ class ValidationUtils:
 
         # La longueur doit être strictement positive.
         if length <= 0:
-            raise ValueError(
-                "Length must be a positive integer"
-            )
+            raise ValueError("Length must be a positive integer")
 
         # Génère un UUID aléatoire.
         session_uuid = uuid.uuid4()
 
         # Supprime les tirets et récupère la longueur demandée.
-        return str(session_uuid).replace(
-            "-",
-            ""
-        )[:length]
+        return str(session_uuid).replace("-", "")[:length]
 
     # =========================================================
     # GÉNÉRATION D'UN MOT DE PASSE
     # =========================================================
 
     @staticmethod
-    def generateSecurePassword(
-        length: int = 12
-    ) -> str:
+    def generateSecurePassword(length: int = 12) -> str:
         """
         Génère un mot de passe contenant :
             - minuscules
@@ -2368,18 +1918,14 @@ class ValidationUtils:
 
         # Refuse les mots de passe trop courts.
         if length < 12:
-            raise ValueError(
-                "The minimum recommended length is 12 characters"
-            )
+            raise ValueError("The minimum recommended length is 12 characters")
 
         # Liste des caractères disponibles.
         lowercase = string.ascii_lowercase
         uppercase = string.ascii_uppercase
         digits = string.digits
 
-        special_chars = (
-            "!@#$%^&*()-_+=<>?/|"
-        )
+        special_chars = "!@#$%^&*()-_+=<>?/|"
 
         # Garantit au moins un caractère de chaque catégorie.
         password = [
@@ -2390,23 +1936,13 @@ class ValidationUtils:
         ]
 
         # Calcule le nombre de caractères restant à générer.
-        remaining_length = (
-            length - len(password)
-        )
+        remaining_length = length - len(password)
 
         # Combine toutes les catégories.
-        all_chars = (
-            lowercase
-            + uppercase
-            + digits
-            + special_chars
-        )
+        all_chars = lowercase + uppercase + digits + special_chars
 
         # Génère les caractères restants.
-        password += random.choices(
-            all_chars,
-            k=remaining_length
-        )
+        password += random.choices(all_chars, k=remaining_length)
 
         # Mélange les caractères.
         random.shuffle(password)
@@ -2419,10 +1955,7 @@ class ValidationUtils:
     # =========================================================
 
     @staticmethod
-    def getValueFromDictionary(
-        data_dict: Dict,
-        possible_keys: List[str]
-    ) -> str:
+    def getValueFromDictionary(data_dict: Dict, possible_keys: List[str]) -> str:
         """
         Recherche la première clé disponible dans un dictionnaire.
         """
@@ -2443,20 +1976,14 @@ class ValidationUtils:
 
         # Si aucune clé n'existe,
         # retourne la première clé candidate.
-        return (
-            possible_keys[0]
-            if possible_keys
-            else ""
-        )
+        return possible_keys[0] if possible_keys else ""
 
     # =========================================================
     # EXTRACTION D'EMAIL DEPUIS UN NOM DE FICHIER LOG
     # =========================================================
 
     @staticmethod
-    def extractEmailFromLogFile(
-        file_name
-    ):
+    def extractEmailFromLogFile(file_name):
         """
         Extrait un email depuis le nom d'un fichier log.
 
@@ -2465,9 +1992,7 @@ class ValidationUtils:
         """
 
         # Conserve uniquement le nom du fichier.
-        file_name = os.path.basename(
-            file_name
-        )
+        file_name = os.path.basename(file_name)
 
         # Recherche l'email selon le format attendu du fichier.
         match = re.search(
@@ -2507,9 +2032,8 @@ class ValidationUtils:
             if not data_list:
 
                 Settings.write_log_dev_file(
-                    "No account data provided "
-                    "for proxy address collection",
-                    "WARNING"
+                    "No account data provided " "for proxy address collection",
+                    "WARNING",
                 )
 
                 return {
@@ -2531,44 +2055,33 @@ class ValidationUtils:
             for index, item in enumerate(data_list):
 
                 # Récupère l'adresse IP.
-                ip = ValidationUtils.getValueSafely(
-                    item,
-                    "ipAddress"
-                )
+                ip = ValidationUtils.getValueSafely(item, "ipAddress")
 
                 # Ajoute l'adresse au Set si elle existe.
                 if ip:
 
-                    unique_ips.add(
-                        str(ip)
-                    )
+                    unique_ips.add(str(ip))
 
                 else:
 
                     # Journalise uniquement l'index,
                     # pas la valeur sensible.
                     Settings.write_log_dev_file(
-                        f"Missing ipAddress at index {index}",
-                        "WARNING"
+                        f"Missing ipAddress at index {index}", "WARNING"
                     )
 
             # Journalise le nombre total d'IP uniques.
             Settings.write_log_dev_file(
-                "Proxy addresses collected - total: "
-                f"{len(unique_ips)}",
-                "INFO"
+                "Proxy addresses collected - total: " f"{len(unique_ips)}", "INFO"
             )
 
             return {
                 "valid": True,
                 "data": unique_ips,
                 "error": None,
-                "error_title": (
-                    "Proxy Address Collection Successful"
-                ),
+                "error_title": ("Proxy Address Collection Successful"),
                 "error_message": (
-                    f"Collected {len(unique_ips)} "
-                    "unique proxy address(es)."
+                    f"Collected {len(unique_ips)} " "unique proxy address(es)."
                 ),
             }
 
@@ -2585,9 +2098,7 @@ class ValidationUtils:
                 "valid": False,
                 "data": None,
                 "error": str(e),
-                "error_title": (
-                    "Proxy Address Collection Error"
-                ),
+                "error_title": ("Proxy Address Collection Error"),
                 "error_message": (
                     "An error occurred while collecting "
                     "proxy addresses. Please verify the "

@@ -307,7 +307,9 @@ class UpdateManager:
                         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
                     except (OSError, json.JSONDecodeError) as e:
                         Settings.write_log_dev_file(
-                            f"Manifest extension illisible: {manifest_path}; erreur={e}",
+                            "Manifest extension illisible "
+                            f"| exception={type(e).__name__}: {e} "
+                            f"| manifest={manifest_path}\n{traceback.format_exc()}",
                             "WARNING",
                         )
                         continue
@@ -325,7 +327,10 @@ class UpdateManager:
                         return version
         except (OSError, PermissionError) as e:
             Settings.write_log_dev_file(
-                f"Erreur accès dossier extensions {extensions_root}: {e}", "ERROR"
+                "Erreur accès dossier extensions "
+                f"| exception={type(e).__name__}: {e} "
+                f"| extensions_root={extensions_root}\n{traceback.format_exc()}",
+                "ERROR",
             )
         return None
 
@@ -350,7 +355,9 @@ class UpdateManager:
                         zipfile.BadZipFile,
                     ) as e:
                         Settings.write_log_dev_file(
-                            f"XPI Firefox illisible: {extension_file}; erreur={e}",
+                            "XPI Firefox illisible "
+                            f"| exception={type(e).__name__}: {e} "
+                            f"| extension_file={extension_file}\n{traceback.format_exc()}",
                             "WARNING",
                         )
                         continue
@@ -369,7 +376,10 @@ class UpdateManager:
                         return version
         except (OSError, PermissionError) as e:
             Settings.write_log_dev_file(
-                f"Erreur accès extensions Firefox {extensions_dir}: {e}", "ERROR"
+                "Erreur accès extensions Firefox "
+                f"| exception={type(e).__name__}: {e} "
+                f"| extensions_dir={extensions_dir}\n{traceback.format_exc()}",
+                "ERROR",
             )
 
         return None
@@ -398,7 +408,9 @@ class UpdateManager:
                 )
             except OSError as e:
                 Settings.write_log_dev_file(
-                    f"Impossible de parcourir les profils Chromium {user_data_root}: {e}",
+                    "Impossible de parcourir les profils Chromium "
+                    f"| exception={type(e).__name__}: {e} "
+                    f"| user_data_root={user_data_root}\n{traceback.format_exc()}",
                     "WARNING",
                 )
 

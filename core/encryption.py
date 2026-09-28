@@ -60,9 +60,7 @@ class EncryptionService:
         try:
             # Vérifie que le payload chiffré est une chaîne Base64 non vide
             if not isinstance(base64_data, str) or not base64_data.strip():
-                raise ValueError(
-                    "Encrypted data must be a non-empty Base64 string."
-                )
+                raise ValueError("Encrypted data must be a non-empty Base64 string.")
 
             try:
                 # Décode le contenu Base64 afin de récupérer les données binaires
@@ -70,9 +68,7 @@ class EncryptionService:
 
             except Exception as e:
                 # Transforme l'erreur de décodage en erreur de validation explicite
-                raise ValueError(
-                    f"Unable to decode Base64 data: {e}"
-                ) from e
+                raise ValueError(f"Unable to decode Base64 data: {e}") from e
 
             # Vérifie que le payload contient au minimum l'IV attendu
             if len(raw) < settings.AES_IV_LENGTH_CBC:
@@ -83,10 +79,10 @@ class EncryptionService:
                 )
 
             # Extrait l'IV placé au début du payload
-            iv = raw[:settings.AES_IV_LENGTH_CBC]
+            iv = raw[: settings.AES_IV_LENGTH_CBC]
 
             # Extrait le ciphertext situé après l'IV
-            ciphertext = raw[settings.AES_IV_LENGTH_CBC:]
+            ciphertext = raw[settings.AES_IV_LENGTH_CBC :]
 
             # Vérifie une nouvelle fois que la taille de l'IV est correcte
             if len(iv) != settings.AES_IV_LENGTH_CBC:
@@ -97,9 +93,7 @@ class EncryptionService:
 
             # Vérifie qu'un ciphertext est bien présent après l'IV
             if len(ciphertext) == 0:
-                raise ValueError(
-                    "Ciphertext is empty after extracting the IV."
-                )
+                raise ValueError("Ciphertext is empty after extracting the IV.")
 
             # Initialise AES avec le mode CBC et l'IV extrait du payload
             cipher = Cipher(
@@ -112,21 +106,13 @@ class EncryptionService:
             decryptor = cipher.decryptor()
 
             # Déchiffre le ciphertext et récupère les données encore paddées
-            padded_plaintext = (
-                decryptor.update(ciphertext)
-                + decryptor.finalize()
-            )
+            padded_plaintext = decryptor.update(ciphertext) + decryptor.finalize()
 
             # Prépare le décompresseur PKCS7 utilisé lors du chiffrement
-            unpadder = padding.PKCS7(
-                settings.AES_BLOCK_SIZE
-            ).unpadder()
+            unpadder = padding.PKCS7(settings.AES_BLOCK_SIZE).unpadder()
 
             # Supprime le padding ajouté avant le chiffrement
-            plaintext_bytes = (
-                unpadder.update(padded_plaintext)
-                + unpadder.finalize()
-            )
+            plaintext_bytes = unpadder.update(padded_plaintext) + unpadder.finalize()
 
             # Convertit les données déchiffrées UTF-8 en chaîne de caractères
             return plaintext_bytes.decode("utf-8")
@@ -140,9 +126,7 @@ class EncryptionService:
                 exception_type=type(e).__name__,
                 error=str(e),
                 payload_length=(
-                    len(base64_data)
-                    if isinstance(base64_data, str)
-                    else 0
+                    len(base64_data) if isinstance(base64_data, str) else 0
                 ),
             )
             sys.exit(1)
@@ -207,15 +191,10 @@ class EncryptionService:
 
         try:
             # Prépare le padding PKCS7 nécessaire au fonctionnement d'AES-CBC
-            padder = padding.PKCS7(
-                settings.AES_BLOCK_SIZE
-            ).padder()
+            padder = padding.PKCS7(settings.AES_BLOCK_SIZE).padder()
 
             # Convertit le texte en UTF-8 puis ajoute le padding
-            padded = (
-                padder.update(plaintext.encode("utf-8"))
-                + padder.finalize()
-            )
+            padded = padder.update(plaintext.encode("utf-8")) + padder.finalize()
 
             # Génère un IV aléatoire pour cette opération de chiffrement
             iv = os.urandom(settings.AES_IV_LENGTH_CBC)
@@ -230,15 +209,10 @@ class EncryptionService:
             encryptor = cipher.encryptor()
 
             # Chiffre les données paddées
-            ciphertext = (
-                encryptor.update(padded)
-                + encryptor.finalize()
-            )
+            ciphertext = encryptor.update(padded) + encryptor.finalize()
 
             # Concatène l'IV et le ciphertext puis encode le résultat en Base64
-            return base64.b64encode(
-                iv + ciphertext
-            ).decode("utf-8")
+            return base64.b64encode(iv + ciphertext).decode("utf-8")
 
         except Exception as e:
             # Enregistre les informations de diagnostic sans exposer le plaintext
@@ -356,7 +330,12 @@ class EncryptionService:
         except Exception as e:
             # Enregistre uniquement les informations techniques de l'erreur
             # sans exposer la clé secrète ou le message chiffré
-            settings.write_log_event(  "fernet_key_generation_failed", "ERROR",  exception_type=type(e).__name__, error=str(e))
+            settings.write_log_event(
+                "fernet_key_generation_failed",
+                "ERROR",
+                exception_type=type(e).__name__,
+                error=str(e),
+            )
             sys.exit(1)
 
 

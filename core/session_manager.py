@@ -52,9 +52,18 @@ class SessionManager:
         # Conserve la compatibilité avec l'ancien nom de méthode.
         return self.check_session()
 
-    def createSession(self, username: str, password: str, p_p_entity_Origine: str, p_entity_New: str, Id_USER) -> bool:
+    def createSession(
+        self,
+        username: str,
+        password: str,
+        p_p_entity_Origine: str,
+        p_entity_New: str,
+        Id_USER,
+    ) -> bool:
         # Conserve la compatibilité avec l'ancien nom de méthode.
-        return self.create_session(username, password, p_p_entity_Origine, p_entity_New, Id_USER)
+        return self.create_session(
+            username, password, p_p_entity_Origine, p_entity_New, Id_USER
+        )
 
     def clearSession(self):
         # Redirige vers la méthode de suppression de session.
@@ -188,15 +197,17 @@ class SessionManager:
 
             # Une session est valide si elle n'est pas dans le futur et a moins de deux jours.
             if datetime.timedelta(0) <= session_age < datetime.timedelta(days=2):
-                session_info.update({
-                    "valid": True,
-                    "username": username,
-                    "password": password,
-                    "date": last_session,
-                    "p_entity_Origine": p_p_entity_Origine,
-                    "p_entity_Nouveau": p_entity_Nouveau,
-                    "Id_User": Id_User,
-                })
+                session_info.update(
+                    {
+                        "valid": True,
+                        "username": username,
+                        "password": password,
+                        "date": last_session,
+                        "p_entity_Origine": p_p_entity_Origine,
+                        "p_entity_Nouveau": p_entity_Nouveau,
+                        "Id_User": Id_User,
+                    }
+                )
 
                 # Journalise uniquement des informations non sensibles.
                 settings.write_log_event(

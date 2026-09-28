@@ -9,7 +9,16 @@ import traceback
 from PyQt6 import uic
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QCursor, QGuiApplication, QIcon
-from PyQt6.QtWidgets import ( QApplication, QFrame, QInputDialog, QListWidget, QMainWindow, QPlainTextEdit, QPushButton, QWidget)
+from PyQt6.QtWidgets import (
+    QApplication,
+    QFrame,
+    QInputDialog,
+    QListWidget,
+    QMainWindow,
+    QPlainTextEdit,
+    QPushButton,
+    QWidget,
+)
 
 from api import API_MANAGER
 from config import Settings
@@ -462,9 +471,7 @@ class AutomationMainWindow(QMainWindow):
         Settings.write_log_dev_file("Extraction Finished", "INFO")
         QTimer.singleShot(
             100,
-            lambda: UIManager.readResultUpdateList(
-                window, self.notification_badges
-            ),
+            lambda: UIManager.readResultUpdateList(window, self.notification_badges),
         )
 
     def verify_required_paths(self):
@@ -1038,7 +1045,13 @@ class AutomationMainWindow(QMainWindow):
         for index, state in enumerate(state_stack_copy, start=1):
             try:
                 pretty = json.dumps(state, indent=2, ensure_ascii=False, default=str)
-            except Exception:
+            except Exception as exc:
+                # Repli attendu : etat non serialisable en JSON -> on garde repr().
+                Settings.write_log_dev_file(
+                    f"json.dumps indisponible pour l'etat #{index}, repli sur repr() "
+                    f"| exception={type(exc).__name__}: {exc}",
+                    "DEBUG",
+                )
                 pretty = repr(state)
 
             try:
@@ -1070,7 +1083,13 @@ class AutomationMainWindow(QMainWindow):
                     state_key = json.dumps(
                         state, sort_keys=True, ensure_ascii=False, default=str
                     )
-                except Exception:
+                except Exception as exc:
+                    # Repli attendu : etat non serialisable -> cle de dedoublonnage via repr().
+                    Settings.write_log_dev_file(
+                        "json.dumps indisponible pour la cle de dedoublonnage, repli sur repr() "
+                        f"| exception={type(exc).__name__}: {exc}",
+                        "DEBUG",
+                    )
                     state_key = repr(state)
                 if state_key not in seen:
                     seen.add(state_key)
@@ -1081,6 +1100,3 @@ class AutomationMainWindow(QMainWindow):
                 f"⚠️ Failed to deduplicate STATE_STACK: {e}\n{traceback.format_exc()}",
                 "ERROR",
             )
-
-
-

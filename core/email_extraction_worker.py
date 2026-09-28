@@ -14,18 +14,25 @@
 # --- Imports de la bibliotheque standard ---
 # datetime : horodatage du lancement des sessions Firefox.
 import datetime
+
 # json : serialisation du scenario d'actions et des informations de session.
 import json
+
 # os : chemins, creation de dossiers, liste des dossiers de logs.
 import os
+
 # shutil : suppression recursive des anciens dossiers de logs.
 import shutil
+
 # subprocess : lancement des navigateurs dans des processus separes.
 import subprocess
+
 # time : pauses entre les lancements.
 import time
+
 # traceback : pile d'appels complete dans les logs d'erreur.
 import traceback
+
 # deque : file d'attente efficace (retrait en tete en O(1)) des emails a traiter.
 from collections import deque
 
@@ -36,14 +43,19 @@ from PyQt6.QtCore import QThread, pyqtSignal
 # --- Imports internes au projet ---
 # API_MANAGER : client de l'API distante (enregistrement des emails traites).
 from api import API_MANAGER
+
 # Settings : configuration centrale (chemins, cles, URL d'API, fonctions de log).
 from config import Settings
+
 # EncryptionService : chiffrement ; SessionManager : verification de la session.
 from core import EncryptionService, SessionManager
+
 # BrowserManager : profils, recherche de PID, sauvegarde des sessions navigateur.
 from models import BrowserManager
+
 # UIManager : utilitaires d'interface (reactivation du bouton Submit).
 from ui_utils import UIManager
+
 # ValidationUtils : lecture des champs, generation de mot de passe, dossiers.
 from utils import ValidationUtils
 
@@ -240,9 +252,11 @@ class EmailExtractionWorker(QThread):
             # Etape 3 : chemin du fichier de donnees de l'extension (dossier different
             # selon Firefox ou Chromium).
             extension_data_path = os.path.join(
-                Settings.EXTENTION_EX3_FIREFOX
-                if self.selected_Browser.lower() == "firefox"
-                else Settings.EXTENTION_EX3_CHROMIUM,
+                (
+                    Settings.EXTENTION_EX3_FIREFOX
+                    if self.selected_Browser.lower() == "firefox"
+                    else Settings.EXTENTION_EX3_CHROMIUM
+                ),
                 "data.txt",
             )
             os.makedirs(os.path.dirname(extension_data_path), exist_ok=True)

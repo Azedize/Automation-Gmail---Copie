@@ -16,22 +16,31 @@
 # --- Imports de la bibliotheque standard ---
 # datetime : horodatage du dossier de session.
 import datetime
+
 # json : serialisation d'une session Firefox pour le log de debogage.
 import json
+
 # os : chemins, dossiers, suppression de fichiers, envoi de signaux (os.kill).
 import os
+
 # re : extraction des metadonnees (session/email/etat) d'un fichier de session.
 import re
+
 # shutil : deplacement des logs et captures d'ecran.
 import shutil
+
 # signal : SIGTERM pour demander l'arret des processus navigateur.
 import signal
+
 # threading : verrou (Lock) protegeant les ensembles partages du thread.
 import threading
+
 # time : attentes (fichier stable, delai initial, temporisations).
 import time
+
 # traceback : pile d'appels complete dans les logs d'erreur.
 import traceback
+
 # Queue : file alimentee par le watcher de fichiers ; Empty : leve quand la
 # file est vide apres le delai d'attente.
 from queue import Empty, Queue
@@ -39,25 +48,33 @@ from queue import Empty, Queue
 # --- Imports tiers ---
 # psutil : verification et arret fiable des processus (par PID).
 import psutil
+
 # user_downloads_dir : chemin du dossier « Telechargements » de l'utilisateur.
 from platformdirs import user_downloads_dir
+
 # QThread : execution en arriere-plan ; pyqtSignal : signal Qt.
 from PyQt6.QtCore import QThread, pyqtSignal
+
 # Observer : surveille le systeme de fichiers et notifie les evenements.
 from watchdog.observers import Observer
 
 # --- Imports internes au projet ---
 # API_MANAGER : envoi du statut de chaque email a l'API distante.
 from api import API_MANAGER
+
 # Settings : configuration (chemins, motifs de nom de fichier, fonctions de log).
 from config import Settings
+
 # DownloadFileEventHandler : gestionnaire watchdog qui met les nouveaux
 # fichiers dans la file.
 from core.file_watcher import DownloadFileEventHandler
+
 # runtime_state : etat partage global (emails actifs, PID, sessions Firefox).
 from core.runtime_state import runtime_state
+
 # BrowserManager : utilitaires navigateur.
 from models import BrowserManager
+
 # ValidationUtils : extraction de l'email depuis le contenu d'un log.
 from utils import ValidationUtils
 
@@ -218,7 +235,10 @@ class BrowserSessionMonitorThread(QThread):
                     screenshots.append(entry.name)
         except OSError as e:
             Settings.write_log_dev_file(
-                f"[WATCHER] Failed to scan screenshots: {e}", "WARNING"
+                "[WATCHER] Failed to scan screenshots "
+                f"| exception={type(e).__name__}: {e} "
+                f"| downloads_folder={self.downloads_folder}\n{traceback.format_exc()}",
+                "WARNING",
             )
         return screenshots
 
@@ -279,7 +299,12 @@ class BrowserSessionMonitorThread(QThread):
                     file_path = self.file_queue.get(timeout=0.5)
                 except Empty:
                     # File vide ET plus aucun travail en cours -> fin de la surveillance.
-                    if (  runtime_state.remaining_emails == 0 and not runtime_state.process_pids  and not runtime_state.active_emails and self.file_queue.empty() ):
+                    if (
+                        runtime_state.remaining_emails == 0
+                        and not runtime_state.process_pids
+                        and not runtime_state.active_emails
+                        and self.file_queue.empty()
+                    ):
                         break
                     continue
 
@@ -287,14 +312,17 @@ class BrowserSessionMonitorThread(QThread):
                     # Traitement du fichier ; toute erreur est journalisee sans arreter la boucle.
                     self.processEventFile(file_path)
                 except Exception as e:
-                    Settings.write_log_dev_file(f"[WATCHER] Error processing {file_path}: {e}\n{traceback.format_exc()}",  "ERROR")
+                    Settings.write_log_dev_file(
+                        f"[WATCHER] Error processing {file_path}: {e}\n{traceback.format_exc()}",
+                        "ERROR",
+                    )
         finally:
             # Etape 4 : arret et attente de l'observateur (toujours execute).
             self.observer.stop()
             self.observer.join(timeout=5)
 
         end_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        Settings.write_log_dev_file(f"Thread finished | End time: {end_time} | PROCESS_PIDS: {len(runtime_state.process_pids)} | REMAINING_EMAILS: {runtime_state.remaining_emails}", "INFO"  )
+        Settings.write_log_dev_file( f"Thread finished | End time: {end_time} | PROCESS_PIDS: {len(runtime_state.process_pids)} | REMAINING_EMAILS: {runtime_state.remaining_emails}", "INFO")
 
     # -------------------------------------------------------------------------
     # Retrouve les informations de session d'un email (PID, session_id,
@@ -370,7 +398,9 @@ class BrowserSessionMonitorThread(QThread):
                                 session_data["firefox_pids"] = [session_data["pid"]]
                 except Exception as e:
                     Settings.write_log_dev_file(
-                        f"[LOG] Failed to read Firefox session data file {profile_data_file}: {e}",
+                        "[LOG] Failed to read Firefox session data file "
+                        f"| exception={type(e).__name__}: {e} "
+                        f"| profile_data_file={profile_data_file}\n{traceback.format_exc()}",
                         "WARNING",
                     )
             return session_data
@@ -415,7 +445,9 @@ class BrowserSessionMonitorThread(QThread):
                             session_data["inserted_id"] = parts[3].strip() or None
                 except Exception as e:
                     Settings.write_log_dev_file(
-                        f"[LOG] Failed to read profile session data file {profile_data_file}: {e}",
+                        "[LOG] Failed to read profile session data file "
+                        f"| exception={type(e).__name__}: {e} "
+                        f"| profile_data_file={profile_data_file}\n{traceback.format_exc()}",
                         "WARNING",
                     )
         return session_data
@@ -439,10 +471,16 @@ class BrowserSessionMonitorThread(QThread):
                         if os.path.exists(target_path):
                             os.remove(target_path)
                         shutil.move(source_path, target_path)
-                        Settings.write_log_dev_file( f"[LOG] Screenshot moved to email folder: {target_path}", "INFO")
+                        Settings.write_log_dev_file(
+                            f"[LOG] Screenshot moved to email folder: {target_path}",
+                            "INFO",
+                        )
                         return target_path
         except Exception as e:
-            Settings.write_log_dev_file(  f"⚠️ [SCREENSHOT] Error moving screenshot for {email}: {e}\n{traceback.format_exc()}", "ERROR" )
+            Settings.write_log_dev_file(
+                f"⚠️ [SCREENSHOT] Error moving screenshot for {email}: {e}\n{traceback.format_exc()}",
+                "ERROR",
+            )
         return None
 
     # -------------------------------------------------------------------------
@@ -460,11 +498,16 @@ class BrowserSessionMonitorThread(QThread):
 
         full_path = os.path.join(self.downloads_folder, log_file)
         metadata = self.parseFilenameMetadata(full_path)
-        Settings.write_log_dev_file( f"[LOG] Starting log file processing: {log_file} | full_path={full_path} | metadata={metadata}",  "DEBUG" )
+        Settings.write_log_dev_file(
+            f"[LOG] Starting log file processing: {log_file} | full_path={full_path} | metadata={metadata}",
+            "DEBUG",
+        )
 
         try:
             if not os.path.exists(full_path):
-                Settings.write_log_dev_file(  f"[LOG] File not found during processing: {full_path}", "ERROR"  )
+                Settings.write_log_dev_file(
+                    f"[LOG] File not found during processing: {full_path}", "ERROR"
+                )
                 return
 
             email = None
@@ -482,7 +525,9 @@ class BrowserSessionMonitorThread(QThread):
             if not email:
                 with open(full_path, "r", encoding="utf-8", errors="replace") as f:
                     sample = f.read(256)
-                Settings.write_log_dev_file(  f"No email found in log file content sample: {sample!r}", "ERROR")
+                Settings.write_log_dev_file(
+                    f"No email found in log file content sample: {sample!r}", "ERROR"
+                )
                 return
 
             # Recuperation des infos de session (PID, inserted_id...) pour cet email.
@@ -592,7 +637,9 @@ class BrowserSessionMonitorThread(QThread):
                         )
                 except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
                     Settings.write_log_dev_file(
-                        f"[CLOSE{flow_label}] Error closing Firefox PID {firefox_pid}: {e}",
+                        f"[CLOSE{flow_label}] Error closing Firefox PID {firefox_pid} "
+                        f"| exception={type(e).__name__}: {e} "
+                        f"| email={email}\n{traceback.format_exc()}",
                         "WARNING",
                     )
         else:
@@ -628,8 +675,6 @@ class BrowserSessionMonitorThread(QThread):
                 "INFO",
             )
 
-
-
     # -------------------------------------------------------------------------
     # Ferme la session du navigateur : delegue a closeFirefoxSession pour
     # Firefox, sinon ferme le(s) processus Chromium via closeBrowserProcess.
@@ -649,8 +694,6 @@ class BrowserSessionMonitorThread(QThread):
                 Settings.write_log_dev_file(
                     f"No PID for {email} {flow_label}".strip(), "WARNING"
                 )
-
-
 
     # -------------------------------------------------------------------------
     # Traite un fichier de SESSION depose par l'extension.
@@ -701,7 +744,8 @@ class BrowserSessionMonitorThread(QThread):
             if not match:
                 Settings.write_log_dev_file(
                     # Contenu illisible : on abandonne le traitement de ce fichier.
-                    f"❌ [SESSION] Parsing failed for file: {file_name}", "ERROR"
+                    f"❌ [SESSION] Parsing failed for file: {file_name}",
+                    "ERROR",
                 )
                 return
 
@@ -780,7 +824,10 @@ class BrowserSessionMonitorThread(QThread):
                         )
                     except ValueError as e:
                         Settings.write_log_dev_file(
-                            f"🚨 [SESSION] Failed to parse Chromium profile line: {profile_line} | error={e}",
+                            "🚨 [SESSION] Failed to parse Chromium profile line "
+                            f"| exception={type(e).__name__}: {e} "
+                            f"| profile_line={profile_line} "
+                            f"| email={email}\n{traceback.format_exc()}",
                             "ERROR",
                         )
                 else:
@@ -828,7 +875,8 @@ class BrowserSessionMonitorThread(QThread):
         except Exception as e:
             Settings.write_log_dev_file(
                 # Gestion d'erreur du traitement de session (journalisee avec la trace).
-                f"❌ [SESSION] Erreur: {e}\n{traceback.format_exc()}", "ERROR"
+                f"❌ [SESSION] Erreur: {e}\n{traceback.format_exc()}",
+                "ERROR",
             )
 
         finally:
@@ -841,7 +889,10 @@ class BrowserSessionMonitorThread(QThread):
                     )
             except Exception as e:
                 Settings.write_log_dev_file(
-                    f"❌ [CLEANUP] Error removing session file: {e}", "DEBUG"
+                    "❌ [CLEANUP] Error removing session file "
+                    f"| exception={type(e).__name__}: {e} "
+                    f"| session_path={session_path}\n{traceback.format_exc()}",
+                    "DEBUG",
                 )
 
             if self.selected_Browser.lower() == "firefox":
@@ -865,7 +916,6 @@ class BrowserSessionMonitorThread(QThread):
                         f"❌ [CLEANUP] Error removing profile data file: {e}\n{traceback.format_exc()}",
                         "DEBUG",
                     )
-
 
     # -------------------------------------------------------------------------
     # Enregistre le resultat d'un email et l'envoie a l'API.
@@ -918,9 +968,9 @@ class BrowserSessionMonitorThread(QThread):
                 "status_api_response",
                 "INFO",
                 response_type=type(result).__name__,
-                response_code=result
-                if result in {"-1", "-2", "-3", "-4", "-5"}
-                else "received",
+                response_code=(
+                    result if result in {"-1", "-2", "-3", "-4", "-5"} else "received"
+                ),
             )
 
             # Reponse -1 : erreur cote API -> on leve une exception.
@@ -940,11 +990,10 @@ class BrowserSessionMonitorThread(QThread):
                 self.reported_results.discard(result_key)
             Settings.write_log_dev_file(
                 # Autre erreur : annulation de la cle envoyee, log detaille, puis SystemExit(1).
-                f"❌ [RESULT] Erreur: {e} details: {traceback.format_exc()}", "ERROR"
+                f"❌ [RESULT] Erreur: {e} details: {traceback.format_exc()}",
+                "ERROR",
             )
             raise SystemExit(1)
-
-
 
     # -------------------------------------------------------------------------
     # Deplace la premiere capture d'ecran dont le nom contient l'email vers le
@@ -964,7 +1013,6 @@ class BrowserSessionMonitorThread(QThread):
             Settings.write_log_dev_file(
                 f"⚠️ [SCREENSHOT] Erreur: {e}\n{traceback.format_exc()}", "ERROR"
             )
-
 
     # -------------------------------------------------------------------------
     # Ferme un (ou plusieurs) processus navigateur Chromium par PID.
@@ -1052,5 +1100,6 @@ class BrowserSessionMonitorThread(QThread):
         except Exception as e:
             Settings.write_log_dev_file(
                 # Erreur globale de la procedure de fermeture (journalisee avec la trace).
-                f"❌ [CLOSE] Erreur: {e}\n{traceback.format_exc()}", "ERROR"
+                f"❌ [CLOSE] Erreur: {e}\n{traceback.format_exc()}",
+                "ERROR",
             )

@@ -109,7 +109,9 @@ class VerticalTabBar(QtWidgets.QTabBar):
     # configurées (adjust(gauche, haut, -droite, -bas)).
     def tabRect(self, index):
         rect = super().tabRect(index)
-        rect.adjust( self.left_margin, self.tab_margin, -self.right_margin, -self.tab_margin )
+        rect.adjust(
+            self.left_margin, self.tab_margin, -self.right_margin, -self.tab_margin
+        )
         return rect
 
     # Dessin complet de la barre d'onglets (remplace le rendu natif de Qt).
@@ -709,9 +711,10 @@ class UIManager:
                         UIManager.logTabDebugInfo(
                             interface_tab_widget, prefix="Result tab non trouvé"
                         )
-                    except Exception:
+                    except Exception as exc:
                         Settings.write_log_dev_file(
-                            "Result tab non trouvé et impossible de logger l'état des tabs",
+                            "Result tab non trouvé et impossible de logger l'état des tabs "
+                            f"| exception={type(exc).__name__}: {exc}\n{traceback.format_exc()}",
                             "ERROR",
                         )
                         pass
@@ -722,9 +725,11 @@ class UIManager:
                         "[UI WARNING] interface_2 introuvable pour la mise à jour du tab Result",
                         "WARNING",
                     )
-                except Exception:
+                except Exception as exc:
                     Settings.write_log_dev_file(
-                        "Erreur lors de la mise à jour du tab Result", "ERROR"
+                        "Erreur lors de la mise à jour du tab Result "
+                        f"| exception={type(exc).__name__}: {exc}\n{traceback.format_exc()}",
+                        "ERROR",
                     )
                     pass
             QApplication.processEvents()
