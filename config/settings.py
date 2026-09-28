@@ -15,8 +15,6 @@ from logging.handlers import RotatingFileHandler
 
 
 class Settings:
-
-
     SECURITY_CONFIG = {
         "API_KEY_PROXY": "Gmf15dfVD61G8gZQg",
         "AUTHORISED_PORTS": ["5836", "0000", "8080", "3128", "1111", "16666"],
@@ -77,26 +75,96 @@ class Settings:
 
     BROWSER_EXTENSION_PATHS = {
         "chrome": (
-            ("AppData", "Local", "Google", "Chrome", "User Data", "Default", "Extensions"),
-            ("AppData", "Local", "Google", "Chrome", "User Data", "Profile 1", "Extensions"),
+            (
+                "AppData",
+                "Local",
+                "Google",
+                "Chrome",
+                "User Data",
+                "Default",
+                "Extensions",
+            ),
+            (
+                "AppData",
+                "Local",
+                "Google",
+                "Chrome",
+                "User Data",
+                "Profile 1",
+                "Extensions",
+            ),
         ),
         "edge": (
-            ("AppData", "Local", "Microsoft", "Edge", "User Data", "Default", "Extensions"),
-            ("AppData", "Local", "Microsoft", "Edge", "User Data", "Profile 1", "Extensions"),
+            (
+                "AppData",
+                "Local",
+                "Microsoft",
+                "Edge",
+                "User Data",
+                "Default",
+                "Extensions",
+            ),
+            (
+                "AppData",
+                "Local",
+                "Microsoft",
+                "Edge",
+                "User Data",
+                "Profile 1",
+                "Extensions",
+            ),
         ),
         "comodo": (
-            ("AppData", "Local", "Comodo", "Browser", "User Data", "Default", "Extensions"),
-            ("AppData", "Local", "Comodo", "Dragon", "User Data", "Default", "Extensions"),
-            ("AppData", "Local", "Comodo", "Dragon", "User Data", "Profile 1", "Extensions"),
-            ("AppData", "Local", "Comodo", "Comodo Dragon", "User Data", "Default", "Extensions"),
-            ("AppData", "Roaming", "Comodo", "Dragon", "User Data", "Default", "Extensions"),
+            (
+                "AppData",
+                "Local",
+                "Comodo",
+                "Browser",
+                "User Data",
+                "Default",
+                "Extensions",
+            ),
+            (
+                "AppData",
+                "Local",
+                "Comodo",
+                "Dragon",
+                "User Data",
+                "Default",
+                "Extensions",
+            ),
+            (
+                "AppData",
+                "Local",
+                "Comodo",
+                "Dragon",
+                "User Data",
+                "Profile 1",
+                "Extensions",
+            ),
+            (
+                "AppData",
+                "Local",
+                "Comodo",
+                "Comodo Dragon",
+                "User Data",
+                "Default",
+                "Extensions",
+            ),
+            (
+                "AppData",
+                "Roaming",
+                "Comodo",
+                "Dragon",
+                "User Data",
+                "Default",
+                "Extensions",
+            ),
         ),
         "icedragon": (
             ("AppData", "Local", "Icedragon", "User Data", "Default", "Extensions"),
         ),
-        "firefox": (
-            ("AppData", "Roaming", "Mozilla", "Firefox", "Profiles"),
-        ),
+        "firefox": (("AppData", "Roaming", "Mozilla", "Firefox", "Profiles"),),
     }
 
     PROCESS_CONFIG = {
@@ -196,6 +264,12 @@ class Settings:
         "AUTHENTICATION_LOGIN": "1",
     }
 
+    API_CONFIG = {
+        "MAX_REQUEST_ATTEMPTS": 3,
+    }
+
+    MAX_REQUEST_ATTEMPTS = API_CONFIG["MAX_REQUEST_ATTEMPTS"]
+
     SCENARIO_API = API_ENDPOINTS["SCENARIO_API"]
     ENCRYPTED_PROXY_API = API_ENDPOINTS["ENCRYPTED_PROXY_API"]
     SESSION_API_KEY = SESSION_API_CONFIG["KEY"]
@@ -266,7 +340,9 @@ class Settings:
     # ═══════════════════════════════════════════════════════════
 
     CONFIG_PROFILE = r"C:\RepProxy\template_Profile"
-    SECURE_PREFERENCES_TEMPLATE = ( r"C:\RepProxy\template_Profile\default\Secure Preferences" )
+    SECURE_PREFERENCES_TEMPLATE = (
+        r"C:\RepProxy\template_Profile\default\Secure Preferences"
+    )
     FICHIER_LOCAL_STATE = r"C:\RepProxy\template_Profile\Local State"
     FICHIER_VARIATIONS = r"C:\RepProxy\template_Profile\Variations"
 
@@ -278,8 +354,12 @@ class Settings:
     MANIFEST_PATH_EX3 = os.path.join(EXTENTION_EX3_CHROMIUM, "manifest.json")
     VERSION_LOCAL_EX3 = os.path.join(EXTENTION_EX3_CHROMIUM, "version.txt")
 
-    TEMPLATE_DIRECTORY_FIREFOX = os.path.join(  TOOLS_DIR, "extensions Templete", "ExtensionTemplateFirefox" )
-    TEMPLATE_DIRECTORY_CHROMIUM = os.path.join( TOOLS_DIR, "extensions Templete", "Extention_Family_Chrome"  )
+    TEMPLATE_DIRECTORY_FIREFOX = os.path.join(
+        TOOLS_DIR, "extensions Templete", "ExtensionTemplateFirefox"
+    )
+    TEMPLATE_DIRECTORY_CHROMIUM = os.path.join(
+        TOOLS_DIR, "extensions Templete", "Extention_Family_Chrome"
+    )
 
     LOGS_DIRECTORY = os.path.join(TOOLS_DIR, "logs")
     RESULT_FILE_PATH = os.path.join(TOOLS_DIR, "result.txt")
@@ -593,7 +673,9 @@ class Settings:
             cls.write_log_dev_file("Node.js already installed", "INFO")
             return True
 
-        cls.write_log_dev_file("Node.js not installed. Trying to install via Chocolatey...", "INFO")
+        cls.write_log_dev_file(
+            "Node.js not installed. Trying to install via Chocolatey...", "INFO"
+        )
 
         if shutil.which("choco") is None:
             cls.write_log_dev_file("Chocolatey not found. Installing...", "INFO")
@@ -657,7 +739,13 @@ class Settings:
             npm_path = shutil.which("npm")
             subprocess.run([npm_path, "install", "--global", "web-ext"], check=True)
         except subprocess.CalledProcessError as exc:
-            cls.write_log_event( "web_ext_install_failed",  "ERROR",  action="npm_install",   exception_type=type(exc).__name__,  error=str(exc) )
+            cls.write_log_event(
+                "web_ext_install_failed",
+                "ERROR",
+                action="npm_install",
+                exception_type=type(exc).__name__,
+                error=str(exc),
+            )
 
     @classmethod
     def ensureWebExtInstalled(cls):
