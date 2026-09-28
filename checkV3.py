@@ -345,9 +345,7 @@ class DependencyManager:
             except subprocess.CalledProcessError as exc:
 
                 # Enregistre l'échec de l'installation du package
-                write_log_dev_file(
-                    f"Error installing {package} " f"| exception={type(exc).__name__}: {exc} " f"| install_spec={install_spec} " f"| returncode={exc.returncode}\n{traceback.format_exc()}", "ERROR"
-                )
+                write_log_dev_file( f"Error installing {package} " f"| exception={type(exc).__name__}: {exc} " f"| install_spec={install_spec} " f"| returncode={exc.returncode}\n{traceback.format_exc()}", "ERROR" )
                 sys.exit(1)
 
             try:
@@ -585,9 +583,7 @@ class UpdateManager:
 
                 # Détermine le dossier source à installer
                 # Si extract_subdir n'est pas fourni, utilise la racine détectée
-                extracted_dir = (
-                    extracted_root if not extract_subdir else (os.path.join(extracted_root, extract_subdir) if os.path.exists(os.path.join(extracted_root, extract_subdir)) else extracted_root)
-                )
+                extracted_dir = (  extracted_root if not extract_subdir else (os.path.join(extracted_root, extract_subdir) if os.path.exists(os.path.join(extracted_root, extract_subdir)) else extracted_root))
 
                 # Enregistre le dossier source sélectionné
                 write_log_dev_file(f"Selected program source directory: {extracted_dir}", "DEBUG")
