@@ -299,6 +299,20 @@ def startExtraction(
         "INFO",
     )
 
+    if browser_path is None:
+        Settings.write_log_dev_file(
+            f"Navigateur introuvable ou chemin d'installation indisponible : {browser_name}",
+            "ERROR",
+        )
+        UIManager.showCriticalMessage(
+            window,
+            "Navigateur introuvable",
+            f"Le navigateur sélectionné ({browser_name}) est introuvable. Vérifiez son installation. Si le problème persiste, contactez le support.",
+            message_type="critical",
+        )
+        UIManager.enableButton(window.submitButton)
+        return
+
     if selected_Browser.lower() == "firefox":
         Settings.ensure_web_ext_installed()
 
@@ -313,9 +327,7 @@ def startExtraction(
     def launch_browser_session_monitor():
         global CLOSE_BROWSER_THREAD
         Settings.write_log_dev_file("Launching BrowserSessionMonitorThread...", "INFO")
-        CLOSE_BROWSER_THREAD = BrowserSessionMonitorThread(
-            selected_Browser, username, SESSION_ID, file_lock
-        )
+        CLOSE_BROWSER_THREAD = BrowserSessionMonitorThread( selected_Browser, username, SESSION_ID, file_lock)
         CLOSE_BROWSER_THREAD.progress.connect(lambda msg: print(msg))
         CLOSE_BROWSER_THREAD.start()
 
@@ -324,18 +336,14 @@ def startExtraction(
 
 
 def main():
+
     Settings.write_log_dev_file("\n\n========== [APP START] ==========\n", "INFO")
     Settings.write_log_dev_file("Application starting...", "INFO")
     Settings.write_log_dev_file(f"Received arguments: {sys.argv}", "DEBUG")
 
     if len(sys.argv) < 3:
-        Settings.write_log_dev_file(
-            "Insufficient arguments provided. Expected encrypted_key and secret_key.",
-            "ERROR",
-        )
-        Settings.write_log_dev_file(
-            "Usage: python AppV2.py <encrypted_key> <secret_key>", "ERROR"
-        )
+        Settings.write_log_dev_file( "Insufficient arguments provided. Expected encrypted_key and secret_key.",  "ERROR"  )
+        Settings.write_log_dev_file( "Usage: python AppV2.py <encrypted_key> <secret_key>", "ERROR" )
         sys.exit(1)
 
     encrypted_key = sys.argv[1]
@@ -356,9 +364,7 @@ def main():
     session_valid = session_info.get("valid", False)
 
     Settings.write_log_dev_file(f"Session valid: {session_valid}", "DEBUG")
-    Settings.write_log_event(
-        "application_session_checked", "DEBUG", valid=session_valid
-    )
+    Settings.write_log_event( "application_session_checked", "DEBUG", valid=session_valid )
 
     app = QApplication(sys.argv)
     Settings.write_log_dev_file("QApplication initialized.", "DEBUG")
@@ -374,9 +380,7 @@ def main():
     window = None
 
     if session_valid:
-        Settings.write_log_dev_file(
-            "Valid session found. Attempting to open AutomationMainWindow.", "INFO"
-        )
+        Settings.write_log_dev_file( "Valid session found. Attempting to open AutomationMainWindow.", "INFO" )
         try:
             Settings.write_log_dev_file( f"Loading config file: {Settings.FILE_ACTIONS_JSON}", "DEBUG")
             with open(Settings.FILE_ACTIONS_JSON, "r", encoding="utf-8") as file:
@@ -388,30 +392,18 @@ def main():
 
             Settings.write_log_dev_file(  "Configuration file loaded successfully.", "INFO"  )
 
-            window = AutomationMainWindow(
-                json_data, stopAllProcesses, startExtraction, runtime_state
-            )
+            window = AutomationMainWindow( json_data, stopAllProcesses, startExtraction, runtime_state )
             Settings.write_log_dev_file("AutomationMainWindow initialized.", "INFO")
 
         except Exception as e:
             Settings.write_log_dev_file(   f"An error occurred while loading AutomationMainWindow: {e}\n{traceback.format_exc()}","ERROR")
             SessionManager.clear_session()
-            window = AuthenticationWindow(
-                AutomationMainWindow,
-                stopAllProcesses,
-                startExtraction,
-                runtime_state,
-            )
+            window = AuthenticationWindow( AutomationMainWindow, stopAllProcesses, startExtraction, runtime_state  )
 
     else:
         Settings.write_log_dev_file("No valid session found. Opening AuthenticationWindow.", "INFO" )
         SessionManager.clear_session()
-        window = AuthenticationWindow(
-            AutomationMainWindow,
-            stopAllProcesses,
-            startExtraction,
-            runtime_state,
-        )
+        window = AuthenticationWindow( AutomationMainWindow,  stopAllProcesses, startExtraction,  runtime_state )
 
     if window is None:
         Settings.write_log_dev_file( "Critical error: No window could be created.", "CRITICAL" )

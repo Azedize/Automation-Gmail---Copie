@@ -207,33 +207,22 @@ class AuthenticationWindow(QMainWindow):
                 self.erreur_label.show()
                 return
             p_entity_Nouveau = selected_entity
-            Settings.write_log_dev_file(
-                f"✅ Entity overridden to: {p_entity_Nouveau}", "INFO"
-            )
+            Settings.write_log_dev_file(f"✅ Entity overridden to: {p_entity_Nouveau}", "INFO")
         else:
             p_entity_Nouveau = p_entity_Origine
 
         try:
-            valid_session = SessionManager.create_session(
-                username, password, p_entity_Origine, p_entity_Nouveau, id_user
-            )
+            valid_session = SessionManager.create_session( username, password, p_entity_Origine, p_entity_Nouveau, id_user)
             if not valid_session:
-                Settings.write_log_dev_file(
-                    "Failed to create user session for unknown reasons.", "ERROR"
-                )
+                Settings.write_log_dev_file("Failed to create user session for unknown reasons.", "ERROR" )
                 UIManager.enableButton(self.login_button)
                 self.erreur_label.setText("Failed to create user session.")
                 self.erreur_label.show()
                 return
         except Exception as error:
             UIManager.enableButton(self.login_button)
-            Settings.write_log_dev_file(
-                f"Exception during session creation: {error}\n{traceback.format_exc()}",
-                "ERROR",
-            )
-            self.erreur_label.setText(
-                f"Exception during session creation: {error}\n{traceback.format_exc()}"
-            )
+            Settings.write_log_dev_file( f"Exception during session creation: {error}\n{traceback.format_exc()}", "ERROR" )
+            self.erreur_label.setText( f"Exception during session creation: {error}\n{traceback.format_exc()}" )
             self.erreur_label.show()
             return
 
@@ -241,27 +230,16 @@ class AuthenticationWindow(QMainWindow):
             with open(Settings.FILE_ACTIONS_JSON, "r", encoding="utf-8") as file:
                 json_data = json.load(file)
             if not json_data:
-                Settings.write_log_dev_file(
-                    f"Configuration file is empty: {Settings.FILE_ACTIONS_JSON}",
-                    "WARNING",
-                )
+                Settings.write_log_dev_file(f"Configuration file is empty: {Settings.FILE_ACTIONS_JSON}","WARNING" )
                 raise ValueError("Fichier de configuration vide")
 
-            Settings.write_log_dev_file(
-                "Configuration file loaded successfully.", "INFO"
-            )
+            Settings.write_log_dev_file( "Configuration file loaded successfully.", "INFO" )
             UIManager.enableButton(self.login_button)
-            self.main_window = self.main_window_class(
-                json_data,
-                self.stop_processes,
-                self.start_extraction,
-                self.runtime_state,
-            )
+            self.main_window = self.main_window_class( json_data,  self.stop_processes,self.start_extraction,  self.runtime_state )
+            
             self.main_window.setFixedSize(Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT)
             self.main_window.setWindowTitle("AutoMailPro")
-            self.main_window.stopButton.clicked.connect(
-                lambda: self.stop_processes(self.main_window)
-            )
+            self.main_window.stopButton.clicked.connect( lambda: self.stop_processes(self.main_window)  )
 
             screen = QGuiApplication.primaryScreen()
             screen_geometry = screen.availableGeometry()
@@ -270,9 +248,8 @@ class AuthenticationWindow(QMainWindow):
             self.main_window.move(x, y)
             self.main_window.show()
             self.close()
-            Settings.write_log_dev_file(
-                "Main window displayed, login completed successfully.", "INFO"
-            )
+           
+            Settings.write_log_dev_file("Main window displayed, login completed successfully.", "INFO" )
 
         except Exception as error:
             UIManager.enableButton(self.login_button)

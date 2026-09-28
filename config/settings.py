@@ -1,21 +1,24 @@
-import os
-from pathlib import Path
-import sys
+"""Configuration centralisée et services transverses de l’application."""
+
 import datetime
-import traceback
-import subprocess
-import shutil
 import hashlib
 import json
 import logging
+import os
 import re
+import shutil
+import subprocess
+import sys
 import threading
 import uuid
 from logging.handlers import RotatingFileHandler
+from pathlib import Path
 
 
 class Settings:
-    
+    """Regroupe les paramètres, chemins et utilitaires partagés par l’application."""
+
+    # Paramètres de sécurité, d’authentification HTTP et de validation TLS.
     SECURITY_CONFIG = {
         "API_KEY_PROXY": "Gmf15dfVD61G8gZQg",
         "AUTHORISED_PORTS": ["5836", "0000", "8080", "3128", "1111", "16666"],
@@ -32,6 +35,7 @@ class Settings:
         },
     }
 
+    # Navigateurs pris en charge et règles utilisées pour les reconnaître.
     BROWSER_CONFIG = {
         "SUPPORTED_BROWSERS": {
             "chrome": {"exe_name": "chrome.exe"},
@@ -62,11 +66,13 @@ class Settings:
         },
     }
 
+    # Identifiants et noms des extensions gérées par l’application.
     EXTENSION_CONFIG = {
         "TARGET_NAME": "EX3",
         "FIREFOX_ID": "gmail.automation.proxy@azedine.dev",
     }
 
+    # Points de contrôle et adresse de téléchargement des mises à jour.
     UPDATE_CONFIG = {
         "PROGRAM_CHECK_ENDPOINT": "https://reporting.nrb-apps.com/APP_R/redirect.php",
         "PROGRAM_CHECK_EXTENSION": "Script",
@@ -74,6 +80,7 @@ class Settings:
         "PROGRAM_DOWNLOAD_URL": "https://github.com/Azedize/Automation-Gmail---Copie/archive/refs/heads/main.zip",
     }
 
+    # Emplacements des extensions installées dans les profils des navigateurs.
     BROWSER_EXTENSION_PATHS = {
         "chrome": (
             (
@@ -168,6 +175,7 @@ class Settings:
         "firefox": (("AppData", "Roaming", "Mozilla", "Firefox", "Profiles"),),
     }
 
+    # Préfixes, exclusions et actions autorisées pour le traitement des processus.
     PROCESS_CONFIG = {
         "GOOGLE_PREFIX": "google",
         "YOUTUBE_PREFIX": "youtube",
@@ -180,14 +188,17 @@ class Settings:
         },
     }
 
+    # Associe les identifiants de fournisseurs à leurs noms affichés.
     ISP_MAPPING = {"gmail": "Gmail", "hotmail": "Hotmail", "yahoo": "Yahoo"}
 
+    # Expressions régulières utilisées pour valider les données saisies.
     VALIDATION_CONFIG = {
         "EMAIL": r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
         "NUMERIC_RANGE": r"^\s*(\d+)(?:\s*,\s*(\d+))?\s*$",
         "IP_ADDRESS": r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$",
     }
 
+    # Dimensions et styles par défaut de l’interface graphique.
     UI_CONFIG = {
         "WINDOW_WIDTH": 1710,
         "WINDOW_HEIGHT": 1005,
@@ -204,6 +215,7 @@ class Settings:
         "FONT_SIZE_LARGE": 16,
     }
 
+    # Expose les paramètres regroupés sous forme d’attributs historiques.
     API_KEY_PROXY = SECURITY_CONFIG["API_KEY_PROXY"]
     AUTHORISED_PORTS = SECURITY_CONFIG["AUTHORISED_PORTS"]
     PROXY_VALIDATION_PORTS = SECURITY_CONFIG["PROXY_VALIDATION_PORTS"]
@@ -244,6 +256,7 @@ class Settings:
     PROGRAM_DOWNLOAD_URL = UPDATE_CONFIG["PROGRAM_DOWNLOAD_URL"]
     BROWSER_EXTENSION_CANDIDATES = BROWSER_EXTENSION_PATHS
 
+    # Associe les identifiants d’API internes à leurs adresses réseau.
     API_ENDPOINTS = {
         "_APIACCESS_API": "https://reporting.nrb-apps.com/pub/chk_usr1.php?rv4=1",
         "_SAVE_EMAIL_API": "https://reporting.nrb-apps.com/pub/h_new.php?k=mP5Q2XYrK9E67Y1&rID=1&rv4=1",
@@ -257,6 +270,7 @@ class Settings:
         "ENCRYPTED_PROXY_API": "https://example.com/",
     }
 
+    # Paramètres transmis lors de la validation et de l’ouverture d’une session.
     SESSION_API_CONFIG = {
         "KEY": "mP5QXYrK9E67Y",
         "VALIDATION_REQUEST_ID": "4",
@@ -265,6 +279,7 @@ class Settings:
         "AUTHENTICATION_LOGIN": "1",
     }
 
+    # Nombre maximal de tentatives pour une requête API.
     API_CONFIG = {
         "MAX_REQUEST_ATTEMPTS": 3,
     }
@@ -279,9 +294,7 @@ class Settings:
     SESSION_APP_VERSION = SESSION_API_CONFIG["APP_VERSION"]
     SESSION_AUTHENTICATION_LOGIN = SESSION_API_CONFIG["AUTHENTICATION_LOGIN"]
 
-    # ═══════════════════════════════════════════════════════════
-    # 🔐 Paramètres de chiffrement
-    # ═══════════════════════════════════════════════════════════
+    # Paramètres cryptographiques partagés par les fonctions de chiffrement.
 
     ENCRYPTION_KEY_HEX = (
         "f564292a5740af4fc4819c6e22f64765232ad35f56079854a0ad3996c68ee7a2"
@@ -295,20 +308,17 @@ class Settings:
     AES_IV_LENGTH_CBC = 16
     AES_IV_LENGTH_GCM = 12
 
-    # ═══════════════════════════════════════════════════════════
-    # 📁 Paramètres des chemins
-    # ═══════════════════════════════════════════════════════════
+    # Répertoires racines et chemins associés aux données locales.
 
     BASE_DIR = Path(__file__).resolve().parent.parent
     RESOURCES_DIR = BASE_DIR / "resources"
 
+    # Utilise APPDATA sous Windows et un chemin équivalent comme solution de repli.
     APPDATA = os.getenv("APPDATA") or str(Path.home() / "AppData" / "Roaming")
     DATA_DIR = Path(APPDATA) / "AutoMailPro"
     SESSION_FILE = DATA_DIR / "session.txt"
 
     TOOLS_DIR = BASE_DIR / "Tools"
-    # EXTENSIONS_DIR_TEMPLETE = TOOLS_DIR / "extensions Templete"
-
     PROFILES_DIR = TOOLS_DIR / "Profiles"
     CHROME_PROFILES = PROFILES_DIR / "chrome"
     FIREFOX_PROFILES = PROFILES_DIR / "firefox"
@@ -316,7 +326,7 @@ class Settings:
     ICEDRAGON_PROFILES = PROFILES_DIR / "icedragon"
     COMODO_PROFILES = PROFILES_DIR / "comodo"
 
-    # VERSION_LOCAL_EXT = os.path.join(EXTENSIONS_DIR_TEMPLETE, "version.txt")
+    # Chemins des profils de navigateur et du numéro de version local.
     VERSION_LOCAL_PROGRAMM = os.path.join(BASE_DIR, "config", "version.txt")
 
     CHROMIUM_BROWSER_PATHS = {
@@ -336,9 +346,7 @@ class Settings:
     ICONS_DIR = BASE_DIR / "resources" / "icons"
     FILE_ISP = os.path.join(BASE_DIR, "config", "Isp.txt")
 
-    # ═══════════════════════════════════════════════════════════
-    # Chemin Extentions
-    # ═══════════════════════════════════════════════════════════
+    # Modèles de profils et fichiers des extensions locales.
 
     CONFIG_PROFILE = r"C:\RepProxy\template_Profile"
     SECURE_PREFERENCES_TEMPLATE = (
@@ -371,9 +379,7 @@ class Settings:
 
     SESSION_PATH = os.path.join(APPDATA_DIR, "session.txt")
 
-    # ═══════════════════════════════════════════════════════════
-    # 🔑 Recherche clés spécifiques
-    # ═══════════════════════════════════════════════════════════
+    # Clés recherchées dans les fichiers de configuration des navigateurs.
     RESULTATS = []
     CLES_RECHERCHE = [
         "cglaeklndjbecchejgkdpblljkmgkacg",
@@ -392,42 +398,18 @@ class Settings:
     DOWN_EXISTS_W = os.path.exists(ARROW_DOWN_W_PATH)
     UP_EXISTS_W = os.path.exists(ARROW_UP_W_PATH)
 
-    # ═══════════════════════════════════════════════════════════
-    # 🖥️ Paramètres de l’interface
-    # ═══════════════════════════════════════════════════════════
-
-    WINDOW_WIDTH = 1710
-    WINDOW_HEIGHT = 1005
-
-    PRIMARY_COLOR = "#669bbc"
-    SECONDARY_COLOR = "#b2cddd"
-    ACCENT_COLOR = "#d90429"
-    SUCCESS_COLOR = "#2e7d32"
-    WARNING_COLOR = "#ed6c02"
-    ERROR_COLOR = "#d32f2f"
-    INFO_COLOR = "#0288d1"
-
-    FONT_FAMILY = "Times, Times New Roman, serif"
-    FONT_SIZE_SMALL = 12
-    FONT_SIZE_MEDIUM = 14
-    FONT_SIZE_LARGE = 16
-
-    # ═══════════════════════════════════════════════════════════
-    # ⚙️ Paramètres de l’application
-    # ═══════════════════════════════════════════════════════════
+    # Paramètres fonctionnels et ressources associées aux fournisseurs.
 
     SERVICES = {
         "Gmail": "Gmail.png",
-        # "Hotmail": "Hotmail.png",
-        # "Yahoo": "Yahoo.png"
+        # Les ressources Hotmail et Yahoo restent désactivées.
     }
 
+    # Limites de concurrence et taille du groupe de travail applicatif.
     MAX_CONCURRENT_BROWSERS = 10
     THREAD_POOL_SIZE = 4
 
-    # ═══════════════════════════════════════════════════════════
-    # 📂 Déclaration des chemins UI globaux Interface
-    # ═══════════════════════════════════════════════════════════
+    # Fichiers d’interface et ressources chargés par les fenêtres.
 
     INTERFACE_UI = os.path.abspath(
         os.path.join(BASE_DIR, "resources", "ui", "interface.ui")
@@ -437,6 +419,7 @@ class Settings:
     AUTH_BACKGROUND = os.path.join(BASE_DIR, "resources", "icons", "baghround.jpg")
     APP_ICON = os.path.join(BASE_DIR, "resources", "icons", "logo.jpg")
 
+    # Statuts utilisés pour classer et afficher les résultats d’extraction.
     STATUS_LIST = [
         "all",
         "bad_proxy",
@@ -463,6 +446,7 @@ class Settings:
         re.IGNORECASE,
     )
 
+    # Paramètres du journal rotatif et état partagé du formateur.
     LOG_DEV_FILE = os.path.abspath(os.path.join(BASE_DIR, "Log/LogDev/my_project.json"))
     LOG_MAX_BYTES = 10 * 1024 * 1024
     LOG_BACKUP_COUNT = 5
@@ -473,6 +457,7 @@ class Settings:
     _LOG_RUN_ID = uuid.uuid4().hex[:12]
     _MAX_LOG_MESSAGE_LENGTH = 800
 
+    # Motifs appliqués avant toute écriture afin de limiter les données exposées.
     _SENSITIVE_KEY_PATTERN = re.compile(
         r"(?i)([\"']?)(password|passwd|pass|secret|token|api[_-]?key|authorization|cookie|"
         r"proxy[_-]?login|private[_-]?key|access[_-]?key|session[_-]?(?:data|id)|"
@@ -483,12 +468,16 @@ class Settings:
         r"(?is)(payload|command)\s*([:=])\s*(.+?)(?=(?:\s+\w[\w -]*\s*[:=])|$)"
     )
     _EMAIL_PATTERN = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")
-    _IP_PATTERN = re.compile(r"\b(?:25[0-5]\.){3}(?:25[0-5])\b")
+    _IP_PATTERN = re.compile(
+        r"\b(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}"
+        r"(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\b"
+    )
     _URL_PATTERN = re.compile(r"\bhttps?://[^\s\]}>,]+", re.IGNORECASE)
     _PATH_PATTERN = re.compile(r"(?<![A-Za-z0-9])(?:[A-Za-z]:\\)[^\n\r|,;]+")
 
     @classmethod
     def _stable_identifier(cls, value: str, label: str) -> str:
+        """Produit un identifiant stable sans conserver la valeur sensible."""
         digest = hashlib.sha256(value.encode("utf-8", errors="replace")).hexdigest()[
             :12
         ]
@@ -496,6 +485,7 @@ class Settings:
 
     @classmethod
     def _redact_log_message(cls, message) -> str:
+        """Masque les données sensibles, adresses et chemins dans un message."""
         text = str(message)
 
         def redact_key_value(match):
@@ -519,6 +509,7 @@ class Settings:
 
     @classmethod
     def _prepare_log_message(cls, message) -> str:
+        """Nettoie puis limite la longueur d’un message destiné au journal."""
         safe_message = cls._redact_log_message(message)
         if len(safe_message) <= cls._MAX_LOG_MESSAGE_LENGTH:
             return safe_message
@@ -529,6 +520,7 @@ class Settings:
 
     @classmethod
     def _get_logger(cls):
+        """Crée le journal rotatif une seule fois et retourne son instance."""
         if cls._LOGGER is not None:
             return cls._LOGGER
 
@@ -555,6 +547,7 @@ class Settings:
 
     @classmethod
     def write_log_event(cls, event: str, level: str = "INFO", **context):
+        """Écrit un événement structuré après nettoyage de son contexte."""
         try:
             safe_context = {
                 str(key): cls._prepare_log_message(value)
@@ -566,6 +559,7 @@ class Settings:
 
     @classmethod
     def _write_log_record(cls, fields, level: str):
+        """Ajoute les métadonnées communes et écrit un enregistrement JSON."""
         with cls._LOGGER_LOCK:
             cls._LOG_SEQUENCE += 1
             sequence = cls._LOG_SEQUENCE
@@ -585,6 +579,7 @@ class Settings:
 
     @classmethod
     def write_log_dev_file(cls, message: str, level: str = "INFO"):
+        """Écrit un message texte dans le journal applicatif."""
         try:
             cls._write_log_record({"message": cls._prepare_log_message(message)}, level)
         except (OSError, TypeError, ValueError):
@@ -592,10 +587,12 @@ class Settings:
 
     @classmethod
     def writeLogDevFile(cls, message: str, level: str = "INFO"):
+        """Conserve l’ancien nom public de la méthode de journalisation."""
         cls.write_log_dev_file(message, level)
 
     @classmethod
     def clear_log(cls):
+        """Vide le fichier de journal sans supprimer sa configuration."""
         try:
             if cls._LOGGER is not None:
                 for handler in cls._LOGGER.handlers:
@@ -615,11 +612,12 @@ class Settings:
 
     @classmethod
     def clearLog(cls):
+        """Conserve l’ancien nom public de la méthode de nettoyage du journal."""
         cls.clear_log()
 
     @classmethod
     def ensure_directories(cls):
-        """Créer les dossiers nécessaires s’ils n’existent pas"""
+        """Crée les répertoires de données et de profils s’ils sont absents."""
         directories = [
             cls.DATA_DIR,
             cls.PROFILES_DIR,
@@ -646,18 +644,22 @@ class Settings:
 
     @classmethod
     def ensureDirectories(cls):
+        """Conserve l’ancien nom public de la méthode de création des dossiers."""
         cls.ensure_directories()
 
     @classmethod
     def get_encryption_key_bytes(cls) -> bytes:
+        """Retourne la clé de chiffrement configurée sous forme binaire."""
         return bytes.fromhex(cls.ENCRYPTION_KEY_HEX)
 
     @classmethod
     def getEncryptionKeyBytes(cls) -> bytes:
+        """Conserve l’ancien nom public d’accès à la clé binaire."""
         return cls.get_encryption_key_bytes()
 
     @classmethod
     def find_pythonw(cls):
+        """Recherche pythonw.exe près de Python puis dans le PATH système."""
         base_dir = os.path.dirname(sys.executable)
         candidate = os.path.join(base_dir, "pythonw.exe")
         if os.path.isfile(candidate):
@@ -670,6 +672,7 @@ class Settings:
 
     @classmethod
     def ensure_node_installed(cls):
+        """Vérifie Node.js et peut installer Chocolatey puis Node.js si nécessaire."""
         if shutil.which("node") is not None:
             cls.write_log_dev_file("Node.js already installed", "INFO")
             return True
@@ -681,6 +684,7 @@ class Settings:
         if shutil.which("choco") is None:
             cls.write_log_dev_file("Chocolatey not found. Installing...", "INFO")
             try:
+                # Exécute le script officiel Chocolatey dans une session PowerShell.
                 subprocess.run(
                     [
                         "powershell",
@@ -706,6 +710,7 @@ class Settings:
                 return False
 
         try:
+            # Installe la version LTS de Node.js avec Chocolatey sans invite.
             subprocess.run(["choco", "install", "nodejs-lts", "-y"], check=True)
             return True
         except subprocess.CalledProcessError as exc:
@@ -720,6 +725,7 @@ class Settings:
 
     @classmethod
     def get_web_ext_path(cls):
+        """Retourne le chemin de web-ext s’il est disponible dans le PATH."""
         path = shutil.which("web-ext")
         if path:
             return path
@@ -727,6 +733,7 @@ class Settings:
 
     @classmethod
     def ensure_web_ext_installed(cls):
+        """Vérifie les prérequis puis peut installer web-ext globalement."""
         if not cls.ensure_node_installed():
             cls.write_log_dev_file("Unable to continue without Node.js.", "WARNING")
             return
@@ -738,6 +745,7 @@ class Settings:
             return
         try:
             npm_path = shutil.which("npm")
+            # Installe web-ext globalement afin qu’il soit accessible dans le PATH.
             subprocess.run([npm_path, "install", "--global", "web-ext"], check=True)
         except subprocess.CalledProcessError as exc:
             cls.write_log_event(
@@ -750,11 +758,12 @@ class Settings:
 
     @classmethod
     def ensureWebExtInstalled(cls):
+        """Conserve l’ancien nom public de la méthode d’installation de web-ext."""
         cls.ensure_web_ext_installed()
 
 
-# Création d’une instance unique utilisée dans tout le projet
+# Crée l’instance unique de configuration utilisée dans tout le projet.
 settings = Settings()
 
-# Vérification et création des dossiers de base
+# Crée les répertoires de base nécessaires au fonctionnement de l’application.
 settings.ensure_directories()

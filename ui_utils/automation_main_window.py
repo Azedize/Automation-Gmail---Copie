@@ -9,16 +9,7 @@ import traceback
 from PyQt6 import uic
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QCursor, QGuiApplication, QIcon
-from PyQt6.QtWidgets import (
-    QApplication,
-    QFrame,
-    QInputDialog,
-    QListWidget,
-    QMainWindow,
-    QPlainTextEdit,
-    QPushButton,
-    QWidget,
-)
+from PyQt6.QtWidgets import ( QApplication, QFrame, QInputDialog, QListWidget, QMainWindow, QPlainTextEdit, QPushButton, QWidget)
 
 from api import API_MANAGER
 from config import Settings
@@ -647,12 +638,13 @@ class AutomationMainWindow(QMainWindow):
 
         if browser_path is None:
             Settings.write_log_dev_file(
-                f"Unable to find path for browser: {selected_Browser}", "ERROR"
+                f"Navigateur introuvable ou chemin d'installation indisponible : {selected_Browser}",
+                "ERROR",
             )
             UIManager.showCriticalMessage(
                 window,
-                "Browser Not Found",
-                f"Unable to find the path for the selected browser: {selected_Browser}.\n\nPlease ensure the browser is installed and try again.",
+                "Navigateur introuvable",
+                f"Le navigateur sélectionné ({selected_Browser}) est introuvable. Vérifiez son installation. Si le problème persiste, contactez le support.",
                 message_type="critical",
             )
             UIManager.enableButton(self.submitButton)
@@ -767,7 +759,7 @@ class AutomationMainWindow(QMainWindow):
             return
 
         Settings.write_log_dev_file("Final JSON:", "INFO")
-        result_json = JsonManager.generateJson(self.scenario_layout, selected_Browser)
+        result_json = JsonManager.generateJson(self.scenario_layout)
         Settings.write_log_dev_file(
             f"Final JSON generated. Data: {json.dumps(result_json, indent=2, ensure_ascii=False)}",
             "INFO",
