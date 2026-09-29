@@ -269,13 +269,21 @@ class SessionManager:
                 if isinstance(data, bytes):
                     data = data.decode("utf-8")
 
+                # La réponse de l'API est CHIFFRÉE : il faut la déchiffrer avec la
+                # même clé que lors du login (cf. check_api_credentials) avant tout
+                # contrôle de format. Sans cette étape, la chaîne chiffrée ne
+                # contient pas de ";" et la session — pourtant valide localement —
+                # était rejetée à tort (InvalidDecryptedFormat) à chaque relance de
+                # l'application, forçant un nouveau login.
+                decrypted = EncryptionService.decrypt_message(data, self.key)
+
                 # Le format attendu après déchiffrement est : ID_USER;ENTITY.
-                if ";" not in data:
+                if not decrypted or ";" not in decrypted:
                     settings.write_log_event("session_api_validation_failed", "WARNING", reason="invalid_decrypted_format")
                     return {"valid": False, "error": "InvalidDecryptedFormat"}
 
                 # Sépare l'identifiant utilisateur et l'entity.
-                id_user_str, entity = data.split(";", 1)
+                id_user_str, entity = decrypted.split(";", 1)
 
                 try:
                     # Convertit l'identifiant texte en entier.
