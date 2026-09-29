@@ -14,7 +14,6 @@ import traceback
 
 
 ROOT_DIR = Path(__file__).resolve().parent
-TOOLS_DIR = ROOT_DIR / "Tools"
 LOG_DEV_FILE = ROOT_DIR / "Log" / "LogDev" / "my_project.json"
 
 
