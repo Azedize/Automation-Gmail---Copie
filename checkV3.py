@@ -360,6 +360,9 @@ class DependencyManager:
                 sys.exit(1)
 
 
+
+
+
 def encrypt_message(plaintext: str, key_bytes: bytes):
     # Importe Base64 pour convertir les données binaires chiffrées
     # en une chaîne de caractères facilement stockable ou transmissible
@@ -418,6 +421,10 @@ def encrypt_message(plaintext: str, key_bytes: bytes):
 
         # Indique que le chiffrement a échoué
         return False
+
+
+
+
 
 
 class UpdateManager:
@@ -800,6 +807,9 @@ class UpdateManager:
                 return None
 
 
+
+
+
 def initialize_dependencies():
 
     # Enregistre le début de l'initialisation des dépendances
@@ -848,6 +858,8 @@ def initialize_dependencies():
         # Cela masque les avertissements liés à certaines connexions HTTPS
         # mais ne rend pas une connexion non sécurisée plus sûre
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+
 
 
 def main():
