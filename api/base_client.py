@@ -182,9 +182,7 @@ class ApiClient:
         # --------------------------------------------------
         Settings.write_log_event("api_client_initialized", "INFO", verify_ssl=self.session.verify, retry_attempts=self.MAX_REQUEST_ATTEMPTS)
 
-    def makeRequest(
-        self, endpoint: str, method: str = "POST", data: Optional[Dict] = None, json_data: Optional[Dict] = None, params: Optional[Dict] = None, headers: Optional[Dict] = None, timeout: int = 30
-    ) -> Dict[str, Any]:
+    def makeRequest(self, endpoint: str, method: str = "POST", data: Optional[Dict] = None, json_data: Optional[Dict] = None, params: Optional[Dict] = None, headers: Optional[Dict] = None, timeout: int = 30 ) -> Dict[str, Any]:
 
         # --------------------------------------------------
         # Détermine l'URL réelle qui sera utilisée.
@@ -461,6 +459,8 @@ class ApiClient:
         # ------------------------------------------------------
         return {"status": "error", "error": (f"Failed after {self.MAX_REQUEST_ATTEMPTS} attempts: {last_exception}"), "status_code": None}
 
+    
+    
     def handleResponse(self, result: Dict[str, Any], success_default: Any = None, failure_default: Any = None):
         # ------------------------------------------------------
         # Cette méthode centralise le traitement des réponses
@@ -533,6 +533,8 @@ class ApiClient:
             # --------------------------------------------------
             return failure_default
 
+    
+    
     def fetchScenarios(self, Url_Api, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
 
         # ------------------------------------------------------
@@ -592,6 +594,8 @@ class ApiClient:
 
             return {"session": False, "scenarios": []}
 
+    
+    
     def saveProcess(self, params: Dict[str, Any]) -> int:
 
         # ------------------------------------------------------
@@ -633,6 +637,8 @@ class ApiClient:
 
         return -1
 
+    
+    
     def saveEmail(self, params: Dict[str, Any]) -> str:
 
         # ------------------------------------------------------
@@ -648,6 +654,8 @@ class ApiClient:
         # ------------------------------------------------------
         return str(self.handleResponse(result, ""))
 
+    
+    
     def sendStatus(self, params: Dict[str, Any]) -> str:
 
         # ------------------------------------------------------
@@ -674,6 +682,8 @@ class ApiClient:
         # ------------------------------------------------------
         return str(self.handleResponse(result, ""))
 
+    
+    
     def handleSaveScenario(self, payload: Dict[str, Any], Url_Api) -> Dict[str, Any]:
 
         # ------------------------------------------------------
@@ -724,6 +734,8 @@ class ApiClient:
 
         return response
 
+    
+    
     def fetchProxyConfiguration(self, unique_ips: set, entity_New: str) -> Dict[str, Any]:
 
         # ------------------------------------------------------

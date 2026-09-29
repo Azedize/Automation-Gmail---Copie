@@ -15,6 +15,7 @@ from utils import ValidationUtils
 
 
 class AuthenticationWindow(QMainWindow):
+    
     def __init__(self, main_window_class, stop_processes, start_extraction=None, runtime_state=None):
         super().__init__()
         self.main_window_class = main_window_class

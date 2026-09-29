@@ -25,6 +25,7 @@ from utils import ValidationUtils
 
 
 class AutomationMainWindow(QMainWindow):
+    
     def __init__(self, json_data, stop_processes, start_extraction, runtime_state=None):
         super(AutomationMainWindow, self).__init__()
         self.stop_processes = stop_processes

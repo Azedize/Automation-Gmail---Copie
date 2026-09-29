@@ -307,9 +307,7 @@ class BrowserManager:
     #     -> utilise Path_DiR/email/data.txt
     # ======================================================
     @staticmethod
-    def persistBrowserSessionInfo(
-        pid: Any, Path_DiR: str, email: str, SESSION_ID: str, browser: str, inserted_id: str, profile_path: Optional[str] = None, web_ext_pid: Optional[int] = None, profile_name: Optional[str] = None
-    ) -> None:
+    def persistBrowserSessionInfo( pid: Any, Path_DiR: str, email: str, SESSION_ID: str, browser: str, inserted_id: str, profile_path: Optional[str] = None, web_ext_pid: Optional[int] = None, profile_name: Optional[str] = None ) -> None:
 
         # ==================================================
         # Normalisation du PID

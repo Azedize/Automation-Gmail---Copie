@@ -54,6 +54,7 @@ except ImportError as error:
 
 
 class JsonManager:
+    
     @staticmethod
     def parseRandomRange(text: str) -> int:
         # Cette méthode sert de passerelle vers ValidationUtils.

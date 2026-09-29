@@ -38,6 +38,7 @@ SessionManager: Any
 
 
 class UpdateManager:
+    
     @staticmethod
     def readLocalVersion(path: str) -> Optional[str]:
         if not path or not os.path.isfile(path):

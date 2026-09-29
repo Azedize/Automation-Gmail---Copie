@@ -255,6 +255,7 @@ class VerticalTabBar(QtWidgets.QTabBar):
 # à gauche du contenu. Utilisé par UIManager.convertToVerticalTabs().
 # =============================================================================
 class VerticalTabWidget(QtWidgets.QTabWidget):
+
     def __init__(self, parent=None):
         super().__init__(parent)
         # Remplacement de la barre d'onglets par défaut (doit être fait avant
@@ -339,7 +340,6 @@ class CustomTextDialog(QDialog):
 #     combobox, onglets verticaux, conteneurs, templates).
 # =============================================================================
 class UIManager:
-    @staticmethod
     # -------------------------------------------------------------------------
     # Remet l'onglet « Result » à son état d'origine (texte simple « Result »),
     # typiquement avant le lancement d'un nouveau traitement (Submit).
@@ -351,6 +351,7 @@ class UIManager:
     #      que la barre revienne à un rendu standard.
     #   4. Force le redessin.
     # -------------------------------------------------------------------------
+    @staticmethod
     def resetResultTabLabel(tab_widget, index):
         """Reset a Result tab to its default plain state before Submit starts."""
         # Sécurité : widget absent ou index hors limites -> on ne fait rien.
@@ -1291,6 +1292,10 @@ class UIManager:
                     widget.deleteLater()
                     reset_options_layout.removeWidget(widget)
 
+   
+   
+   
+   
     @staticmethod
     # -------------------------------------------------------------------------
     # Même principe que removeCopier, mais le critère porte sur les étapes dont
@@ -1328,6 +1333,8 @@ class UIManager:
                     widget.deleteLater()
                     reset_options_layout.removeWidget(widget)
 
+    
+    
     @staticmethod
     # -------------------------------------------------------------------------
     # Lit un fichier texte UTF-8 et renvoie son contenu sans espaces de début
@@ -1347,6 +1354,9 @@ class UIManager:
             Settings.write_log_event("file_read_failed", "ERROR", file_path=file_path, exception_type=type(exc).__name__, error=str(exc))
             return None
 
+   
+   
+   
     @staticmethod
     # -------------------------------------------------------------------------
     # Recherche un widget enfant par son objectName. Si widget_type est fourni,
@@ -1701,6 +1711,8 @@ class UIManager:
         UIManager.convertToVerticalTabs(window)
         UIManager.setIconsForExistingButtons(window)
 
+   
+   
     @staticmethod
     # -------------------------------------------------------------------------
     # Clic sur un onglet de résultats : après vérification de l'index, rend
@@ -1713,6 +1725,9 @@ class UIManager:
             return
         window.tabWidgetResult.setCurrentIndex(index)
 
+    
+    
+    
     @staticmethod
     # -------------------------------------------------------------------------
     # Changement d'onglet de résultats : journalise le nom du nouvel onglet.
@@ -1761,6 +1776,9 @@ class UIManager:
                     # bouton copie bien le contenu de SON onglet.
                     button.clicked.connect(partial(UIManager.copyResultFromTab, window, i))
 
+    
+    
+    
     @staticmethod
     # -------------------------------------------------------------------------
     # Associe à chaque onglet une icône dont le nom est dérivé de son texte :
@@ -1782,6 +1800,10 @@ class UIManager:
                 icon_pixmap = icon.pixmap(icon_size[0], icon_size[1])
                 tab_widget.setTabIcon(i, QIcon(icon_pixmap))
 
+    
+    
+    
+    
     @staticmethod
     # -------------------------------------------------------------------------
     # Remplace « tabWidgetResult » (onglets horizontaux issus du .ui) par un
@@ -1830,6 +1852,11 @@ class UIManager:
             pass
         window.tabWidgetResult.currentChanged.connect(lambda index: UIManager.handleResultTabChanged(window, index))
 
+    
+    
+    
+    
+    
     @staticmethod
     # -------------------------------------------------------------------------
     # Initialise le widget d'onglets principal « interface_2 » : curseur main
@@ -1860,6 +1887,12 @@ class UIManager:
                 frame.show()
                 break
 
+    
+    
+    
+    
+    
+    
     @staticmethod
     # -------------------------------------------------------------------------
     # Réglages divers de l'interface :
@@ -1900,6 +1933,11 @@ class UIManager:
 
         window.result_tab_widget = UIManager.findWidget(window, "tabWidgetResult", QTabWidget)
 
+    
+    
+    
+    
+    
     @staticmethod
     # -------------------------------------------------------------------------
     # Ajoute des images de flèches haut/bas personnalisées à tous les QSpinBox
@@ -1910,10 +1948,7 @@ class UIManager:
             return
         for spin_box in window.findChildren(QSpinBox):
             old_style = spin_box.styleSheet()
-            spin_box.setStyleSheet(
-                old_style
-                + f'QSpinBox::down-button {{ image: url("{Settings.ARROW_DOWN_PATH}"); width: 13px; height: 13px; border-top-left-radius: 5px; border-bottom-left-radius: 5px; }} QSpinBox::up-button {{ image: url("{Settings.ARROW_UP_PATH}"); width: 13px; height: 13px; border-top-left-radius: 5px; border-bottom-left-radius: 5px; }}'
-            )
+            spin_box.setStyleSheet(  old_style + f'QSpinBox::down-button {{ image: url("{Settings.ARROW_DOWN_PATH}"); width: 13px; height: 13px; border-top-left-radius: 5px; border-bottom-left-radius: 5px; }} QSpinBox::up-button {{ image: url("{Settings.ARROW_UP_PATH}"); width: 13px; height: 13px; border-top-left-radius: 5px; border-bottom-left-radius: 5px; }}' )
 
     @staticmethod
     # -------------------------------------------------------------------------
@@ -2032,6 +2067,9 @@ class UIManager:
             new_template.setProperty("full_state", state)
             window.scenario_layout.addWidget(new_template)
 
+    
+    
+    
     @staticmethod
     # -------------------------------------------------------------------------
     # Affiche ou masque le champ lié à une case à cocher.
@@ -2044,6 +2082,10 @@ class UIManager:
             else:
                 lineedit.hide()
 
+    
+    
+    
+    
     @staticmethod
     # -------------------------------------------------------------------------
     # Désactive un bouton et lui applique un style « grisé ».
@@ -2075,6 +2117,12 @@ class UIManager:
         QApplication.processEvents()
         Settings.write_log_dev_file(f"Button '{button.objectName()}' disabled with style: {disabled_style}", "INFO")
 
+    
+    
+    
+    
+    
+    
     @staticmethod
     # -------------------------------------------------------------------------
     # Réactive un bouton et restaure le style sauvegardé par disableButton()
