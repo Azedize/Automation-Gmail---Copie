@@ -462,6 +462,8 @@ class UpdateManager:
             # Retourne None pour indiquer que la lecture a échoué
             return None
 
+    
+    
     @staticmethod
     def _download_and_extract(zip_url, target_dir, clean_target=False, extract_subdir=None, progress_callback=None):
         try:
@@ -639,6 +641,8 @@ class UpdateManager:
             # Relance l'exception afin que la fonction appelante puisse la gérer
             raise
 
+    
+    
     @staticmethod
     def check_and_update(progress_callback=None):
         # Fonction locale utilisée pour transmettre la progression
