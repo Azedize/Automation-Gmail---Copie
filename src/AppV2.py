@@ -208,8 +208,8 @@ def startExtraction(window, data_list, entered_number, selected_Browser, Isp, un
         Settings.write_log_dev_file(f"Navigateur introuvable ou chemin d'installation indisponible : {browser_name}", "ERROR")
         UIManager.showCriticalMessage(
             window,
-            "Navigateur introuvable",
-            f"Le navigateur sélectionné ({browser_name}) est introuvable. Vérifiez son installation. Si le problème persiste, contactez le support.",
+            "Browser Not Found",
+            f"The selected browser ({browser_name}) could not be found. Please check its installation. If the problem persists, contact support.",
             message_type="critical",
         )
         UIManager.enableButton(window.submitButton)
@@ -222,8 +222,8 @@ def startExtraction(window, data_list, entered_number, selected_Browser, Isp, un
 
     EXTRACTION_THREAD.finished.connect(lambda: window.extraction_finished(window))
     EXTRACTION_THREAD.progress.connect(lambda msg: print(msg))
-    EXTRACTION_THREAD.stopped.connect(lambda msg: UIManager.showCriticalMessage(window, "ArrÃªtÃ©", msg, message_type="warning"))
-    EXTRACTION_THREAD.finished.connect(lambda: UIManager.showCriticalMessage(window, "TerminÃ©", "L'extraction est terminÃ©e.", message_type="success"))
+    EXTRACTION_THREAD.stopped.connect(lambda msg: UIManager.showCriticalMessage(window, "Stopped", msg, message_type="warning"))
+    EXTRACTION_THREAD.finished.connect(lambda: UIManager.showCriticalMessage(window, "Completed", "The extraction has finished.", message_type="success"))
     EXTRACTION_THREAD.start()
 
     def launch_browser_session_monitor():

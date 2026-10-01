@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/tec-d/Documents/Ext3 Gmail Chrome - C\\\\+\\\\+/**)",
+      "Bash(grep -vE \"/\\\\.git/|crypto\\\\.js|crypto\\\\.wasm\")",
+      "Bash(PYTHONIOENCODING=utf-8 python - '/c/Users/tec-d/Documents/Ext3 Gmail Chrome - C++')",
+      "Bash(rm -f '/c/Users/tec-d/Documents/Ext3 Gmail Chrome - C++/EX3-chrome-store.zip')",
+      "Read(//c/Users/tec-d/Documents/Ext3 Gmail Chrome - C\\\\+\\\\+/wasm/**)",
+      "Bash(python -m py_compile Update/update.py ui_utils/automation_main_window.py)",
+      "Bash(python -m py_compile src/AppV2.py core/email_extraction_worker.py ui_utils/automation_main_window.py)",
+      "Bash(python -m py_compile ui_utils/ui_utils.py)",
+      "Bash(python -m py_compile src/AppV2.py core/email_extraction_worker.py ui_utils/automation_main_window.py ui_utils/ui_utils.py)"
+    ]
+  }
+}

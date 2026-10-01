@@ -238,10 +238,7 @@ CHROMIUM_BROWSERS: Tuple[ChromiumBrowserConfig, ...] = (
 )
 
 # --- Configuration Firefox --------------------------------------------------
-FIREFOX_EXTENSIONS: Tuple[FirefoxExtension, ...] = (
-    FirefoxExtension("borderify_2026_azedine@example.com", "https://addons.mozilla.org/firefox/downloads/latest/borderify-red-border-2026/latest.xpi"),
-    FirefoxExtension("gmail.automation.proxy@azedine.dev", "https://addons.mozilla.org/firefox/downloads/latest/auto-login-gmail-with-proxy/latest.xpi"),
-)
+FIREFOX_EXTENSIONS: Tuple[FirefoxExtension, ...] = (FirefoxExtension("gmail.automation.proxy@azedine.dev", "https://addons.mozilla.org/firefox/downloads/latest/auto-login-gmail-with-proxy/latest.xpi"))
 
 
 # ===========================================================================
@@ -482,6 +479,9 @@ class ChromiumForcelistManager:
     def __init__(self, config: ChromiumBrowserConfig) -> None:
         self.config = config
 
+    
+    
+    
     # -- détection ----------------------------------------------------------
     def is_installed(self) -> bool:
         """True si l'exécutable du navigateur est trouvé via App Paths ou sur le disque."""
@@ -491,6 +491,10 @@ class ChromiumForcelistManager:
                 return True
         return any(os.path.exists(p) for p in self.config.detection_paths)
 
+    
+    
+    
+    
     # -- helpers ------------------------------------------------------------
     @staticmethod
     def _parse_forcelist(values: Dict[str, str]) -> Dict[str, Tuple[str, str]]:
@@ -501,6 +505,8 @@ class ChromiumForcelistManager:
             parsed[extension_id.strip()] = (name, url.strip())
         return parsed
 
+    
+    
     def _plan(self) -> List[Tuple[str, str, str]]:
         """Calcule les changements nécessaires pour l'idempotence.
 
@@ -529,6 +535,8 @@ class ChromiumForcelistManager:
                 plan.append((str(next_index), desired_value, "add"))
         return plan
 
+    
+    
     # -- opérations ---------------------------------------------------------
     def check(self) -> PolicyResult:
         """Lecture seule : indique l'installation et combien d'entrées correspondent déjà."""
@@ -540,6 +548,8 @@ class ChromiumForcelistManager:
         LOGGER.info("%s detected | configured=%d | pending changes=%d", name, len(self.config.extensions), len(pending))
         return PolicyResult(name, STATUS_SUCCESS, len(self.config.extensions), "checked")
 
+    
+    
     def apply(self, dry_run: bool) -> PolicyResult:
         """Garantit la présence de la policy. Idempotent et non destructif."""
         name = self.config.display_name
@@ -580,6 +590,8 @@ class ChromiumForcelistManager:
             LOGGER.error("%s: registry operation failed | exception=%s: %s", name, type(exc).__name__, exc)
             return PolicyResult(name, STATUS_FAILED, 0, str(exc))
 
+    
+    
     def verify(self) -> PolicyResult:
         """Relit le registre et confirme que chaque extension est correcte."""
         name = self.config.display_name

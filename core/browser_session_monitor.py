@@ -803,19 +803,46 @@ class BrowserSessionMonitorThread(QThread):
                 Settings.write_log_dev_file(f"No valid PID to close for {email} ({browser})", "WARNING")
                 return
 
-            # Fermeture de chaque PID de la liste calculee.
+            # Fermeture de chaque PID de la liste calculee, AVEC ses processus enfants
+            # (Chrome/Comodo lance des sous-processus : renderers, GPU, utilitaires...).
+            # On ne ferme QUE l'arbre de ce PID : les autres instances du navigateur
+            # (autres arbres de processus) ne sont pas touchees.
             for current_pid in pid_list:
                 try:
-                    # Demande d'arret « doux » (SIGTERM), puis verification/terminaison forcee.
-                    os.kill(current_pid, signal.SIGTERM)
-                    time.sleep(2)
-                    if psutil.pid_exists(current_pid):
-                        p = psutil.Process(current_pid)
-                        p.terminate()
-                        p.wait(timeout=3)
-                        Settings.write_log_dev_file(f"Chrome closed via terminate() for PID {current_pid}", "INFO")
-                    else:
-                        Settings.write_log_dev_file(f"Chrome closed via SIGTERM for PID {current_pid}", "INFO")
+                    # Recupere le processus parent. S'il n'existe plus, il est deja ferme.
+                    try:
+                        parent = psutil.Process(current_pid)
+                    except psutil.NoSuchProcess:
+                        Settings.write_log_dev_file(f"PID {current_pid} n'existe plus (deja ferme)", "INFO")
+                        parent = None
+
+                    if parent is not None:
+                        # IMPORTANT : on collecte les enfants AVANT de tuer le parent
+                        # (sinon ils sont reparentes et deviennent introuvables).
+                        try:
+                            children = parent.children(recursive=True)
+                        except psutil.NoSuchProcess:
+                            children = []
+
+                        # Cible = enfants d'abord, puis le parent.
+                        procs_to_close = children + [parent]
+
+                        # 1) Arret « doux » (terminate) de tout l'arbre.
+                        for proc in procs_to_close:
+                            try:
+                                proc.terminate()
+                            except (psutil.NoSuchProcess, psutil.AccessDenied) as e_term:
+                                Settings.write_log_dev_file(f"terminate() ignore pour PID {getattr(proc, 'pid', '?')}: {type(e_term).__name__}", "DEBUG")
+
+                        # 2) Attend la fin, puis tue de force ceux qui survivent (kill).
+                        _, alive = psutil.wait_procs(procs_to_close, timeout=3)
+                        for proc in alive:
+                            try:
+                                proc.kill()
+                            except (psutil.NoSuchProcess, psutil.AccessDenied) as e_kill:
+                                Settings.write_log_dev_file(f"kill() ignore pour PID {getattr(proc, 'pid', '?')}: {type(e_kill).__name__}", "DEBUG")
+
+                        Settings.write_log_dev_file(f"Chrome ferme | PID={current_pid} | enfants={len(children)}", "INFO")
                 except Exception as e_chrome:
                     Settings.write_log_dev_file(
                         # Echec de fermeture d'un PID precis : journalise, on passe au suivant.

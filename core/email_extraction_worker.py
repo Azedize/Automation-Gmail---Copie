@@ -196,7 +196,7 @@ class EmailExtractionWorker(QThread):
 
         # Session invalide : signal d'arret vers l'interface, log, puis sortie.
         if not session_info["valid"]:
-            self.stopped.emit("Session invalide. Veuillez vous reconnecter.")
+            self.stopped.emit("Invalid session. Please log in again.")
             Settings.write_log_dev_file("Invalid session. Please reconnect.", "ERROR")
             return
 
@@ -431,6 +431,7 @@ class EmailExtractionWorker(QThread):
                             f"--profile-directory={profile_email}",
                             f"--disable-extensions-except={Settings.EXTENTION_EX3_CHROMIUM}",
                             f"--load-extension={os.path.join(Settings.EXTENTION_EX3_CHROMIUM)}",
+                            "--start-maximized",
                             "--no-first-run",
                             "--no-default-browser-check",
                             "--disable-sync",
@@ -453,25 +454,16 @@ class EmailExtractionWorker(QThread):
                         profile_dir = Settings.CHROMIUM_BROWSER_PATHS.get(self.selected_Browser, {"profiles": Settings.CHROME_PROFILES})["profiles"]
                         browser_executable = self.Browser_path
                         ValidationUtils.ensurePathExists(profile_dir, is_file=False)
+                        # UNE SEULE commande : lance directement le navigateur (Chrome/Comodo)
+                        # avec l'URL chiffree. Le double lancement (profil sans URL puis URL)
+                        # n'est plus necessaire : l'extension gere l'initialisation (rechargement
+                        # au premier install cote background.js).
                         command = [
                             browser_executable,
                             f"--user-data-dir={os.path.join(profile_dir, profile_email)}",
                             f"--profile-directory={profile_email}",
-                            "--lang=En-US",
-                            "--no-first-run",
-                            "--no-default-browser-check",
-                            "--disable-sync",
-                            "--disable-popup-blocking",
-                            "--disable-notifications",
-                            "--disable-features=DownloadBubble",
-                        ]
-                        # Deux commandes : la premiere initialise le profil (sans URL), la seconde
-                        # ouvre l'URL chiffree apres un delai.
-                        command1 = [
-                            browser_executable,
-                            f"--user-data-dir={os.path.join(profile_dir, profile_email)}",
-                            f"--profile-directory={profile_email}",
                             f"{url}",
+                            "--start-maximized",
                             "--lang=En-US",
                             "--no-first-run",
                             "--no-default-browser-check",
@@ -481,13 +473,13 @@ class EmailExtractionWorker(QThread):
                             "--disable-features=DownloadBubble",
                         ]
                         process = subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        # PID de l'instance lancee : servira a fermer CE navigateur et ses
+                        # processus enfants, sans toucher les autres instances de l'utilisateur.
                         self.runtime_state.process_pids.append(process.pid)
-                        # Pause pour laisser le profil s'initialiser avant d'ouvrir l'URL.
+                        # Delai controle apres le lancement (respect de l'ordre d'execution).
                         time.sleep(4)
-                        process1 = subprocess.Popen(command1, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                        self.runtime_state.process_pids.append(process1.pid)
-                        # Les deux PID sont enregistres ensemble (« pid;pid »).
-                        session_pids = f"{process.pid};{process1.pid}"
+                        # Un seul PID enregistre pour cette session.
+                        session_pids = f"{process.pid}"
                         BrowserManager.persistBrowserSessionInfo(
                             session_pids, profile_dir, profile_email, self.session_id, self.selected_Browser.lower(), inserted_id, profile_path=os.path.join(profile_dir, profile_email)
                         )

@@ -422,6 +422,21 @@ class AutomationMainWindow(QMainWindow):
             return
 
         update_result = UpdateManager.checkAndUpdate(window=self)
+        # Token/session invalide : on NE ferme PAS l'application. On prévient
+        # l'utilisateur, puis on revient à l'écran de login (nouvelle connexion).
+        if update_result == "invalid_token":
+            Settings.write_log_dev_file("Token invalide détecté : notification utilisateur et retour au login (sans arrêt complet).", "WARNING")
+            UIManager.enableButton(self.submitButton)
+            UIManager.showCriticalMessage(
+                self,
+                "Session Reset",
+                "Your session has expired or is no longer valid.\nPlease log in again.",
+                message_type="warning",
+            )
+            # log_out() efface la session, ouvre la fenêtre de login et ferme
+            # celle-ci. On l'appelle APRÈS la notification (il ferme self).
+            self.log_out()
+            return
         if update_result is False:
             Settings.write_log_dev_file("Mise à jour détectée : checkV3.py lancé et AppV2 fermé.", "INFO")
             QApplication.instance().quit()
@@ -438,8 +453,8 @@ class AutomationMainWindow(QMainWindow):
             Settings.write_log_dev_file(f"Navigateur introuvable ou chemin d'installation indisponible : {selected_Browser}", "ERROR")
             UIManager.showCriticalMessage(
                 window,
-                "Navigateur introuvable",
-                f"Le navigateur sélectionné ({selected_Browser}) est introuvable. Vérifiez son installation. Si le problème persiste, contactez le support.",
+                "Browser Not Found",
+                f"The selected browser ({selected_Browser}) could not be found. Please check its installation. If the problem persists, contact support.",
                 message_type="critical",
             )
             UIManager.enableButton(self.submitButton)

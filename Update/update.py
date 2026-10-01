@@ -124,7 +124,11 @@ class UpdateManager:
                 except Exception as e:
                     Settings.write_log_dev_file(f"Erreur lors du nettoyage de session après token invalide\n{traceback.format_exc()}", "ERROR")
 
-                os._exit(1)
+                # On n'ARRETE PLUS le programme (plus de os._exit). On signale au
+                # caller qu'il doit prevenir l'utilisateur et revenir au login pour
+                # une nouvelle connexion. L'arret complet + relance de checkV3 reste
+                # reserve au cas « mise a jour du programme » (plus bas).
+                return "invalid_token"
 
             if not isinstance(data, dict):
                 Settings.write_log_dev_file(f"Réponse serveur programme invalide: {data}", "ERROR")

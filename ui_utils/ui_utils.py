@@ -1212,7 +1212,7 @@ class UIManager:
                         def apply_error():
                             new_style = ValidationUtils.inject_border_into_style(cleaned_style)
                             qlineedit.setStyleSheet(new_style)
-                            qlineedit.setToolTip("Texte invalide. Valeur remplacée par défaut depuis full_state.")
+                            qlineedit.setToolTip("Invalid text. Value reset to the default.")
 
                         QTimer.singleShot(0, apply_error)
                         return
@@ -1225,7 +1225,7 @@ class UIManager:
             def apply_error():
                 new_style = ValidationUtils.inject_border_into_style(cleaned_style)
                 qlineedit.setStyleSheet(new_style)
-                qlineedit.setToolTip("Le texte est un nombre ou trop court, veuillez corriger la saisie.")
+                qlineedit.setToolTip("The text is a number or too short. Please correct your input.")
 
             QTimer.singleShot(0, apply_error)
         # Texte valide : style normal et infobulle vidée.
